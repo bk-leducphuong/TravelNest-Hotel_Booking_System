@@ -1,0 +1,52 @@
+####################################
+# Cluster
+####################################
+cluster.name: elk-cluster
+node.name: es-1
+
+####################################
+# Node & Discovery
+####################################
+discovery.type: single-node
+
+####################################
+# Paths
+####################################
+path.data: /usr/share/elasticsearch/data
+path.logs: /usr/share/elasticsearch/logs
+
+####################################
+# Network
+####################################
+network.host: 0.0.0.0
+http.port: 9200
+
+####################################
+# Security
+####################################
+xpack.security.enabled: true
+xpack.security.http.ssl.enabled: false
+xpack.security.transport.ssl.enabled: false
+
+####################################
+# Disk allocation safety
+####################################
+cluster.routing.allocation.disk.threshold_enabled: true
+cluster.routing.allocation.disk.watermark.low: 85%
+cluster.routing.allocation.disk.watermark.high: 90%
+cluster.routing.allocation.disk.watermark.flood_stage: 95%
+
+####################################
+# Index defaults (replicas, codec, refresh_interval) must be set via
+# index templates or PUT /index/_settings, not in node config (ES 5+).
+####################################
+
+####################################
+# Performance / Stability
+####################################
+bootstrap.memory_lock: true
+
+####################################
+# Monitoring (keep enabled)
+####################################
+xpack.monitoring.collection.enabled: true

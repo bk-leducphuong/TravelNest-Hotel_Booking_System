@@ -17,9 +17,9 @@ http.port: 9600
 
 # Monitoring
 xpack.monitoring.enabled: true
-xpack.monitoring.elasticsearch.hosts: ["http://elasticsearch:9200"]
-xpack.monitoring.elasticsearch.username: "elastic"
-xpack.monitoring.elasticsearch.password: "admin123"
+xpack.monitoring.elasticsearch.hosts: ["${ELASTICSEARCH_HOSTS:http://elasticsearch:9200}"]
+xpack.monitoring.elasticsearch.username: "${ELASTICSEARCH_USERNAME:elastic}"
+xpack.monitoring.elasticsearch.password: "${ELASTICSEARCH_PASSWORD}"
 
 # Log settings
 log.level: info

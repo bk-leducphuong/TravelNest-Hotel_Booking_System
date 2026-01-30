@@ -11,6 +11,7 @@ filebeat.inputs:
     fields_under_root: true
     json.keys_under_root: true
     json.add_error_key: true
+    json.message_key: message
     multiline.pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
     multiline.negate: true
     multiline.match: after
@@ -105,5 +106,5 @@ logging.files:
 monitoring.enabled: true
 monitoring.elasticsearch:
   hosts: ['elasticsearch:9200']
-  username: 'elastic'
-  password: 'admin123'
+  username: '${ELASTICSEARCH_USERNAME:elastic}'
+  password: '${ELASTICSEARCH_PASSWORD}'

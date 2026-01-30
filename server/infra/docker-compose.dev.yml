@@ -6,10 +6,10 @@ services:
     container_name: travelnest-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: 123
-      MYSQL_DATABASE: travelnest
-      MYSQL_USER: user
-      MYSQL_PASSWORD: 123
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
       - '3306:3306'
     volumes:
@@ -17,6 +17,15 @@ services:
     command: --default-authentication-plugin=mysql_native_password
     networks:
       - travelnest-net
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'mysqladmin ping -h localhost -u ${DB_USER} -p${DB_PASSWORD}',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -29,6 +38,11 @@ services:
     command: ['redis-server', '--appendonly', 'yes']
     networks:
       - travelnest-net
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli ping']
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   minio:
     image: minio/minio:latest
@@ -38,8 +52,8 @@ services:
       - '9000:9000' # API
       - '9001:9001' # Web console
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin123
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     volumes:
       - ../minio-data:/data
     networks:
@@ -85,16 +99,16 @@ services:
 
   # kafka-consumer:
   #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.dev
+  #     context: ..
+  #     dockerfile: infra/Dockerfile.dev
   #     args:
   #       ENV_FILE: .env.development
   #   container_name: travelnest-kafka-consumer
   #   restart: unless-stopped
   #   depends_on:
-  #     - kafka
-  #        condition: service_healthy
-  #   command: ['node', 'services/kafka/consumer.service.js']
+  #     kafka:
+  #       condition: service_healthy
+  #   command: ['node', 'kafka/worker.js']
   #   environment:
   #     NODE_ENV: development
   #     KAFKA_CLIENT_ID: my-kafka

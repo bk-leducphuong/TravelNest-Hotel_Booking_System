@@ -2,22 +2,33 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
     container_name: elasticsearch
+    restart: unless-stopped
+    env_file: .env
     environment:
       - discovery.type=single-node
       - 'ES_JAVA_OPTS=-Xms2g -Xmx2g'
       - xpack.security.enabled=true
-      - ELASTIC_PASSWORD=admin123
+      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD}
       - xpack.security.http.ssl.enabled=false
+      - cluster.routing.allocation.disk.threshold_enabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     ports:
       - '9200:9200'
       - '9300:9300'
     volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
+      - ./elasticsearch/data:/usr/share/elasticsearch/data
+      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
     networks:
       - elk
     healthcheck:
       test:
-        ['CMD-SHELL', 'curl -f http://localhost:9200/_cluster/health || exit 1']
+        [
+          'CMD-SHELL',
+          'curl -u elastic:${ELASTICSEARCH_PASSWORD} -f http://localhost:9200/_cluster/health || exit 1',
+        ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -25,10 +36,12 @@ services:
   kibana:
     image: docker.elastic.co/kibana/kibana:8.11.3
     container_name: kibana
+    env_file: .env
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=elastic
-      - ELASTICSEARCH_PASSWORD=admin123
+      - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_HOSTS}
+      # Kibana 8+ cannot use "elastic" superuser; must use kibana_system
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
     ports:
       - '5601:5601'
     networks:
@@ -36,26 +49,22 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
-    healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:5601/api/status || exit 1']
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   logstash:
     image: docker.elastic.co/logstash/logstash:8.11.3
     container_name: logstash
+    env_file: .env
     volumes:
-      - ../infra/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
-      - ../infra/logstash/pipeline:/usr/share/logstash/pipeline
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
     ports:
       - '5044:5044'
       - '9600:9600'
     environment:
       - 'LS_JAVA_OPTS=-Xms1g -Xmx1g'
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=elastic
-      - ELASTICSEARCH_PASSWORD=admin123
+      - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_HOSTS}
+      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME}
+      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD}
     networks:
       - elk
     depends_on:
@@ -66,8 +75,12 @@ services:
     image: docker.elastic.co/beats/filebeat:8.11.3
     container_name: filebeat
     user: root
+    env_file: .env
+    environment:
+      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME:-elastic}
+      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD}
     volumes:
-      - ../infra/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ../logs:/logs:ro # Mount your application logs
