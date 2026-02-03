@@ -10,6 +10,7 @@ const { getObject, uploadObject } = require('@utils/minio.utils');
 const logger = require('@config/logger.config');
 const sharp = require('sharp');
 const { uuidv7 } = require('uuidv7');
+const { topicFor } = require('@kafka/topics');
 
 // Image variant configurations
 const IMAGE_VARIANTS = {
@@ -18,6 +19,7 @@ const IMAGE_VARIANTS = {
   medium: { width: 800, height: 800, quality: 90 },
   large: { width: 1920, height: 1920, quality: 95 },
 };
+const TOPIC = topicFor('imageProcessing');
 
 /**
  * Resize image using Sharp
@@ -165,7 +167,7 @@ async function processImage(message) {
  * Subscribes to 'image.processing' topic and processes images
  */
 const imageProcessingConsumer = createRetryingConsumer({
-  baseTopic: 'image.processing',
+  baseTopic: TOPIC,
   groupId: process.env.KAFKA_IMAGE_PROCESSING_GROUP || 'image-processing-group',
   retry: {
     maxRetries: Number(process.env.KAFKA_IMAGE_PROCESSING_MAX_RETRIES || 5),
