@@ -1,3 +1,4 @@
+// TDOO: Add currency field for price
 const Sequelize = require('sequelize');
 module.exports = function (sequelize, DataTypes) {
   const RoomInventory = sequelize.define(
@@ -6,49 +7,123 @@ module.exports = function (sequelize, DataTypes) {
       room_id: {
         type: DataTypes.UUID,
         allowNull: false,
+        primaryKey: true,
         references: {
           model: 'rooms',
           key: 'id',
         },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+        comment: 'Composite primary key part 1',
       },
       date: {
         type: DataTypes.DATEONLY,
-        allowNull: true,
+        allowNull: false,
+        primaryKey: true,
+        comment: 'Composite primary key part 2 - specific date for inventory',
       },
       total_inventory: {
         type: DataTypes.INTEGER,
-        allowNull: true,
+        allowNull: false,
+        defaultValue: 0,
+        validate: {
+          min: 0,
+        },
+        comment: 'Total number of rooms available for this date',
       },
       total_reserved: {
         type: DataTypes.INTEGER,
-        allowNull: true,
+        allowNull: false,
+        defaultValue: 0,
+        validate: {
+          min: 0,
+          isValidReservation(value) {
+            if (value > this.total_inventory) {
+              throw new Error('total_reserved cannot exceed total_inventory');
+            }
+          },
+        },
+        comment: 'Number of rooms already reserved for this date',
       },
       status: {
-        type: DataTypes.ENUM('close', 'open'),
-        allowNull: true,
+        type: DataTypes.ENUM('open', 'close', 'sold_out', 'maintenance'),
+        allowNull: false,
+        defaultValue: 'open',
+        comment: 'Availability status for this date',
       },
       price_per_night: {
         type: DataTypes.DECIMAL(10, 2),
-        allowNull: true,
+        allowNull: false,
+        validate: {
+          min: 0,
+        },
+        comment:
+          'Price per night for this specific date (allows dynamic pricing)',
+      },
+      created_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'created_at',
+      },
+      updated_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'updated_at',
       },
     },
     {
       sequelize,
       tableName: 'room_inventory',
-      timestamps: false,
+      timestamps: true,
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
       indexes: [
         {
-          name: 'room_id',
+          name: 'PRIMARY',
+          unique: true,
           using: 'BTREE',
-          fields: [{ name: 'room_id' }],
+          fields: [{ name: 'room_id' }, { name: 'date' }],
+          comment: 'Composite primary key on room_id and date',
+        },
+        {
+          name: 'idx_date',
+          using: 'BTREE',
+          fields: [{ name: 'date' }],
+          comment: 'Index for date-based queries',
+        },
+        {
+          name: 'idx_status',
+          using: 'BTREE',
+          fields: [{ name: 'status' }],
+          comment: 'Index for filtering by availability status',
+        },
+        {
+          name: 'idx_date_status',
+          using: 'BTREE',
+          fields: [{ name: 'date' }, { name: 'status' }],
+          comment: 'Composite index for availability searches by date',
+        },
+        {
+          name: 'idx_price',
+          using: 'BTREE',
+          fields: [{ name: 'price_per_night' }],
+          comment: 'Index for price range filtering',
         },
       ],
+      validate: {
+        reservationCheck() {
+          if (this.total_reserved > this.total_inventory) {
+            throw new Error('total_reserved cannot exceed total_inventory');
+          }
+        },
+      },
     }
   );
 
   RoomInventory.associate = function (models) {
     RoomInventory.belongsTo(models.rooms, {
       foreignKey: 'room_id',
+      as: 'room',
     });
   };
 

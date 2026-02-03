@@ -26,8 +26,13 @@ module.exports = function (sequelize, DataTypes) {
         },
       },
       rating: {
-        type: DataTypes.DECIMAL(2, 1),
+        type: DataTypes.DECIMAL(3, 2),
         allowNull: false,
+        validate: {
+          min: 0.00,
+          max: 10.00,
+        },
+        comment: 'Review rating with precision up to 2 decimal places (e.g., 4.75)',
       },
       comment: {
         type: DataTypes.TEXT,
