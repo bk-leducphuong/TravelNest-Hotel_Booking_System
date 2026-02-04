@@ -23,7 +23,11 @@
     "migrate:create": "sequelize-cli migration:generate --name",
     "migrate:seed": "sequelize-cli db:seed:all",
     "migrate:seed:undo": "sequelize-cli db:seed:undo:all",
-    "start:consumer": "cross-env NODE_ENV=development node kafka/worker.js"
+    "start:consumer": "cross-env NODE_ENV=development node kafka/worker.js",
+    "es:setup-hotels": "cross-env NODE_ENV=development node infra/elasticsearch/setup-hotels-index.js",
+    "es:setup-logs": "cross-env NODE_ENV=development node infra/elasticsearch/setup-logs-index.js",
+    "es:setup-logs:force": "cross-env NODE_ENV=development node infra/elasticsearch/setup-logs-index.js --force",
+    "es:setup-logs:create": "cross-env NODE_ENV=development node infra/elasticsearch/setup-logs-index.js --force --create-index"
   },
   "_moduleAliases": {
     "@controllers": "controllers",

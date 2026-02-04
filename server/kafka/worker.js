@@ -8,11 +8,13 @@ require('dotenv').config({
 
 const logger = require('@config/logger.config');
 const { disconnectAllProducers } = require('@kafka/index');
-const { imageProcessingConsumer, hotelSearchSnapshotConsumer } = require('@kafka/workers/index');
+const {
+  imageProcessingConsumer,
+  hotelSearchSnapshotConsumer,
+} = require('@kafka/workers/index');
 
 /**
  * Kafka worker process.
- *
  * Runs background consumers for image processing and other tasks.
  */
 async function main() {
@@ -20,7 +22,7 @@ async function main() {
 
   // Add image processing consumer
   consumers.push(imageProcessingConsumer);
-  
+
   // Add hotel search snapshot consumer
   consumers.push(hotelSearchSnapshotConsumer);
 
