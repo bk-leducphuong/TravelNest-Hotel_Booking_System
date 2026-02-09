@@ -33,10 +33,17 @@ module.exports = function (sequelize, DataTypes) {
         onUpdate: 'CASCADE',
         comment: 'User who has a role at this hotel',
       },
-      role: {
-        type: DataTypes.ENUM('OWNER', 'MANAGER', 'STAFF'),
+      role_id: {
+        type: DataTypes.UUID,
         allowNull: false,
-        comment: 'Role of the user for this specific hotel',
+        references: {
+          model: 'roles',
+          key: 'id',
+        },
+        onDelete: 'RESTRICT',
+        onUpdate: 'CASCADE',
+        comment:
+          'Hotel-specific role (owner, manager, or staff) for this user at this hotel',
       },
       is_primary_owner: {
         type: DataTypes.BOOLEAN,
@@ -92,10 +99,10 @@ module.exports = function (sequelize, DataTypes) {
           comment: 'For querying all hotels a user is attached to',
         },
         {
-          name: 'idx_role',
+          name: 'idx_role_id',
           using: 'BTREE',
-          fields: [{ name: 'role' }],
-          comment: 'Filter by staff role',
+          fields: [{ name: 'role_id' }],
+          comment: 'Index for filtering by hotel role',
         },
         {
           name: 'idx_primary_owner_per_hotel',
@@ -117,6 +124,11 @@ module.exports = function (sequelize, DataTypes) {
     HotelUser.belongsTo(models.users, {
       foreignKey: 'user_id',
       as: 'user',
+    });
+
+    HotelUser.belongsTo(models.roles, {
+      foreignKey: 'role_id',
+      as: 'role',
     });
   };
 

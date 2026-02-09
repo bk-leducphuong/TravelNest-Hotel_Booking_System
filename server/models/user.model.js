@@ -10,40 +10,46 @@ module.exports = function (sequelize, DataTypes) {
         primaryKey: true,
         defaultValue: () => uuidv7(),
       },
-      username: {
-        type: DataTypes.STRING(255),
-        allowNull: true,
-      },
       email: {
         type: DataTypes.STRING(255),
         allowNull: false,
+        validate: {
+          isEmail: true,
+        },
       },
       password_hash: {
         type: DataTypes.STRING(255),
-        allowNull: true,
+        allowNull: false,
+        validate: {
+          len: [60, 255], // e.g. bcrypt hashes are typically 60 chars
+        },
       },
-      full_name: {
+      first_name: {
         type: DataTypes.STRING(255),
-        allowNull: true,
+        allowNull: false,
+      },
+      last_name: {
+        type: DataTypes.STRING(255),
+        allowNull: false,
       },
       phone_number: {
         type: DataTypes.STRING(15),
         allowNull: true,
-      },
-      user_role: {
-        type: DataTypes.ENUM('customer', 'partner', 'admin'),
-        allowNull: true,
-        defaultValue: 'customer',
+        comment:
+          'Phone number in E.164 format (e.g., +12025550123). Validation enforced at application level.',
+        validate: {
+          is: /^\+[1-9]\d{1,14}$/, // Basic E.164 regex
+        },
       },
       created_at: {
         type: DataTypes.DATE,
-        allowNull: true,
-        defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        allowNull: false,
+        field: 'created_at',
       },
       updated_at: {
         type: DataTypes.DATE,
-        allowNull: true,
-        defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        allowNull: false,
+        field: 'updated_at',
       },
       connect_account_id: {
         type: DataTypes.STRING(255),
@@ -58,27 +64,64 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.STRING(255),
         allowNull: true,
       },
-      profile_picture_url: {
-        type: DataTypes.TEXT,
-        allowNull: true,
+      status: {
+        type: DataTypes.ENUM('active', 'inactive', 'banned'),
+        allowNull: false,
+        defaultValue: 'active',
+        comment: 'Account status used for authentication/authorization checks',
       },
       date_of_birth: {
         type: DataTypes.DATEONLY,
         allowNull: true,
       },
       gender: {
-        type: DataTypes.ENUM('male', 'female'),
+        type: DataTypes.ENUM(
+          'male',
+          'female',
+          'non_binary',
+          'other',
+          'prefer_not_to_say'
+        ),
         allowNull: true,
       },
       nationality: {
         type: DataTypes.STRING(30),
         allowNull: true,
       },
+      last_login_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'Timestamp of the user last successful login',
+      },
+      email_verified_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'When the user verified their email address',
+      },
+      phone_verified_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'When the user verified their phone number',
+      },
+      terms_accepted_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'When the user accepted the latest terms of service',
+      },
+      deleted_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        field: 'deleted_at',
+      },
     },
     {
       sequelize,
       tableName: 'users',
-      timestamps: false,
+      timestamps: true,
+      paranoid: true,
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
+      deletedAt: 'deleted_at',
       indexes: [
         {
           name: 'PRIMARY',
@@ -87,10 +130,10 @@ module.exports = function (sequelize, DataTypes) {
           fields: [{ name: 'id' }],
         },
         {
-          name: 'unique_email_role',
+          name: 'unique_email',
           unique: true,
           using: 'BTREE',
-          fields: [{ name: 'email' }, { name: 'user_role' }],
+          fields: [{ name: 'email' }],
         },
         {
           name: 'connect_account_id_UNIQUE',
@@ -106,10 +149,6 @@ module.exports = function (sequelize, DataTypes) {
     User.hasMany(models.bookings, {
       foreignKey: 'buyer_id',
       as: 'user_bookings', // Explicit alias to avoid conflicts
-    });
-    User.hasMany(models.hotels, {
-      foreignKey: 'owner_id',
-      as: 'owned_hotels', // Explicit alias
     });
     User.hasMany(models.notifications, {
       foreignKey: 'sender_id',
@@ -140,6 +179,11 @@ module.exports = function (sequelize, DataTypes) {
       foreignKey: 'user_id',
       otherKey: 'hotel_id',
       as: 'hotels_with_roles',
+    });
+    // Global roles/permissions through a separate table
+    User.hasMany(models.user_roles, {
+      foreignKey: 'user_id',
+      as: 'roles',
     });
   };
 

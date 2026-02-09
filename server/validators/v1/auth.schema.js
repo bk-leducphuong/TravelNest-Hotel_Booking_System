@@ -1,4 +1,5 @@
 const Joi = require('joi');
+const { VALID_ROLES } = require('@constants/roles');
 
 /**
  * Auth validation schemas
@@ -9,8 +10,10 @@ const Joi = require('joi');
 const emailSchema = Joi.string().email().max(255).required();
 const passwordSchema = Joi.string().min(8).max(128).required();
 const userRoleSchema = Joi.string()
-  .valid('customer', 'partner', 'admin')
+  .valid(...VALID_ROLES)
   .required();
+const firstNameSchema = Joi.string().min(1).max(255).trim().required();
+const lastNameSchema = Joi.string().min(1).max(255).trim().required();
 const phoneNumberSchema = Joi.string()
   .pattern(/^\+?[1-9]\d{1,14}$/)
   .max(20)
@@ -71,6 +74,8 @@ exports.register = {
   body: Joi.object({
     email: emailSchema,
     password: passwordSchema,
+    firstName: firstNameSchema,
+    lastName: lastNameSchema,
     userRole: userRoleSchema,
   }).required(),
 };

@@ -1,17 +1,12 @@
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
-const redisClient = require('../config/redis.config');
-const transporter = require('../config/nodemailer.config');
-const fs = require('fs');
-const path = require('path');
-const authRepository = require('../repositories/auth.repository');
-const ApiError = require('../utils/ApiError');
+const authRepository = require('@repositories/auth.repository');
+const ApiError = require('@utils/ApiError');
+const { isValidRole } = require('@constants/roles');
 const {
   isValidEmailFormat,
   validateEmail,
   validateEmailDomain,
-} = require('../utils/emailValidation.js');
-const { Infobip, AuthType } = require('@infobip-api/sdk');
+} = require('@utils/emailValidation.js');
 
 /**
  * Auth Service - Contains main business logic for authentication
@@ -20,12 +15,17 @@ const { Infobip, AuthType } = require('@infobip-api/sdk');
 
 class AuthService {
   /**
-   * Check if email exists
+   * Check if email exists with specific role
    * @param {string} email - Email address
-   * @param {string} userRole - User role (customer, partner, admin)
+   * @param {string} roleName - Role name (guest, hotel_manager, hotel_staff, admin, support_agent)
    * @returns {Promise<Object>} Object with exists flag
    */
-  async checkEmail(email, userRole) {
+  async checkEmail(email, roleName) {
+    // Validate role name
+    if (!isValidRole(roleName)) {
+      throw new ApiError(400, 'INVALID_ROLE', 'Invalid role name');
+    }
+
     // Validate email format
     if (!isValidEmailFormat(email)) {
       throw new ApiError(400, 'INVALID_EMAIL_FORMAT', 'Invalid email format');
@@ -36,8 +36,8 @@ class AuthService {
       throw new ApiError(400, 'INVALID_EMAIL_DOMAIN', 'Invalid email domain');
     }
 
-    // Check if user exists
-    const user = await authRepository.findByEmailAndRole(email, userRole);
+    // Check if user exists with this role
+    const user = await authRepository.findByEmailAndRole(email, roleName);
 
     if (user) {
       return { exists: true };
@@ -55,13 +55,18 @@ class AuthService {
    * Login user
    * @param {string} email - Email address
    * @param {string} password - Password
-   * @param {string} userRole - User role
+   * @param {string} roleName - Role name
    * @returns {Promise<Object>} User data for session
    */
-  async login(email, password, userRole) {
+  async login(email, password, roleName) {
+    // Validate role name
+    if (!isValidRole(roleName)) {
+      throw new ApiError(400, 'INVALID_ROLE', 'Invalid role name');
+    }
+
     const user = await authRepository.findByEmailAndRoleWithPassword(
       email,
-      userRole
+      roleName
     );
 
     if (!user) {
@@ -69,6 +74,15 @@ class AuthService {
         401,
         'INVALID_CREDENTIALS',
         'Invalid email or password'
+      );
+    }
+
+    // Check user status
+    if (user.status !== 'active') {
+      throw new ApiError(
+        403,
+        'ACCOUNT_INACTIVE',
+        `Account is ${user.status}. Please contact support.`
       );
     }
 
@@ -81,9 +95,16 @@ class AuthService {
       );
     }
 
+    // Update last login timestamp
+    await authRepository.updateLastLogin(user.id);
+
+    // Get full user data with context
+    const userWithContext = await authRepository.getUserWithContext(user.id);
+
     return {
       userId: user.id,
-      userRole: user.user_role,
+      userRole: user.role,
+      userData: userWithContext,
     };
   }
 
@@ -91,279 +112,77 @@ class AuthService {
    * Register new user
    * @param {string} email - Email address
    * @param {string} password - Password
-   * @param {string} userRole - User role
+   * @param {string} firstName - First name
+   * @param {string} lastName - Last name
+   * @param {string} roleName - Role name
    * @returns {Promise<Object>} Created user data
    */
-  async register(email, password, userRole) {
-    // Check if user already exists
-    const existingUser = await authRepository.findByEmailAndRole(
-      email,
-      userRole
-    );
+  async register(email, password, firstName, lastName, roleName) {
+    // Validate role name
+    if (!isValidRole(roleName)) {
+      throw new ApiError(400, 'INVALID_ROLE', 'Invalid role name');
+    }
 
+    // Check if user already exists (any role)
+    const existingUser = await authRepository.findByEmail(email);
     if (existingUser) {
-      throw new ApiError(409, 'USER_ALREADY_EXISTS', 'User already exists');
+      // Check if user already has this specific role
+      const hasRole = existingUser.roles?.some(
+        (ur) => ur.role.name === roleName
+      );
+      if (hasRole) {
+        throw new ApiError(409, 'USER_ALREADY_EXISTS', 'User already exists');
+      }
+      // User exists but doesn't have this role - assign it
+      const role = await authRepository.findRoleByName(roleName);
+      if (!role) {
+        throw new ApiError(500, 'ROLE_NOT_FOUND', 'Role not found in system');
+      }
+      await authRepository.assignRoleToUser(existingUser.id, role.id);
+
+      // Get full user data with context
+      const userWithContext = await authRepository.getUserWithContext(
+        existingUser.id
+      );
+
+      return {
+        userId: existingUser.id,
+        userRole: roleName,
+        userData: userWithContext,
+      };
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
-    const newUser = await authRepository.createUser({
-      email: email,
-      username: email.split('@')[0],
-      password_hash: hashedPassword,
-      user_role: userRole,
-      profile_picture_url:
-        'http://localhost:3000/uploads/users/avatars/default_avatar.png',
-    });
-
-    return {
-      userId: newUser.id,
-      userRole: userRole,
-    };
-  }
-
-  /**
-   * Register admin/partner
-   * @param {Object} userData - User registration data
-   * @returns {Promise<Object>} Created user data
-   */
-  async registerAdmin(userData) {
-    const { email, password, userRole, firstName, lastName, phoneNumber } =
-      userData;
-
-    // Check if user already exists (by email or phone)
-    const existingUser = await authRepository.findByEmailOrPhoneAndRole(
-      email,
-      phoneNumber,
-      userRole
-    );
-
-    if (existingUser) {
-      throw new ApiError(409, 'USER_ALREADY_EXISTS', 'User already exists');
+    // Get role
+    const role = await authRepository.findRoleByName(roleName);
+    if (!role) {
+      throw new ApiError(500, 'ROLE_NOT_FOUND', 'Role not found in system');
     }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const username = `${lastName} ${firstName}`;
 
     // Create user
     const newUser = await authRepository.createUser({
       email: email,
-      username: username,
       password_hash: hashedPassword,
-      user_role: userRole,
-      phone_number: phoneNumber,
-      profile_picture_url:
-        'http://localhost:3000/uploads/users/avatars/default_avatar.png',
+      first_name: firstName,
+      last_name: lastName,
+      status: 'active',
     });
+
+    // Assign role to user
+    await authRepository.assignRoleToUser(newUser.id, role.id);
+
+    // Get full user data with context
+    const userWithContext = await authRepository.getUserWithContext(
+      newUser.id
+    );
 
     return {
       userId: newUser.id,
-      userRole: userRole,
+      userRole: roleName,
+      userData: userWithContext,
     };
   }
-
-  /**
-   * Send SMS OTP
-   * @param {string} phoneNumber - Phone number
-   * @param {string} userRole - User role
-   * @returns {Promise<void>}
-   */
-  async sendSmsOtp(phoneNumber, userRole) {
-    // Check rate limiting
-    const attemptsKey = `sms-otp-attempts:${phoneNumber}:${userRole}`;
-    const attempts = parseInt(await redisClient.get(attemptsKey)) || 0;
-
-    if (attempts >= 3) {
-      throw new ApiError(
-        429,
-        'TOO_MANY_REQUESTS',
-        'You have requested too many times. Please try again after 5 minutes.'
-      );
-    }
-
-    // Increment attempts
-    await redisClient.set(attemptsKey, attempts + 1, 'EX', 300);
-
-    // Initialize Infobip
-    const infobip = new Infobip({
-      apiKey: process.env.INFOBIP_API_KEY,
-      baseUrl: process.env.INFOBIP_BASE_URL,
-      authType: AuthType.ApiKey,
-    });
-
-    // Generate OTP
-    const otp = Math.floor(1000 + Math.random() * 9000);
-    const message = `Your OTP is ${otp}. It expires in 10 minutes.`;
-
-    // Send SMS
-    await infobip.channels.sms.send({
-      messages: [
-        {
-          from: '447491163443',
-          destinations: [
-            {
-              to: phoneNumber,
-            },
-          ],
-          text: message,
-        },
-      ],
-    });
-
-    // Store OTP in Redis
-    await redisClient.set(`sms-otp:${phoneNumber}`, otp, 'EX', 600);
-
-    return;
-  }
-
-  /**
-   * Verify SMS OTP
-   * @param {string} phoneNumber - Phone number
-   * @param {string} otp - OTP code
-   * @returns {Promise<void>}
-   */
-  async verifySmsOtp(phoneNumber, otp) {
-    const storedOtp = await redisClient.get(`sms-otp:${phoneNumber}`);
-
-    if (!storedOtp || storedOtp !== otp) {
-      throw new ApiError(400, 'INVALID_OTP', 'Invalid OTP');
-    }
-
-    // Remove OTP from Redis
-    await redisClient.del(`sms-otp:${phoneNumber}`);
-
-    return;
-  }
-
-  /**
-   * Forgot password - Send OTP via email
-   * @param {string} email - Email address
-   * @param {string} userRole - User role
-   * @returns {Promise<void>}
-   */
-  async forgotPassword(email, userRole) {
-    // Check if user exists
-    const user = await authRepository.findByEmailAndRole(email, userRole);
-    if (!user) {
-      throw new ApiError(404, 'USER_NOT_FOUND', 'Invalid email or role');
-    }
-
-    // Check rate limiting
-    const attemptsKey = `otp_attempts:${email}:${userRole}`;
-    const attempts = parseInt(await redisClient.get(attemptsKey)) || 0;
-
-    if (attempts >= 3) {
-      throw new ApiError(
-        429,
-        'TOO_MANY_REQUESTS',
-        'You have requested too many times. Please try again after 5 minutes.'
-      );
-    }
-
-    // Increment attempts
-    await redisClient.set(attemptsKey, attempts + 1, 'EX', 300);
-
-    // Generate OTP
-    const otp = crypto.randomInt(1000, 9999).toString();
-
-    // Store OTP in Redis
-    const otpKey = `otp:${email}:${userRole}`;
-    await redisClient.set(otpKey, otp, 'EX', 300);
-
-    // Load email template
-    const templatePath = path.join(
-      __dirname,
-      '../email-templates/otpVerification.html'
-    );
-    let emailTemplate = fs.readFileSync(templatePath, 'utf8');
-
-    // Replace placeholders
-    emailTemplate = emailTemplate.replace('{{otp}}', otp);
-
-    // Send email
-    const mailOptions = {
-      from: process.env.NODEMAILER_EMAIL,
-      to: email,
-      subject: 'OTP verification',
-      html: emailTemplate,
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    return;
-  }
-
-  /**
-   * Reset password with OTP
-   * @param {string} email - Email address
-   * @param {string} userRole - User role
-   * @param {string} otp - OTP code
-   * @param {string} newPassword - New password
-   * @returns {Promise<void>}
-   */
-  async resetPassword(email, userRole, otp, newPassword) {
-    // Verify OTP
-    const otpKey = `otp:${email}:${userRole}`;
-    const storedOtp = await redisClient.get(otpKey);
-
-    if (!storedOtp || storedOtp !== otp) {
-      throw new ApiError(400, 'INVALID_OTP', 'Invalid or expired OTP');
-    }
-
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update password
-    const updatedRows = await authRepository.updatePasswordByEmailAndRole(
-      email,
-      userRole,
-      hashedPassword
-    );
-
-    if (updatedRows === 0) {
-      throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
-    }
-
-    // Remove OTP from Redis
-    await redisClient.del(otpKey);
-
-    return;
-  }
-
-  /**
-   * Handle Google OAuth callback
-   * @param {Object} profile - Google profile
-   * @returns {Promise<Object>} User data for session
-   */
-  async handleGoogleCallback(profile) {
-    if (!profile) {
-      throw new ApiError(401, 'OAUTH_FAILED', 'Google authentication failed');
-    }
-
-    const email = profile.emails[0].value;
-    const displayName = profile.displayName;
-
-    // Find or create user
-    let user = await authRepository.findByEmailAndRole(email, 'customer');
-
-    if (!user) {
-      user = await authRepository.createUser({
-        email: email,
-        username: displayName,
-        user_role: 'customer',
-        profile_picture_url:
-          'http://localhost:3000/uploads/users/avatars/default_avatar.png',
-      });
-    }
-
-    return {
-      userId: user.id,
-      userRole: user.user_role,
-    };
-  }
-}
 
 module.exports = new AuthService();

@@ -45,7 +45,9 @@
     "@socket": "socket",
     "@utils": "utils",
     "@interfaces": "interfaces",
-    "@adapters": "adapters"
+    "@adapters": "adapters",
+    "@helpers": "helpers",
+    "@constants": "constants"
   },
   "author": "Le Duc Phuong",
   "license": "ISC",

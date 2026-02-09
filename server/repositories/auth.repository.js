@@ -1,4 +1,5 @@
-const { Users } = require('../models/index.js');
+const { Users, Roles, UserRoles, HotelUsers } = require('@models/index.js');
+const { Op } = require('sequelize');
 
 /**
  * Auth Repository - Contains all database operations for authentication
@@ -7,72 +8,230 @@ const { Users } = require('../models/index.js');
 
 class AuthRepository {
   /**
-   * Find user by email and role
+   * Find user by email with role check
+   * @param {string} email - User email
+   * @param {string} roleName - Role name (e.g., 'guest', 'hotel_manager')
+   * @returns {Promise<Object|null>} User with role information
    */
-  async findByEmailAndRole(email, userRole) {
+  async findByEmailAndRole(email, roleName) {
+    const role = await Roles.findOne({ where: { name: roleName } });
+    if (!role) {
+      return null;
+    }
+
     return await Users.findOne({
-      where: {
-        email: email,
-        user_role: userRole,
-      },
+      where: { email },
+      include: [
+        {
+          model: UserRoles,
+          as: 'roles',
+          where: { role_id: role.id },
+          required: true,
+          include: [
+            {
+              model: Roles,
+              as: 'role',
+              attributes: ['id', 'name', 'description'],
+            },
+          ],
+        },
+      ],
     });
   }
 
   /**
    * Find user by email
+   * @param {string} email - User email
+   * @returns {Promise<Object|null>} User object
    */
   async findByEmail(email) {
     return await Users.findOne({
       where: { email },
+      include: [
+        {
+          model: UserRoles,
+          as: 'roles',
+          include: [
+            {
+              model: Roles,
+              as: 'role',
+              attributes: ['id', 'name', 'description'],
+            },
+          ],
+        },
+      ],
     });
   }
 
   /**
-   * Find user by email or phone number and role
+   * Find user by email or phone number with role check
+   * @param {string} email - User email
+   * @param {string} phoneNumber - User phone number
+   * @param {string} roleName - Role name
+   * @returns {Promise<Object|null>} User with role information
    */
-  async findByEmailOrPhoneAndRole(email, phoneNumber, userRole) {
-    const { Op } = require('sequelize');
+  async findByEmailOrPhoneAndRole(email, phoneNumber, roleName) {
+    const role = await Roles.findOne({ where: { name: roleName } });
+    if (!role) {
+      return null;
+    }
+
     return await Users.findOne({
       where: {
-        [Op.or]: [{ email: email }, { phone_number: phoneNumber }],
-        user_role: userRole,
+        [Op.or]: [{ email }, { phone_number: phoneNumber }],
       },
+      include: [
+        {
+          model: UserRoles,
+          as: 'roles',
+          where: { role_id: role.id },
+          required: true,
+          include: [
+            {
+              model: Roles,
+              as: 'role',
+              attributes: ['id', 'name', 'description'],
+            },
+          ],
+        },
+      ],
     });
   }
 
   /**
    * Create new user
+   * @param {Object} userData - User data to create
+   * @returns {Promise<Object>} Created user
    */
   async createUser(userData) {
     return await Users.create(userData);
   }
 
   /**
-   * Update user password by email and role
+   * Assign role to user
+   * @param {string} userId - User ID
+   * @param {string} roleId - Role ID
+   * @returns {Promise<Object>} Created user role assignment
    */
-  async updatePasswordByEmailAndRole(email, userRole, passwordHash) {
+  async assignRoleToUser(userId, roleId) {
+    return await UserRoles.create({
+      user_id: userId,
+      role_id: roleId,
+    });
+  }
+
+  /**
+   * Find role by name
+   * @param {string} roleName - Role name
+   * @returns {Promise<Object|null>} Role object
+   */
+  async findRoleByName(roleName) {
+    return await Roles.findOne({ where: { name: roleName } });
+  }
+
+  /**
+   * Update user password by email
+   * @param {string} email - User email
+   * @param {string} passwordHash - Hashed password
+   * @returns {Promise<number>} Number of updated rows
+   */
+  async updatePasswordByEmail(email, passwordHash) {
     const [updatedRows] = await Users.update(
       { password_hash: passwordHash },
-      {
-        where: {
-          email: email,
-          user_role: userRole,
-        },
-      }
+      { where: { email } }
     );
     return updatedRows;
   }
 
   /**
-   * Find user by email and role with password hash
+   * Find user by email and role with password hash (for login)
+   * @param {string} email - User email
+   * @param {string} roleName - Role name
+   * @returns {Promise<Object|null>} User with password hash and role
    */
-  async findByEmailAndRoleWithPassword(email, userRole) {
-    return await Users.findOne({
-      where: {
-        email: email,
-        user_role: userRole,
-      },
-      attributes: ['id', 'email', 'password_hash', 'user_role'],
+  async findByEmailAndRoleWithPassword(email, roleName) {
+    const role = await Roles.findOne({ where: { name: roleName } });
+    if (!role) {
+      return null;
+    }
+
+    const user = await Users.findOne({
+      where: { email },
+      attributes: ['id', 'email', 'password_hash', 'status'],
+      include: [
+        {
+          model: UserRoles,
+          as: 'roles',
+          where: { role_id: role.id },
+          required: true,
+          include: [
+            {
+              model: Roles,
+              as: 'role',
+              attributes: ['id', 'name'],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (user && user.roles && user.roles.length > 0) {
+      return {
+        id: user.id,
+        email: user.email,
+        password_hash: user.password_hash,
+        status: user.status,
+        role: user.roles[0].role.name,
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Update user last login timestamp
+   * @param {string} userId - User ID
+   * @returns {Promise<void>}
+   */
+  async updateLastLogin(userId) {
+    await Users.update(
+      { last_login_at: new Date() },
+      { where: { id: userId } }
+    );
+  }
+
+  /**
+   * Get user with roles and hotel context
+   * @param {string} userId - User ID
+   * @returns {Promise<Object|null>} User with roles and hotel_users
+   */
+  async getUserWithContext(userId) {
+    return await Users.findByPk(userId, {
+      include: [
+        {
+          model: UserRoles,
+          as: 'roles',
+          include: [
+            {
+              model: Roles,
+              as: 'role',
+              attributes: ['id', 'name', 'description'],
+            },
+          ],
+        },
+        {
+          model: HotelUsers,
+          as: 'hotel_roles',
+          attributes: ['hotel_id', 'role_id', 'is_primary_owner'],
+          include: [
+            {
+              model: Roles,
+              as: 'role',
+              attributes: ['id', 'name', 'description'],
+            },
+          ],
+        },
+      ],
     });
   }
 }
