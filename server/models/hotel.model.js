@@ -10,14 +10,6 @@ module.exports = function (sequelize, DataTypes) {
         primaryKey: true,
         defaultValue: () => uuidv7(),
       },
-      owner_id: {
-        type: DataTypes.UUID,
-        allowNull: true,
-        references: {
-          model: 'users',
-          key: 'id',
-        },
-      },
       name: {
         type: DataTypes.STRING(255),
         allowNull: false,
@@ -137,11 +129,6 @@ module.exports = function (sequelize, DataTypes) {
           comment: 'Non-unique index for geospatial queries',
         },
         {
-          name: 'idx_owner_id',
-          using: 'BTREE',
-          fields: [{ name: 'owner_id' }],
-        },
-        {
           name: 'idx_city',
           using: 'BTREE',
           fields: [{ name: 'city' }],
@@ -177,10 +164,6 @@ module.exports = function (sequelize, DataTypes) {
   );
 
   Hotel.associate = function (models) {
-    Hotel.belongsTo(models.users, {
-      foreignKey: 'owner_id',
-      as: 'owner',
-    });
     Hotel.hasMany(models.bookings, {
       foreignKey: 'hotel_id',
       as: 'bookings',
@@ -246,6 +229,16 @@ module.exports = function (sequelize, DataTypes) {
         entity_type: 'hotel',
       },
       as: 'images',
+    });
+    Hotel.hasMany(models.hotel_users, {
+      foreignKey: 'hotel_id',
+      as: 'hotel_users',
+    });
+    Hotel.belongsToMany(models.users, {
+      through: models.hotel_users,
+      foreignKey: 'hotel_id',
+      otherKey: 'user_id',
+      as: 'users',
     });
   };
 
