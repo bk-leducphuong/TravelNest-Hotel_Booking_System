@@ -9,8 +9,6 @@ const ApiError = require('@utils/ApiError');
 class InventoryService {
   /**
    * Reserve rooms for a booking
-   * Increments booked_rooms for each room and date in the date range
-   *
    * @param {Object} data - Reservation data
    * @param {Array<Object>} data.bookedRooms - Array of {room_id, roomQuantity}
    * @param {string|Date} data.checkInDate - Check-in date
@@ -340,6 +338,195 @@ class InventoryService {
         500,
         'GET_INVENTORY_FAILED',
         'Failed to get inventory details',
+        { originalError: error.message }
+      );
+    }
+  }
+
+  /**
+   * Check availability for hold (considers held_rooms: available = total_rooms - booked_rooms - held_rooms)
+   * @param {Object} data - { rooms: [{ roomId, quantity }], checkInDate, checkOutDate }
+   * @returns {Promise<boolean>}
+   */
+  async checkAvailabilityForHold(data) {
+    const { rooms, checkInDate, checkOutDate } = data;
+
+    if (!rooms || !Array.isArray(rooms) || rooms.length === 0) {
+      throw new ApiError(
+        400,
+        'INVALID_ROOMS',
+        'rooms must be a non-empty array of { roomId, quantity }'
+      );
+    }
+
+    if (!checkInDate || !checkOutDate) {
+      throw new ApiError(
+        400,
+        'MISSING_DATES',
+        'checkInDate and checkOutDate are required'
+      );
+    }
+
+    try {
+      const startDate =
+        typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
+      const endDate =
+        typeof checkOutDate === 'string'
+          ? new Date(checkOutDate)
+          : checkOutDate;
+
+      if (startDate >= endDate) {
+        throw new ApiError(
+          400,
+          'INVALID_DATE_RANGE',
+          'checkOutDate must be after checkInDate'
+        );
+      }
+
+      const reservations = rooms.map((r) => ({
+        roomId: r.roomId,
+        quantity: r.quantity ?? 1,
+      }));
+
+      return await roomInventoryRepository.checkAvailabilityForHold(
+        reservations,
+        startDate,
+        endDate
+      );
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      logger.error('Error checking availability for hold:', error);
+      throw new ApiError(
+        500,
+        'CHECK_AVAILABILITY_FAILED',
+        'Failed to check availability for hold',
+        { originalError: error.message }
+      );
+    }
+  }
+
+  /**
+   * Hold rooms (increment held_rooms) for a temporary hold
+   * @param {Object} data - { rooms: [{ roomId, quantity }], checkInDate, checkOutDate }
+   * @param {Object} options - { transaction }
+   */
+  async holdRooms(data, options = {}) {
+    const { rooms, checkInDate, checkOutDate } = data;
+
+    if (!rooms || !Array.isArray(rooms) || rooms.length === 0) {
+      throw new ApiError(
+        400,
+        'INVALID_ROOMS',
+        'rooms must be a non-empty array of { roomId, quantity }'
+      );
+    }
+
+    if (!checkInDate || !checkOutDate) {
+      throw new ApiError(
+        400,
+        'MISSING_DATES',
+        'checkInDate and checkOutDate are required'
+      );
+    }
+
+    try {
+      const startDate =
+        typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
+      const endDate =
+        typeof checkOutDate === 'string'
+          ? new Date(checkOutDate)
+          : checkOutDate;
+
+      if (startDate >= endDate) {
+        throw new ApiError(
+          400,
+          'INVALID_DATE_RANGE',
+          'checkOutDate must be after checkInDate'
+        );
+      }
+
+      const holdings = rooms.map((r) => ({
+        roomId: r.roomId,
+        quantity: r.quantity ?? 1,
+      }));
+
+      await roomInventoryRepository.batchIncrementHeld(
+        holdings,
+        startDate,
+        endDate,
+        options
+      );
+
+      logger.info('Rooms held successfully', {
+        roomCount: holdings.length,
+        checkInDate: startDate.toISOString().split('T')[0],
+        checkOutDate: endDate.toISOString().split('T')[0],
+      });
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      logger.error('Error holding rooms:', error);
+      throw new ApiError(500, 'HOLD_ROOMS_FAILED', 'Failed to hold rooms', {
+        originalError: error.message,
+      });
+    }
+  }
+
+  /**
+   * Release held rooms (decrement held_rooms)
+   * @param {Object} data - { rooms: [{ roomId, quantity }], checkInDate, checkOutDate }
+   * @param {Object} options - { transaction }
+   */
+  async releaseHoldRooms(data, options = {}) {
+    const { rooms, checkInDate, checkOutDate } = data;
+
+    if (!rooms || !Array.isArray(rooms) || rooms.length === 0) {
+      throw new ApiError(
+        400,
+        'INVALID_ROOMS',
+        'rooms must be a non-empty array of { roomId, quantity }'
+      );
+    }
+
+    if (!checkInDate || !checkOutDate) {
+      throw new ApiError(
+        400,
+        'MISSING_DATES',
+        'checkInDate and checkOutDate are required'
+      );
+    }
+
+    try {
+      const startDate =
+        typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
+      const endDate =
+        typeof checkOutDate === 'string'
+          ? new Date(checkOutDate)
+          : checkOutDate;
+
+      const holdings = rooms.map((r) => ({
+        roomId: r.roomId,
+        quantity: r.quantity ?? 1,
+      }));
+
+      await roomInventoryRepository.batchDecrementHeld(
+        holdings,
+        startDate,
+        endDate,
+        options
+      );
+
+      logger.info('Held rooms released successfully', {
+        roomCount: holdings.length,
+        checkInDate: startDate.toISOString().split('T')[0],
+        checkOutDate: endDate.toISOString().split('T')[0],
+      });
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      logger.error('Error releasing held rooms:', error);
+      throw new ApiError(
+        500,
+        'RELEASE_HOLD_ROOMS_FAILED',
+        'Failed to release held rooms',
         { originalError: error.message }
       );
     }

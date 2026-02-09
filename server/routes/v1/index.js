@@ -10,6 +10,7 @@ const router = express.Router();
 const authRoutes = require('./auth.routes');
 const bookingRoutes = require('./booking.routes');
 const homeRoutes = require('./home.routes');
+const holdRoutes = require('./hold.routes');
 const hotelRoutes = require('./hotel.routes');
 const imageRoutes = require('./image.routes');
 const joinRoutes = require('./join.routes');
@@ -31,6 +32,7 @@ router.use('/payments', paymentRoutes);
 router.use('/user', userRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/bookings', bookingRoutes);
+router.use('/hold', holdRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/admin', adminRoutes);
 

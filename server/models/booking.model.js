@@ -35,6 +35,15 @@ module.exports = function (sequelize, DataTypes) {
           key: 'id',
         },
       },
+      hold_id: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+          model: 'holds',
+          key: 'id',
+        },
+        comment: 'Hold ID for temporary locking',
+      },
       booking_code: {
         type: DataTypes.STRING(100),
         allowNull: false,
@@ -166,6 +175,10 @@ module.exports = function (sequelize, DataTypes) {
     Booking.hasOne(models.transactions, {
       foreignKey: 'booking_id',
       as: 'transaction',
+    });
+    Booking.hasOne(models.holds, {
+      foreignKey: 'booking_id',
+      as: 'hold',
     });
   };
 

@@ -301,6 +301,208 @@ class RoomInventoryRepository {
   }
 
   /**
+   * Increment held count for a room on a date
+   * @param {string} roomId - Room ID
+   * @param {string|Date} date - Date
+   * @param {number} quantity - Quantity to increment
+   * @param {Object} options - Sequelize options (transaction)
+   */
+  async incrementHeld(roomId, date, quantity, options = {}) {
+    try {
+      const dateStr =
+        typeof date === 'string' ? date : date.toISOString().split('T')[0];
+
+      return await RoomInventory.increment(
+        { held_rooms: quantity },
+        {
+          where: {
+            room_id: roomId,
+            date: dateStr,
+          },
+          ...options,
+        }
+      );
+    } catch (error) {
+      logger.error('Error incrementing held count:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Decrement held count for a room on a date
+   * @param {string} roomId - Room ID
+   * @param {string|Date} date - Date
+   * @param {number} quantity - Quantity to decrement
+   * @param {Object} options - Sequelize options (transaction)
+   */
+  async decrementHeld(roomId, date, quantity, options = {}) {
+    try {
+      const dateStr =
+        typeof date === 'string' ? date : date.toISOString().split('T')[0];
+
+      return await RoomInventory.decrement(
+        { held_rooms: quantity },
+        {
+          where: {
+            room_id: roomId,
+            date: dateStr,
+          },
+          ...options,
+        }
+      );
+    } catch (error) {
+      logger.error('Error decrementing held count:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Batch increment held count for multiple rooms in a date range
+   * @param {Array<Object>} holdings - Array of {roomId, quantity}
+   * @param {string|Date} startDate - Start date
+   * @param {string|Date} endDate - End date (exclusive)
+   * @param {Object} options - Sequelize options (transaction)
+   */
+  async batchIncrementHeld(holdings, startDate, endDate, options = {}) {
+    const transaction = options.transaction || (await sequelize.transaction());
+    const shouldCommit = !options.transaction;
+
+    try {
+      const startDateObj =
+        typeof startDate === 'string' ? new Date(startDate) : startDate;
+      const endDateObj =
+        typeof endDate === 'string' ? new Date(endDate) : endDate;
+
+      const dates = [];
+      const currentDate = new Date(startDateObj);
+      while (currentDate < endDateObj) {
+        dates.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      for (const holding of holdings) {
+        const { roomId, quantity } = holding;
+        for (const date of dates) {
+          await this.incrementHeld(roomId, date, quantity, { transaction });
+        }
+      }
+
+      if (shouldCommit) {
+        await transaction.commit();
+      }
+    } catch (error) {
+      if (shouldCommit) {
+        await transaction.rollback();
+      }
+      logger.error('Error batch incrementing held:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Batch decrement held count for multiple rooms in a date range
+   * @param {Array<Object>} holdings - Array of {roomId, quantity}
+   * @param {string|Date} startDate - Start date
+   * @param {string|Date} endDate - End date (exclusive)
+   * @param {Object} options - Sequelize options (transaction)
+   */
+  async batchDecrementHeld(holdings, startDate, endDate, options = {}) {
+    const transaction = options.transaction || (await sequelize.transaction());
+    const shouldCommit = !options.transaction;
+
+    try {
+      const startDateObj =
+        typeof startDate === 'string' ? new Date(startDate) : startDate;
+      const endDateObj =
+        typeof endDate === 'string' ? new Date(endDate) : endDate;
+
+      const dates = [];
+      const currentDate = new Date(startDateObj);
+      while (currentDate < endDateObj) {
+        dates.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      for (const holding of holdings) {
+        const { roomId, quantity } = holding;
+        for (const date of dates) {
+          await this.decrementHeld(roomId, date, quantity, { transaction });
+        }
+      }
+
+      if (shouldCommit) {
+        await transaction.commit();
+      }
+    } catch (error) {
+      if (shouldCommit) {
+        await transaction.rollback();
+      }
+      logger.error('Error batch decrementing held:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check availability for hold: (total_rooms - booked_rooms - held_rooms) >= quantity for each room/date
+   * @param {Array<Object>} reservations - Array of {roomId, quantity}
+   * @param {string|Date} startDate - Start date
+   * @param {string|Date} endDate - End date (exclusive)
+   * @returns {Promise<boolean>} True if all rooms have sufficient availability for hold
+   */
+  async checkAvailabilityForHold(reservations, startDate, endDate) {
+    try {
+      const roomIds = reservations.map((r) => r.roomId);
+      const quantityByRoom = new Map(
+        reservations.map((r) => [r.roomId, r.quantity || 1])
+      );
+
+      const inventories = await this.findByRoomsAndDateRange(
+        roomIds,
+        startDate,
+        endDate
+      );
+
+      for (const inventory of inventories) {
+        const available =
+          inventory.total_rooms -
+          inventory.booked_rooms -
+          (inventory.held_rooms || 0);
+        const required = quantityByRoom.get(inventory.room_id) || 1;
+        if (available < required || inventory.status !== 'open') {
+          return false;
+        }
+      }
+
+      const startDateObj =
+        typeof startDate === 'string' ? new Date(startDate) : startDate;
+      const endDateObj =
+        typeof endDate === 'string' ? new Date(endDate) : endDate;
+      const expectedDates = [];
+      const currentDate = new Date(startDateObj);
+      while (currentDate < endDateObj) {
+        expectedDates.push(currentDate.toISOString().split('T')[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      const foundDates = new Set(
+        inventories.map((inv) =>
+          typeof inv.date === 'string' ? inv.date : inv.date.toISOString().split('T')[0]
+        )
+      );
+      for (const date of expectedDates) {
+        if (!foundDates.has(date)) {
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      logger.error('Error checking availability for hold:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Check availability for rooms in a date range
    * @param {Array<string>} roomIds - Array of room IDs
    * @param {string|Date} startDate - Start date
