@@ -3,11 +3,6 @@ const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 
 /**
- * Search Controller - HTTP ↔ business mapping
- * Follows RESTful API standards
- */
-
-/**
  * GET /api/search
  * Search hotels by location and availability
  */

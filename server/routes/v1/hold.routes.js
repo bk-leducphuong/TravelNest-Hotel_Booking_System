@@ -1,12 +1,6 @@
 /**
  * Hold API - Temporarily hold rooms during checkout
  * Prevents other users from booking the same room while the user completes payment.
- *
- * Flow:
- * 1. POST /hold - Create hold (validates payload, checks availability, creates hold + increments held_rooms)
- * 2. Optional: Redis cache user_holds:{userId} to limit or fast-check active holds
- * 3. Optional: BullMQ job to release hold when expires_at is reached
- * 4. DELETE /hold/:holdId - Release hold (user cancels or timeout)
  */
 
 const express = require('express');

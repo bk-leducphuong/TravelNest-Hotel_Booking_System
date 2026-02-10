@@ -187,10 +187,6 @@ module.exports = function (sequelize, DataTypes) {
       foreignKey: 'hotel_id',
       as: 'invoices',
     });
-    Hotel.hasMany(models.nearby_places, {
-      foreignKey: 'hotel_id',
-      as: 'nearby_places',
-    });
     Hotel.hasMany(models.notifications, {
       foreignKey: 'reciever_id',
       as: 'notifications',

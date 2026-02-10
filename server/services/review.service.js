@@ -97,13 +97,8 @@ class ReviewService {
    * @returns {Promise<Object>} Created review
    */
   async createReview(userId, reviewData) {
-    const {
-      hotelId,
-      rating,
-      comment,
-      reviewCriteria,
-      bookingCode,
-    } = reviewData;
+    const { hotelId, rating, comment, reviewCriteria, bookingCode } =
+      reviewData;
 
     // Validate required fields
     if (!hotelId || !rating || !comment || !reviewCriteria || !bookingCode) {
@@ -204,9 +199,10 @@ class ReviewService {
         hotel_id: bookingData.hotel_id,
         booking_code: bookingData.booking_code,
         hotel: bookingData.hotels || bookingData.Hotel,
-        review: bookingData.reviews && bookingData.reviews.length > 0
-          ? bookingData.reviews[0]
-          : null,
+        review:
+          bookingData.reviews && bookingData.reviews.length > 0
+            ? bookingData.reviews[0]
+            : null,
       };
     });
   }

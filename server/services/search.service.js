@@ -31,7 +31,14 @@ class SearchService {
     } = searchParams;
 
     // Validate required parameters
-    if (!location || !adults || !children || !checkInDate || !checkOutDate || !rooms) {
+    if (
+      !location ||
+      !adults ||
+      !children ||
+      !checkInDate ||
+      !checkOutDate ||
+      !rooms
+    ) {
       throw new ApiError(
         400,
         'MISSING_SEARCH_CRITERIA',
@@ -61,7 +68,8 @@ class SearchService {
     }
 
     // Calculate number of days if not provided
-    const calculatedDays = numberOfDays || Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+    const calculatedDays =
+      numberOfDays || Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
 
     // Search hotels
     const hotels = await searchRepository.searchHotelsByLocation({
