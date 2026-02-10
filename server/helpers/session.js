@@ -6,10 +6,12 @@
 function mapRoleToUserType(roleName) {
   const roleMap = {
     guest: 'GUEST',
-    hotel_manager: 'USER',
-    hotel_staff: 'STAFF',
-    admin: 'ADMIN',
+    user: 'USER',
+    owner: 'STAFF',
+    manager: 'STAFF',
+    staff: 'STAFF',
     support_agent: 'STAFF',
+    admin: 'ADMIN',
   };
   return roleMap[roleName] || 'GUEST';
 }
