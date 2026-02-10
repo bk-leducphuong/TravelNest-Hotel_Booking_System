@@ -16,6 +16,7 @@ const logger = require('@config/logger.config');
 const db = require('@models');
 const { initSocket } = require('@socket/index');
 const { initBucket } = require('@config/minio.config');
+const { setupSwagger } = require('@config/swagger.config');
 
 /*********************** Middlewares ************************/
 const errorMiddleware = require('@middlewares/error.middleware.js');
@@ -84,6 +85,9 @@ const initServer = async () => {
 
   // Rate limiter
   app.use(limiter);
+
+  // Swagger API documentation (before routes)
+  setupSwagger(app);
 
   // API v1 routes
   app.use('/api/v1', v1Routes);
