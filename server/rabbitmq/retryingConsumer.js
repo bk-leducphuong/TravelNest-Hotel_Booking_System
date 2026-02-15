@@ -35,13 +35,13 @@ function errorToString(err) {
 
 /**
  * Create a RabbitMQ consumer with retry and DLQ support
- * 
+ *
  * Features:
  * - Main queue processing
  * - Automatic retry with exponential backoff
  * - Dead-letter queue for failed messages
  * - Manual acknowledgment
- * 
+ *
  * @param {object} options - Consumer configuration
  * @param {string} options.baseQueue - Base queue name
  * @param {string} options.consumerTag - Consumer identifier
@@ -62,7 +62,9 @@ function createRetryingConsumer({
   const { main, retry: retryQueue, dlq: dlqQueue } = queuesFor(baseQueue);
 
   const maxRetries =
-    typeof retry.maxRetries === 'number' ? retry.maxRetries : config.retry.maxRetries;
+    typeof retry.maxRetries === 'number'
+      ? retry.maxRetries
+      : config.retry.maxRetries;
   const delayMs =
     typeof retry.delayMs === 'number' ? retry.delayMs : config.retry.delayMs;
 
@@ -96,7 +98,13 @@ function createRetryingConsumer({
   /**
    * Publish message to retry or DLQ
    */
-  async function publishToRetryOrDlq(targetQueue, message, properties, retryCount, err) {
+  async function publishToRetryOrDlq(
+    targetQueue,
+    message,
+    properties,
+    retryCount,
+    err
+  ) {
     const newProperties = {
       ...properties,
       persistent: true,
@@ -155,7 +163,7 @@ function createRetryingConsumer({
 
       // Acknowledge message on success
       channel.ack(message);
-      
+
       logger.debug('Message processed successfully', {
         queue: main,
         messageId: message.properties.messageId,
@@ -221,14 +229,10 @@ function createRetryingConsumer({
       await setupQueues();
 
       // Start consuming from main queue
-      const mainConsumer = await channel.consume(
-        main,
-        processMessage,
-        {
-          noAck: false, // Manual acknowledgment
-          consumerTag: `${consumerTag}-main`,
-        }
-      );
+      const mainConsumer = await channel.consume(main, processMessage, {
+        noAck: false, // Manual acknowledgment
+        consumerTag: `${consumerTag}-main`,
+      });
       consumerTags.push(mainConsumer.consumerTag);
 
       isConsuming = true;

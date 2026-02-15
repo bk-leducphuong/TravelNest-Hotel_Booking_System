@@ -36,13 +36,13 @@ async function main() {
   const shutdown = async (reason) => {
     try {
       logger.info({ reason }, 'RabbitMQ worker shutting down');
-      
+
       // Stop all consumers
       await Promise.allSettled(consumers.map((c) => c.stop()));
-      
+
       // Close connection
       await connectionManager.close();
-      
+
       logger.info('RabbitMQ worker shutdown complete');
     } finally {
       process.exit(0);
@@ -52,7 +52,7 @@ async function main() {
   ['SIGTERM', 'SIGINT', 'SIGUSR2'].forEach((sig) => {
     process.once(sig, () => shutdown(sig));
   });
-  
+
   ['unhandledRejection', 'uncaughtException'].forEach((evt) => {
     process.on(evt, (err) => {
       logger.error({ err }, `Process error: ${evt}`);
