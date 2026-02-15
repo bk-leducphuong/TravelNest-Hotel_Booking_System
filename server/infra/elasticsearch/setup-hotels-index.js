@@ -7,8 +7,8 @@ require('dotenv').config({
       ? '.env.production'
       : '.env.development',
 });
-const logger = require('@config/logger.config');
-const elasticsearchClient = require('@config/elasticsearch.config');
+const logger = require('../../config/logger.config');
+const elasticsearchClient = require('../../config/elasticsearch.config');
 
 const INDEX_NAME = 'hotels';
 

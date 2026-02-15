@@ -1,11 +1,5 @@
-const bookingRepository = require('../repositories/booking.repository');
-const ApiError = require('../utils/ApiError');
-
-/**
- * Booking Service - Contains main business logic
- * Follows RESTful API standards
- * Includes booking management and cancellation
- */
+const bookingRepository = require('@repositories/booking.repository');
+const ApiError = require('@utils/ApiError');
 
 class BookingService {
   /**
@@ -155,11 +149,7 @@ class BookingService {
     );
 
     if (updatedCount === 0) {
-      throw new ApiError(
-        500,
-        'UPDATE_FAILED',
-        'Failed to cancel booking'
-      );
+      throw new ApiError(500, 'UPDATE_FAILED', 'Failed to cancel booking');
     }
 
     return {

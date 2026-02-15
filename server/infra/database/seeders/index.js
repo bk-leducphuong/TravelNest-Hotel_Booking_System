@@ -7,6 +7,11 @@ const { seedHotelAmenities } = require('./hotel_amenity.seed');
 const { seedRoomInventory } = require('./room_inventory.seed');
 const { seedRoomAmenities } = require('./room_amenity.seed');
 const { seedPermissions } = require('./permission.seed');
+const {
+  seedHotelSearchSnapshots,
+  seedHotelSearchSnapshotsByFilter,
+  rebuildAllSnapshots,
+} = require('./hotel_search_snapshot.seed');
 
 if (require.main === module) {
   (async () => {
@@ -36,4 +41,7 @@ module.exports = {
   seedRoomInventory,
   seedRoomAmenities,
   seedPermissions,
+  seedHotelSearchSnapshots,
+  seedHotelSearchSnapshotsByFilter,
+  rebuildAllSnapshots,
 };

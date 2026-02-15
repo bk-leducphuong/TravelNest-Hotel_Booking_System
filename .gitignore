@@ -38,8 +38,8 @@ client/.vscode/*
 /scrape_data/data/*.json
 /scrape_data/data/hotels/
 
-server/minio-data/*
-!server/minio-data/.gitkeep
+server/infra/minio-data/*
+!server/infra/minio-data/.gitkeep
 
 server/infra/elasticsearch/data/*
 !server/infra/elasticsearch/data/.gitkeep

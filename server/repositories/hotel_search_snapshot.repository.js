@@ -1,4 +1,10 @@
-const { hotel_search_snapshots, hotels, room_inventory, hotel_amenities, amenities } = require('../models');
+const {
+  hotel_search_snapshots,
+  hotels,
+  room_inventory,
+  hotel_amenities,
+  amenities,
+} = require('../models');
 const { Op, Sequelize } = require('sequelize');
 
 /**
@@ -42,7 +48,7 @@ const createInitialSnapshot = async (hotelId, hotelData) => {
  */
 const recomputePricing = async (hotelId) => {
   const now = new Date();
-  
+
   // Get all rooms for this hotel
   const { rooms } = require('../models');
   const hotelRooms = await rooms.findAll({
@@ -84,7 +90,7 @@ const recomputePricing = async (hotelId) => {
  */
 const recomputeRating = async (hotelId) => {
   const { hotel_rating_summaries } = require('../models');
-  
+
   const ratingSummary = await hotel_rating_summaries.findOne({
     where: { hotel_id: hotelId },
     attributes: ['overall_rating', 'total_reviews'],
@@ -116,8 +122,10 @@ const recomputeAmenities = async (hotelId) => {
     raw: true,
   });
 
-  const amenityCodes = amenityData.map((a) => a['amenity.code']).filter(Boolean);
-  
+  const amenityCodes = amenityData
+    .map((a) => a['amenity.code'])
+    .filter(Boolean);
+
   return { amenity_codes: amenityCodes };
 };
 
@@ -135,7 +143,16 @@ const checkFreeCancellation = async (hotelId) => {
  */
 const getHotelBasicInfo = async (hotelId) => {
   const hotel = await hotels.findByPk(hotelId, {
-    attributes: ['id', 'name', 'city', 'country', 'latitude', 'longitude', 'hotel_class', 'status'],
+    attributes: [
+      'id',
+      'name',
+      'city',
+      'country',
+      'latitude',
+      'longitude',
+      'hotel_class',
+      'status',
+    ],
     raw: true,
   });
 
@@ -159,7 +176,7 @@ const getHotelBasicInfo = async (hotelId) => {
  */
 const getPrimaryImageUrl = async (hotelId) => {
   const { images } = require('../models');
-  
+
   const primaryImage = await images.findOne({
     where: {
       entity_type: 'hotel',
@@ -186,15 +203,21 @@ const getPrimaryImageUrl = async (hotelId) => {
  * Full snapshot refresh - recompute everything
  */
 const fullRefresh = async (hotelId) => {
-  const [basicInfo, pricingData, ratingData, amenityData, imageData, freeCancelData] =
-    await Promise.all([
-      getHotelBasicInfo(hotelId),
-      recomputePricing(hotelId),
-      recomputeRating(hotelId),
-      recomputeAmenities(hotelId),
-      getPrimaryImageUrl(hotelId),
-      checkFreeCancellation(hotelId),
-    ]);
+  const [
+    basicInfo,
+    pricingData,
+    ratingData,
+    amenityData,
+    imageData,
+    freeCancelData,
+  ] = await Promise.all([
+    getHotelBasicInfo(hotelId),
+    recomputePricing(hotelId),
+    recomputeRating(hotelId),
+    recomputeAmenities(hotelId),
+    getPrimaryImageUrl(hotelId),
+    checkFreeCancellation(hotelId),
+  ]);
 
   const snapshotData = {
     ...basicInfo,
@@ -203,7 +226,8 @@ const fullRefresh = async (hotelId) => {
     ...amenityData,
     ...imageData,
     ...freeCancelData,
-    is_available: pricingData.has_available_rooms && basicInfo.status === 'active',
+    is_available:
+      pricingData.has_available_rooms && basicInfo.status === 'active',
   };
 
   return await upsertSnapshot(hotelId, snapshotData);

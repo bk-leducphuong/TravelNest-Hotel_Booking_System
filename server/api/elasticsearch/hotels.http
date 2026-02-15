@@ -1,0 +1,1090 @@
+@baseUrl = http://localhost:9200
+@contentType = application/json
+@credentials = ZWxhc3RpYzphZG1pbjEyMw==
+@indexName = hotels
+
+########################################
+# INDEX MANAGEMENT
+########################################
+
+### Check Cluster Health
+GET {{baseUrl}}/_cluster/health?pretty
+Authorization: Basic {{credentials}}
+
+### List All Indices
+GET {{baseUrl}}/_cat/indices?v
+Authorization: Basic {{credentials}}
+
+### Get Hotels Index Stats
+GET {{baseUrl}}/{{indexName}}/_stats?pretty
+Authorization: Basic {{credentials}}
+
+### Count Total Hotels
+GET {{baseUrl}}/{{indexName}}/_count?pretty
+Authorization: Basic {{credentials}}
+
+### Get Hotels Index Mapping
+GET {{baseUrl}}/{{indexName}}/_mapping?pretty
+Authorization: Basic {{credentials}}
+
+### Get Hotels Index Settings
+GET {{baseUrl}}/{{indexName}}/_settings?pretty
+Authorization: Basic {{credentials}}
+
+########################################
+# CRUD OPERATIONS
+########################################
+
+### Get Hotel by ID
+GET {{baseUrl}}/{{indexName}}/_doc/019c4592-457b-7872-9e2f-2a50ff6b9bbf
+Authorization: Basic {{credentials}}
+
+### Create/Update Hotel Document
+PUT {{baseUrl}}/{{indexName}}/_doc/test-hotel-001
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "hotel_id": "test-hotel-001",
+  "hotel_name": "Test Grand Hotel",
+  "city": "San Francisco",
+  "country": "United States",
+  "latitude": 37.7749,
+  "longitude": -122.4194,
+  "location": {
+    "lat": 37.7749,
+    "lon": -122.4194
+  },
+  "min_price": 150.00,
+  "max_price": 500.00,
+  "avg_rating": 4.5,
+  "review_count": 120,
+  "hotel_class": 5,
+  "status": "active",
+  "amenity_codes": ["FREE_WIFI", "POOL", "FITNESS_CENTER", "SPA", "RESTAURANT"],
+  "has_free_cancellation": true,
+  "is_available": true,
+  "has_available_rooms": true,
+  "primary_image_url": "https://example.com/image.jpg",
+  "total_bookings": 350,
+  "view_count": 1500,
+  "popularity_score": 850,
+  "created_at": "2026-02-15T00:00:00Z",
+  "updated_at": "2026-02-15T00:00:00Z"
+}
+
+### Update Hotel Document (Partial Update)
+POST {{baseUrl}}/{{indexName}}/_update/test-hotel-001
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "doc": {
+    "min_price": 140.00,
+    "avg_rating": 4.6,
+    "review_count": 125,
+    "view_count": 1550,
+    "updated_at": "2026-02-15T12:00:00Z"
+  }
+}
+
+### Delete Hotel by ID
+DELETE {{baseUrl}}/{{indexName}}/_doc/test-hotel-001
+Authorization: Basic {{credentials}}
+
+### Bulk Index Hotels
+POST {{baseUrl}}/{{indexName}}/_bulk
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{"index":{"_id":"bulk-hotel-001"}}
+{"hotel_id":"bulk-hotel-001","hotel_name":"Bulk Hotel 1","city":"New York","country":"USA","latitude":40.7128,"longitude":-74.0060,"location":{"lat":40.7128,"lon":-74.0060},"min_price":100,"max_price":300,"avg_rating":4.0,"review_count":50,"hotel_class":4,"status":"active","amenity_codes":["FREE_WIFI","POOL"],"has_free_cancellation":true,"is_available":true,"has_available_rooms":true,"total_bookings":100,"view_count":500,"created_at":"2026-02-15T00:00:00Z","updated_at":"2026-02-15T00:00:00Z"}
+{"index":{"_id":"bulk-hotel-002"}}
+{"hotel_id":"bulk-hotel-002","hotel_name":"Bulk Hotel 2","city":"Los Angeles","country":"USA","latitude":34.0522,"longitude":-118.2437,"location":{"lat":34.0522,"lon":-118.2437},"min_price":120,"max_price":350,"avg_rating":4.2,"review_count":75,"hotel_class":5,"status":"active","amenity_codes":["FREE_WIFI","SPA","RESTAURANT"],"has_free_cancellation":false,"is_available":true,"has_available_rooms":true,"total_bookings":150,"view_count":800,"created_at":"2026-02-15T00:00:00Z","updated_at":"2026-02-15T00:00:00Z"}
+
+### Delete by Query (Delete all test hotels)
+POST {{baseUrl}}/{{indexName}}/_delete_by_query
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "query": {
+    "bool": {
+      "should": [
+        {"prefix": {"hotel_id.keyword": "test-"}},
+        {"prefix": {"hotel_id.keyword": "bulk-"}}
+      ]
+    }
+  }
+}
+
+########################################
+# BASIC SEARCH QUERIES
+########################################
+
+### Get All Hotels (First 20)
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 20,
+  "sort": [
+    { "updated_at": { "order": "desc" } }
+  ],
+  "query": {
+    "match_all": {}
+  }
+}
+
+### Search Hotels by Name (Full-text)
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 10,
+  "query": {
+    "match": {
+      "hotel_name": "Grand"
+    }
+  },
+  "highlight": {
+    "fields": {
+      "hotel_name": {}
+    }
+  }
+}
+
+### Search Hotels by Name (Autocomplete)
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 10,
+  "query": {
+    "match_phrase_prefix": {
+      "hotel_name": "Gra"
+    }
+  }
+}
+
+### Suggest Hotels (Completion Suggester)
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "suggest": {
+    "hotel-suggest": {
+      "prefix": "Gra",
+      "completion": {
+        "field": "hotel_name.suggest",
+        "size": 10,
+        "skip_duplicates": true
+      }
+    }
+  }
+}
+
+########################################
+# LOCATION-BASED QUERIES
+########################################
+
+### Search Hotels by City
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 20,
+  "query": {
+    "match": {
+      "city": "New York"
+    }
+  },
+  "sort": [
+    { "avg_rating": { "order": "desc" } },
+    { "review_count": { "order": "desc" } }
+  ]
+}
+
+### Search Hotels by Country
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 20,
+  "query": {
+    "term": {
+      "country.keyword": "United States"
+    }
+  }
+}
+
+### Geo Distance Query (Hotels within 10km of location)
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 20,
+  "query": {
+    "bool": {
+      "must": {
+        "match_all": {}
+      },
+      "filter": {
+        "geo_distance": {
+          "distance": "10km",
+          "location": {
+            "lat": 40.7128,
+            "lon": -74.0060
+          }
+        }
+      }
+    }
+  },
+  "sort": [
+    {
+      "_geo_distance": {
+        "location": {
+          "lat": 40.7128,
+          "lon": -74.0060
+        },
+        "order": "asc",
+        "unit": "km",
+        "distance_type": "arc"
+      }
+    }
+  ]
+}
+
+### Geo Bounding Box Query (Hotels in rectangular area)
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 50,
+  "query": {
+    "bool": {
+      "filter": {
+        "geo_bounding_box": {
+          "location": {
+            "top_left": {
+              "lat": 41.0,
+              "lon": -75.0
+            },
+            "bottom_right": {
+              "lat": 40.0,
+              "lon": -73.0
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+### Geo Polygon Query (Hotels in custom polygon area)
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "query": {
+    "bool": {
+      "filter": {
+        "geo_polygon": {
+          "location": {
+            "points": [
+              {"lat": 40.8, "lon": -74.2},
+              {"lat": 40.8, "lon": -73.8},
+              {"lat": 40.6, "lon": -73.8},
+              {"lat": 40.6, "lon": -74.2}
+            ]
+          }
+        }
+      }
+    }
+  }
+}
+
+########################################
+# FILTERING QUERIES
+########################################
+
+### Filter by Price Range
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 20,
+  "query": {
+    "bool": {
+      "filter": [
+        { "range": { "min_price": { "gte": 100, "lte": 300 } } }
+      ]
+    }
+  },
+  "sort": [
+    { "min_price": { "order": "asc" } }
+  ]
+}
+
+### Filter by Rating
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 20,
+  "query": {
+    "bool": {
+      "filter": [
+        { "range": { "avg_rating": { "gte": 4.0 } } }
+      ]
+    }
+  },
+  "sort": [
+    { "avg_rating": { "order": "desc" } },
+    { "review_count": { "order": "desc" } }
+  ]
+}
+
+### Filter by Hotel Class (Star Rating)
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 20,
+  "query": {
+    "bool": {
+      "filter": [
+        { "terms": { "hotel_class": [4, 5] } }
+      ]
+    }
+  }
+}
+
+### Filter by Status
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 20,
+  "query": {
+    "bool": {
+      "filter": [
+        { "term": { "status.keyword": "active" } }
+      ]
+    }
+  }
+}
+
+### Filter by Availability
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 20,
+  "query": {
+    "bool": {
+      "filter": [
+        { "term": { "is_available": true } },
+        { "term": { "has_available_rooms": true } }
+      ]
+    }
+  }
+}
+
+### Filter by Amenities (Has WiFi and Pool)
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 20,
+  "query": {
+    "bool": {
+      "filter": [
+        { "terms": { "amenity_codes": ["FREE_WIFI", "POOL"] } }
+      ]
+    }
+  }
+}
+
+### Filter by Free Cancellation
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 20,
+  "query": {
+    "bool": {
+      "filter": [
+        { "term": { "has_free_cancellation": true } }
+      ]
+    }
+  }
+}
+
+########################################
+# COMPLEX SEARCH QUERIES
+########################################
+
+### Combined Search: City + Price + Rating + Amenities
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 20,
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "city": "New York" } }
+      ],
+      "filter": [
+        { "term": { "status.keyword": "active" } },
+        { "term": { "is_available": true } },
+        { "range": { "min_price": { "gte": 100, "lte": 500 } } },
+        { "range": { "avg_rating": { "gte": 4.0 } } },
+        { "terms": { "amenity_codes": ["FREE_WIFI", "POOL"] } }
+      ]
+    }
+  },
+  "sort": [
+    { "avg_rating": { "order": "desc" } },
+    { "min_price": { "order": "asc" } }
+  ]
+}
+
+### Search Near Location with Filters
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 20,
+  "query": {
+    "bool": {
+      "must": {
+        "match_all": {}
+      },
+      "filter": [
+        {
+          "geo_distance": {
+            "distance": "20km",
+            "location": {
+              "lat": 40.7128,
+              "lon": -74.0060
+            }
+          }
+        },
+        { "range": { "min_price": { "lte": 300 } } },
+        { "range": { "avg_rating": { "gte": 3.5 } } },
+        { "term": { "status.keyword": "active" } }
+      ]
+    }
+  },
+  "sort": [
+    {
+      "_geo_distance": {
+        "location": {
+          "lat": 40.7128,
+          "lon": -74.0060
+        },
+        "order": "asc",
+        "unit": "km"
+      }
+    }
+  ]
+}
+
+### Multi-field Search (Name or City)
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 20,
+  "query": {
+    "multi_match": {
+      "query": "Grand Park",
+      "fields": ["hotel_name^2", "city"],
+      "type": "best_fields",
+      "operator": "or"
+    }
+  }
+}
+
+### Boosted Search (Popular hotels ranked higher)
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 20,
+  "query": {
+    "function_score": {
+      "query": {
+        "match": {
+          "city": "New York"
+        }
+      },
+      "functions": [
+        {
+          "field_value_factor": {
+            "field": "total_bookings",
+            "factor": 1.2,
+            "modifier": "log1p",
+            "missing": 1
+          }
+        },
+        {
+          "field_value_factor": {
+            "field": "avg_rating",
+            "factor": 2,
+            "modifier": "none",
+            "missing": 0
+          }
+        }
+      ],
+      "score_mode": "sum",
+      "boost_mode": "multiply"
+    }
+  }
+}
+
+### Search with Popularity Ranking
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 20,
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "city": "San Francisco" } }
+      ],
+      "should": [
+        {
+          "rank_feature": {
+            "field": "popularity_score",
+            "boost": 2.0
+          }
+        }
+      ],
+      "filter": [
+        { "term": { "status.keyword": "active" } }
+      ]
+    }
+  }
+}
+
+########################################
+# AGGREGATIONS & ANALYTICS
+########################################
+
+### Count Hotels by City (Top 20)
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 0,
+  "aggs": {
+    "hotels_by_city": {
+      "terms": {
+        "field": "city.keyword",
+        "size": 20,
+        "order": { "_count": "desc" }
+      }
+    }
+  }
+}
+
+### Count Hotels by Country
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 0,
+  "aggs": {
+    "hotels_by_country": {
+      "terms": {
+        "field": "country.keyword",
+        "size": 50,
+        "order": { "_count": "desc" }
+      }
+    }
+  }
+}
+
+### Count Hotels by Star Rating
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 0,
+  "aggs": {
+    "hotels_by_class": {
+      "terms": {
+        "field": "hotel_class",
+        "size": 5,
+        "order": { "_key": "asc" }
+      }
+    }
+  }
+}
+
+### Average Price by City
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 0,
+  "aggs": {
+    "cities": {
+      "terms": {
+        "field": "city.keyword",
+        "size": 20
+      },
+      "aggs": {
+        "avg_min_price": {
+          "avg": { "field": "min_price" }
+        },
+        "avg_max_price": {
+          "avg": { "field": "max_price" }
+        }
+      }
+    }
+  }
+}
+
+### Price Range Statistics
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 0,
+  "aggs": {
+    "price_stats": {
+      "stats": {
+        "field": "min_price"
+      }
+    },
+    "price_histogram": {
+      "histogram": {
+        "field": "min_price",
+        "interval": 50
+      }
+    }
+  }
+}
+
+### Rating Distribution
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 0,
+  "aggs": {
+    "rating_ranges": {
+      "range": {
+        "field": "avg_rating",
+        "ranges": [
+          { "key": "Poor", "to": 2.0 },
+          { "key": "Fair", "from": 2.0, "to": 3.0 },
+          { "key": "Good", "from": 3.0, "to": 4.0 },
+          { "key": "Very Good", "from": 4.0, "to": 4.5 },
+          { "key": "Excellent", "from": 4.5 }
+        ]
+      }
+    }
+  }
+}
+
+### Most Popular Amenities
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 0,
+  "aggs": {
+    "popular_amenities": {
+      "terms": {
+        "field": "amenity_codes",
+        "size": 30,
+        "order": { "_count": "desc" }
+      }
+    }
+  }
+}
+
+### Top Rated Hotels
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 10,
+  "query": {
+    "bool": {
+      "filter": [
+        { "term": { "status.keyword": "active" } },
+        { "range": { "review_count": { "gte": 10 } } }
+      ]
+    }
+  },
+  "sort": [
+    { "avg_rating": { "order": "desc" } },
+    { "review_count": { "order": "desc" } }
+  ]
+}
+
+### Most Booked Hotels
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 10,
+  "query": {
+    "bool": {
+      "filter": [
+        { "term": { "status.keyword": "active" } }
+      ]
+    }
+  },
+  "sort": [
+    { "total_bookings": { "order": "desc" } }
+  ]
+}
+
+### Hotels with Most Views
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 10,
+  "query": {
+    "bool": {
+      "filter": [
+        { "term": { "status.keyword": "active" } }
+      ]
+    }
+  },
+  "sort": [
+    { "view_count": { "order": "desc" } }
+  ]
+}
+
+### Availability Statistics
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 0,
+  "aggs": {
+    "availability": {
+      "terms": {
+        "field": "is_available"
+      }
+    },
+    "with_rooms": {
+      "terms": {
+        "field": "has_available_rooms"
+      }
+    },
+    "free_cancellation": {
+      "terms": {
+        "field": "has_free_cancellation"
+      }
+    }
+  }
+}
+
+### Hotels by Status
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 0,
+  "aggs": {
+    "by_status": {
+      "terms": {
+        "field": "status.keyword"
+      }
+    }
+  }
+}
+
+########################################
+# GEO AGGREGATIONS
+########################################
+
+### Hotels Clustered by Geo Hash
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 0,
+  "aggs": {
+    "hotel_clusters": {
+      "geohash_grid": {
+        "field": "location",
+        "precision": 5
+      }
+    }
+  }
+}
+
+### Hotels by Distance Ranges from Point
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 0,
+  "aggs": {
+    "distance_ranges": {
+      "geo_distance": {
+        "field": "location",
+        "origin": {
+          "lat": 40.7128,
+          "lon": -74.0060
+        },
+        "unit": "km",
+        "ranges": [
+          { "to": 5 },
+          { "from": 5, "to": 10 },
+          { "from": 10, "to": 20 },
+          { "from": 20, "to": 50 },
+          { "from": 50 }
+        ]
+      }
+    }
+  }
+}
+
+### Geo Centroid (Average location of hotels in city)
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 0,
+  "query": {
+    "match": {
+      "city": "New York"
+    }
+  },
+  "aggs": {
+    "centroid": {
+      "geo_centroid": {
+        "field": "location"
+      }
+    }
+  }
+}
+
+########################################
+# ADVANCED QUERIES
+########################################
+
+### Search with Highlighting
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 10,
+  "query": {
+    "multi_match": {
+      "query": "luxury spa resort",
+      "fields": ["hotel_name", "city"]
+    }
+  },
+  "highlight": {
+    "fields": {
+      "hotel_name": {},
+      "city": {}
+    },
+    "pre_tags": ["<strong>"],
+    "post_tags": ["</strong>"]
+  }
+}
+
+### Fuzzy Search (Typo-tolerant)
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 10,
+  "query": {
+    "fuzzy": {
+      "hotel_name": {
+        "value": "Grnad Hotl",
+        "fuzziness": "AUTO"
+      }
+    }
+  }
+}
+
+### Scroll API (For exporting large datasets)
+POST {{baseUrl}}/{{indexName}}/_search?scroll=1m
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "size": 100,
+  "query": {
+    "match_all": {}
+  }
+}
+
+### Count Hotels Matching Criteria
+POST {{baseUrl}}/{{indexName}}/_count
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "query": {
+    "bool": {
+      "filter": [
+        { "term": { "status.keyword": "active" } },
+        { "range": { "avg_rating": { "gte": 4.0 } } }
+      ]
+    }
+  }
+}
+
+### Update by Query (Bulk update)
+POST {{baseUrl}}/{{indexName}}/_update_by_query
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "script": {
+    "source": "ctx._source.view_count += 1",
+    "lang": "painless"
+  },
+  "query": {
+    "term": {
+      "hotel_id.keyword": "019c4592-457b-7872-9e2f-2a50ff6b9bbf"
+    }
+  }
+}
+
+### Exists Query (Hotels with images)
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "query": {
+    "exists": {
+      "field": "primary_image_url"
+    }
+  }
+}
+
+### Missing Values Query (Hotels without ratings)
+POST {{baseUrl}}/{{indexName}}/_search
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "query": {
+    "bool": {
+      "must_not": [
+        { "exists": { "field": "avg_rating" } }
+      ]
+    }
+  }
+}
+
+########################################
+# TESTING & DEBUGGING
+########################################
+
+### Explain Query (Debug scoring)
+POST {{baseUrl}}/{{indexName}}/_explain/019c4592-457b-7872-9e2f-2a50ff6b9bbf
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "query": {
+    "match": {
+      "hotel_name": "Grand"
+    }
+  }
+}
+
+### Validate Query
+POST {{baseUrl}}/{{indexName}}/_validate/query?explain=true
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "city": "New York" } }
+      ]
+    }
+  }
+}
+
+### Analyze Text (Test tokenization)
+POST {{baseUrl}}/{{indexName}}/_analyze
+Content-Type: {{contentType}}
+Authorization: Basic {{credentials}}
+
+{
+  "analyzer": "hotel_name_analyzer",
+  "text": "Grand Royal Palace Hotel"
+}
+
+########################################
+# CLEANUP
+########################################
+
+### Delete All Hotels (Use with caution!)
+# POST {{baseUrl}}/{{indexName}}/_delete_by_query
+# Content-Type: {{contentType}}
+# Authorization: Basic {{credentials}}
+# 
+# {
+#   "query": {
+#     "match_all": {}
+#   }
+# }
+
+### Refresh Index
+POST {{baseUrl}}/{{indexName}}/_refresh
+Authorization: Basic {{credentials}}
+
+###

@@ -1,4 +1,4 @@
-const { Client, logLevel } = require('@elastic/elasticsearch');
+const { Client } = require('@elastic/elasticsearch');
 require('dotenv').config({
   path:
     process.env.NODE_ENV === 'production'
@@ -12,8 +12,7 @@ const elasticsearchClient = new Client({
     username: process.env.ELASTICSEARCH_USERNAME,
     password: process.env.ELASTICSEARCH_PASSWORD,
   },
-  log: process.env.NODE_ENV === 'development',
-  logLevel: logLevel.ERROR, // Avoid flooding logs in production
+  log: 'error',
   requestTimeout: 30000,
   tls: {
     rejectUnauthorized: false,
