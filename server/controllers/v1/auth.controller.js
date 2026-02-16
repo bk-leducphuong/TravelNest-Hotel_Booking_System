@@ -3,7 +3,7 @@ const authService = require('@services/auth.service');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 const validate = require('@middlewares/validate.middleware');
-const { buildSession } = require('@helpers/session');
+const { buildSession } = require('@helpers/session.helper');
 
 /**
  * GET /api/auth/session
