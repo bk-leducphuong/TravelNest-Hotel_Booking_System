@@ -3,54 +3,117 @@ const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 
 /**
- * GET /api/search
- * Search hotels by location and availability
+ * GET /api/v1/search/hotels
+ * Search hotels with hybrid ES + DB architecture
+ *
+ * Query params:
+ * - Location: city, country, latitude, longitude, radius
+ * - Dates: checkIn, checkOut (ISO format, required)
+ * - Guests: adults (required), children, rooms
+ * - Filters: minPrice, maxPrice, minRating, hotelClass, amenities, freeCancellation
+ * - Sorting: sortBy (relevance, price_asc, price_desc, rating, distance, popularity)
+ * - Pagination: page, limit
  */
 const searchHotels = asyncHandler(async (req, res) => {
-  const {
-    location,
-    adults,
-    children,
-    checkInDate,
-    checkOutDate,
-    rooms,
-    numberOfDays,
-  } = req.query;
-
   const searchParams = {
-    location,
-    adults: adults ? parseInt(adults, 10) : undefined,
-    children: children ? parseInt(children, 10) : undefined,
-    checkInDate,
-    checkOutDate,
-    rooms: rooms ? parseInt(rooms, 10) : undefined,
-    numberOfDays: numberOfDays ? parseInt(numberOfDays, 10) : undefined,
+    // Location
+    city: req.query.city,
+    country: req.query.country,
+    latitude: req.query.latitude ? parseFloat(req.query.latitude) : undefined,
+    longitude: req.query.longitude
+      ? parseFloat(req.query.longitude)
+      : undefined,
+    radius: req.query.radius ? parseFloat(req.query.radius) : undefined,
+
+    // Dates (required)
+    checkIn: req.query.checkIn || req.query.checkInDate,
+    checkOut: req.query.checkOut || req.query.checkOutDate,
+
+    // Guests (required)
+    adults: req.query.adults ? parseInt(req.query.adults, 10) : undefined,
+    children: req.query.children ? parseInt(req.query.children, 10) : undefined,
+    rooms: req.query.rooms ? parseInt(req.query.rooms, 10) : undefined,
+
+    // Filters
+    minPrice: req.query.minPrice ? parseFloat(req.query.minPrice) : undefined,
+    maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice) : undefined,
+    minRating: req.query.minRating
+      ? parseFloat(req.query.minRating)
+      : undefined,
+    hotelClass: req.query.hotelClass,
+    amenities: req.query.amenities,
+    freeCancellation: req.query.freeCancellation,
+
+    // Sorting
+    sortBy: req.query.sortBy || 'relevance',
+
+    // Pagination
+    page: req.query.page ? parseInt(req.query.page, 10) : 1,
+    limit: req.query.limit ? parseInt(req.query.limit, 10) : 20,
   };
 
-  const hotels = await searchService.searchHotels(searchParams);
+  const result = await searchService.searchHotels(searchParams);
 
-  res.status(200).json({
-    data: hotels,
+  // Save search log asynchronously (don't wait)
+  const userId = req.session?.user?.user_id || null;
+  searchService.saveSearchLog(searchParams, userId).catch((err) => {
+    logger.error('Failed to save search log:', err);
   });
+
+  res.status(200).json(result);
 });
 
 /**
- * POST /api/search
- * Save search information to search logs
+ * GET /api/v1/search/hotels/:hotelId/availability
+ * Check availability for a specific hotel
+ *
+ * Query params: checkIn, checkOut, adults, children, rooms
  */
-const saveSearchInformation = asyncHandler(async (req, res) => {
-  const userId = req.session.user?.user_id || null;
-  const { searchData } = req.body;
+const getHotelAvailability = asyncHandler(async (req, res) => {
+  const { hotelId } = req.params;
 
-  // Support both nested searchData and flat structure
-  const searchParams = searchData || req.body;
+  const params = {
+    checkIn: req.query.checkIn,
+    checkOut: req.query.checkOut,
+    adults: req.query.adults ? parseInt(req.query.adults, 10) : undefined,
+    children: req.query.children ? parseInt(req.query.children, 10) : undefined,
+    rooms: req.query.rooms ? parseInt(req.query.rooms, 10) : undefined,
+  };
 
-  const searchLog = await searchService.saveSearchInformation(
-    searchParams,
-    userId
+  const result = await searchService.getHotelAvailability(hotelId, params);
+
+  res.status(200).json(result);
+});
+
+/**
+ * GET /api/v1/search/autocomplete
+ * Get autocomplete suggestions for hotel names
+ *
+ * Query params: query (required), limit
+ */
+const getAutocompleteSuggestions = asyncHandler(async (req, res) => {
+  const { query, limit } = req.query;
+
+  const result = await searchService.getAutocompleteSuggestions(
+    query,
+    limit ? parseInt(limit, 10) : 10
   );
 
+  res.status(200).json(result);
+});
+
+/**
+ * POST /api/v1/search/log
+ * Save search information to search logs (optional, for analytics)
+ */
+const saveSearchInformation = asyncHandler(async (req, res) => {
+  const userId = req.session?.user?.user_id || null;
+  const searchData = req.body;
+
+  const searchLog = await searchService.saveSearchLog(searchData, userId);
+
   res.status(201).json({
+    success: true,
     data: {
       message: 'Search log recorded successfully',
       searchLog,
@@ -60,5 +123,7 @@ const saveSearchInformation = asyncHandler(async (req, res) => {
 
 module.exports = {
   searchHotels,
+  getHotelAvailability,
+  getAutocompleteSuggestions,
   saveSearchInformation,
 };

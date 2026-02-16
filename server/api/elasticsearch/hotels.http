@@ -36,8 +36,10 @@ Authorization: Basic {{credentials}}
 ########################################
 
 ### Get Hotel by ID
-GET {{baseUrl}}/{{indexName}}/_doc/019c4592-457b-7872-9e2f-2a50ff6b9bbf
+GET {{baseUrl}}/{{indexName}}/_doc/019c4592-45b6-7e6e-9c8a-2dfd3e85ff5e
 Authorization: Basic {{credentials}}
+
+>>! response.json
 
 ### Create/Update Hotel Document
 PUT {{baseUrl}}/{{indexName}}/_doc/test-hotel-001

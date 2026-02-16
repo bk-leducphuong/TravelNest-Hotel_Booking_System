@@ -1,4 +1,6 @@
 const redis = require('redis');
+const logger = require('@config/logger.config');
+
 require('dotenv').config({
   path:
     process.env.NODE_ENV === 'production'
@@ -21,7 +23,7 @@ const redisClient = redis.createClient({
 // Connect to Redis
 redisClient
   .connect()
-  .then(() => console.log('Connected to Redis'))
-  .catch((err) => console.error('Redis connection error:', err));
+  .then(() => logger.info('Redis connection successful'))
+  .catch((err) => logger.error('Redis connection error:', err));
 
 module.exports = redisClient;
