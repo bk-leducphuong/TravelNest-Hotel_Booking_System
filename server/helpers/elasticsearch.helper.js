@@ -50,12 +50,36 @@ class ElasticsearchHelper {
 
     // Location filters
     if (city) {
-      query.bool.must.push({
-        match: {
-          city: {
-            query: city,
-            fuzziness: 'AUTO',
-          },
+      // Use a bool query with should clauses for flexible city matching
+      query.bool.filter.push({
+        bool: {
+          should: [
+            // Exact match (case-sensitive)
+            {
+              term: {
+                'city.keyword': city,
+              },
+            },
+            // Fuzzy match for typos
+            {
+              match: {
+                city: {
+                  query: city,
+                  fuzziness: 'AUTO',
+                },
+              },
+            },
+            // Wildcard match for partial matches (case-insensitive)
+            {
+              wildcard: {
+                'city.keyword': {
+                  value: `*${city}*`,
+                  case_insensitive: true,
+                },
+              },
+            },
+          ],
+          minimum_should_match: 1,
         },
       });
     }
@@ -107,7 +131,11 @@ class ElasticsearchHelper {
     // Amenities filter
     if (amenities && Array.isArray(amenities) && amenities.length > 0) {
       query.bool.filter.push({
-        terms: { amenity_codes: amenities },
+        bool: {
+          must: amenities.map((a) => ({
+            term: { amenity_codes: a },
+          })),
+        },
       });
     }
 
@@ -203,12 +231,17 @@ class ElasticsearchHelper {
    */
   async search(query) {
     try {
+      // Debug: Log the query being sent to ES
+      logger.debug('Elasticsearch query:', JSON.stringify(query, null, 2));
+
       const response = await elasticsearchClient.search({
         index: this.indexName,
         body: query,
       });
 
       const hits = response.hits.hits;
+
+      logger.debug(`Elasticsearch returned ${hits.length} results`);
 
       return hits.map((hit) => {
         const source = hit._source;

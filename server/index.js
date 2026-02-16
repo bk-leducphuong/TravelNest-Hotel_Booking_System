@@ -32,7 +32,7 @@ const v1Routes = require('@routes/v1/index.js');
 const initServer = async () => {
   // Connect and sync database
   await db.sequelize.authenticate();
-  await db.sequelize.sync();
+  // await db.sequelize.sync({ alter: false, force: false });
 
   require('@models/index.js');
   logger.info('Database connected successfully');
@@ -41,7 +41,10 @@ const initServer = async () => {
   try {
     await initPublisher();
   } catch (error) {
-    logger.warn('RabbitMQ publisher initialization failed (will retry on first use):', error.message);
+    logger.warn(
+      'RabbitMQ publisher initialization failed (will retry on first use):',
+      error.message
+    );
   }
 
   const app = express();

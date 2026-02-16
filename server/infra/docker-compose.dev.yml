@@ -55,7 +55,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     volumes:
-      - ../minio-data:/data
+      - ./minor-data:/data
     networks:
       - travelnest-net
 
