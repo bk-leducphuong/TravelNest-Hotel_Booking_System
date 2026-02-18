@@ -50,36 +50,14 @@ class ElasticsearchHelper {
 
     // Location filters
     if (city) {
-      // Use a bool query with should clauses for flexible city matching
-      query.bool.filter.push({
-        bool: {
-          should: [
-            // Exact match (case-sensitive)
-            {
-              term: {
-                'city.keyword': city,
-              },
-            },
-            // Fuzzy match for typos
-            {
-              match: {
-                city: {
-                  query: city,
-                  fuzziness: 'AUTO',
-                },
-              },
-            },
-            // Wildcard match for partial matches (case-insensitive)
-            {
-              wildcard: {
-                'city.keyword': {
-                  value: `*${city}*`,
-                  case_insensitive: true,
-                },
-              },
-            },
-          ],
-          minimum_should_match: 1,
+      // Use match query for flexible city matching (handles case-insensitivity and typos)
+      query.bool.must.push({
+        match: {
+          city: {
+            query: city,
+            fuzziness: 'AUTO',
+            operator: 'and',
+          },
         },
       });
     }

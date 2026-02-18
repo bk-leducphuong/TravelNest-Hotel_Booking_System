@@ -130,14 +130,30 @@ Content-Type: {{contentType}}
 Authorization: Basic {{credentials}}
 
 {
-  "size": 20,
-  "sort": [
-    { "updated_at": { "order": "desc" } }
-  ],
   "query": {
-    "match_all": {}
-  }
+    "bool": {
+      "filter": [
+        { "term": { "status.keyword": "active" } },
+        { "term": { "is_available": true } },
+        { "term": { "has_available_rooms": true } },
+        { "term": { "city.keyword": "Irving" } }
+      ],
+      "must": [],
+      "should": []
+    }
+  },
+  "sort": [
+    { "avg_rating": { "order": "desc" } } 
+  ],
+  "size": 200,
+  "_source": [
+    "hotel_id", "hotel_name", "city", "country", "location", "latitude", "longitude",
+    "min_price", "max_price", "avg_rating", "review_count", "hotel_class", "status",
+    "amenity_codes", "has_free_cancellation", "primary_image_url", "total_bookings", "view_count"
+  ]
 }
+
+>>! response1.json
 
 ### Search Hotels by Name (Full-text)
 POST {{baseUrl}}/{{indexName}}/_search
@@ -148,7 +164,7 @@ Authorization: Basic {{credentials}}
   "size": 10,
   "query": {
     "match": {
-      "hotel_name": "Grand"
+      "city": "Irving"
     }
   },
   "highlight": {
@@ -157,6 +173,8 @@ Authorization: Basic {{credentials}}
     }
   }
 }
+
+>>! response2.json
 
 ### Search Hotels by Name (Autocomplete)
 POST {{baseUrl}}/{{indexName}}/_search
