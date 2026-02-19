@@ -42,10 +42,6 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.DATEONLY,
         allowNull: true,
       },
-      number_of_days: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
     },
     {
       sequelize,

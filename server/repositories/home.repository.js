@@ -111,7 +111,6 @@ class HomeRepository {
         'children',
         'rooms',
         'search_time',
-        'number_of_days',
       ],
       order: [['search_time', 'DESC']],
       limit,

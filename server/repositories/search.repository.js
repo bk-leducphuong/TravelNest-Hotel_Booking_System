@@ -109,7 +109,6 @@ class SearchRepository {
       adults,
       children,
       rooms,
-      numberOfDays,
     } = searchData;
 
     return await SearchLogs.create({
@@ -121,7 +120,6 @@ class SearchRepository {
       rooms,
       check_in_date: checkInDate,
       check_out_date: checkOutDate,
-      number_of_days: numberOfDays,
     });
   }
 

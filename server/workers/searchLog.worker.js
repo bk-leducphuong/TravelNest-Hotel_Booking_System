@@ -23,10 +23,6 @@ const processSearchLogJob = async (job) => {
       adults: searchData.adults,
       children: searchData.children || 0,
       rooms: searchData.rooms || 1,
-      numberOfDays: searchData.nights,
-      filters: metadata?.filters || null,
-      resultCount: metadata?.resultCount || 0,
-      searchTimeMs: metadata?.searchTimeMs || 0,
     });
 
     logger.info(`Search log created`, {
@@ -36,11 +32,7 @@ const processSearchLogJob = async (job) => {
 
     return { success: true, searchLogId: searchLog.id };
   } catch (error) {
-    console.warn('DEBUGPRINT[15]: searchLog.worker.js:38: error=', error);
-    logger.error(`Failed to save search log:`, {
-      error: error.message,
-      searchData,
-    });
+    logger.error(`Failed to save search log:`, error);
     throw error;
   }
 };
