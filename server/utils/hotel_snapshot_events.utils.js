@@ -1,5 +1,7 @@
 const { publishToQueue } = require('@utils/rabbitmq.utils');
 const { queueFor } = require('@rabbitmq/queues');
+const { hotelSnapshotQueue } = require('@queues/index');
+const { addJob } = require('@utils/bullmq.utils');
 const logger = require('@config/logger.config');
 
 const QUEUE = queueFor('hotelSearchSnapshot');
@@ -8,25 +10,33 @@ const QUEUE = queueFor('hotelSearchSnapshot');
  * Emit hotel.created event
  */
 const emitHotelCreated = async (hotelId, hotelData) => {
-  await publishToQueue(
-    QUEUE,
-    {
-      eventType: 'hotel.created',
-      hotelId,
-      hotelData: {
-        name: hotelData.name,
-        city: hotelData.city,
-        country: hotelData.country,
-        latitude: hotelData.latitude,
-        longitude: hotelData.longitude,
-        hotel_class: hotelData.hotel_class,
-        status: hotelData.status,
-      },
-      timestamp: new Date().toISOString(),
+  const payload = {
+    eventType: 'hotel.created',
+    hotelId,
+    hotelData: {
+      name: hotelData.name,
+      city: hotelData.city,
+      country: hotelData.country,
+      latitude: hotelData.latitude,
+      longitude: hotelData.longitude,
+      hotel_class: hotelData.hotel_class,
+      status: hotelData.status,
     },
-    5, // priority
-    hotelId // messageId for idempotency
-  );
+    timestamp: new Date().toISOString(),
+  };
+
+  try {
+    await publishToQueue(QUEUE, payload, 5, hotelId);
+  } catch (error) {
+    logger.warn('Failed to publish to RabbitMQ (continuing with BullMQ)', {
+      error: error.message,
+    });
+  }
+
+  await addJob(hotelSnapshotQueue, 'hotel-snapshot-event', payload, {
+    priority: 5,
+    jobId: `hotel.created-${hotelId}-${Date.now()}`,
+  });
 
   logger.info(`[Event] Emitted hotel.created for hotel ${hotelId}`);
 };
@@ -35,16 +45,24 @@ const emitHotelCreated = async (hotelId, hotelData) => {
  * Emit hotel.updated event
  */
 const emitHotelUpdated = async (hotelId) => {
-  await publishToQueue(
-    QUEUE,
-    {
-      eventType: 'hotel.updated',
-      hotelId,
-      timestamp: new Date().toISOString(),
-    },
-    5,
-    hotelId
-  );
+  const payload = {
+    eventType: 'hotel.updated',
+    hotelId,
+    timestamp: new Date().toISOString(),
+  };
+
+  try {
+    await publishToQueue(QUEUE, payload, 5, hotelId);
+  } catch (error) {
+    logger.warn('Failed to publish to RabbitMQ (continuing with BullMQ)', {
+      error: error.message,
+    });
+  }
+
+  await addJob(hotelSnapshotQueue, 'hotel-snapshot-event', payload, {
+    priority: 5,
+    jobId: `hotel.updated-${hotelId}-${Date.now()}`,
+  });
 
   logger.info(`[Event] Emitted hotel.updated for hotel ${hotelId}`);
 };
@@ -53,17 +71,25 @@ const emitHotelUpdated = async (hotelId) => {
  * Emit room_inventory.changed event
  */
 const emitRoomInventoryChanged = async (hotelId, roomId) => {
-  await publishToQueue(
-    QUEUE,
-    {
-      eventType: 'room_inventory.changed',
-      hotelId,
-      roomId,
-      timestamp: new Date().toISOString(),
-    },
-    5,
-    hotelId
-  );
+  const payload = {
+    eventType: 'room_inventory.changed',
+    hotelId,
+    roomId,
+    timestamp: new Date().toISOString(),
+  };
+
+  try {
+    await publishToQueue(QUEUE, payload, 5, hotelId);
+  } catch (error) {
+    logger.warn('Failed to publish to RabbitMQ (continuing with BullMQ)', {
+      error: error.message,
+    });
+  }
+
+  await addJob(hotelSnapshotQueue, 'hotel-snapshot-event', payload, {
+    priority: 5,
+    jobId: `room_inventory.changed-${hotelId}-${Date.now()}`,
+  });
 
   logger.info(`[Event] Emitted room_inventory.changed for hotel ${hotelId}`);
 };
@@ -72,17 +98,25 @@ const emitRoomInventoryChanged = async (hotelId, roomId) => {
  * Emit review.created event
  */
 const emitReviewCreated = async (hotelId, reviewId) => {
-  await publishToQueue(
-    QUEUE,
-    {
-      eventType: 'review.created',
-      hotelId,
-      reviewId,
-      timestamp: new Date().toISOString(),
-    },
-    5,
-    hotelId
-  );
+  const payload = {
+    eventType: 'review.created',
+    hotelId,
+    reviewId,
+    timestamp: new Date().toISOString(),
+  };
+
+  try {
+    await publishToQueue(QUEUE, payload, 5, hotelId);
+  } catch (error) {
+    logger.warn('Failed to publish to RabbitMQ (continuing with BullMQ)', {
+      error: error.message,
+    });
+  }
+
+  await addJob(hotelSnapshotQueue, 'hotel-snapshot-event', payload, {
+    priority: 5,
+    jobId: `review.created-${hotelId}-${Date.now()}`,
+  });
 
   logger.info(`[Event] Emitted review.created for hotel ${hotelId}`);
 };
@@ -91,16 +125,24 @@ const emitReviewCreated = async (hotelId, reviewId) => {
  * Emit amenity.changed event
  */
 const emitAmenityChanged = async (hotelId) => {
-  await publishToQueue(
-    QUEUE,
-    {
-      eventType: 'amenity.changed',
-      hotelId,
-      timestamp: new Date().toISOString(),
-    },
-    5,
-    hotelId
-  );
+  const payload = {
+    eventType: 'amenity.changed',
+    hotelId,
+    timestamp: new Date().toISOString(),
+  };
+
+  try {
+    await publishToQueue(QUEUE, payload, 5, hotelId);
+  } catch (error) {
+    logger.warn('Failed to publish to RabbitMQ (continuing with BullMQ)', {
+      error: error.message,
+    });
+  }
+
+  await addJob(hotelSnapshotQueue, 'hotel-snapshot-event', payload, {
+    priority: 5,
+    jobId: `amenity.changed-${hotelId}-${Date.now()}`,
+  });
 
   logger.info(`[Event] Emitted amenity.changed for hotel ${hotelId}`);
 };
@@ -109,17 +151,25 @@ const emitAmenityChanged = async (hotelId) => {
  * Emit booking.completed event
  */
 const emitBookingCompleted = async (hotelId, bookingId) => {
-  await publishToQueue(
-    QUEUE,
-    {
-      eventType: 'booking.completed',
-      hotelId,
-      bookingId,
-      timestamp: new Date().toISOString(),
-    },
-    5,
-    hotelId
-  );
+  const payload = {
+    eventType: 'booking.completed',
+    hotelId,
+    bookingId,
+    timestamp: new Date().toISOString(),
+  };
+
+  try {
+    await publishToQueue(QUEUE, payload, 5, hotelId);
+  } catch (error) {
+    logger.warn('Failed to publish to RabbitMQ (continuing with BullMQ)', {
+      error: error.message,
+    });
+  }
+
+  await addJob(hotelSnapshotQueue, 'hotel-snapshot-event', payload, {
+    priority: 5,
+    jobId: `booking.completed-${hotelId}-${Date.now()}`,
+  });
 
   logger.info(`[Event] Emitted booking.completed for hotel ${hotelId}`);
 };
@@ -128,35 +178,49 @@ const emitBookingCompleted = async (hotelId, bookingId) => {
  * Emit hotel.viewed event
  */
 const emitHotelViewed = async (hotelId, userId = null) => {
-  await publishToQueue(
-    QUEUE,
-    {
-      eventType: 'hotel.viewed',
-      hotelId,
-      userId,
-      timestamp: new Date().toISOString(),
-    },
-    3, // Lower priority for view events
-    hotelId
-  );
+  const payload = {
+    eventType: 'hotel.viewed',
+    hotelId,
+    userId,
+    timestamp: new Date().toISOString(),
+  };
 
-  // Note: Don't log this to avoid spam, as views can be frequent
+  try {
+    await publishToQueue(QUEUE, payload, 3, hotelId);
+  } catch (error) {
+    logger.warn('Failed to publish to RabbitMQ (continuing with BullMQ)', {
+      error: error.message,
+    });
+  }
+
+  await addJob(hotelSnapshotQueue, 'hotel-snapshot-event', payload, {
+    priority: 3,
+    jobId: `hotel.viewed-${hotelId}-${Date.now()}`,
+  });
 };
 
 /**
  * Emit snapshot.full_refresh event
  */
 const emitFullRefresh = async (hotelId) => {
-  await publishToQueue(
-    QUEUE,
-    {
-      eventType: 'snapshot.full_refresh',
-      hotelId,
-      timestamp: new Date().toISOString(),
-    },
-    8, // High priority for full refresh
-    hotelId
-  );
+  const payload = {
+    eventType: 'snapshot.full_refresh',
+    hotelId,
+    timestamp: new Date().toISOString(),
+  };
+
+  try {
+    await publishToQueue(QUEUE, payload, 8, hotelId);
+  } catch (error) {
+    logger.warn('Failed to publish to RabbitMQ (continuing with BullMQ)', {
+      error: error.message,
+    });
+  }
+
+  await addJob(hotelSnapshotQueue, 'hotel-snapshot-event', payload, {
+    priority: 8,
+    jobId: `snapshot.full_refresh-${hotelId}-${Date.now()}`,
+  });
 
   logger.info(`[Event] Emitted snapshot.full_refresh for hotel ${hotelId}`);
 };

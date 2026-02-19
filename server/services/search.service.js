@@ -11,6 +11,8 @@
 
 const elasticsearchHelper = require('../helpers/elasticsearch.helper');
 const searchRepository = require('../repositories/search.repository');
+const { searchLogQueue } = require('@queues/index');
+const { addJob } = require('@utils/bullmq.utils');
 const ApiError = require('../utils/ApiError');
 const logger = require('../config/logger.config');
 
@@ -503,29 +505,58 @@ class SearchService {
   }
 
   /**
-   * Save search log for analytics
+   * Save search log for analytics (async via BullMQ)
    *
    * @param {Object} searchData - Search data
    * @param {string} userId - User ID (optional)
-   * @returns {Promise<Object>} Created search log
+   * @param {Object} metadata - Additional metadata (resultCount, searchTimeMs, etc.)
+   * @returns {Promise<Object>} Job info
    */
-  async saveSearchLog(searchData, userId = null) {
+  async saveSearchLog(searchData, userId = null, metadata = {}) {
     try {
-      const searchLog = await searchRepository.createSearchLog({
-        location: searchData.city || searchData.country,
+      const job = await addJob(
+        searchLogQueue,
+        'save-search-log',
+        {
+          searchData: {
+            city: searchData.city,
+            country: searchData.country,
+            checkIn: searchData.checkIn,
+            checkOut: searchData.checkOut,
+            adults: searchData.adults,
+            children: searchData.children,
+            rooms: searchData.rooms,
+            nights: searchData.nights,
+          },
+          userId,
+          metadata: {
+            filters: {
+              minPrice: searchData.minPrice,
+              maxPrice: searchData.maxPrice,
+              minRating: searchData.minRating,
+              hotelClass: searchData.hotelClass,
+              amenities: searchData.amenities,
+              freeCancellation: searchData.freeCancellation,
+              sortBy: searchData.sortBy,
+            },
+            resultCount: metadata.resultCount || 0,
+            searchTimeMs: metadata.searchTimeMs || 0,
+          },
+        },
+        {
+          priority: 3,
+          jobId: `search-log-${userId || 'guest'}-${Date.now()}`,
+        }
+      );
+
+      logger.debug('Search log job queued', {
+        jobId: job.id,
         userId,
-        checkInDate: searchData.checkIn,
-        checkOutDate: searchData.checkOut,
-        adults: searchData.adults,
-        children: searchData.children,
-        rooms: searchData.rooms,
-        numberOfDays: searchData.nights,
       });
 
-      return searchLog;
+      return { jobId: job.id };
     } catch (error) {
-      logger.error('Failed to save search log:', error);
-      // Don't throw error - logging is not critical
+      logger.error('Failed to queue search log:', error);
       return null;
     }
   }

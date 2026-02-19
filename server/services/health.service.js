@@ -1,6 +1,5 @@
 const sequelize = require('@config/database.config');
 const redisClient = require('@config/redis.config');
-const rabbitMQConnection = require('@rabbitmq/connection');
 const { minioClient, bucketName } = require('@config/minio.config');
 const elasticsearchClient = require('@config/elasticsearch.config');
 const logger = require('@config/logger.config');
@@ -23,25 +22,17 @@ class HealthService {
       this.checkNodeProcess(),
       this.checkMySQLConnection(),
       this.checkRedisConnection(),
-      this.checkRabbitMQConnection(),
       this.checkMinIOConnection(),
       this.checkElasticsearchConnection(),
     ]);
 
-    const [
-      nodeCheck,
-      mysqlCheck,
-      redisCheck,
-      rabbitmqCheck,
-      minioCheck,
-      elasticsearchCheck,
-    ] = checks;
+    const [nodeCheck, mysqlCheck, redisCheck, minioCheck, elasticsearchCheck] =
+      checks;
 
     const services = {
       node: this._formatCheckResult(nodeCheck),
       mysql: this._formatCheckResult(mysqlCheck),
       redis: this._formatCheckResult(redisCheck),
-      rabbitmq: this._formatCheckResult(rabbitmqCheck),
       minio: this._formatCheckResult(minioCheck),
       elasticsearch: this._formatCheckResult(elasticsearchCheck),
     };
@@ -204,50 +195,6 @@ class HealthService {
       return {
         status: 'unhealthy',
         message: 'Redis connection failed',
-        error: error.message,
-        responseTime,
-      };
-    }
-  }
-
-  /**
-   * Check RabbitMQ connection health
-   * @returns {Promise<Object>}
-   */
-  async checkRabbitMQConnection() {
-    const startTime = Date.now();
-    try {
-      // Check if connection exists, if not try to connect
-      if (!rabbitMQConnection.isConnected()) {
-        logger.info('RabbitMQ not connected, attempting to connect...');
-        await rabbitMQConnection.connect();
-      }
-
-      // Try to get a channel (this verifies the connection is working)
-      const channel = await rabbitMQConnection.getChannel('health-check');
-
-      // Get connection info
-      const connection = rabbitMQConnection.connection;
-      const channelCount = rabbitMQConnection.channels.size;
-
-      const responseTime = Date.now() - startTime;
-
-      return {
-        status: 'healthy',
-        message: 'RabbitMQ connection is active',
-        details: {
-          url: process.env.RABBITMQ_URL?.replace(/\/\/.*@/, '//<credentials>@'), // Hide credentials
-          connected: true,
-          channels: channelCount,
-        },
-        responseTime,
-      };
-    } catch (error) {
-      logger.error('RabbitMQ health check failed:', error);
-      const responseTime = Date.now() - startTime;
-      return {
-        status: 'unhealthy',
-        message: 'RabbitMQ connection failed',
         error: error.message,
         responseTime,
       };

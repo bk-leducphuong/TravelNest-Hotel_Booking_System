@@ -17,7 +17,6 @@ const db = require('@models');
 const { initSocket } = require('@socket/index');
 const { initBucket } = require('@config/minio.config');
 const { setupSwagger } = require('@config/swagger.config');
-const { initPublisher } = require('@utils/rabbitmq.utils');
 
 /*********************** Middlewares ************************/
 const errorMiddleware = require('@middlewares/error.middleware.js');
@@ -36,16 +35,6 @@ const initServer = async () => {
 
   require('@models/index.js');
   logger.info('Database connected successfully');
-
-  // Initialize RabbitMQ publisher (non-blocking - will connect on first use if this fails)
-  try {
-    await initPublisher();
-  } catch (error) {
-    logger.warn(
-      'RabbitMQ publisher initialization failed (will retry on first use):',
-      error.message
-    );
-  }
 
   const app = express();
 
@@ -99,6 +88,34 @@ const initServer = async () => {
 
   // Swagger API documentation (before routes)
   setupSwagger(app);
+
+  // Bull Board Dashboard for BullMQ monitoring
+  const { createBullBoard } = require('@bull-board/api');
+  const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
+  const { ExpressAdapter } = require('@bull-board/express');
+  const {
+    imageProcessingQueue,
+    hotelSnapshotQueue,
+    searchLogQueue,
+  } = require('@queues/index');
+
+  const serverAdapter = new ExpressAdapter();
+  serverAdapter.setBasePath('/admin/queues');
+
+  createBullBoard({
+    queues: [
+      new BullMQAdapter(imageProcessingQueue),
+      new BullMQAdapter(hotelSnapshotQueue),
+      new BullMQAdapter(searchLogQueue),
+    ],
+    serverAdapter,
+  });
+
+  // TODO: Add authentication middleware for production
+  // app.use('/admin/queues', authMiddleware.requireAdmin, serverAdapter.getRouter());
+  app.use('/admin/queues', serverAdapter.getRouter());
+
+  logger.info('Bull Board dashboard available at /admin/queues');
 
   // API v1 routes
   app.use('/api/v1', v1Routes);

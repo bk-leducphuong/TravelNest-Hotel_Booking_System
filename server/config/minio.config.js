@@ -6,13 +6,15 @@ require('dotenv').config({
       : '.env.development',
 });
 
-const minioClient = new Minio.Client({
+const minioConfig = {
   endPoint: process.env.MINIO_ENDPOINT || 'localhost',
   port: Number(process.env.MINIO_PORT) || 9000,
   useSSL: process.env.MINIO_USE_SSL === 'true',
   accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',
   secretKey: process.env.MINIO_SECRET_KEY || 'minioadmin123',
-});
+};
+
+const minioClient = new Minio.Client(minioConfig);
 
 const bucketName = process.env.MINIO_BUCKET || 'uploads';
 
@@ -43,4 +45,10 @@ function getObjectUrl(objectName) {
   return `${base.replace(/\/+$/, '')}/${bucketName}/${objectName.replace(/^\/+/, '')}`;
 }
 
-module.exports = { minioClient, initBucket, bucketName, getObjectUrl };
+module.exports = {
+  minioClient,
+  initBucket,
+  bucketName,
+  getObjectUrl,
+  minioConfig,
+};

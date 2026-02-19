@@ -59,45 +59,6 @@ services:
     networks:
       - travelnest-net
 
-  rabbitmq:
-    image: rabbitmq:3.13-management-alpine
-    container_name: travelnest-rabbitmq
-    restart: unless-stopped
-    ports:
-      - '5672:5672' # AMQP port
-      - '15672:15672' # Management UI
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
-      RABBITMQ_DEFAULT_VHOST: /
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - travelnest-net
-    healthcheck:
-      test: ['CMD-SHELL', 'rabbitmq-diagnostics -q ping']
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  # rabbitmq-consumer:
-  #   build:
-  #     context: ..
-  #     dockerfile: infra/Dockerfile.dev
-  #     args:
-  #       ENV_FILE: .env.development
-  #   container_name: travelnest-rabbitmq-consumer
-  #   restart: unless-stopped
-  #   depends_on:
-  #     rabbitmq:
-  #       condition: service_healthy
-  #   command: ['node', 'rabbitmq/worker.js']
-  #   environment:
-  #     NODE_ENV: development
-  #     RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
-  #   networks:
-  #     - travelnest-net
-
 networks:
   travelnest-net:
     driver: bridge

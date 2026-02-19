@@ -54,11 +54,16 @@ const searchHotels = asyncHandler(async (req, res) => {
 
   const result = await searchService.searchHotels(searchParams);
 
-  // Save search log asynchronously (don't wait)
+  // Save search log asynchronously via BullMQ (don't wait)
   const userId = req.session?.user?.user_id || null;
-  searchService.saveSearchLog(searchParams, userId).catch((err) => {
-    logger.error('Failed to save search log:', err);
-  });
+  searchService
+    .saveSearchLog(searchParams, userId, {
+      resultCount: result.data?.pagination?.total || 0,
+      searchTimeMs: result.data?.search_metadata?.search_time_ms || 0,
+    })
+    .catch((err) => {
+      logger.error('Failed to queue search log:', err);
+    });
 
   res.status(200).json(result);
 });
@@ -110,13 +115,17 @@ const saveSearchInformation = asyncHandler(async (req, res) => {
   const userId = req.session?.user?.user_id || null;
   const searchData = req.body;
 
-  const searchLog = await searchService.saveSearchLog(searchData, userId);
+  const result = await searchService.saveSearchLog(
+    searchData,
+    userId,
+    req.body.metadata || {}
+  );
 
   res.status(201).json({
     success: true,
     data: {
-      message: 'Search log recorded successfully',
-      searchLog,
+      message: 'Search log queued for processing',
+      jobId: result?.jobId,
     },
   });
 });

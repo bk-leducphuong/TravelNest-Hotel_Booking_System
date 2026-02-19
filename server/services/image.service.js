@@ -1,5 +1,6 @@
 const imageRepository = require('@repositories/image.repository');
-const { publishToQueue } = require('@utils/rabbitmq.utils');
+const { imageProcessingQueue } = require('@queues/index');
+const { addJob } = require('@utils/bullmq.utils');
 const {
   getBucketName,
   uploadObject,
@@ -71,9 +72,9 @@ class ImageService {
         await imageRepository.setPrimaryImage(entityType, entityId, imageId);
       }
 
-      // Publish to processing queue for thumbnail/variant generation
-      await publishToQueue(
-        'image.processing',
+      await addJob(
+        imageProcessingQueue,
+        'process-image',
         {
           imageId,
           bucket,
@@ -82,7 +83,10 @@ class ImageService {
           entityId,
           mimeType: file.mimetype,
         },
-        isPrimary ? 10 : 5 // Higher priority for primary images
+        {
+          priority: isPrimary ? 10 : 5,
+          jobId: imageId,
+        }
       );
 
       logger.info(`Image uploaded successfully: ${imageId}`, {
