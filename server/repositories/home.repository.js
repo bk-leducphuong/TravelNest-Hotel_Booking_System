@@ -1,12 +1,12 @@
 const {
   Hotels,
   ViewedHotels,
-  SearchLogs,
   Reviews,
   Bookings,
 } = require('../models/index.js');
 const { Op } = require('sequelize');
 const { Sequelize } = require('sequelize');
+const searchLogClickHouseRepository = require('./clickhouse/search_log.repository');
 
 /**
  * Home Repository - Contains all database operations for home page
@@ -97,48 +97,27 @@ class HomeRepository {
   }
 
   /**
-   * Find search logs by user ID
+   * Find search logs by user ID (from ClickHouse)
    */
   async findSearchLogsByUserId(userId, limit = 10) {
-    return await SearchLogs.findAll({
-      where: { user_id: userId },
-      attributes: [
-        'search_id',
-        'location',
-        'check_in_date',
-        'check_out_date',
-        'adults',
-        'children',
-        'rooms',
-        'search_time',
-      ],
-      order: [['search_time', 'DESC']],
-      limit,
-    });
+    return await searchLogClickHouseRepository.findSearchLogsByUserId(
+      userId,
+      limit
+    );
   }
 
   /**
-   * Delete search log by ID
+   * Delete search log by ID (from ClickHouse)
    */
   async deleteSearchLogById(searchId) {
-    return await SearchLogs.destroy({
-      where: { search_id: searchId },
-    });
+    return await searchLogClickHouseRepository.deleteSearchLogById(searchId);
   }
 
   /**
-   * Find popular places (most searched locations)
+   * Find popular places (from ClickHouse materialized view)
    */
   async findPopularPlaces(limit = 5) {
-    return await SearchLogs.findAll({
-      attributes: [
-        'location',
-        [Sequelize.fn('COUNT', Sequelize.col('search_id')), 'search_count'],
-      ],
-      group: ['location'],
-      order: [[Sequelize.fn('COUNT', Sequelize.col('search_id')), 'DESC']],
-      limit,
-    });
+    return await searchLogClickHouseRepository.findPopularPlaces(limit);
   }
 
   /**
@@ -201,9 +180,7 @@ class HomeRepository {
         'image_urls',
         'hotel_class',
       ],
-      having: Sequelize.literal(
-        `COUNT(reviews.review_id) >= ${minReviews}`
-      ),
+      having: Sequelize.literal(`COUNT(reviews.review_id) >= ${minReviews}`),
       order: [
         ['overall_rating', 'DESC'],
         [Sequelize.literal('review_count'), 'DESC'],
@@ -245,10 +222,7 @@ class HomeRepository {
       attributes: [
         'city',
         [Sequelize.fn('COUNT', Sequelize.col('hotel_id')), 'hotel_count'],
-        [
-          Sequelize.fn('AVG', Sequelize.col('overall_rating')),
-          'avg_rating',
-        ],
+        [Sequelize.fn('AVG', Sequelize.col('overall_rating')), 'avg_rating'],
       ],
       group: ['city'],
       having: Sequelize.literal(`COUNT(hotel_id) >= ${minHotels}`),
@@ -277,10 +251,7 @@ class HomeRepository {
           Sequelize.fn('COUNT', Sequelize.col('viewed_hotels.view_id')),
           'view_count',
         ],
-        [
-          Sequelize.fn('COUNT', Sequelize.col('bookings.id')),
-          'booking_count',
-        ],
+        [Sequelize.fn('COUNT', Sequelize.col('bookings.id')), 'booking_count'],
       ],
       include: [
         {
@@ -313,12 +284,7 @@ class HomeRepository {
         'image_urls',
         'hotel_class',
       ],
-      order: [
-        [
-          Sequelize.literal('(view_count + booking_count * 2)'),
-          'DESC',
-        ],
-      ],
+      order: [[Sequelize.literal('(view_count + booking_count * 2)'), 'DESC']],
       limit,
     });
   }

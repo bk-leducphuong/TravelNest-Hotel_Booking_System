@@ -2,20 +2,23 @@ require('module-alias/register');
 const { Worker } = require('bullmq');
 const config = require('@config/bullmq.config');
 const logger = require('@config/logger.config');
-const searchRepository = require('@repositories/search.repository');
+const searchLogClickHouseRepository = require('@repositories/clickhouse/search_log.repository');
 
 const queueName = 'searchLog';
 
 const processSearchLogJob = async (job) => {
   const { searchData, userId, metadata } = job.data;
 
-  logger.info(`[Worker] Processing search log`, {
-    city: searchData.city,
-    userId,
-  });
+  logger.info(
+    {
+      city: searchData.city,
+      userId,
+    },
+    `[Worker] Processing search log`
+  );
 
   try {
-    const searchLog = await searchRepository.createSearchLog({
+    const searchLog = await searchLogClickHouseRepository.createSearchLog({
       location: searchData.city || searchData.country,
       userId,
       checkInDate: searchData.checkIn,
@@ -25,14 +28,26 @@ const processSearchLogJob = async (job) => {
       rooms: searchData.rooms || 1,
     });
 
-    logger.info(`Search log created`, {
-      searchLogId: searchLog.id,
-      userId,
-    });
+    logger.info(
+      {
+        searchLogId: searchLog.search_id,
+        userId,
+      },
+      `Search log created in ClickHouse`
+    );
 
-    return { success: true, searchLogId: searchLog.id };
+    return { success: true, searchLogId: searchLog.search_id };
   } catch (error) {
-    logger.error(`Failed to save search log:`, error);
+    logger.error(
+      {
+        error: error.message,
+        errorCode: error.code,
+        errorType: error.type,
+        stack: error.stack,
+        searchData,
+      },
+      `Failed to save search log: ${error.message}`
+    );
     throw error;
   }
 };
@@ -43,16 +58,28 @@ const searchLogWorker = new Worker(queueName, processSearchLogJob, {
 });
 
 searchLogWorker.on('completed', (job) => {
-  logger.info(`Search log job completed: ${job.id}`, {
-    duration: Date.now() - job.timestamp,
-  });
+  logger.info(
+    {
+      jobId: job.id,
+      duration: Date.now() - job.timestamp,
+    },
+    `Search log job completed: ${job.id}`
+  );
 });
 
 searchLogWorker.on('failed', (job, err) => {
-  logger.error(`Search log job failed: ${job?.id}`, {
-    error: err.message,
-    attemptsMade: job?.attemptsMade,
-  });
+  logger.error(
+    {
+      jobId: job?.id,
+      error: err.message,
+      errorCode: err.code,
+      errorType: err.type,
+      stack: err.stack,
+      attemptsMade: job?.attemptsMade,
+      jobData: job?.data,
+    },
+    `Search log job failed: ${job?.id} - ${err.message}`
+  );
 });
 
 searchLogWorker.on('error', (err) => {
@@ -60,7 +87,7 @@ searchLogWorker.on('error', (err) => {
 });
 
 searchLogWorker.on('active', (job) => {
-  logger.debug(`Search log job started: ${job.id}`);
+  logger.debug({ jobId: job.id }, `Search log job started: ${job.id}`);
 });
 
 module.exports = searchLogWorker;

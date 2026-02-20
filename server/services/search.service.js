@@ -526,7 +526,6 @@ class SearchService {
             adults: searchData.adults,
             children: searchData.children,
             rooms: searchData.rooms,
-            nights: searchData.nights,
           },
           userId,
           metadata: {

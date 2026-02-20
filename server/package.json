@@ -50,7 +50,8 @@
     "es:setup-logs:create": "cross-env NODE_ENV=development node infra/elasticsearch/setup-logs-index.js --force --create-index",
     "es:seed-hotels": "cross-env NODE_ENV=development node infra/elasticsearch/seeders/hotels_index.seed.js",
     "es:seed-hotels:clear": "cross-env NODE_ENV=development node infra/elasticsearch/seeders/hotels_index.seed.js --clear",
-    "es:seed-hotels:active": "cross-env NODE_ENV=development node infra/elasticsearch/seeders/hotels_index.seed.js --status=active"
+    "es:seed-hotels:active": "cross-env NODE_ENV=development node infra/elasticsearch/seeders/hotels_index.seed.js --status=active",
+    "clickhouse:init": "docker exec -i travelnest-clickhouse clickhouse-client --multiquery < infra/clickhouse/init/01-create-search-logs.sql"
   },
   "_moduleAliases": {
     "@controllers": "controllers",
@@ -79,6 +80,7 @@
     "@bull-board/api": "^5.23.0",
     "@bull-board/express": "^5.23.0",
     "@bull-board/ui": "^5.23.0",
+    "@clickhouse/client": "^1.17.0",
     "@elastic/elasticsearch": "^8.11.0",
     "@infobip-api/sdk": "^0.3.2",
     "axios": "^1.7.7",

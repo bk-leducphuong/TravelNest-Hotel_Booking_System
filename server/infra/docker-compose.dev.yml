@@ -55,9 +55,34 @@ services:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     volumes:
-      - ./minor-data:/data
+      - ./minio-data:/data
     networks:
       - travelnest-net
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3-alpine
+    container_name: travelnest-clickhouse
+    restart: unless-stopped
+    ports:
+      - '8123:8123' # HTTP
+      - '9009:9000' # Native (optional)
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DATABASE:-travelnest}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    networks:
+      - travelnest-net
+    healthcheck:
+      test: ['CMD', 'clickhouse-client', '--query', 'SELECT 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s # Gives the container time to initialize before health checks begin
 
 networks:
   travelnest-net:
@@ -67,3 +92,4 @@ volumes:
   mysql_data:
   redis_data:
   rabbitmq_data:
+  clickhouse_data:

@@ -2,6 +2,7 @@ const sequelize = require('@config/database.config');
 const redisClient = require('@config/redis.config');
 const { minioClient, bucketName } = require('@config/minio.config');
 const elasticsearchClient = require('@config/elasticsearch.config');
+const clickhouseClient = require('@config/clickhouse.config');
 const logger = require('@config/logger.config');
 
 /**
@@ -24,10 +25,17 @@ class HealthService {
       this.checkRedisConnection(),
       this.checkMinIOConnection(),
       this.checkElasticsearchConnection(),
+      this.checkClickHouseConnection(),
     ]);
 
-    const [nodeCheck, mysqlCheck, redisCheck, minioCheck, elasticsearchCheck] =
-      checks;
+    const [
+      nodeCheck,
+      mysqlCheck,
+      redisCheck,
+      minioCheck,
+      elasticsearchCheck,
+      clickhouseCheck,
+    ] = checks;
 
     const services = {
       node: this._formatCheckResult(nodeCheck),
@@ -35,6 +43,7 @@ class HealthService {
       redis: this._formatCheckResult(redisCheck),
       minio: this._formatCheckResult(minioCheck),
       elasticsearch: this._formatCheckResult(elasticsearchCheck),
+      clickhouse: this._formatCheckResult(clickhouseCheck),
     };
 
     // Determine overall status
@@ -304,6 +313,42 @@ class HealthService {
       return {
         status: 'unhealthy',
         message: 'Elasticsearch connection failed',
+        error: error.message,
+        responseTime,
+      };
+    }
+  }
+
+  /**
+   * Check ClickHouse connection health
+   * @returns {Promise<Object>}
+   */
+  async checkClickHouseConnection() {
+    const startTime = Date.now();
+    try {
+      const isHealthy = await clickhouseClient.ping();
+
+      if (!isHealthy) {
+        throw new Error('ClickHouse ping failed');
+      }
+
+      const responseTime = Date.now() - startTime;
+
+      return {
+        status: 'healthy',
+        message: 'ClickHouse connection is active',
+        details: {
+          host: process.env.CLICKHOUSE_HOST || 'http://localhost:8123',
+          database: process.env.CLICKHOUSE_DATABASE || 'travelnest',
+        },
+        responseTime,
+      };
+    } catch (error) {
+      logger.error('ClickHouse health check failed:', error);
+      const responseTime = Date.now() - startTime;
+      return {
+        status: 'unhealthy',
+        message: 'ClickHouse connection failed',
         error: error.message,
         responseTime,
       };
