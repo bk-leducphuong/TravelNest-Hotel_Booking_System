@@ -29,6 +29,7 @@
     "seed:room_amenity": "cross-env NODE_ENV=development node infra/database/seeders/room_amenity.seed.js",
     "seed:permission": "cross-env NODE_ENV=development node infra/database/seeders/permission.seed.js",
     "seed:hotel_search_snapshot": "cross-env NODE_ENV=development node infra/database/seeders/hotel_search_snapshot.seed.js --rebuild",
+    "seed:images": "cross-env NODE_ENV=development node infra/database/seeders/images.seed.js",
     "seed:review": "cross-env NODE_ENV=development node infra/database/seeders/review.seed.js",
     "seed:room": "cross-env NODE_ENV=development node infra/database/seeders/room.seed.js",
     "seed:booking": "cross-env NODE_ENV=development node infra/database/seeders/booking.seed.js",

@@ -1,12 +1,9 @@
 const path = require('path');
 require('dotenv').config({
-  path: path.join(
-    __dirname,
-    '../..',
-    process.env.NODE_ENV === 'production'
-      ? '.env.production'
-      : '.env.development'
-  ),
+  path:
+    process.env.NODE_ENV === 'development'
+      ? '.env.development'
+      : '.env.production',
 });
 
 const sharp = require('sharp');
@@ -34,18 +31,22 @@ async function resizeImage(imageBuffer, config, format) {
 
 function initDatabase() {
   const Sequelize = require('sequelize');
-  const dbConfig = require('../../config/database.config');
 
   const sequelize = new Sequelize(
-    dbConfig.database,
-    dbConfig.username,
-    dbConfig.password,
+    process.env.DB_NAME || 'travelnest',
+    process.env.DB_USER || 'user',
+    process.env.DB_PASSWORD || '123',
     {
-      host: dbConfig.host,
-      port: dbConfig.port,
-      dialect: dbConfig.dialect,
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '3306', 10),
+      dialect: 'mysql',
       logging: false,
-      pool: dbConfig.pool,
+      pool: {
+        max: 5,
+        min: 0,
+        acquire: 30000,
+        idle: 10000,
+      },
     }
   );
 

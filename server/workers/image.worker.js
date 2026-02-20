@@ -17,37 +17,49 @@ const imageWorker = new Worker(
 );
 
 imageWorker.on('completed', (job) => {
-  logger.info(`Image job completed: ${job.id}`, {
-    imageId: job.data.imageId,
-    duration: Date.now() - job.timestamp,
-    returnValue: job.returnvalue,
-  });
+  logger.info(
+    {
+      imageId: job.data.imageId,
+      duration: Date.now() - job.timestamp,
+      returnValue: job.returnvalue,
+    },
+    `Image job completed: ${job.id}`
+  );
 });
 
 imageWorker.on('failed', (job, err) => {
-  logger.error(`Image job failed: ${job?.id}`, {
-    imageId: job?.data?.imageId,
-    error: err.message,
-    stack: err.stack,
-    attemptsMade: job?.attemptsMade,
-  });
+  logger.error(
+    {
+      imageId: job?.data?.imageId,
+      error: err.message,
+      stack: err.stack,
+      attemptsMade: job?.attemptsMade,
+    },
+    `Image job failed: ${job?.id}`
+  );
 });
 
 imageWorker.on('progress', (job, progress) => {
-  logger.debug(`Image job progress: ${job.id}`, {
-    imageId: job.data.imageId,
-    progress: `${progress}%`,
-  });
+  logger.debug(
+    {
+      imageId: job.data.imageId,
+      progress: `${progress}%`,
+    },
+    `Image job progress: ${job.id}`
+  );
 });
 
 imageWorker.on('error', (err) => {
-  logger.error('Image worker error:', err);
+  logger.error({ error: err.message, stack: err.stack }, 'Image worker error:');
 });
 
 imageWorker.on('active', (job) => {
-  logger.info(`Image job started: ${job.id}`, {
-    imageId: job.data.imageId,
-  });
+  logger.info(
+    {
+      imageId: job.data.imageId,
+    },
+    `Image job started: ${job.id}`
+  );
 });
 
 module.exports = imageWorker;
