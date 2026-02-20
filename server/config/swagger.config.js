@@ -71,6 +71,7 @@ const options = {
       { name: 'Bookings', description: 'Booking operations' },
       { name: 'Reviews', description: 'Review operations' },
       { name: 'Search', description: 'Search operations' },
+      { name: 'Images', description: 'Image upload and management' },
     ],
   },
   apis: ['./routes/v1/*.js', './routes/v1/**/*.js'],
