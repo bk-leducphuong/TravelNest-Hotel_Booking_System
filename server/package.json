@@ -52,7 +52,14 @@
     "es:seed-hotels": "cross-env NODE_ENV=development node infra/elasticsearch/seeders/hotels_index.seed.js",
     "es:seed-hotels:clear": "cross-env NODE_ENV=development node infra/elasticsearch/seeders/hotels_index.seed.js --clear",
     "es:seed-hotels:active": "cross-env NODE_ENV=development node infra/elasticsearch/seeders/hotels_index.seed.js --status=active",
-    "clickhouse:init": "docker exec -i travelnest-clickhouse clickhouse-client --multiquery < infra/clickhouse/init/01-create-search-logs.sql"
+    "clickhouse:init": "docker exec -i travelnest-clickhouse clickhouse-client --multiquery < infra/clickhouse/init/01-create-search-logs.sql",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest __tests__/unit",
+    "test:integration": "jest __tests__/integration",
+    "test:verbose": "jest --verbose",
+    "test:ci": "jest --ci --coverage --maxWorkers=2"
   },
   "_moduleAliases": {
     "@controllers": "controllers",
@@ -117,8 +124,12 @@
     "uuidv7": "^1.1.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.0",
     "@eslint/js": "^9.25.1",
     "@faker-js/faker": "^10.2.0",
+    "@types/jest": "^29.5.14",
+    "babel-jest": "^29.7.0",
     "cross-env": "^7.0.3",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
@@ -130,8 +141,12 @@
     "eslint-plugin-unused-imports": "^4.3.0",
     "eslint-plugin-vue": "^10.0.0",
     "globals": "^16.5.0",
+    "jest": "^30.2.0",
+    "jest-mock-extended": "^4.0.0",
     "nodemon": "^3.1.7",
     "prettier": "^3.7.4",
-    "sequelize-cli": "^6.6.5"
+    "sequelize-cli": "^6.6.5",
+    "sinon": "^21.0.1",
+    "supertest": "^7.2.2"
   }
 }
