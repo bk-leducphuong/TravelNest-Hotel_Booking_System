@@ -39,7 +39,7 @@ class ElasticsearchHelper {
       bool: {
         filter: [
           // Always filter by active status
-          { term: { 'status.keyword': 'active' } },
+          { term: { status: 'active' } },
           { term: { is_available: true } },
           { term: { has_available_rooms: true } },
         ],
@@ -64,7 +64,7 @@ class ElasticsearchHelper {
 
     if (country) {
       query.bool.filter.push({
-        term: { 'country.keyword': country },
+        term: { country: country },
       });
     }
 
@@ -209,17 +209,12 @@ class ElasticsearchHelper {
    */
   async search(query) {
     try {
-      // Debug: Log the query being sent to ES
-      logger.debug('Elasticsearch query:', JSON.stringify(query, null, 2));
-
       const response = await elasticsearchClient.search({
         index: this.indexName,
         body: query,
       });
 
       const hits = response.hits.hits;
-
-      logger.debug(`Elasticsearch returned ${hits.length} results`);
 
       return hits.map((hit) => {
         const source = hit._source;
@@ -240,7 +235,7 @@ class ElasticsearchHelper {
         return result;
       });
     } catch (error) {
-      logger.error('Elasticsearch search error:', error);
+      logger.error(error, 'Elasticsearch search error:');
       throw error;
     }
   }

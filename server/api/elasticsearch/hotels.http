@@ -113,8 +113,8 @@ Authorization: Basic {{credentials}}
   "query": {
     "bool": {
       "should": [
-        {"prefix": {"hotel_id.keyword": "test-"}},
-        {"prefix": {"hotel_id.keyword": "bulk-"}}
+        {"prefix": {"hotel_id": "test-"}},
+        {"prefix": {"hotel_id": "bulk-"}}
       ]
     }
   }
@@ -133,10 +133,10 @@ Authorization: Basic {{credentials}}
   "query": {
     "bool": {
       "filter": [
-        { "term": { "status.keyword": "active" } },
+        { "term": { "status": "active" } },
         { "term": { "is_available": true } },
         { "term": { "has_available_rooms": true } },
-        { "term": { "city.keyword": "Irving" } }
+        { "match": { "city": "Muncie" } }
       ],
       "must": [],
       "should": []
@@ -164,7 +164,7 @@ Authorization: Basic {{credentials}}
   "size": 10,
   "query": {
     "match": {
-      "city": "Irving"
+      "city": "Muncie"
     }
   },
   "highlight": {
@@ -239,7 +239,7 @@ Authorization: Basic {{credentials}}
   "size": 20,
   "query": {
     "term": {
-      "country.keyword": "United States"
+      "country": "United States"
     }
   }
 }
@@ -402,7 +402,7 @@ Authorization: Basic {{credentials}}
   "query": {
     "bool": {
       "filter": [
-        { "term": { "status.keyword": "active" } }
+        { "term": { "status": "active" } }
       ]
     }
   }
@@ -474,7 +474,7 @@ Authorization: Basic {{credentials}}
         { "match": { "city": "New York" } }
       ],
       "filter": [
-        { "term": { "status.keyword": "active" } },
+        { "term": { "status": "active" } },
         { "term": { "is_available": true } },
         { "range": { "min_price": { "gte": 100, "lte": 500 } } },
         { "range": { "avg_rating": { "gte": 4.0 } } },
@@ -512,7 +512,7 @@ Authorization: Basic {{credentials}}
         },
         { "range": { "min_price": { "lte": 300 } } },
         { "range": { "avg_rating": { "gte": 3.5 } } },
-        { "term": { "status.keyword": "active" } }
+        { "term": { "status": "active" } }
       ]
     }
   },
@@ -606,7 +606,7 @@ Authorization: Basic {{credentials}}
         }
       ],
       "filter": [
-        { "term": { "status.keyword": "active" } }
+        { "term": { "status": "active" } }
       ]
     }
   }
@@ -644,7 +644,7 @@ Authorization: Basic {{credentials}}
   "aggs": {
     "hotels_by_country": {
       "terms": {
-        "field": "country.keyword",
+        "field": "country",
         "size": 50,
         "order": { "_count": "desc" }
       }
@@ -768,7 +768,7 @@ Authorization: Basic {{credentials}}
   "query": {
     "bool": {
       "filter": [
-        { "term": { "status.keyword": "active" } },
+        { "term": { "status": "active" } },
         { "range": { "review_count": { "gte": 10 } } }
       ]
     }
@@ -789,7 +789,7 @@ Authorization: Basic {{credentials}}
   "query": {
     "bool": {
       "filter": [
-        { "term": { "status.keyword": "active" } }
+        { "term": { "status": "active" } }
       ]
     }
   },
@@ -808,7 +808,7 @@ Authorization: Basic {{credentials}}
   "query": {
     "bool": {
       "filter": [
-        { "term": { "status.keyword": "active" } }
+        { "term": { "status": "active" } }
       ]
     }
   },
@@ -853,7 +853,7 @@ Authorization: Basic {{credentials}}
   "aggs": {
     "by_status": {
       "terms": {
-        "field": "status.keyword"
+        "field": "status"
       }
     }
   }
@@ -994,7 +994,7 @@ Authorization: Basic {{credentials}}
   "query": {
     "bool": {
       "filter": [
-        { "term": { "status.keyword": "active" } },
+        { "term": { "status": "active" } },
         { "range": { "avg_rating": { "gte": 4.0 } } }
       ]
     }
@@ -1013,7 +1013,7 @@ Authorization: Basic {{credentials}}
   },
   "query": {
     "term": {
-      "hotel_id.keyword": "019c4592-457b-7872-9e2f-2a50ff6b9bbf"
+      "hotel_id": "019c4592-457b-7872-9e2f-2a50ff6b9bbf"
     }
   }
 }

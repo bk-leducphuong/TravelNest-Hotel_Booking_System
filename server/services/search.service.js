@@ -39,13 +39,6 @@ class SearchService {
         totalGuests,
       };
 
-      logger.info('Hotel search initiated', {
-        city: validated.city,
-        checkIn: validated.checkIn,
-        checkOut: validated.checkOut,
-        guests: validated.totalGuests,
-      });
-
       // Phase 1: Elasticsearch - Find candidate hotels
       const candidateHotels = await this._phase1_findCandidates(validated);
 
@@ -91,15 +84,18 @@ class SearchService {
         startTime
       );
 
-      logger.info('Hotel search completed', {
-        candidates: candidateHotels.length,
-        available: rankedHotels.length,
-        duration: Date.now() - startTime,
-      });
+      logger.info(
+        {
+          candidates: candidateHotels.length,
+          available: rankedHotels.length,
+          duration: Date.now() - startTime,
+        },
+        'Hotel search completed'
+      );
 
       return response;
     } catch (error) {
-      logger.error('Hotel search error:', error);
+      logger.error(error, 'Hotel search error:');
       throw error;
     }
   }
@@ -127,7 +123,7 @@ class SearchService {
 
       return results;
     } catch (error) {
-      logger.error('Phase 1 error, falling back to database:', error);
+      logger.error(error, 'Phase 1 error, falling back to database');
       // Fallback to database search
       return await searchRepository.searchHotelsFromDatabase(params);
     }
@@ -548,14 +544,9 @@ class SearchService {
         }
       );
 
-      logger.debug('Search log job queued', {
-        jobId: job.id,
-        userId,
-      });
-
       return { jobId: job.id };
     } catch (error) {
-      logger.error('Failed to queue search log:', error);
+      logger.error(error, 'Failed to queue search log:');
       return null;
     }
   }
