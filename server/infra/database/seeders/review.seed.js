@@ -23,112 +23,172 @@ require('dotenv').config({
       : '.env.production',
 });
 const { faker } = require('@faker-js/faker');
-const db = require('../models');
-const sequelize = require('../config/database.config');
-const { reviews, review_criterias, hotels, users, bookings } = db;
+const db = require('../../../models');
+const sequelize = require('../../../config/database.config');
+const { REVIEW_STATUSES } = require('../../../constants/reviews');
+const { reviews, hotels, users, bookings, user_roles, roles } = db;
 
-// Common review criteria names
-const REVIEW_CRITERIA_NAMES = [
-  'Cleanliness',
-  'Staff',
-  'Facilities',
-  'Comfort',
-  'Location',
-  'Value for money',
-  'Service',
-  'Amenities',
-  'Breakfast',
-  'WiFi',
-  'Room Quality',
-  'Check-in Experience',
-];
-
-// Review comment templates based on rating
-const REVIEW_COMMENTS = {
-  5: [
-    'Excellent hotel with outstanding service!',
-    'Perfect stay, highly recommend!',
-    'Amazing experience, will definitely come back!',
-    'Outstanding facilities and friendly staff.',
-    'Best hotel I have ever stayed at!',
-    'Exceptional service and beautiful rooms.',
-    'Absolutely fantastic! Everything was perfect.',
-    'Wonderful experience from check-in to check-out.',
-    'Top-notch service and amenities.',
-    'Exceeded all expectations!',
+// Review title templates based on rating (1-10 scale)
+const REVIEW_TITLES = {
+  9: [
+    'Outstanding Experience!',
+    'Exceeded All Expectations',
+    'Simply Perfect',
+    'Absolutely Amazing',
+    'Best Hotel Ever',
   ],
-  4: [
-    'Great hotel with good service.',
-    'Very nice stay, enjoyed it.',
-    'Good value for money.',
-    'Comfortable rooms and helpful staff.',
-    'Nice location and clean facilities.',
-    'Pleasant experience overall.',
-    'Good hotel with minor improvements needed.',
-    'Satisfactory stay with good amenities.',
-    'Enjoyed my time here.',
-    'Decent hotel, would stay again.',
+  7: [
+    'Great Stay',
+    'Very Good Hotel',
+    'Highly Recommend',
+    'Wonderful Experience',
+    'Really Enjoyed It',
+  ],
+  5: [
+    'Decent Stay',
+    'Average Experience',
+    'It Was Okay',
+    'Nothing Special',
+    'Mixed Feelings',
   ],
   3: [
-    'Average hotel, nothing special.',
-    'Okay stay, but could be better.',
-    'Room was fine but service was slow.',
-    'Decent but expected more.',
-    'Acceptable but not exceptional.',
-    'Some good points but also some issues.',
-    'Average experience overall.',
-    'Could use some improvements.',
-    'Not bad but not great either.',
-    'Mediocre stay.',
-  ],
-  2: [
-    'Disappointing experience.',
-    'Not what I expected.',
-    'Several issues during my stay.',
-    'Poor service and facilities.',
-    'Would not recommend.',
-    'Many things could be improved.',
-    'Below average hotel.',
-    'Had some problems.',
-    'Not satisfied with the stay.',
-    'Needs significant improvements.',
+    'Disappointing',
+    'Below Expectations',
+    'Not Great',
+    'Had Some Issues',
+    'Could Be Better',
   ],
   1: [
-    'Terrible experience, very disappointed.',
-    'Worst hotel stay ever.',
-    'Multiple issues, very poor service.',
-    'Would never stay here again.',
-    'Completely unacceptable.',
-    'Many problems, avoid this hotel.',
-    'Very poor quality.',
-    'Extremely disappointed.',
-    'Awful experience.',
-    'Not recommended at all.',
+    'Terrible Experience',
+    'Very Disappointing',
+    'Would Not Recommend',
+    'Awful Stay',
+    'Complete Disaster',
+  ],
+};
+
+// Review comment templates based on rating (1-10 scale)
+const REVIEW_COMMENTS = {
+  10: [
+    'Excellent hotel with outstanding service! Everything was absolutely perfect from start to finish.',
+    'Perfect stay, highly recommend! The attention to detail was exceptional.',
+    'Amazing experience, will definitely come back! This hotel sets the gold standard.',
+    'Outstanding facilities and incredibly friendly staff. Best hotel experience ever.',
+    'Best hotel I have ever stayed at! Worth every penny and more.',
+    'Exceptional service and beautiful rooms. Cannot fault anything.',
+    'Absolutely fantastic! Everything was perfect and beyond expectations.',
+    'Wonderful experience from check-in to check-out. Staff went above and beyond.',
+    'Top-notch service and amenities. This place is a gem!',
+    'Exceeded all expectations! Would give more stars if I could.',
+  ],
+  8: [
+    'Great hotel with good service. Really enjoyed my stay here.',
+    'Very nice stay, enjoyed it thoroughly. Would definitely return.',
+    'Good value for money. Everything was clean and well-maintained.',
+    'Comfortable rooms and helpful staff. Had a pleasant experience.',
+    'Nice location and clean facilities. Staff were friendly and accommodating.',
+    'Pleasant experience overall. Few minor issues but nothing major.',
+    'Good hotel with some room for improvement. Still recommend it.',
+    'Satisfactory stay with good amenities. Met most of my expectations.',
+    'Enjoyed my time here. Good quality for the price.',
+    'Decent hotel, would stay again. Solid choice in the area.',
+  ],
+  6: [
+    'Average hotel, nothing special but adequate for the price.',
+    'Okay stay, but could be better. Some aspects were good, others not so much.',
+    'Room was fine but service was slow at times.',
+    'Decent but expected more based on the reviews and photos.',
+    'Acceptable but not exceptional. Had both good and bad moments.',
+    'Some good points but also some issues that need addressing.',
+    'Average experience overall. Not bad but not great either.',
+    'Could use some improvements. Basic amenities were okay.',
+    'Not bad but not great either. Mediocre in most aspects.',
+    'Mediocre stay. Just an average hotel experience.',
+  ],
+  4: [
+    'Disappointing experience. Several things did not meet expectations.',
+    'Not what I expected based on the listing. Quite underwhelming.',
+    'Several issues during my stay. Management needs to address problems.',
+    'Poor service and facilities need updating. Below average.',
+    'Would not recommend. Too many problems for the price.',
+    'Many things could be improved. Not worth the money.',
+    'Below average hotel. Had multiple issues that were not resolved.',
+    'Had some problems that affected my stay negatively.',
+    'Not satisfied with the stay. Expected much better.',
+    'Needs significant improvements. Disappointed overall.',
+  ],
+  2: [
+    'Terrible experience, very disappointed. Nothing went right.',
+    'Worst hotel stay ever. Multiple serious issues.',
+    'Multiple issues, very poor service. Would never return.',
+    'Would never stay here again. Complete waste of money.',
+    'Completely unacceptable. Hotel did not meet basic standards.',
+    'Many problems, avoid this hotel. Save your money.',
+    'Very poor quality. Nothing was as advertised.',
+    'Extremely disappointed. One of the worst experiences.',
+    'Awful experience. Everything was below standard.',
+    'Not recommended at all. Stay somewhere else.',
   ],
 };
 
 /**
- * Generate a review comment based on rating
- * @param {number} rating - Rating (1-5)
+ * Generate a review title based on rating (1-10 scale)
+ * @param {number} rating - Rating (1-10)
+ * @returns {string} Review title
+ */
+function generateReviewTitle(rating) {
+  let titleGroup;
+  if (rating >= 9) {
+    titleGroup = REVIEW_TITLES[9];
+  } else if (rating >= 7) {
+    titleGroup = REVIEW_TITLES[7];
+  } else if (rating >= 5) {
+    titleGroup = REVIEW_TITLES[5];
+  } else if (rating >= 3) {
+    titleGroup = REVIEW_TITLES[3];
+  } else {
+    titleGroup = REVIEW_TITLES[1];
+  }
+
+  return faker.helpers.arrayElement(titleGroup);
+}
+
+/**
+ * Generate a review comment based on rating (1-10 scale)
+ * @param {number} rating - Rating (1-10)
  * @returns {string} Review comment
  */
 function generateReviewComment(rating) {
-  const comments = REVIEW_COMMENTS[rating] || REVIEW_COMMENTS[3];
-  const baseComment = faker.helpers.arrayElement(comments);
+  let commentGroup;
+  if (rating >= 9) {
+    commentGroup = REVIEW_COMMENTS[10];
+  } else if (rating >= 7) {
+    commentGroup = REVIEW_COMMENTS[8];
+  } else if (rating >= 5) {
+    commentGroup = REVIEW_COMMENTS[6];
+  } else if (rating >= 3) {
+    commentGroup = REVIEW_COMMENTS[4];
+  } else {
+    commentGroup = REVIEW_COMMENTS[2];
+  }
+
+  const baseComment = faker.helpers.arrayElement(commentGroup);
 
   // Sometimes add more detail
   if (faker.datatype.boolean()) {
     const details = [
-      ' The staff was very helpful.',
-      ' The location was convenient.',
-      ' The room was spacious and clean.',
-      ' Breakfast was delicious.',
-      ' The facilities were modern.',
-      ' Great value for money.',
-      ' The view was amazing.',
-      ' Very comfortable beds.',
-      ' Excellent WiFi connection.',
-      ' Parking was easy.',
+      ' The staff was very helpful and professional.',
+      ' The location was convenient and easy to access.',
+      ' The room was spacious and well-maintained.',
+      ' Breakfast was delicious with good variety.',
+      ' The facilities were modern and clean.',
+      ' Great value for money in this area.',
+      ' The view from the room was amazing.',
+      ' Very comfortable beds and quality linens.',
+      ' Excellent WiFi connection throughout.',
+      ' Parking was easy and convenient.',
+      ' The pool and gym facilities were excellent.',
+      ' Check-in process was smooth and efficient.',
     ];
 
     return baseComment + faker.helpers.arrayElement(details);
@@ -138,40 +198,27 @@ function generateReviewComment(rating) {
 }
 
 /**
- * Generate review criteria for a review
- * @param {number} reviewId - Review ID
- * @param {number} overallRating - Overall rating (affects criteria scores)
- * @returns {Array} Array of review criteria objects
+ * Generate rating scores for individual criteria based on overall rating
+ * Adds realistic variation while keeping them correlated to overall rating
+ * @param {number} overallRating - Overall rating (1-10)
+ * @returns {Object} Object with rating_cleanliness, rating_location, rating_service, rating_value
  */
-function generateReviewCriteria(reviewId, overallRating) {
-  // Select 4-6 criteria randomly
-  const numCriteria = faker.number.int({ min: 4, max: 6 });
-  const selectedCriteria = faker.helpers.arrayElements(
-    REVIEW_CRITERIA_NAMES,
-    numCriteria
-  );
+function generateCriteriaRatings(overallRating) {
+  const variation = 1.5; // Max variation from overall rating
 
-  return selectedCriteria.map((criteriaName) => {
-    // Criteria score should be close to overall rating, with some variation
-    let score;
-    if (overallRating === 5) {
-      score = faker.helpers.arrayElement([4, 5]);
-    } else if (overallRating === 4) {
-      score = faker.helpers.arrayElement([3, 4, 5]);
-    } else if (overallRating === 3) {
-      score = faker.helpers.arrayElement([2, 3, 4]);
-    } else if (overallRating === 2) {
-      score = faker.helpers.arrayElement([1, 2, 3]);
-    } else {
-      score = faker.helpers.arrayElement([1, 2]);
-    }
+  const generateScore = () => {
+    const score =
+      overallRating + faker.number.float({ min: -variation, max: variation });
+    // Clamp between 1.0 and 10.0 and round to 1 decimal
+    return parseFloat(Math.max(1.0, Math.min(10.0, score)).toFixed(1));
+  };
 
-    return {
-      review_id: reviewId,
-      criteria_name: criteriaName,
-      score: score,
-    };
-  });
+  return {
+    rating_cleanliness: generateScore(),
+    rating_location: generateScore(),
+    rating_service: generateScore(),
+    rating_value: generateScore(),
+  };
 }
 
 /**
@@ -179,44 +226,62 @@ function generateReviewCriteria(reviewId, overallRating) {
  * @param {number} userId - User ID
  * @param {number} hotelId - Hotel ID
  * @param {Object} options - Options
- * @param {number} options.bookingId - Optional booking ID
- * @param {string} options.bookingCode - Optional booking code
+ * @param {string} options.bookingId - Optional booking ID (makes review verified)
  * @returns {Object} Review data object
  */
 function generateReview(userId, hotelId, options = {}) {
-  const { bookingId = null, bookingCode = null } = options;
+  const { bookingId = null } = options;
 
-  // Generate rating (weighted towards positive reviews)
+  // Generate overall rating (1-10 scale, weighted towards positive reviews)
   const ratingDistribution = faker.number.int({ min: 1, max: 100 });
   let rating;
-  if (ratingDistribution <= 40) {
-    // 40% chance of 5 stars
-    rating = 5;
-  } else if (ratingDistribution <= 65) {
-    // 25% chance of 4 stars
-    rating = 4;
-  } else if (ratingDistribution <= 85) {
-    // 20% chance of 3 stars
-    rating = 3;
-  } else if (ratingDistribution <= 95) {
-    // 10% chance of 2 stars
-    rating = 2;
+  if (ratingDistribution <= 30) {
+    // 30% chance of 9-10 (excellent)
+    rating = faker.number.float({ min: 9.0, max: 10.0 });
+  } else if (ratingDistribution <= 60) {
+    // 30% chance of 7-8.9 (good)
+    rating = faker.number.float({ min: 7.0, max: 8.9 });
+  } else if (ratingDistribution <= 80) {
+    // 20% chance of 5-6.9 (average)
+    rating = faker.number.float({ min: 5.0, max: 6.9 });
+  } else if (ratingDistribution <= 93) {
+    // 13% chance of 3-4.9 (below average)
+    rating = faker.number.float({ min: 3.0, max: 4.9 });
   } else {
-    // 5% chance of 1 star
-    rating = 1;
+    // 7% chance of 1-2.9 (poor)
+    rating = faker.number.float({ min: 1.0, max: 2.9 });
   }
+
+  const overallRating = parseFloat(rating.toFixed(1));
+  const criteriaRatings = generateCriteriaRatings(overallRating);
+  
+  // Determine status (most are published)
+  const statusDistribution = faker.number.int({ min: 1, max: 100 });
+  let status;
+  if (statusDistribution <= 92) {
+    status = 'published';
+  } else if (statusDistribution <= 97) {
+    status = 'hidden';
+  } else {
+    status = 'deleted';
+  }
+
+  const createdAt = faker.date.past({ years: 1 });
+  const updatedAt = faker.date.between({ from: createdAt, to: new Date() });
 
   const review = {
     user_id: userId,
     hotel_id: hotelId,
-    rating: parseFloat(rating.toFixed(1)),
-    comment: generateReviewComment(rating),
     booking_id: bookingId,
-    booking_code: bookingCode || null,
-    reply: null, // Can be populated later
-    number_of_likes: faker.number.int({ min: 0, max: 50 }),
-    number_of_dislikes: faker.number.int({ min: 0, max: 10 }),
-    created_at: faker.date.past({ years: 1 }),
+    rating_overall: overallRating,
+    ...criteriaRatings,
+    title: generateReviewTitle(overallRating),
+    comment: generateReviewComment(overallRating),
+    status: status,
+    is_verified: bookingId !== null,
+    helpful_count: faker.number.int({ min: 0, max: 50 }),
+    created_at: createdAt,
+    updated_at: updatedAt,
   };
 
   return review;
@@ -229,7 +294,7 @@ function generateReview(userId, hotelId, options = {}) {
  *   Can be a number or object with min/max: { min: 10, max: 30 }
  * @param {boolean} options.clearExisting - Whether to clear existing reviews (default: false)
  * @param {boolean} options.useBookings - Whether to use existing bookings (default: false)
- * @param {Array<number>} options.hotelIds - Specific hotel IDs to seed (optional, seeds all if not provided)
+ * @param {Array<string>} options.hotelIds - Specific hotel IDs (UUIDs) to seed (optional, seeds all if not provided)
  */
 async function seedReviews(options = {}) {
   const {
@@ -258,10 +323,32 @@ async function seedReviews(options = {}) {
       return;
     }
 
-    // Get all customers (users with role 'customer')
-    const existingCustomers = await users.findAll({
-      where: { user_role: 'customer' },
+    // Get all customers (users with 'user' or 'guest' role)
+    const customerRoles = await roles.findAll({
+      where: { name: ['user', 'guest'] },
       attributes: ['id'],
+    });
+
+    if (customerRoles.length === 0) {
+      console.log(
+        '❌ No customer roles (user/guest) found in database. Please seed roles first.'
+      );
+      return;
+    }
+
+    const customerRoleIds = customerRoles.map((role) => role.id || role.get?.('id'));
+
+    const existingCustomers = await users.findAll({
+      attributes: ['id'],
+      include: [
+        {
+          model: user_roles,
+          as: 'roles',
+          where: { role_id: customerRoleIds },
+          attributes: [],
+          required: true,
+        },
+      ],
     });
 
     if (existingCustomers.length === 0) {
@@ -278,7 +365,7 @@ async function seedReviews(options = {}) {
     let existingBookings = [];
     if (useBookings) {
       existingBookings = await bookings.findAll({
-        attributes: ['id', 'booking_code', 'buyer_id', 'hotel_id'],
+        attributes: ['id', 'buyer_id', 'hotel_id'],
         where: {
           status: ['completed', 'checked in'],
         },
@@ -293,14 +380,12 @@ async function seedReviews(options = {}) {
         await reviews.destroy({ where: { hotel_id: hotelIds } });
       } else {
         await reviews.destroy({ where: {}, truncate: true });
-        await review_criterias.destroy({ where: {}, truncate: true });
       }
       console.log('✅ Existing reviews cleared');
     }
 
     let totalReviewsCreated = 0;
     const reviewsToCreate = [];
-    const criteriaToCreate = [];
 
     // Generate reviews for each hotel
     for (const hotel of existingHotels) {
@@ -333,26 +418,20 @@ async function seedReviews(options = {}) {
           existingCustomers[
             faker.number.int({ min: 0, max: existingCustomers.length - 1 })
           ];
-        const userId =
-          randomCustomer.id || randomCustomer.get?.('id');
+        const userId = randomCustomer.id || randomCustomer.get?.('id');
 
         // Try to use a booking if available and useBookings is true
         let bookingId = null;
-        let bookingCode = null;
         if (hotelBookings.length > 0 && faker.datatype.boolean()) {
           const randomBooking =
             hotelBookings[
               faker.number.int({ min: 0, max: hotelBookings.length - 1 })
             ];
-          bookingId =
-            randomBooking.booking_id || randomBooking.get?.('booking_id');
-          bookingCode =
-            randomBooking.booking_code || randomBooking.get?.('booking_code');
+          bookingId = randomBooking.id || randomBooking.get?.('id');
         }
 
         const review = generateReview(userId, hotelId, {
           bookingId,
-          bookingCode,
         });
         reviewsToCreate.push(review);
       }
@@ -372,25 +451,6 @@ async function seedReviews(options = {}) {
         returning: true,
       });
 
-      // Generate and create review criteria for each review
-      console.log('💾 Creating review criteria...');
-      for (const review of createdReviews) {
-        const reviewId = review.review_id || review.get?.('review_id');
-        const rating = review.rating || review.get?.('rating');
-        const criteria = generateReviewCriteria(reviewId, Math.round(rating));
-
-        criteriaToCreate.push(...criteria);
-      }
-
-      if (criteriaToCreate.length > 0) {
-        await review_criterias.bulkCreate(criteriaToCreate, {
-          validate: true,
-        });
-        console.log(
-          `✅ ${criteriaToCreate.length} review criteria created successfully`
-        );
-      }
-
       totalReviewsCreated = createdReviews.length;
       console.log(`✅ ${totalReviewsCreated} review(s) created successfully`);
     }
@@ -400,8 +460,8 @@ async function seedReviews(options = {}) {
     const reviewsByHotel = await reviews.findAll({
       attributes: [
         'hotel_id',
-        [sequelize.fn('COUNT', sequelize.col('review_id')), 'review_count'],
-        [sequelize.fn('AVG', sequelize.col('rating')), 'avg_rating'],
+        [sequelize.fn('COUNT', sequelize.col('id')), 'review_count'],
+        [sequelize.fn('AVG', sequelize.col('rating_overall')), 'avg_rating'],
       ],
       group: ['hotel_id'],
       raw: true,
@@ -417,7 +477,7 @@ async function seedReviews(options = {}) {
       reviewsByHotel.forEach((item) => {
         const avgRating = parseFloat(item.avg_rating || 0).toFixed(1);
         console.log(
-          `     Hotel ${item.hotel_id}: ${item.review_count} review(s), avg rating: ${avgRating}`
+          `     Hotel ${item.hotel_id}: ${item.review_count} review(s), avg rating: ${avgRating}/10.0`
         );
       });
     }
@@ -429,7 +489,7 @@ async function seedReviews(options = {}) {
 
 /**
  * Seed reviews for a specific hotel
- * @param {number} hotelId - Hotel ID
+ * @param {string} hotelId - Hotel ID (UUID)
  * @param {number} count - Number of reviews to generate
  * @param {boolean} useBookings - Whether to use existing bookings
  * @returns {Promise<Array>} Created reviews
@@ -442,10 +502,29 @@ async function seedReviewsForHotel(hotelId, count = 20, useBookings = false) {
       throw new Error(`Hotel with ID ${hotelId} not found`);
     }
 
-    // Get customers
+    // Get customers (users with 'user' or 'guest' role)
+    const customerRoles = await roles.findAll({
+      where: { name: ['user', 'guest'] },
+      attributes: ['id'],
+    });
+
+    if (customerRoles.length === 0) {
+      throw new Error('No customer roles (user/guest) found in database');
+    }
+
+    const customerRoleIds = customerRoles.map((role) => role.id || role.get?.('id'));
+
     const existingCustomers = await users.findAll({
-      where: { user_role: 'customer' },
-      attributes: ['user_id'],
+      attributes: ['id'],
+      include: [
+        {
+          model: user_roles,
+          as: 'roles',
+          where: { role_id: customerRoleIds },
+          attributes: [],
+          required: true,
+        },
+      ],
     });
 
     if (existingCustomers.length === 0) {
@@ -460,12 +539,11 @@ async function seedReviewsForHotel(hotelId, count = 20, useBookings = false) {
           hotel_id: hotelId,
           status: ['completed', 'checked in'],
         },
-        attributes: ['id', 'booking_code', 'buyer_id'],
+        attributes: ['id', 'buyer_id'],
       });
     }
 
     const reviewsToCreate = [];
-    const criteriaToCreate = [];
 
     for (let i = 0; i < count; i++) {
       const randomCustomer =
@@ -475,21 +553,16 @@ async function seedReviewsForHotel(hotelId, count = 20, useBookings = false) {
       const userId = randomCustomer.id || randomCustomer.get?.('id');
 
       let bookingId = null;
-      let bookingCode = null;
       if (hotelBookings.length > 0 && faker.datatype.boolean()) {
         const randomBooking =
           hotelBookings[
             faker.number.int({ min: 0, max: hotelBookings.length - 1 })
           ];
-        bookingId =
-          randomBooking.booking_id || randomBooking.get?.('booking_id');
-        bookingCode =
-          randomBooking.booking_code || randomBooking.get?.('booking_code');
+        bookingId = randomBooking.id || randomBooking.get?.('id');
       }
 
       const review = generateReview(userId, hotelId, {
         bookingId,
-        bookingCode,
       });
       reviewsToCreate.push(review);
     }
@@ -498,20 +571,6 @@ async function seedReviewsForHotel(hotelId, count = 20, useBookings = false) {
       validate: true,
       returning: true,
     });
-
-    // Create review criteria
-    for (const review of createdReviews) {
-      const reviewId = review.review_id || review.get?.('review_id');
-      const rating = review.rating || review.get?.('rating');
-      const criteria = generateReviewCriteria(reviewId, Math.round(rating));
-      criteriaToCreate.push(...criteria);
-    }
-
-    if (criteriaToCreate.length > 0) {
-      await review_criterias.bulkCreate(criteriaToCreate, {
-        validate: true,
-      });
-    }
 
     console.log(
       `✅ Created ${createdReviews.length} review(s) for hotel ${hotelId}`

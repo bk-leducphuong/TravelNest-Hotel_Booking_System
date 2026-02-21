@@ -76,8 +76,14 @@ module.exports = function (sequelize, DataTypes) {
   );
 
   ReviewHelpfulVote.associate = function (models) {
-    ReviewHelpfulVote.belongsTo(models.reviews, { foreignKey: 'review_id', as: 'review' });
-    ReviewHelpfulVote.belongsTo(models.users, { foreignKey: 'user_id', as: 'user' });
+    ReviewHelpfulVote.belongsTo(models.reviews, {
+      foreignKey: 'review_id',
+      as: 'review',
+    });
+    ReviewHelpfulVote.belongsTo(models.users, {
+      foreignKey: 'user_id',
+      as: 'user',
+    });
   };
 
   return ReviewHelpfulVote;

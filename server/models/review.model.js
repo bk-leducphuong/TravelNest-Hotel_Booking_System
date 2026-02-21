@@ -146,10 +146,22 @@ module.exports = function (sequelize, DataTypes) {
   Review.associate = function (models) {
     Review.belongsTo(models.users, { foreignKey: 'user_id', as: 'user' });
     Review.belongsTo(models.hotels, { foreignKey: 'hotel_id', as: 'hotel' });
-    Review.belongsTo(models.bookings, { foreignKey: 'booking_id', as: 'booking' });
-    Review.hasOne(models.review_replies, { foreignKey: 'review_id', as: 'reply' });
-    Review.hasMany(models.review_media, { foreignKey: 'review_id', as: 'media' });
-    Review.hasMany(models.review_helpful_votes, { foreignKey: 'review_id', as: 'helpful_votes' });
+    Review.belongsTo(models.bookings, {
+      foreignKey: 'booking_id',
+      as: 'booking',
+    });
+    Review.hasOne(models.review_replies, {
+      foreignKey: 'review_id',
+      as: 'reply',
+    });
+    Review.hasMany(models.review_media, {
+      foreignKey: 'review_id',
+      as: 'media',
+    });
+    Review.hasMany(models.review_helpful_votes, {
+      foreignKey: 'review_id',
+      as: 'helpful_votes',
+    });
   };
 
   return Review;
