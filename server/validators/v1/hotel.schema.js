@@ -7,18 +7,15 @@ const { pagination } = require('./common.schema');
  */
 
 // Common validations
-const hotelIdSchema = Joi.number().integer().positive().required().messages({
-  'number.base': 'hotelId must be a number',
-  'number.integer': 'hotelId must be an integer',
-  'number.positive': 'hotelId must be a positive number',
+const hotelIdSchema = Joi.string().uuid().required().messages({
+  'string.base': 'hotelId must be a string',
+  'string.guid': 'hotelId must be a valid UUID',
   'any.required': 'hotelId is required',
 });
 
-const dateSchema = Joi.string()
-  .isoDate()
-  .messages({
-    'string.isoDate': 'Date must be in ISO 8601 format (YYYY-MM-DD)',
-  });
+const dateSchema = Joi.string().isoDate().messages({
+  'string.isoDate': 'Date must be in ISO 8601 format (YYYY-MM-DD)',
+});
 
 const positiveIntegerSchema = Joi.number().integer().positive().messages({
   'number.base': 'Must be a number',
@@ -137,40 +134,39 @@ exports.checkRoomAvailability = {
     numberOfGuests: positiveIntegerSchema,
     selectedRooms: Joi.alternatives()
       .try(
-        Joi.string()
-          .custom((value, helpers) => {
-            try {
-              const parsed = JSON.parse(value);
-              if (!Array.isArray(parsed)) {
-                return helpers.error('any.custom', {
-                  message: 'selectedRooms must be a JSON array',
-                });
-              }
-              if (parsed.length === 0) {
-                return helpers.error('any.custom', {
-                  message: 'At least one room must be selected',
-                });
-              }
-              // Validate each room object
-              const roomSchema = Joi.object({
-                room_id: Joi.string().uuid().required(),
-                roomQuantity: Joi.number().integer().positive().required(),
-              });
-              for (const room of parsed) {
-                const { error } = roomSchema.validate(room);
-                if (error) {
-                  return helpers.error('any.custom', {
-                    message: `Invalid room object: ${error.message}`,
-                  });
-                }
-              }
-              return parsed;
-            } catch (e) {
+        Joi.string().custom((value, helpers) => {
+          try {
+            const parsed = JSON.parse(value);
+            if (!Array.isArray(parsed)) {
               return helpers.error('any.custom', {
-                message: 'selectedRooms must be a valid JSON array',
+                message: 'selectedRooms must be a JSON array',
               });
             }
-          }),
+            if (parsed.length === 0) {
+              return helpers.error('any.custom', {
+                message: 'At least one room must be selected',
+              });
+            }
+            // Validate each room object
+            const roomSchema = Joi.object({
+              room_id: Joi.string().uuid().required(),
+              roomQuantity: Joi.number().integer().positive().required(),
+            });
+            for (const room of parsed) {
+              const { error } = roomSchema.validate(room);
+              if (error) {
+                return helpers.error('any.custom', {
+                  message: `Invalid room object: ${error.message}`,
+                });
+              }
+            }
+            return parsed;
+          } catch (e) {
+            return helpers.error('any.custom', {
+              message: 'selectedRooms must be a valid JSON array',
+            });
+          }
+        }),
         Joi.array()
           .items(
             Joi.object({
@@ -224,4 +220,14 @@ exports.checkRoomAvailability = {
       }
       return value;
     }),
+};
+
+/**
+ * GET /api/hotels/:hotelId/policies
+ * Get all policies for a hotel
+ */
+exports.getHotelPolicies = {
+  params: Joi.object({
+    hotelId: hotelIdSchema,
+  }).required(),
 };

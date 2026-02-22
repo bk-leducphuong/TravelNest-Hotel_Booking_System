@@ -29,10 +29,7 @@ const getHotelDetails = asyncHandler(async (req, res) => {
     numberOfGuests: numberOfGuests ? parseInt(numberOfGuests, 10) : undefined,
   };
 
-  const result = await hotelService.getHotelDetails(
-    hotelId,
-    options
-  );
+  const result = await hotelService.getHotelDetails(hotelId, options);
 
   res.status(200).json({
     data: result,
@@ -65,10 +62,7 @@ const searchRooms = asyncHandler(async (req, res) => {
     limit: limit ? parseInt(limit, 10) : 20,
   };
 
-  const result = await hotelService.searchRooms(
-    hotelId,
-    searchParams
-  );
+  const result = await hotelService.searchRooms(hotelId, searchParams);
 
   res.status(200).json({
     data: result.rooms,
@@ -119,8 +113,15 @@ const checkRoomAvailability = asyncHandler(async (req, res) => {
   });
 });
 
+const getHotelPolicies = asyncHandler(async (req, res) => {
+  const { hotelId } = req.params;
+  const policies = await hotelService.getHotelPolicies(hotelId);
+  res.status(200).json({ data: policies });
+});
+
 module.exports = {
   getHotelDetails,
   searchRooms,
   checkRoomAvailability,
+  getHotelPolicies,
 };

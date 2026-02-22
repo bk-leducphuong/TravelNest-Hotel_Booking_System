@@ -10,6 +10,22 @@ const HOTEL_CHECK_OUT_POLICIES = [
   'No check-out policy',
 ];
 
+const POLICY_TYPES = [
+  'cancellation',
+  'children',
+  'pets',
+  'payment',
+  'smoking',
+  'damage',
+  'age_restriction',
+  'internet',
+  'parking',
+  'breakfast',
+  'group_booking',
+  'additional_fees',
+  'other',
+];
+
 const IANA_TIMEZONES = [
   'America/New_York',
   'America/Los_Angeles',
@@ -33,4 +49,5 @@ module.exports = {
   HOTEL_CHECK_IN_POLICIES,
   HOTEL_CHECK_OUT_POLICIES,
   IANA_TIMEZONES,
+  POLICY_TYPES,
 };

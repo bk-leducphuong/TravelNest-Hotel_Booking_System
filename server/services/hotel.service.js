@@ -57,6 +57,9 @@ class HotelService {
     const reviewCriterias =
       await hotelRepository.findReviewCriteriasByHotelId(hotelId);
 
+    // Get hotel policies
+    const policies = await hotelRepository.findPoliciesByHotelId(hotelId);
+
     return {
       hotel: hotel.toJSON ? hotel.toJSON() : hotel,
       rooms,
@@ -65,6 +68,9 @@ class HotelService {
         place.toJSON ? place.toJSON() : place
       ),
       reviewCriterias,
+      policies: policies.map((policy) =>
+        policy.toJSON ? policy.toJSON() : policy
+      ),
       meta: {
         totalReviews: reviewsResult.count || 0,
       },
@@ -217,6 +223,30 @@ class HotelService {
     }
 
     return true;
+  }
+
+  /**
+   * Get all policies for a hotel
+   * @param {string} hotelId - Hotel ID (UUID)
+   * @returns {Promise<Array>} List of hotel policies
+   */
+  async getHotelPolicies(hotelId) {
+    // Validate hotel exists
+    const hotel = await hotelRepository.findById(hotelId);
+    if (!hotel) {
+      throw new ApiError(404, 'HOTEL_NOT_FOUND', 'Hotel not found');
+    }
+
+    const policies = await hotelRepository.findPoliciesByHotelId(hotelId);
+
+    return policies.map((policy) => ({
+      id: policy.id,
+      policyType: policy.policy_type,
+      title: policy.title,
+      description: policy.description,
+      displayOrder: policy.display_order,
+      icon: policy.icon,
+    }));
   }
 }
 

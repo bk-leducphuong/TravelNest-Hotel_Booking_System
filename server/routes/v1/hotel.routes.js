@@ -3,6 +3,7 @@ const {
   getHotelDetails,
   searchRooms,
   checkRoomAvailability,
+  getHotelPolicies,
 } = require('@controllers/v1/hotel.controller.js');
 const validate = require('@middlewares/validate.middleware');
 const hotelSchema = require('@validators/v1/hotel.schema');
@@ -16,6 +17,16 @@ const router = express.Router();
  * Query params: checkInDate, checkOutDate, numberOfDays, numberOfRooms, numberOfGuests
  */
 router.get('/:hotelId', validate(hotelSchema.getHotelDetails), getHotelDetails);
+
+/**
+ * GET /api/hotels/:hotelId/policies
+ * Get all policies for a hotel
+ */
+router.get(
+  '/:hotelId/policies',
+  validate(hotelSchema.getHotelPolicies),
+  getHotelPolicies
+);
 
 /**
  * GET /api/hotels/:hotelId/rooms

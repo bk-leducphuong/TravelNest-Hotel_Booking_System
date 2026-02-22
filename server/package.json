@@ -33,6 +33,7 @@
     "seed:review": "cross-env NODE_ENV=development node infra/database/seeders/review.seed.js",
     "seed:room": "cross-env NODE_ENV=development node infra/database/seeders/room.seed.js",
     "seed:booking": "cross-env NODE_ENV=development node infra/database/seeders/booking.seed.js",
+    "seed:policy": "cross-env NODE_ENV=development node infra/database/seeders/hotel_policy.seed.js",
     "seed:nearby_place": "cross-env NODE_ENV=development node infra/database/seeders/nearby_place.seed.js",
     "seed:notification": "cross-env NODE_ENV=development node infra/database/seeders/notification.seed.js",
     "migrate": "sequelize-cli db:migrate",

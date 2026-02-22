@@ -6,6 +6,7 @@ const {
   ReviewCriterias,
   RoomInventories,
   Users,
+  HotelPolicies,
 } = require('../models/index.js');
 
 /**
@@ -264,6 +265,27 @@ class HotelRepository {
         'room_type',
         'quantity',
       ],
+    });
+  }
+
+  /**
+   * Find policies for a hotel
+   */
+  async findPoliciesByHotelId(hotelId) {
+    return await HotelPolicies.findAll({
+      where: {
+        hotel_id: hotelId,
+        is_active: true,
+      },
+      attributes: [
+        'id',
+        'policy_type',
+        'title',
+        'description',
+        'display_order',
+        'icon',
+      ],
+      order: [['display_order', 'ASC']],
     });
   }
 }

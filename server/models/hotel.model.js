@@ -229,6 +229,10 @@ module.exports = function (sequelize, DataTypes) {
       foreignKey: 'hotel_id',
       as: 'hotel_users',
     });
+    Hotel.hasMany(models.hotel_policies, {
+      foreignKey: 'hotel_id',
+      as: 'policies',
+    });
   };
 
   return Hotel;
