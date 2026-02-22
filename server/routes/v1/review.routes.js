@@ -35,11 +35,7 @@ router.get(
  * GET /api/reviews/validate
  * Validate if user can review a booking
  */
-router.get(
-  '/validate',
-  validate(reviewSchema.validateReview),
-  validateReview
-);
+router.get('/validate', validate(reviewSchema.validateReview), validateReview);
 
 /**
  * GET /api/reviews/check

@@ -486,7 +486,9 @@ class RoomInventoryRepository {
 
       const foundDates = new Set(
         inventories.map((inv) =>
-          typeof inv.date === 'string' ? inv.date : inv.date.toISOString().split('T')[0]
+          typeof inv.date === 'string'
+            ? inv.date
+            : inv.date.toISOString().split('T')[0]
         )
       );
       for (const date of expectedDates) {

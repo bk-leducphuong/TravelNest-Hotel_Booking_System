@@ -30,25 +30,9 @@ async function initBucket() {
   }
 }
 
-/**
- * Build a public URL for an object.
- * If MINIO_PUBLIC_URL is set, use it as base, otherwise fall back to MINIO_ENDPOINT:MINIO_PORT.
- */
-function getObjectUrl(objectName) {
-  const base =
-    process.env.MINIO_PUBLIC_URL ||
-    `${process.env.MINIO_USE_SSL === 'true' ? 'https' : 'http'}://${
-      process.env.MINIO_ENDPOINT
-    }:${process.env.MINIO_PORT}`;
-
-  // Ensure no duplicate slashes
-  return `${base.replace(/\/+$/, '')}/${bucketName}/${objectName.replace(/^\/+/, '')}`;
-}
-
 module.exports = {
   minioClient,
   initBucket,
   bucketName,
-  getObjectUrl,
   minioConfig,
 };

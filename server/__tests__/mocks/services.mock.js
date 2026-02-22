@@ -4,7 +4,6 @@
 const createMockHotelService = () => ({
   getHotelDetails: jest.fn(),
   searchRooms: jest.fn(),
-  checkRoomAvailability: jest.fn(),
 });
 
 /**

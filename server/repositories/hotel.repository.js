@@ -3,10 +3,15 @@ const {
   Rooms,
   Reviews,
   NearbyPlaces,
-  ReviewCriterias,
   RoomInventories,
   Users,
   HotelPolicies,
+  Amenities,
+  Images,
+  ImageVariants,
+  HotelRatingSummaries,
+  ReviewReplies,
+  ReviewMedia,
 } = require('../models/index.js');
 
 /**
@@ -16,146 +21,257 @@ const {
 
 class HotelRepository {
   /**
-   * Find hotel by ID with basic information
+   * Find hotel by ID with all associations
    */
   async findById(hotelId) {
     return await Hotels.findOne({
-      where: { id: hotelId },
+      where: { id: hotelId, status: 'active' },
       attributes: [
         'id',
         'name',
         'description',
         'address',
         'city',
+        'country',
         'phone_number',
-        'overall_rating',
         'latitude',
         'longitude',
-        'image_urls',
         'hotel_class',
-        'hotel_amenities',
         'check_in_time',
         'check_out_time',
+        'check_in_policy',
+        'check_out_policy',
+        'min_price',
+        'status',
+        'timezone',
+      ],
+      include: [
+        {
+          model: Amenities,
+          as: 'amenities',
+          attributes: ['id', 'code', 'name', 'icon', 'category'],
+          through: { attributes: [] }, // Exclude junction table fields
+        },
+        {
+          model: Images,
+          as: 'images',
+          where: { status: 'active' },
+          attributes: [
+            'id',
+            'bucket_name',
+            'object_key',
+            'original_filename',
+            'width',
+            'height',
+            'is_primary',
+            'display_order',
+          ],
+          required: false,
+          order: [
+            ['is_primary', 'DESC'],
+            ['display_order', 'ASC'],
+          ],
+          include: [
+            {
+              model: ImageVariants,
+              as: 'image_variants',
+              attributes: [
+                'id',
+                'variant_type',
+                'bucket_name',
+                'object_key',
+                'width',
+                'height',
+              ],
+              required: false,
+            },
+          ],
+        },
       ],
     });
   }
 
   /**
-   * Find available rooms for a hotel with date range and filters
-   * Uses raw query for complex aggregation
+   * Find hotel rating summary
    */
-  async findAvailableRooms(hotelId, checkInDate, checkOutDate, options = {}) {
-    const {
-      numberOfRooms = 1,
-      numberOfDays,
-      numberOfGuests,
-      limit,
-      offset,
-    } = options;
-
-    // Lazy load sequelize to avoid circular dependency
-    const sequelize = require('../config/database.config');
-
-    const query = `
-      SELECT 
-        r.room_id,
-        r.room_name, 
-        r.max_guests,
-        r.image_urls AS room_image_urls, 
-        r.room_amenities, 
-        ri.price_per_night, 
-        ri.available_rooms
-      FROM rooms AS r
-      JOIN (
-        SELECT 
-          ri.room_id,
-          SUM(ri.price_per_night) AS price_per_night,
-          MIN(ri.total_rooms - ri.booked_rooms - COALESCE(ri.held_rooms, 0)) AS available_rooms
-        FROM room_inventory AS ri
-        WHERE 
-          ri.date BETWEEN ? AND ?
-          AND ri.status = 'open'
-        GROUP BY ri.room_id
-        HAVING COUNT(CASE WHEN (ri.total_rooms - ri.booked_rooms - COALESCE(ri.held_rooms, 0)) >= ? THEN 1 END) = ?
-      ) AS ri ON r.room_id = ri.room_id
-      JOIN hotels AS h ON h.id = r.hotel_id
-      WHERE h.id = ?
-      ${numberOfGuests ? 'AND r.max_guests >= ?' : ''}
-      ${limit ? 'LIMIT ?' : ''}
-      ${offset ? 'OFFSET ?' : ''}
-    `;
-
-    const replacements = [
-      checkInDate,
-      checkOutDate,
-      numberOfRooms,
-      numberOfDays,
-      hotelId,
-    ];
-
-    if (numberOfGuests) {
-      replacements.push(numberOfGuests);
-    }
-    if (limit) {
-      replacements.push(limit);
-    }
-    if (offset) {
-      replacements.push(offset);
-    }
-
-    return await sequelize.query(query, {
-      replacements,
-      type: sequelize.QueryTypes.SELECT,
+  async findRatingSummaryByHotelId(hotelId) {
+    return await HotelRatingSummaries.findOne({
+      where: { hotel_id: hotelId },
+      attributes: [
+        'overall_rating',
+        'total_reviews',
+        'rating_10',
+        'rating_9',
+        'rating_8',
+        'rating_7',
+        'rating_6',
+        'rating_5',
+        'rating_4',
+        'rating_3',
+        'rating_2',
+        'rating_1',
+        'last_review_date',
+      ],
     });
   }
 
   /**
-   * Find reviews for a hotel
-   * Uses raw query to join with users table
+   * Find hotel images
+   */
+  async findImagesByHotelId(hotelId) {
+    return await Images.findAll({
+      where: {
+        entity_type: 'hotel',
+        entity_id: hotelId,
+        status: 'active',
+      },
+      attributes: [
+        'id',
+        'bucket_name',
+        'object_key',
+        'original_filename',
+        'width',
+        'height',
+        'is_primary',
+        'display_order',
+      ],
+      order: [
+        ['is_primary', 'DESC'],
+        ['display_order', 'ASC'],
+      ],
+      include: [
+        {
+          model: ImageVariants,
+          as: 'image_variants',
+          attributes: [
+            'id',
+            'variant_type',
+            'bucket_name',
+            'object_key',
+            'width',
+            'height',
+          ],
+          required: false,
+        },
+      ],
+    });
+  }
+
+  /**
+   * Find hotel amenities
+   */
+  async findAmenitiesByHotelId(hotelId) {
+    const hotel = await Hotels.findByPk(hotelId, {
+      attributes: ['id'],
+      include: [
+        {
+          model: Amenities,
+          as: 'amenities',
+          attributes: [
+            'id',
+            'code',
+            'name',
+            'icon',
+            'category',
+            'description',
+            'display_order',
+          ],
+          through: { attributes: [] },
+          where: { is_active: true },
+          required: false,
+        },
+      ],
+    });
+
+    return hotel ? hotel.amenities : [];
+  }
+
+  /**
+   * Find reviews for a hotel with new structure
    */
   async findReviewsByHotelId(hotelId, options = {}) {
     const { limit = 10, offset = 0 } = options;
-    const sequelize = require('../config/database.config');
 
-    const query = `
-      SELECT 
-        rv.review_id, 
-        rv.user_id, 
-        rv.rating, 
-        rv.comment, 
-        rv.created_at, 
-        rv.booking_code, 
-        users.username, 
-        users.profile_picture_url, 
-        users.country
-      FROM reviews rv 
-      JOIN users ON users.id = rv.user_id
-      WHERE rv.hotel_id = ?
-      ORDER BY rv.created_at DESC
-      LIMIT ? OFFSET ?
-    `;
-
-    const countQuery = `
-      SELECT COUNT(*) as count
-      FROM reviews rv 
-      WHERE rv.hotel_id = ?
-    `;
-
-    const [reviews, countResult] = await Promise.all([
-      sequelize.query(query, {
-        replacements: [hotelId, limit, offset],
-        type: sequelize.QueryTypes.SELECT,
-      }),
-      sequelize.query(countQuery, {
-        replacements: [hotelId],
-        type: sequelize.QueryTypes.SELECT,
-      }),
-    ]);
+    const result = await Reviews.findAndCountAll({
+      where: {
+        hotel_id: hotelId,
+        status: 'published',
+      },
+      attributes: [
+        'id',
+        'rating_overall',
+        'rating_cleanliness',
+        'rating_location',
+        'rating_service',
+        'rating_value',
+        'title',
+        'comment',
+        'is_verified',
+        'helpful_count',
+        'status',
+        'created_at',
+      ],
+      include: [
+        {
+          model: Users,
+          as: 'user',
+          attributes: ['id', 'first_name', 'country'],
+        },
+        {
+          model: ReviewReplies,
+          as: 'reply',
+          attributes: ['reply_text', 'created_at'],
+          required: false,
+        },
+        {
+          model: ReviewMedia,
+          as: 'media',
+          attributes: ['id', 'media_type', 'url', 'thumbnail_url'],
+          required: false,
+        },
+      ],
+      order: [['created_at', 'DESC']],
+      limit,
+      offset,
+    });
 
     return {
-      rows: reviews,
-      count: countResult[0]?.count || 0,
+      rows: result.rows,
+      count: result.count,
     };
+  }
+
+  /**
+   * Calculate review criteria averages from review fields
+   */
+  async findReviewCriteriasByHotelId(hotelId) {
+    const sequelize = require('../config/database.config.js');
+
+    const query = `
+      SELECT
+        AVG(rating_cleanliness) AS cleanliness,
+        AVG(rating_location) AS location,
+        AVG(rating_service) AS service,
+        AVG(rating_value) AS value_for_money,
+        AVG(rating_overall) AS overall
+      FROM reviews
+      WHERE hotel_id = ? AND status = 'published'
+    `;
+
+    const result = await sequelize.query(query, {
+      replacements: [hotelId],
+      type: sequelize.QueryTypes.SELECT,
+    });
+
+    return (
+      result[0] || {
+        cleanliness: null,
+        location: null,
+        service: null,
+        value_for_money: null,
+        overall: null,
+      }
+    );
   }
 
   /**
@@ -198,67 +314,6 @@ class HotelRepository {
         ['distance_km', 'ASC'],
       ],
       limit,
-    });
-  }
-
-  /**
-   * Find review criteria averages for a hotel
-   */
-  async findReviewCriteriasByHotelId(hotelId) {
-    const sequelize = require('../config/database.config.js');
-
-    const query = `
-      SELECT
-        rc.criteria_name,
-        r.hotel_id,
-        AVG(rc.score) AS average_score
-      FROM
-        review_criterias rc
-      JOIN
-        reviews r ON rc.review_id = r.review_id
-      WHERE
-        r.hotel_id = ?
-      GROUP BY
-        rc.criteria_name
-    `;
-
-    return await sequelize.query(query, {
-      replacements: [hotelId],
-      type: sequelize.QueryTypes.SELECT,
-    });
-  }
-
-  /**
-   * Check room availability for specific rooms
-   */
-  async checkRoomAvailability(
-    hotelId,
-    roomIds,
-    checkInDate,
-    checkOutDate,
-    numberOfDays
-  ) {
-    const sequelize = require('../config/database.config.js');
-
-    const query = `
-      SELECT 
-        MIN(ri.total_rooms - ri.booked_rooms) AS available_rooms,
-        r.room_id
-      FROM hotels h
-      JOIN rooms r 
-      ON h.id = r.hotel_id
-      JOIN room_inventory ri 
-      ON r.room_id = ri.room_id
-      WHERE h.id = ?
-      AND r.room_id IN (?)
-      AND ri.date BETWEEN ? AND ?
-      GROUP BY r.room_id
-      HAVING COUNT(CASE WHEN ri.total_rooms - ri.booked_rooms >= 0 THEN 1 END) = ?
-    `;
-
-    return await sequelize.query(query, {
-      replacements: [hotelId, roomIds, checkInDate, checkOutDate, numberOfDays],
-      type: sequelize.QueryTypes.SELECT,
     });
   }
 

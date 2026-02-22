@@ -1,8 +1,4 @@
-const {
-  Rooms,
-  RoomInventories,
-  Hotels,
-} = require('../../models/index.js');
+const { Rooms, RoomInventories, Hotels } = require('../../models/index.js');
 const { Op } = require('sequelize');
 
 /**

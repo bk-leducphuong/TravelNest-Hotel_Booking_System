@@ -7,7 +7,6 @@ const createMockHotelRepository = () => ({
   findReviewsByHotelId: jest.fn(),
   findNearbyPlacesByHotelId: jest.fn(),
   findReviewCriteriasByHotelId: jest.fn(),
-  checkRoomAvailability: jest.fn(),
   findRoomById: jest.fn(),
   findRoomsByHotelId: jest.fn(),
 });

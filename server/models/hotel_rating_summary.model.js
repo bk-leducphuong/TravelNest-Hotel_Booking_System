@@ -20,7 +20,7 @@ module.exports = function (sequelize, DataTypes) {
       overall_rating: {
         type: DataTypes.DECIMAL(3, 2),
         allowNull: false,
-        defaultValue: 0.00,
+        defaultValue: 0.0,
         comment: 'Weighted average rating (0.00 to 10.00)',
       },
       total_reviews: {
@@ -94,7 +94,7 @@ module.exports = function (sequelize, DataTypes) {
       total_rating_sum: {
         type: DataTypes.DECIMAL(12, 2),
         allowNull: false,
-        defaultValue: 0.00,
+        defaultValue: 0.0,
         comment: 'Sum of all ratings (for recalculating average)',
       },
       // Recent activity tracking

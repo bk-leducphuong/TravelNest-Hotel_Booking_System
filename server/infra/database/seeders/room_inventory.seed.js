@@ -26,9 +26,9 @@ require('dotenv').config({
 });
 
 const { faker } = require('@faker-js/faker');
-const db = require('../../models');
-const sequelize = require('../../config/database.config');
-const { CURRENCIES } = require('../../constants/common');
+const db = require('../../../models');
+const sequelize = require('../../../config/database.config');
+const { CURRENCIES } = require('../../../constants/common');
 
 const { rooms: Rooms, room_inventory: RoomInventory } = db;
 
@@ -52,12 +52,14 @@ function toDateOnly(d) {
  * @param {Object} options - priceMin, priceMax, currency
  * @returns {Array<Object>}
  */
-function generateInventoryForRoom(roomId, quantity, startDate, endDate, options = {}) {
-  const {
-    priceMin = 80,
-    priceMax = 350,
-    currency = 'USD',
-  } = options;
+function generateInventoryForRoom(
+  roomId,
+  quantity,
+  startDate,
+  endDate,
+  options = {}
+) {
+  const { priceMin = 80, priceMax = 350, currency = 'USD' } = options;
 
   const records = [];
   const current = new Date(startDate);
@@ -68,7 +70,10 @@ function generateInventoryForRoom(roomId, quantity, startDate, endDate, options 
   while (current <= end) {
     const dateStr = toDateOnly(current);
     const booked = faker.number.int({ min: 0, max: Math.max(0, quantity - 1) });
-    const held = faker.number.int({ min: 0, max: Math.max(0, quantity - booked) });
+    const held = faker.number.int({
+      min: 0,
+      max: Math.max(0, quantity - booked),
+    });
     const status = faker.helpers.arrayElement([
       'open',
       'open',
@@ -84,7 +89,9 @@ function generateInventoryForRoom(roomId, quantity, startDate, endDate, options 
       booked_rooms: status === 'sold_out' ? quantity : booked,
       held_rooms: status === 'sold_out' ? 0 : held,
       status,
-      price_per_night: String(faker.number.float({ min: priceMin, max: priceMax, fractionDigits: 2 })),
+      price_per_night: String(
+        faker.number.float({ min: priceMin, max: priceMax, fractionDigits: 2 })
+      ),
       currency,
     });
 
@@ -116,7 +123,9 @@ async function seedRoomInventory(options = {}) {
   } = options;
 
   if (!CURRENCIES.includes(currency)) {
-    throw new Error(`Invalid currency: ${currency}. Must be one of: ${CURRENCIES.join(', ')}`);
+    throw new Error(
+      `Invalid currency: ${currency}. Must be one of: ${CURRENCIES.join(', ')}`
+    );
   }
 
   try {

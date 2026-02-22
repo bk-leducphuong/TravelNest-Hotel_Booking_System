@@ -1,11 +1,7 @@
 const hotelService = require('@services/hotel.service');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
-
-/**
- * Hotel Controller - HTTP ↔ business mapping
- * Follows RESTful API standards
- */
+const { computeNumberOfNights } = require('@helpers/hotel.helpers');
 
 /**
  * GET /api/hotels/:hotelId
@@ -13,18 +9,15 @@ const asyncHandler = require('@utils/asyncHandler');
  */
 const getHotelDetails = asyncHandler(async (req, res) => {
   const { hotelId } = req.params;
-  const {
-    checkInDate,
-    checkOutDate,
-    numberOfDays,
-    numberOfRooms,
-    numberOfGuests,
-  } = req.query;
+  const { checkInDate, checkOutDate, numberOfRooms, numberOfGuests } =
+    req.query;
+
+  const numberOfNights = computeNumberOfNights(checkInDate, checkOutDate);
 
   const options = {
     checkInDate,
     checkOutDate,
-    numberOfDays: numberOfDays ? parseInt(numberOfDays, 10) : undefined,
+    numberOfNights,
     numberOfRooms: numberOfRooms ? parseInt(numberOfRooms, 10) : undefined,
     numberOfGuests: numberOfGuests ? parseInt(numberOfGuests, 10) : undefined,
   };
@@ -45,17 +38,18 @@ const searchRooms = asyncHandler(async (req, res) => {
   const {
     checkInDate,
     checkOutDate,
-    numberOfDays,
     numberOfRooms,
     numberOfGuests,
     page,
     limit,
   } = req.query;
 
+  const numberOfNights = computeNumberOfNights(checkInDate, checkOutDate);
+
   const searchParams = {
     checkInDate,
     checkOutDate,
-    numberOfDays: numberOfDays ? parseInt(numberOfDays, 10) : undefined,
+    numberOfNights,
     numberOfRooms: numberOfRooms ? parseInt(numberOfRooms, 10) : 1,
     numberOfGuests: numberOfGuests ? parseInt(numberOfGuests, 10) : undefined,
     page: page ? parseInt(page, 10) : 1,
@@ -74,45 +68,6 @@ const searchRooms = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * GET /api/hotels/:hotelId/rooms/availability
- * Check room availability for specific rooms
- * Note: selectedRooms is validated and parsed by Joi schema
- */
-const checkRoomAvailability = asyncHandler(async (req, res) => {
-  const { hotelId } = req.params;
-  const {
-    checkInDate,
-    checkOutDate,
-    numberOfDays,
-    numberOfGuests,
-    selectedRooms,
-  } = req.query;
-
-  // selectedRooms is validated and transformed by Joi schema
-  // It should already be an array, but handle string case for safety
-  const parsedSelectedRooms = Array.isArray(selectedRooms)
-    ? selectedRooms
-    : typeof selectedRooms === 'string'
-      ? JSON.parse(selectedRooms)
-      : selectedRooms;
-
-  const isAvailable = await hotelService.checkRoomAvailability(
-    hotelId,
-    parsedSelectedRooms,
-    checkInDate,
-    checkOutDate,
-    parseInt(numberOfDays, 10),
-    numberOfGuests ? parseInt(numberOfGuests, 10) : undefined
-  );
-
-  res.status(200).json({
-    data: {
-      isAvailable,
-    },
-  });
-});
-
 const getHotelPolicies = asyncHandler(async (req, res) => {
   const { hotelId } = req.params;
   const policies = await hotelService.getHotelPolicies(hotelId);
@@ -126,19 +81,18 @@ const getHotelPolicies = asyncHandler(async (req, res) => {
 const getNearbyPlaces = asyncHandler(async (req, res) => {
   const { hotelId } = req.params;
   const { category, limit } = req.query;
-  
+
   const places = await hotelService.getNearbyPlaces(hotelId, {
     category,
     limit: limit ? parseInt(limit, 10) : 20,
   });
-  
+
   res.status(200).json({ data: places });
 });
 
 module.exports = {
   getHotelDetails,
   searchRooms,
-  checkRoomAvailability,
   getHotelPolicies,
   getNearbyPlaces,
 };

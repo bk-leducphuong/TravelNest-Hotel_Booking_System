@@ -133,9 +133,10 @@ module.exports = function (sequelize, DataTypes) {
   );
 
   Image.associate = function (models) {
-    // Image variants association
+    // Image variants association (thumbnail, small, medium, large, *_webp, etc.)
     Image.hasMany(models.image_variants, {
       foreignKey: 'image_id',
+      as: 'image_variants',
     });
   };
 

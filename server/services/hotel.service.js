@@ -1,5 +1,8 @@
+const { bucketName } = require('@config/minio.config');
 const hotelRepository = require('../repositories/hotel.repository');
+const roomRepository = require('../repositories/room.repository');
 const ApiError = require('../utils/ApiError');
+const { getPresignedUrl } = require('@utils/minio.utils');
 
 /**
  * Hotel Service - Contains main business logic
@@ -8,71 +11,308 @@ const ApiError = require('../utils/ApiError');
 
 class HotelService {
   /**
-   * Get hotel details with rooms, reviews, nearby places, and review criteria
-   * @param {number} hotelId - Hotel ID
-   * @param {Object} options - Search options (checkInDate, checkOutDate, numberOfDays, numberOfRooms, numberOfGuests)
+   * Get hotel details with comprehensive information
+   * @param {string} hotelId - Hotel ID (UUID)
+   * @param {Object} options - Search options (checkInDate, checkOutDate, numberOfNights, numberOfRooms, numberOfGuests)
    * @returns {Promise<Object>} Hotel details with related data
    */
   async getHotelDetails(hotelId, options = {}) {
     const {
       checkInDate,
       checkOutDate,
-      numberOfDays,
+      numberOfNights,
       numberOfRooms,
       numberOfGuests,
     } = options;
 
-    // Get hotel basic information
-    const hotel = await hotelRepository.findById(hotelId);
+    // Fetch all data in parallel for better performance
+    const [
+      hotel,
+      ratingSummary,
+      reviewsResult,
+      reviewCriteria,
+      nearbyPlaces,
+      policies,
+      rooms,
+    ] = await Promise.all([
+      // 1. Hotel basic info with amenities and images (already included via associations)
+      hotelRepository.findById(hotelId),
+
+      // 2. Rating summary
+      hotelRepository.findRatingSummaryByHotelId(hotelId),
+
+      // 3. Reviews with user info, replies, and media
+      hotelRepository.findReviewsByHotelId(hotelId, {
+        limit: 10,
+        offset: 0,
+      }),
+
+      // 4. Review criteria averages
+      hotelRepository.findReviewCriteriasByHotelId(hotelId),
+
+      // 5. Nearby places
+      hotelRepository.findNearbyPlacesByHotelId(hotelId, { limit: 20 }),
+
+      // 6. Hotel policies
+      hotelRepository.findPoliciesByHotelId(hotelId),
+
+      // 7. Available rooms (only if search params provided)
+      checkInDate && checkOutDate && numberOfNights && numberOfRooms
+        ? roomRepository.findAvailableRooms(
+            hotelId,
+            checkInDate,
+            checkOutDate,
+            {
+              numberOfRooms,
+              numberOfNights,
+              numberOfGuests,
+            }
+          )
+        : Promise.resolve([]),
+    ]);
+
     if (!hotel) {
       throw new ApiError(404, 'HOTEL_NOT_FOUND', 'Hotel not found');
     }
 
-    // Get available rooms if search parameters are provided
-    let rooms = [];
-    if (checkInDate && checkOutDate && numberOfDays && numberOfRooms) {
-      rooms = await hotelRepository.findAvailableRooms(
-        hotelId,
-        checkInDate,
-        checkOutDate,
-        {
-          numberOfRooms,
-          numberOfDays,
-          numberOfGuests,
-        }
-      );
-    }
+    // Format hotel data
+    const hotelData = hotel.toJSON ? hotel.toJSON() : hotel;
 
-    // Get reviews with pagination
-    const reviewsResult = await hotelRepository.findReviewsByHotelId(hotelId, {
-      limit: 10, // Default limit for reviews
-      offset: 0,
+    // Format images with presigned URLs and all variants (works with private bucket)
+    const imageList = hotelData.images || [];
+    const images = await Promise.all(
+      imageList.map(async (img) => {
+        const bucket = img.bucket_name || bucketName;
+        const url = await getPresignedUrl(bucket, img.object_key, 3600);
+
+        // Generate presigned URLs for each variant
+        const variantList = img.image_variants || [];
+        const variants = await Promise.all(
+          variantList.map(async (v) => {
+            const variantBucket = v.bucket_name || bucketName;
+            const variantUrl = await getPresignedUrl(
+              variantBucket,
+              v.object_key,
+              3600
+            );
+            return {
+              id: v.id,
+              variantType: v.variant_type,
+              url: variantUrl,
+              width: v.width,
+              height: v.height,
+            };
+          })
+        );
+
+        return {
+          id: img.id,
+          url,
+          filename: img.original_filename,
+          width: img.width,
+          height: img.height,
+          isPrimary: img.is_primary,
+          displayOrder: img.display_order,
+          variants,
+        };
+      })
+    );
+
+    // Format amenities grouped by category
+    const amenitiesByCategory = {};
+    (hotelData.amenities || []).forEach((amenity) => {
+      if (!amenitiesByCategory[amenity.category]) {
+        amenitiesByCategory[amenity.category] = [];
+      }
+      amenitiesByCategory[amenity.category].push({
+        id: amenity.id,
+        code: amenity.code,
+        name: amenity.name,
+        icon: amenity.icon,
+      });
     });
 
-    // Get nearby places
-    const nearbyPlaces =
-      await hotelRepository.findNearbyPlacesByHotelId(hotelId);
+    // Format rating summary
+    const ratingSummaryData = ratingSummary
+      ? {
+          overallRating: parseFloat(ratingSummary.overall_rating || 0),
+          totalReviews: ratingSummary.total_reviews || 0,
+          ratingDistribution: {
+            rating_10: ratingSummary.rating_10 || 0,
+            rating_9: ratingSummary.rating_9 || 0,
+            rating_8: ratingSummary.rating_8 || 0,
+            rating_7: ratingSummary.rating_7 || 0,
+            rating_6: ratingSummary.rating_6 || 0,
+            rating_5: ratingSummary.rating_5 || 0,
+            rating_4: ratingSummary.rating_4 || 0,
+            rating_3: ratingSummary.rating_3 || 0,
+            rating_2: ratingSummary.rating_2 || 0,
+            rating_1: ratingSummary.rating_1 || 0,
+          },
+          lastReviewDate: ratingSummary.last_review_date,
+        }
+      : null;
 
-    // Get review criteria averages
-    const reviewCriterias =
-      await hotelRepository.findReviewCriteriasByHotelId(hotelId);
+    // Format review criteria breakdown
+    const ratingBreakdown = {
+      cleanliness: reviewCriteria.cleanliness
+        ? parseFloat(reviewCriteria.cleanliness).toFixed(1)
+        : null,
+      location: reviewCriteria.location
+        ? parseFloat(reviewCriteria.location).toFixed(1)
+        : null,
+      service: reviewCriteria.service
+        ? parseFloat(reviewCriteria.service).toFixed(1)
+        : null,
+      valueForMoney: reviewCriteria.value_for_money
+        ? parseFloat(reviewCriteria.value_for_money).toFixed(1)
+        : null,
+      overall: reviewCriteria.overall
+        ? parseFloat(reviewCriteria.overall).toFixed(1)
+        : null,
+    };
 
-    // Get hotel policies
-    const policies = await hotelRepository.findPoliciesByHotelId(hotelId);
+    // Format reviews
+    const reviews = (reviewsResult.rows || []).map((review) => {
+      const reviewData = review.toJSON ? review.toJSON() : review;
+      return {
+        id: reviewData.id,
+        ratingOverall: parseFloat(reviewData.rating_overall),
+        ratingCleanliness: reviewData.rating_cleanliness
+          ? parseFloat(reviewData.rating_cleanliness)
+          : null,
+        ratingLocation: reviewData.rating_location
+          ? parseFloat(reviewData.rating_location)
+          : null,
+        ratingService: reviewData.rating_service
+          ? parseFloat(reviewData.rating_service)
+          : null,
+        ratingValue: reviewData.rating_value
+          ? parseFloat(reviewData.rating_value)
+          : null,
+        title: reviewData.title,
+        comment: reviewData.comment,
+        isVerified: reviewData.is_verified,
+        helpfulCount: reviewData.helpful_count,
+        createdAt: reviewData.created_at,
+        user: reviewData.user
+          ? {
+              id: reviewData.user.id,
+              firstName: reviewData.user.first_name,
+              country: reviewData.user.country,
+            }
+          : null,
+        reply: reviewData.reply
+          ? {
+              comment: reviewData.reply.comment,
+              createdAt: reviewData.reply.created_at,
+            }
+          : null,
+        media: (reviewData.media || []).map((m) => ({
+          id: m.id,
+          type: m.media_type,
+          url: m.media_url,
+        })),
+      };
+    });
 
+    // Format nearby places
+    const formattedNearbyPlaces = nearbyPlaces.map((place) => {
+      const placeData = place.toJSON ? place.toJSON() : place;
+      return {
+        id: placeData.id,
+        name: placeData.name,
+        category: placeData.category,
+        description: placeData.description,
+        address: placeData.address,
+        latitude: parseFloat(placeData.latitude),
+        longitude: parseFloat(placeData.longitude),
+        distanceKm: parseFloat(placeData.distance_km),
+        travelTimeMinutes: placeData.travel_time_minutes,
+        travelMode: placeData.travel_mode,
+        rating: placeData.rating ? parseFloat(placeData.rating) : null,
+        websiteUrl: placeData.website_url,
+        phoneNumber: placeData.phone_number,
+        openingHours: placeData.opening_hours,
+        priceLevel: placeData.price_level,
+        icon: placeData.icon,
+      };
+    });
+
+    // Format policies
+    const formattedPolicies = policies.map((policy) => {
+      const policyData = policy.toJSON ? policy.toJSON() : policy;
+      return {
+        id: policyData.id,
+        policyType: policyData.policy_type,
+        title: policyData.title,
+        description: policyData.description,
+        displayOrder: policyData.display_order,
+        icon: policyData.icon,
+      };
+    });
+
+    // Format rooms (if search params provided)
+    const formattedRooms = rooms.map((room) => ({
+      roomId: room.id || room.room_id,
+      roomName: room.room_name,
+      maxGuests: room.max_guests,
+      roomImageUrls: room.room_image_urls,
+      roomAmenities: room.room_amenities,
+      pricePerNight: parseFloat(room.price_per_night) || 0,
+      availableRooms: room.available_rooms || 0,
+      totalPrice:
+        numberOfNights && room.price_per_night
+          ? parseFloat(
+              (parseFloat(room.price_per_night) * numberOfNights).toFixed(2)
+            )
+          : null,
+    }));
+
+    // Build complete response
     return {
-      hotel: hotel.toJSON ? hotel.toJSON() : hotel,
-      rooms,
-      reviews: reviewsResult.rows || [],
-      nearbyPlaces: nearbyPlaces.map((place) =>
-        place.toJSON ? place.toJSON() : place
-      ),
-      reviewCriterias,
-      policies: policies.map((policy) =>
-        policy.toJSON ? policy.toJSON() : policy
-      ),
+      hotel: {
+        id: hotelData.id,
+        name: hotelData.name,
+        description: hotelData.description,
+        address: hotelData.address,
+        city: hotelData.city,
+        country: hotelData.country,
+        phoneNumber: hotelData.phone_number,
+        latitude: parseFloat(hotelData.latitude),
+        longitude: parseFloat(hotelData.longitude),
+        hotelClass: hotelData.hotel_class,
+        minPrice: hotelData.min_price ? parseFloat(hotelData.min_price) : null,
+        status: hotelData.status,
+        timezone: hotelData.timezone,
+      },
+      checkInOut: {
+        checkInTime: hotelData.check_in_time,
+        checkOutTime: hotelData.check_out_time,
+        checkInPolicy: hotelData.check_in_policy,
+        checkOutPolicy: hotelData.check_out_policy,
+      },
+      images,
+      amenities: amenitiesByCategory,
+      ratingSummary: ratingSummaryData,
+      ratingBreakdown,
+      reviews,
+      nearbyPlaces: formattedNearbyPlaces,
+      policies: formattedPolicies,
+      rooms: formattedRooms,
       meta: {
         totalReviews: reviewsResult.count || 0,
+        hasSearchParams: !!(checkInDate && checkOutDate && numberOfNights),
+        searchParams:
+          checkInDate && checkOutDate && numberOfNights
+            ? {
+                checkInDate,
+                checkOutDate,
+                numberOfNights,
+                numberOfRooms,
+                numberOfGuests,
+              }
+            : null,
       },
     };
   }
@@ -83,7 +323,7 @@ class HotelService {
    * @param {Object} searchParams - Search parameters
    * @param {string} searchParams.checkInDate - Check-in date
    * @param {string} searchParams.checkOutDate - Check-out date
-   * @param {number} searchParams.numberOfDays - Number of days
+   * @param {number} searchParams.numberOfNights - Number of nights (inferred from checkIn/checkOut)
    * @param {number} searchParams.numberOfRooms - Number of rooms needed
    * @param {number} searchParams.numberOfGuests - Number of guests
    * @param {number} searchParams.page - Page number (default: 1)
@@ -94,7 +334,7 @@ class HotelService {
     const {
       checkInDate,
       checkOutDate,
-      numberOfDays,
+      numberOfNights,
       numberOfRooms = 1,
       numberOfGuests,
       page = 1,
@@ -102,11 +342,11 @@ class HotelService {
     } = searchParams;
 
     // Validate required parameters
-    if (!checkInDate || !checkOutDate || !numberOfDays) {
+    if (!checkInDate || !checkOutDate || !numberOfNights) {
       throw new ApiError(
         400,
         'MISSING_PARAMETERS',
-        'checkInDate, checkOutDate, and numberOfDays are required'
+        'checkInDate and checkOutDate are required (numberOfNights is inferred from them)'
       );
     }
 
@@ -121,13 +361,13 @@ class HotelService {
     const offset = (page - 1) * validatedLimit;
 
     // Get available rooms
-    const rooms = await hotelRepository.findAvailableRooms(
+    const rooms = await roomRepository.findAvailableRooms(
       hotelId,
       checkInDate,
       checkOutDate,
       {
         numberOfRooms,
-        numberOfDays,
+        numberOfNights,
         numberOfGuests,
         limit: validatedLimit,
         offset,
@@ -148,81 +388,6 @@ class HotelService {
       limit: validatedLimit,
       total: rooms.length, // Note: This is approximate, full count would require separate query
     };
-  }
-
-  /**
-   * Check room availability for specific rooms
-   * @param {number} hotelId - Hotel ID
-   * @param {Array<Object>} selectedRooms - Array of {roomId, roomQuantity}
-   * @param {string} checkInDate - Check-in date
-   * @param {string} checkOutDate - Check-out date
-   * @param {number} numberOfDays - Number of days
-   * @param {number} numberOfGuests - Number of guests
-   * @returns {Promise<boolean>} True if all rooms are available
-   */
-  async checkRoomAvailability(
-    hotelId,
-    selectedRooms,
-    checkInDate,
-    checkOutDate,
-    numberOfDays,
-    numberOfGuests
-  ) {
-    // Validate hotel exists
-    const hotel = await hotelRepository.findById(hotelId);
-    if (!hotel) {
-      throw new ApiError(404, 'HOTEL_NOT_FOUND', 'Hotel not found');
-    }
-
-    // Validate required parameters
-    if (!checkInDate || !checkOutDate || !numberOfDays) {
-      throw new ApiError(
-        400,
-        'MISSING_PARAMETERS',
-        'checkInDate, checkOutDate, and numberOfDays are required'
-      );
-    }
-
-    if (
-      !selectedRooms ||
-      !Array.isArray(selectedRooms) ||
-      selectedRooms.length === 0
-    ) {
-      throw new ApiError(
-        400,
-        'INVALID_INPUT',
-        'selectedRooms must be a non-empty array'
-      );
-    }
-
-    // Extract room IDs
-    const roomIds = selectedRooms.map((room) => room.roomId || room.room_id);
-
-    // Check availability
-    const availableRooms = await hotelRepository.checkRoomAvailability(
-      hotelId,
-      roomIds,
-      checkInDate,
-      checkOutDate,
-      numberOfDays
-    );
-
-    // Check if all selected rooms are available in required quantities
-    for (const selectedRoom of selectedRooms) {
-      const room = availableRooms.find(
-        (r) => (r.room_id || r.id) === (selectedRoom.room_id || selectedRoom.roomId)
-      );
-
-      if (!room) {
-        return false;
-      }
-
-      if (room.available_rooms < selectedRoom.roomQuantity) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   /**
