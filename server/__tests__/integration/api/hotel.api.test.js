@@ -1,17 +1,21 @@
 /**
  * Integration Test Example for Hotel API
- * 
+ *
  * Integration tests verify that multiple components work together correctly.
  * Unlike unit tests which mock dependencies, integration tests use real implementations
  * (though may still use test database).
- * 
- * NOTE: This is a template showing the structure for integration tests.
- * To actually run these, you need to set up a test database.
- * For now, these tests are skipped.
+ *
+ * NOTE: This is a template. To run integration tests, you'll need:
+ * 1. Test database setup
+ * 2. Database seeding
+ * 3. Test environment configuration
  */
 
-// Skipping integration tests for now - requires test database setup
-describe.skip('Hotel API Integration Tests (Template)', () => {
+const request = require('supertest');
+const app = require('../../../index'); // Your Express app
+const { sequelize } = require('@config/database.config');
+
+describe('Hotel API Integration Tests', () => {
   // Setup: Run before all tests
   beforeAll(async () => {
     // Connect to test database
