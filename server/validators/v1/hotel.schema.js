@@ -231,3 +231,52 @@ exports.getHotelPolicies = {
     hotelId: hotelIdSchema,
   }).required(),
 };
+
+/**
+ * GET /api/hotels/:hotelId/nearby-places
+ * Get nearby places for a hotel
+ */
+exports.getNearbyPlaces = {
+  params: Joi.object({
+    hotelId: hotelIdSchema,
+  }).required(),
+  query: Joi.object({
+    category: Joi.string()
+      .valid(
+        'restaurant',
+        'cafe',
+        'bar',
+        'shopping',
+        'attraction',
+        'museum',
+        'park',
+        'beach',
+        'airport',
+        'train_station',
+        'bus_station',
+        'hospital',
+        'pharmacy',
+        'bank',
+        'atm',
+        'gas_station',
+        'parking',
+        'gym',
+        'spa',
+        'entertainment',
+        'landmark',
+        'religious',
+        'school',
+        'other'
+      )
+      .optional()
+      .messages({
+        'any.only': 'Invalid category',
+      }),
+    limit: Joi.number().integer().min(1).max(100).default(20).messages({
+      'number.base': 'limit must be a number',
+      'number.integer': 'limit must be an integer',
+      'number.min': 'limit must be at least 1',
+      'number.max': 'limit cannot exceed 100',
+    }),
+  }).optional(),
+};

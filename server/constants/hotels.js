@@ -26,6 +26,33 @@ const POLICY_TYPES = [
   'other',
 ];
 
+const PLACE_CATEGORIES = [
+  'restaurant',
+  'cafe',
+  'bar',
+  'shopping',
+  'attraction',
+  'museum',
+  'park',
+  'beach',
+  'airport',
+  'train_station',
+  'bus_station',
+  'hospital',
+  'pharmacy',
+  'bank',
+  'atm',
+  'gas_station',
+  'parking',
+  'gym',
+  'spa',
+  'entertainment',
+  'landmark',
+  'religious',
+  'school',
+  'other',
+];
+
 const IANA_TIMEZONES = [
   'America/New_York',
   'America/Los_Angeles',
@@ -50,4 +77,5 @@ module.exports = {
   HOTEL_CHECK_OUT_POLICIES,
   IANA_TIMEZONES,
   POLICY_TYPES,
+  PLACE_CATEGORIES,
 };

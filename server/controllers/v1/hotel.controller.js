@@ -119,9 +119,26 @@ const getHotelPolicies = asyncHandler(async (req, res) => {
   res.status(200).json({ data: policies });
 });
 
+/**
+ * GET /api/hotels/:hotelId/nearby-places
+ * Get nearby places for a hotel
+ */
+const getNearbyPlaces = asyncHandler(async (req, res) => {
+  const { hotelId } = req.params;
+  const { category, limit } = req.query;
+  
+  const places = await hotelService.getNearbyPlaces(hotelId, {
+    category,
+    limit: limit ? parseInt(limit, 10) : 20,
+  });
+  
+  res.status(200).json({ data: places });
+});
+
 module.exports = {
   getHotelDetails,
   searchRooms,
   checkRoomAvailability,
   getHotelPolicies,
+  getNearbyPlaces,
 };

@@ -4,6 +4,7 @@ const {
   searchRooms,
   checkRoomAvailability,
   getHotelPolicies,
+  getNearbyPlaces,
 } = require('@controllers/v1/hotel.controller.js');
 const validate = require('@middlewares/validate.middleware');
 const hotelSchema = require('@validators/v1/hotel.schema');
@@ -26,6 +27,17 @@ router.get(
   '/:hotelId/policies',
   validate(hotelSchema.getHotelPolicies),
   getHotelPolicies
+);
+
+/**
+ * GET /api/hotels/:hotelId/nearby-places
+ * Get nearby places for a hotel
+ * Query params: category, limit
+ */
+router.get(
+  '/:hotelId/nearby-places',
+  validate(hotelSchema.getNearbyPlaces),
+  getNearbyPlaces
 );
 
 /**

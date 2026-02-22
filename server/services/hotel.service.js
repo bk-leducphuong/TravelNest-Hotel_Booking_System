@@ -248,6 +248,69 @@ class HotelService {
       icon: policy.icon,
     }));
   }
+
+  /**
+   * Get nearby places for a hotel
+   * @param {string} hotelId - Hotel ID (UUID)
+   * @param {Object} options - Filter options
+   * @param {string} options.category - Filter by category
+   * @param {number} options.limit - Limit results (default: 20)
+   * @returns {Promise<Array>} List of nearby places
+   */
+  async getNearbyPlaces(hotelId, options = {}) {
+    // Validate hotel exists
+    const hotel = await hotelRepository.findById(hotelId);
+    if (!hotel) {
+      throw new ApiError(404, 'HOTEL_NOT_FOUND', 'Hotel not found');
+    }
+
+    const places = await hotelRepository.findNearbyPlacesByHotelId(
+      hotelId,
+      options
+    );
+
+    return places.map((place) => ({
+      id: place.id,
+      name: place.name,
+      category: place.category,
+      description: place.description,
+      address: place.address,
+      latitude: parseFloat(place.latitude),
+      longitude: parseFloat(place.longitude),
+      distanceKm: parseFloat(place.distance_km),
+      travelTimeMinutes: place.travel_time_minutes,
+      travelMode: place.travel_mode,
+      rating: place.rating ? parseFloat(place.rating) : null,
+      websiteUrl: place.website_url,
+      phoneNumber: place.phone_number,
+      openingHours: place.opening_hours,
+      priceLevel: place.price_level,
+      icon: place.icon,
+    }));
+  }
+
+  /**
+   * Get nearby places grouped by category
+   * @param {string} hotelId - Hotel ID (UUID)
+   * @returns {Promise<Array>} Places grouped by category with statistics
+   */
+  async getNearbyPlacesByCategory(hotelId) {
+    // Validate hotel exists
+    const hotel = await hotelRepository.findById(hotelId);
+    if (!hotel) {
+      throw new ApiError(404, 'HOTEL_NOT_FOUND', 'Hotel not found');
+    }
+
+    const groupedPlaces =
+      await hotelRepository.findNearbyPlacesGroupedByCategory(hotelId);
+
+    return groupedPlaces.map((group) => ({
+      category: group.category,
+      placeCount: parseInt(group.place_count),
+      minDistance: parseFloat(group.min_distance),
+      avgDistance: parseFloat(group.avg_distance),
+    }));
+  }
 }
 
 module.exports = new HotelService();

@@ -1,7 +1,7 @@
 /**
  * Nearby Places Seed File
  *
- * Generates fake nearby places data using Faker.js and seeds the database.
+ * Generates realistic nearby places data for hotels and seeds the database.
  * Requires existing hotels in the database.
  *
  * Usage:
@@ -9,9 +9,9 @@
  *   - Import and use: const { seedNearbyPlaces } = require('./seed/nearby_place.seed');
  *
  * Options:
- *   - placesPerHotel: Number of places to generate per hotel (default: 5-15 random)
  *   - clearExisting: Whether to clear existing places before seeding (default: false)
- *   - maxDistanceKm: Maximum distance from hotel in kilometers (default: 5)
+ *   - hotelIds: Specific hotel IDs (UUIDs) to seed (optional, seeds all if not provided)
+ *   - placesPerHotel: Number of places to generate per hotel (default: 15-25 random)
  *
  * Note: This seed file requires hotels to exist in the database first.
  */
@@ -23,83 +23,164 @@ require('dotenv').config({
       : '.env.production',
 });
 const { faker } = require('@faker-js/faker');
-const db = require('../models');
-const sequelize = require('../config/database.config');
-const { nearby_places, hotels } = db;
+const db = require('../../../models');
+const sequelize = require('../../../config/database.config');
+const { PLACE_CATEGORIES } = require('../../../constants/hotels');
+const { hotels, nearby_places } = db;
 
-// Common place types/categories
-const PLACE_TYPES = {
+// Place name templates by category
+const PLACE_NAMES = {
   restaurant: [
-    'Restaurant',
-    'Cafe',
-    'Bistro',
-    'Diner',
-    'Pizzeria',
-    'Steakhouse',
-    'Seafood Restaurant',
-    'Italian Restaurant',
-    'Asian Restaurant',
-    'Mexican Restaurant',
-    'Fast Food',
-    'Bakery',
-    'Coffee Shop',
-    'Bar & Grill',
+    'The Golden Spoon',
+    'Bella Vista Restaurant',
+    'Ocean Breeze Dining',
+    'La Terrazza',
+    'The Grill House',
+    'Sakura Sushi Bar',
+    'Mama Mia Trattoria',
+    'Le Petit Bistro',
+    'Taste of Paradise',
+    'The Chef\'s Table',
+  ],
+  cafe: [
+    'Morning Brew Cafe',
+    'The Coffee Corner',
+    'Espresso Yourself',
+    'Bean There Done That',
+    'The Daily Grind',
+    'Latte Love',
+    'Cafe Central',
+    'The Roastery',
+  ],
+  bar: [
+    'The Tipsy Turtle',
+    'Blue Moon Bar',
+    'The Vault Lounge',
+    'Sunset Bar & Grill',
+    'The Cocktail Lab',
+    'Whiskey & Wine',
+  ],
+  shopping: [
+    'City Mall',
+    'Fashion District',
+    'The Marketplace',
+    'Downtown Shopping Center',
+    'Boutique Row',
+    'Grand Plaza',
   ],
   attraction: [
-    'Museum',
-    'Art Gallery',
-    'Park',
-    'Beach',
-    'Shopping Mall',
-    'Market',
-    'Theater',
-    'Cinema',
-    'Stadium',
-    'Zoo',
-    'Aquarium',
-    'Botanical Garden',
-    'Monument',
-    'Landmark',
-    'Historic Site',
-    'Viewpoint',
+    'City Viewpoint',
+    'Historic Downtown',
+    'Waterfront Promenade',
+    'Old Town Square',
+    'Harbor Walk',
   ],
-  service: [
-    'Supermarket',
-    'Convenience Store',
-    'Pharmacy',
-    'Bank',
-    'ATM',
-    'Hospital',
-    'Clinic',
-    'Gas Station',
-    'Post Office',
-    'Police Station',
-    'Fire Station',
+  museum: [
+    'City Museum',
+    'Art Gallery',
+    'History Museum',
+    'Science Center',
+    'Contemporary Art Museum',
+  ],
+  park: [
+    'Central Park',
+    'Riverside Park',
+    'Botanical Gardens',
+    'City Green',
+    'Memorial Park',
+  ],
+  beach: [
+    'Sandy Beach',
+    'Paradise Cove',
+    'Sunset Beach',
+    'Crystal Bay',
+    'North Shore Beach',
+  ],
+  airport: [
+    'International Airport',
+    'City Airport',
+    'Regional Airport',
+  ],
+  train_station: [
+    'Central Station',
+    'Main Terminal',
+    'Railway Station',
+  ],
+  bus_station: [
+    'Central Bus Terminal',
+    'City Bus Station',
+    'Transit Center',
+  ],
+  hospital: [
+    'City Hospital',
+    'Medical Center',
+    'General Hospital',
+    'Emergency Care Center',
+  ],
+  pharmacy: [
+    'City Pharmacy',
+    '24/7 Drugstore',
+    'Health Plus Pharmacy',
+  ],
+  bank: [
+    'National Bank',
+    'City Bank',
+    'Trust Bank',
+    'Financial Center',
+  ],
+  atm: [
+    'ATM - Main Street',
+    'ATM - Plaza',
+    'ATM - Station',
+  ],
+  parking: [
+    'Downtown Parking',
+    'City Parking Garage',
+    'Public Parking Lot',
+  ],
+  gym: [
+    'Fitness Center',
+    '24/7 Gym',
+    'Power Fitness',
+    'Body & Soul Gym',
+  ],
+  spa: [
+    'Serenity Spa',
+    'Wellness Center',
+    'The Spa Retreat',
+    'Harmony Spa',
   ],
   entertainment: [
-    'Nightclub',
-    'Karaoke',
-    'Bowling Alley',
-    'Arcade',
-    'Casino',
-    'Spa',
-    'Gym',
-    'Fitness Center',
-    'Swimming Pool',
-    'Golf Course',
+    'Cinema Complex',
+    'Theater',
+    'Concert Hall',
+    'Entertainment Center',
+  ],
+  landmark: [
+    'Historic Monument',
+    'City Tower',
+    'Famous Square',
+    'Memorial',
+  ],
+  religious: [
+    'Cathedral',
+    'Temple',
+    'Church',
+    'Mosque',
+    'Synagogue',
   ],
 };
 
 /**
  * Calculate distance between two coordinates (Haversine formula)
- * @param {number} lat1 - Latitude 1
- * @param {number} lon1 - Longitude 1
- * @param {number} lat2 - Latitude 2
- * @param {number} lon2 - Longitude 2
+ * @param {number} lat1 - Latitude of point 1
+ * @param {number} lon1 - Longitude of point 1
+ * @param {number} lat2 - Latitude of point 2
+ * @param {number} lon2 - Longitude of point 2
  * @returns {number} Distance in kilometers
  */
 function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Earth's radius in kilometers
+  const R = 6371; // Earth's radius in km
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -113,128 +194,197 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 /**
- * Generate a random coordinate near a given point
- * @param {number} centerLat - Center latitude
- * @param {number} centerLon - Center longitude
- * @param {number} maxDistanceKm - Maximum distance in kilometers
- * @returns {Object} Object with latitude and longitude
+ * Generate a random coordinate near a base coordinate
+ * @param {number} baseLat - Base latitude
+ * @param {number} baseLon - Base longitude
+ * @param {number} maxDistanceKm - Maximum distance in km
+ * @returns {Object} { latitude, longitude }
  */
-function generateNearbyCoordinate(centerLat, centerLon, maxDistanceKm = 5) {
-  // Convert to radians
-  const centerLatRad = (centerLat * Math.PI) / 180;
-  const centerLonRad = (centerLon * Math.PI) / 180;
-
-  // Random distance in km (0 to maxDistanceKm)
-  const distance = faker.number.float({ min: 0.1, max: maxDistanceKm });
-
-  // Random bearing (0 to 360 degrees)
-  const bearing = faker.number.float({ min: 0, max: 360 }) * (Math.PI / 180);
-
-  // Earth's radius in km
-  const R = 6371;
-
-  // Calculate new latitude
-  const newLatRad = Math.asin(
-    Math.sin(centerLatRad) * Math.cos(distance / R) +
-      Math.cos(centerLatRad) *
-        Math.sin(distance / R) *
-        Math.cos(bearing)
-  );
-
-  // Calculate new longitude
-  const newLonRad =
-    centerLonRad +
-    Math.atan2(
-      Math.sin(bearing) * Math.sin(distance / R) * Math.cos(centerLatRad),
-      Math.cos(distance / R) -
-        Math.sin(centerLatRad) * Math.sin(newLatRad)
-    );
-
-  // Convert back to degrees
-  const newLat = (newLatRad * 180) / Math.PI;
-  const newLon = (newLonRad * 180) / Math.PI;
+function generateNearbyCoordinate(baseLat, baseLon, maxDistanceKm) {
+  // Rough conversion: 1 degree ≈ 111km
+  const maxDegrees = maxDistanceKm / 111;
+  const latOffset = (Math.random() - 0.5) * 2 * maxDegrees;
+  const lonOffset = (Math.random() - 0.5) * 2 * maxDegrees;
 
   return {
-    latitude: parseFloat(newLat.toFixed(6)),
-    longitude: parseFloat(newLon.toFixed(6)),
+    latitude: parseFloat((baseLat + latOffset).toFixed(7)),
+    longitude: parseFloat((baseLon + lonOffset).toFixed(7)),
   };
 }
 
 /**
- * Generate a place name based on type
- * @returns {string} Place name
- */
-function generatePlaceName() {
-  const category = faker.helpers.arrayElement(Object.keys(PLACE_TYPES));
-  const placeType = faker.helpers.arrayElement(PLACE_TYPES[category]);
-  const name = faker.company.name();
-
-  // Sometimes add the type, sometimes just use the name
-  if (faker.datatype.boolean()) {
-    return `${name} ${placeType}`;
-  }
-  return `${placeType} ${name}`;
-}
-
-/**
- * Generate fake nearby places data for a hotel
- * @param {number} hotelId - Hotel ID
- * @param {number} hotelLat - Hotel latitude
- * @param {number} hotelLon - Hotel longitude
+ * Generate nearby places for a hotel
+ * @param {Object} hotel - Hotel object with id, latitude, longitude
  * @param {number} count - Number of places to generate
- * @param {number} maxDistanceKm - Maximum distance in kilometers
- * @returns {Array} Array of nearby place data objects
+ * @returns {Array} Array of nearby place objects
  */
-function generateNearbyPlacesForHotel(
-  hotelId,
-  hotelLat,
-  hotelLon,
-  count,
-  maxDistanceKm = 5
-) {
+function generateNearbyPlacesForHotel(hotel, count = 20) {
   const places = [];
+  const hotelLat = parseFloat(hotel.latitude);
+  const hotelLon = parseFloat(hotel.longitude);
+  let displayOrder = 0;
 
-  for (let i = 0; i < count; i++) {
-    const coordinate = generateNearbyCoordinate(
+  // Ensure we have a good mix of categories
+  const essentialCategories = [
+    'restaurant',
+    'cafe',
+    'shopping',
+    'attraction',
+    'pharmacy',
+    'bank',
+  ];
+
+  const optionalCategories = PLACE_CATEGORIES.filter(
+    (cat) => !essentialCategories.includes(cat)
+  );
+
+  // Add essential places (2-3 of each)
+  essentialCategories.forEach((category) => {
+    const numPlaces = faker.number.int({ min: 2, max: 3 });
+    for (let i = 0; i < numPlaces; i++) {
+      const place = generatePlace(
+        hotel.id,
+        category,
+        hotelLat,
+        hotelLon,
+        displayOrder++
+      );
+      places.push(place);
+    }
+  });
+
+  // Fill remaining with random categories
+  const remainingCount = count - places.length;
+  for (let i = 0; i < remainingCount; i++) {
+    const category = faker.helpers.arrayElement([
+      ...essentialCategories,
+      ...optionalCategories,
+    ]);
+    const place = generatePlace(
+      hotel.id,
+      category,
       hotelLat,
       hotelLon,
-      maxDistanceKm
+      displayOrder++
     );
-
-    const place = {
-      hotel_id: hotelId,
-      place_name: generatePlaceName(),
-      latitude: coordinate.latitude,
-      longitude: coordinate.longitude,
-    };
-
     places.push(place);
   }
+
+  // Sort by distance
+  places.sort((a, b) => a.distance_km - b.distance_km);
+
+  // Update display order based on distance
+  places.forEach((place, index) => {
+    place.display_order = index;
+  });
 
   return places;
 }
 
 /**
+ * Generate a single place
+ */
+function generatePlace(hotelId, category, hotelLat, hotelLon, displayOrder) {
+  // Generate coordinates within a reasonable distance
+  const maxDistance = category === 'airport' ? 30 : category === 'train_station' || category === 'bus_station' ? 10 : 5;
+  const coords = generateNearbyCoordinate(hotelLat, hotelLon, maxDistance);
+
+  const distance = calculateDistance(
+    hotelLat,
+    hotelLon,
+    coords.latitude,
+    coords.longitude
+  );
+
+  // Calculate travel time based on distance and mode
+  let travelMode = 'walking';
+  let travelTime = null;
+
+  if (distance <= 1.5) {
+    travelMode = 'walking';
+    travelTime = Math.ceil(distance * 12); // ~12 min per km
+  } else if (distance <= 5) {
+    travelMode = Math.random() > 0.5 ? 'walking' : 'public_transport';
+    travelTime =
+      travelMode === 'walking'
+        ? Math.ceil(distance * 12)
+        : Math.ceil(distance * 5);
+  } else {
+    travelMode =
+      Math.random() > 0.3 ? 'public_transport' : 'driving';
+    travelTime =
+      travelMode === 'driving'
+        ? Math.ceil(distance * 3)
+        : Math.ceil(distance * 5);
+  }
+
+  const nameTemplates = PLACE_NAMES[category] || ['Local Place'];
+  const name = faker.helpers.arrayElement(nameTemplates);
+
+  // Generate rating (most places have good ratings)
+  const ratingDist = faker.number.int({ min: 1, max: 100 });
+  let rating;
+  if (ratingDist <= 40) {
+    rating = faker.number.float({ min: 4.5, max: 5.0, precision: 0.1 });
+  } else if (ratingDist <= 75) {
+    rating = faker.number.float({ min: 4.0, max: 4.4, precision: 0.1 });
+  } else if (ratingDist <= 90) {
+    rating = faker.number.float({ min: 3.5, max: 3.9, precision: 0.1 });
+  } else {
+    rating = faker.number.float({ min: 3.0, max: 3.4, precision: 0.1 });
+  }
+
+  // Price level for relevant categories
+  let priceLevel = null;
+  if (['restaurant', 'cafe', 'bar', 'spa', 'gym'].includes(category)) {
+    priceLevel = faker.number.int({ min: 1, max: 4 });
+  }
+
+  const place = {
+    hotel_id: hotelId,
+    name,
+    category,
+    description: faker.company.catchPhrase(),
+    address: faker.location.streetAddress(),
+    latitude: coords.latitude,
+    longitude: coords.longitude,
+    distance_km: parseFloat(distance.toFixed(2)),
+    travel_time_minutes: travelTime,
+    travel_mode: travelMode,
+    rating: parseFloat(rating.toFixed(1)),
+    phone_number:
+      Math.random() > 0.3 ? faker.phone.number('+1##########') : null,
+    website_url: Math.random() > 0.5 ? faker.internet.url() : null,
+    price_level: priceLevel,
+    is_verified: Math.random() > 0.3,
+    is_active: true,
+    display_order: displayOrder,
+    icon: category,
+    created_at: faker.date.past({ years: 1 }),
+    updated_at: faker.date.recent({ days: 30 }),
+  };
+
+  return place;
+}
+
+/**
  * Seed nearby places into the database
  * @param {Object} options - Seeding options
- * @param {number|Object} options.placesPerHotel - Number of places per hotel (default: random 5-15)
- *   Can be a number or object with min/max: { min: 5, max: 15 }
  * @param {boolean} options.clearExisting - Whether to clear existing places (default: false)
- * @param {number} options.maxDistanceKm - Maximum distance from hotel in km (default: 5)
- * @param {Array<number>} options.hotelIds - Specific hotel IDs to seed (optional, seeds all if not provided)
+ * @param {Array<string>} options.hotelIds - Specific hotel IDs (UUIDs) to seed (optional)
+ * @param {number|Object} options.placesPerHotel - Places per hotel (default: {min:15, max:25})
  */
 async function seedNearbyPlaces(options = {}) {
   const {
-    placesPerHotel = { min: 5, max: 15 },
     clearExisting = false,
-    maxDistanceKm = 5,
     hotelIds = null,
+    placesPerHotel = { min: 15, max: 25 },
   } = options;
 
   try {
     console.log('🌱 Starting nearby places seeding...');
 
-    // Get all hotels with coordinates or specific hotels
+    // Get hotels
     let hotelQuery = {};
     if (hotelIds && Array.isArray(hotelIds) && hotelIds.length > 0) {
       hotelQuery = { id: hotelIds };
@@ -263,92 +413,67 @@ async function seedNearbyPlaces(options = {}) {
       console.log('✅ Existing nearby places cleared');
     }
 
-    let totalPlacesCreated = 0;
     const placesToCreate = [];
 
     // Generate places for each hotel
     for (const hotel of existingHotels) {
       const hotelId = hotel.id || hotel.get?.('id');
-      const hotelLat = parseFloat(hotel.latitude || hotel.get?.('latitude'));
-      const hotelLon = parseFloat(hotel.longitude || hotel.get?.('longitude'));
 
-      // Validate coordinates
-      if (
-        isNaN(hotelLat) ||
-        isNaN(hotelLon) ||
-        hotelLat < -90 ||
-        hotelLat > 90 ||
-        hotelLon < -180 ||
-        hotelLon > 180
-      ) {
-        console.log(
-          `   ⚠️  Skipping hotel ${hotelId}: Invalid coordinates (${hotelLat}, ${hotelLon})`
-        );
-        continue;
-      }
-
-      // Determine number of places for this hotel
       let numPlaces;
       if (typeof placesPerHotel === 'number') {
         numPlaces = placesPerHotel;
       } else {
         numPlaces = faker.number.int({
-          min: placesPerHotel.min || 5,
-          max: placesPerHotel.max || 15,
+          min: placesPerHotel.min || 15,
+          max: placesPerHotel.max || 25,
         });
       }
 
-      const hotelPlaces = generateNearbyPlacesForHotel(
-        hotelId,
-        hotelLat,
-        hotelLon,
-        numPlaces,
-        maxDistanceKm
-      );
+      const hotelPlaces = generateNearbyPlacesForHotel(hotel, numPlaces);
       placesToCreate.push(...hotelPlaces);
-      totalPlacesCreated += hotelPlaces.length;
 
       console.log(
-        `   📍 Generated ${hotelPlaces.length} place(s) for hotel ID ${hotelId}`
+        `   📍 Generated ${hotelPlaces.length} nearby places for hotel ${hotelId}`
       );
     }
 
     // Bulk create all places
     if (placesToCreate.length > 0) {
       console.log(
-        `\n💾 Creating ${placesToCreate.length} place(s) in database...`
+        `\n💾 Creating ${placesToCreate.length} nearby place(s) in database...`
       );
-      await nearby_places.bulkCreate(placesToCreate, {
-        ignoreDuplicates: true,
+      const createdPlaces = await nearby_places.bulkCreate(placesToCreate, {
         validate: true,
+        returning: true,
       });
-      console.log(`✅ ${placesToCreate.length} place(s) created successfully`);
+
+      console.log(
+        `✅ ${createdPlaces.length} nearby place(s) created successfully`
+      );
     }
 
     // Display summary
     const totalPlaces = await nearby_places.count();
-    const placesByHotel = await nearby_places.findAll({
+    const placesByCategory = await nearby_places.findAll({
       attributes: [
-        'hotel_id',
-        [
-          sequelize.fn('COUNT', sequelize.col('place_id')),
-          'place_count',
-        ],
+        'category',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'place_count'],
+        [sequelize.fn('AVG', sequelize.col('distance_km')), 'avg_distance'],
       ],
-      group: ['hotel_id'],
+      group: ['category'],
       raw: true,
     });
 
     console.log('\n📊 Nearby Places Summary:');
     console.log(`   Total places: ${totalPlaces}`);
-    console.log(`   Places created in this run: ${totalPlacesCreated}`);
-    console.log(`   Hotels with places: ${placesByHotel.length}`);
+    console.log(`   Hotels with places: ${existingHotels.length}`);
 
-    if (placesByHotel.length > 0 && placesByHotel.length <= 10) {
-      console.log('\n   Places per hotel:');
-      placesByHotel.forEach((item) => {
+    if (placesByCategory.length > 0) {
+      console.log('\n   Places by category:');
+      placesByCategory.forEach((item) => {
+        const avgDist = parseFloat(item.avg_distance || 0).toFixed(2);
         console.log(
-          `     Hotel ${item.hotel_id}: ${item.place_count} place(s)`
+          `     ${item.category}: ${item.place_count} (avg distance: ${avgDist}km)`
         );
       });
     }
@@ -359,19 +484,14 @@ async function seedNearbyPlaces(options = {}) {
 }
 
 /**
- * Seed nearby places for a specific hotel
- * @param {number} hotelId - Hotel ID
+ * Seed places for a specific hotel
+ * @param {string} hotelId - Hotel ID (UUID)
  * @param {number} count - Number of places to generate
- * @param {number} maxDistanceKm - Maximum distance in kilometers
  * @returns {Promise<Array>} Created places
  */
-async function seedNearbyPlacesForHotel(
-  hotelId,
-  count = 10,
-  maxDistanceKm = 5
-) {
+async function seedPlacesForHotel(hotelId, count = 20) {
   try {
-    // Verify hotel exists and get coordinates
+    // Verify hotel exists
     const hotel = await hotels.findByPk(hotelId, {
       attributes: ['id', 'latitude', 'longitude'],
     });
@@ -380,66 +500,21 @@ async function seedNearbyPlacesForHotel(
       throw new Error(`Hotel with ID ${hotelId} not found`);
     }
 
-    const hotelLat = parseFloat(hotel.latitude);
-    const hotelLon = parseFloat(hotel.longitude);
+    const placesToCreate = generateNearbyPlacesForHotel(hotel, count);
 
-    if (
-      isNaN(hotelLat) ||
-      isNaN(hotelLon) ||
-      hotelLat < -90 ||
-      hotelLat > 90 ||
-      hotelLon < -180 ||
-      hotelLon > 180
-    ) {
-      throw new Error(
-        `Hotel ${hotelId} has invalid coordinates (${hotelLat}, ${hotelLon})`
-      );
-    }
-
-    const hotelPlaces = generateNearbyPlacesForHotel(
-      hotelId,
-      hotelLat,
-      hotelLon,
-      count,
-      maxDistanceKm
-    );
-    const createdPlaces = await nearby_places.bulkCreate(hotelPlaces, {
+    const createdPlaces = await nearby_places.bulkCreate(placesToCreate, {
       validate: true,
+      returning: true,
     });
 
     console.log(
-      `✅ Created ${createdPlaces.length} place(s) for hotel ${hotelId}`
+      `✅ Created ${createdPlaces.length} nearby places for hotel ${hotelId}`
     );
     return createdPlaces;
   } catch (error) {
     console.error(`❌ Error seeding places for hotel ${hotelId}:`, error);
     throw error;
   }
-}
-
-/**
- * Generate nearby places data without saving to database (for testing)
- * @param {number} hotelId - Hotel ID
- * @param {number} hotelLat - Hotel latitude
- * @param {number} hotelLon - Hotel longitude
- * @param {number} count - Number of places to generate
- * @param {number} maxDistanceKm - Maximum distance in kilometers
- * @returns {Array} Array of nearby place data objects
- */
-function generateNearbyPlaces(
-  hotelId,
-  hotelLat,
-  hotelLon,
-  count = 10,
-  maxDistanceKm = 5
-) {
-  return generateNearbyPlacesForHotel(
-    hotelId,
-    hotelLat,
-    hotelLon,
-    count,
-    maxDistanceKm
-  );
 }
 
 // If running directly
@@ -452,10 +527,9 @@ if (require.main === module) {
 
       // Seed nearby places
       await seedNearbyPlaces({
-        placesPerHotel: { min: 5, max: 15 }, // Random 5-15 places per hotel
-        maxDistanceKm: 5, // Within 5km radius
         clearExisting: false, // Set to true to clear existing places
-        // hotelIds: [1, 2, 3], // Optional: seed only specific hotels
+        placesPerHotel: { min: 15, max: 25 },
+        // hotelIds: ['uuid-1', 'uuid-2'], // Optional: seed only specific hotels
       });
 
       // Close database connection
@@ -471,7 +545,6 @@ if (require.main === module) {
 
 module.exports = {
   seedNearbyPlaces,
-  seedNearbyPlacesForHotel,
-  generateNearbyPlaces,
+  seedPlacesForHotel,
   generateNearbyPlacesForHotel,
 };
