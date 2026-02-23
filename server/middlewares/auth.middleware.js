@@ -16,7 +16,7 @@ const logger = require('@config/logger.config');
 async function authenticate(req, res, next) {
   try {
     // Check if session exists and has user data
-    if (!req.session?.userData?.id) {
+    if (!req.session?.user?.id) {
       return res.status(401).json({
         success: false,
         message: 'Unauthorized access. Please log in.',
