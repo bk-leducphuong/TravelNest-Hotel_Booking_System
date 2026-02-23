@@ -2,9 +2,8 @@ const paymentService = require('@services/payment.service');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 const StripeWebhookAdapter = require('@adapters/webhooks/stripeWebhook.adapter');
 const webhookEventLogRepository = require('@repositories/webhook_event_log.repository');
-const notificationService = require('@services/notification.service');
-const emailService = require('@services/email.service');
-const inventoryService = require('@services/inventory.service');
+const { paymentNotificationQueue } = require('@queues/index');
+const { addJob } = require('@utils/bullmq.utils');
 const logger = require('@config/logger.config');
 
 /**
@@ -105,9 +104,21 @@ async function handlePaymentSucceeded(event) {
     const result = await paymentService.handlePaymentSucceeded(context);
 
     if (!result.alreadyProcessed) {
-      sendPaymentSuccessNotifications(context).catch((err) => {
-        logger.error('Error sending payment success notifications:', err);
-      });
+      await addJob(
+        paymentNotificationQueue,
+        'payment-success',
+        {
+          type: 'payment_success',
+          context: {
+            ...context,
+            eventId: event.id,
+          },
+        },
+        {
+          priority: 8,
+          jobId: `payment-success-${context.bookingCode || context.paymentIntentId}-${event.id}`,
+        }
+      );
     }
 
     logger.info('Payment succeeded handled successfully', {
@@ -132,9 +143,21 @@ async function handlePaymentFailed(event) {
 
     await paymentService.handlePaymentFailed(context);
 
-    sendPaymentFailureNotifications(context).catch((err) => {
-      logger.error('Error sending payment failure notifications:', err);
-    });
+    await addJob(
+      paymentNotificationQueue,
+      'payment-failure',
+      {
+        type: 'payment_failure',
+        context: {
+          ...context,
+          eventId: event.id,
+        },
+      },
+      {
+        priority: 5,
+        jobId: `payment-failure-${context.paymentIntentId}-${event.id}`,
+      }
+    );
 
     logger.info('Payment failed handled successfully', { eventId: event.id });
   } catch (error) {
@@ -154,15 +177,21 @@ async function handleChargeRefunded(event) {
 
     await paymentService.handleRefundSucceeded(context);
 
-    await inventoryService.releaseRooms({
-      bookedRooms: context.bookedRooms,
-      checkInDate: context.checkInDate,
-      checkOutDate: context.checkOutDate,
-    });
-
-    sendRefundNotifications(context).catch((err) => {
-      logger.error('Error sending refund notifications:', err);
-    });
+    await addJob(
+      paymentNotificationQueue,
+      'refund',
+      {
+        type: 'refund',
+        context: {
+          ...context,
+          eventId: event.id,
+        },
+      },
+      {
+        priority: 7,
+        jobId: `refund-${context.bookingCode || context.refundId || context.chargeId}-${event.id}`,
+      }
+    );
 
     logger.info('Refund handled successfully', {
       eventId: event.id,
@@ -183,13 +212,22 @@ async function handlePayoutPaid(event) {
   try {
     const context = webhookAdapter.extractPayoutContext(event);
 
-    // Update invoice status
-    // await invoiceService.markAsPaid(context.transactionId);
-
-    // Send payout notification
-    sendPayoutNotifications(context, 'completed').catch((err) => {
-      logger.error('Error sending payout notifications:', err);
-    });
+    await addJob(
+      paymentNotificationQueue,
+      'payout-completed',
+      {
+        type: 'payout',
+        status: 'completed',
+        context: {
+          ...context,
+          eventId: event.id,
+        },
+      },
+      {
+        priority: 5,
+        jobId: `payout-completed-${context.transactionId || context.payoutId}-${event.id}`,
+      }
+    );
 
     logger.info('Payout paid handled successfully', { eventId: event.id });
   } catch (error) {
@@ -207,122 +245,27 @@ async function handlePayoutFailed(event) {
   try {
     const context = webhookAdapter.extractPayoutContext(event);
 
-    // Send payout failure notification
-    sendPayoutNotifications(context, 'failed').catch((err) => {
-      logger.error('Error sending payout notifications:', err);
-    });
+    await addJob(
+      paymentNotificationQueue,
+      'payout-failed',
+      {
+        type: 'payout',
+        status: 'failed',
+        context: {
+          ...context,
+          eventId: event.id,
+        },
+      },
+      {
+        priority: 5,
+        jobId: `payout-failed-${context.transactionId || context.payoutId}-${event.id}`,
+      }
+    );
 
     logger.info('Payout failed handled successfully', { eventId: event.id });
   } catch (error) {
     logger.error('Error handling payout failed:', error);
     throw error;
-  }
-}
-
-/**
- * Background task: Send payment success notifications
- * Includes emails, push notifications, socket events
- */
-async function sendPaymentSuccessNotifications(context) {
-  try {
-    // Send email confirmation
-    if (context.receiptEmail) {
-      await emailService.sendBookingConfirmation({
-        email: context.receiptEmail,
-        bookingCode: context.bookingCode,
-        checkInDate: context.checkInDate,
-        checkOutDate: context.checkOutDate,
-        numberOfGuests: context.numberOfGuests,
-        totalPrice: context.amount,
-      });
-    }
-
-    // Send real-time notifications via Socket.IO
-    await notificationService.sendNewBookingNotification({
-      buyerId: context.buyerId,
-      hotelId: context.hotelId,
-      bookingCode: context.bookingCode,
-      checkInDate: context.checkInDate,
-      checkOutDate: context.checkOutDate,
-      numberOfGuests: context.numberOfGuests,
-      bookedRooms: context.bookedRooms,
-    });
-
-    // Update room inventory
-    await inventoryService.reserveRooms({
-      bookedRooms: context.bookedRooms,
-      checkInDate: context.checkInDate,
-      checkOutDate: context.checkOutDate,
-    });
-
-    logger.info('Payment success notifications sent', {
-      bookingCode: context.bookingCode,
-    });
-  } catch (error) {
-    logger.error('Error sending payment success notifications:', error);
-    // Don't throw - notifications are non-critical
-  }
-}
-
-/**
- * Background task: Send payment failure notifications
- */
-async function sendPaymentFailureNotifications(context) {
-  try {
-    // Notify user of payment failure
-    if (context.receiptEmail) {
-      await emailService.sendPaymentFailure({
-        email: context.receiptEmail,
-        failureMessage: context.failureMessage,
-      });
-    }
-
-    logger.info('Payment failure notifications sent', {
-      buyerId: context.buyerId,
-    });
-  } catch (error) {
-    logger.error('Error sending payment failure notifications:', error);
-  }
-}
-
-/**
- * Background task: Send refund notifications
- */
-async function sendRefundNotifications(context) {
-  try {
-    await notificationService.sendRefundNotification({
-      buyerId: context.buyerId,
-      hotelId: context.hotelId,
-      bookingCode: context.bookingCode,
-      refundAmount: context.refundAmount,
-    });
-
-    logger.info('Refund notifications sent', {
-      bookingCode: context.bookingCode,
-    });
-  } catch (error) {
-    logger.error('Error sending refund notifications:', error);
-  }
-}
-
-/**
- * Background task: Send payout notifications
- */
-async function sendPayoutNotifications(context, status) {
-  try {
-    await notificationService.sendPayoutNotification({
-      hotelId: context.hotelId,
-      transactionId: context.transactionId,
-      status,
-      amount: context.amount,
-    });
-
-    logger.info('Payout notifications sent', {
-      hotelId: context.hotelId,
-      status,
-    });
-  } catch (error) {
-    logger.error('Error sending payout notifications:', error);
   }
 }
 

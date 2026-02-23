@@ -10,8 +10,14 @@ const logger = require('@config/logger.config');
 const imageWorker = require('./image.worker');
 const hotelSnapshotWorker = require('./hotelSnapshot.worker');
 const searchLogWorker = require('./searchLog.worker');
+const paymentNotificationWorker = require('./paymentNotification.worker');
 
-const workers = [imageWorker, hotelSnapshotWorker, searchLogWorker];
+const workers = [
+  imageWorker,
+  hotelSnapshotWorker,
+  searchLogWorker,
+  paymentNotificationWorker,
+];
 
 async function startWorkers() {
   try {

@@ -6,20 +6,6 @@ const logger = require('@config/logger.config');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 const sequelize = require('@config/database.config');
 
-/**
- * Refactored Payment Service
- *
- * Responsibilities:
- * - Business logic for payments
- * - Idempotent state transitions
- * - Database transactions
- * - Coordinating between entities (bookings, payments, invoices)
- *
- * Does NOT:
- * - Parse webhooks (that's adapter's job)
- * - Know about Stripe-specific details
- * - Handle HTTP requests (that's controller's job)
- */
 class PaymentService {
   constructor() {
     // Default to Stripe, but can be swapped with PayPal, etc.
