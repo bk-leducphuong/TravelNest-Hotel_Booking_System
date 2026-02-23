@@ -1,4 +1,4 @@
-const { logger } = require('@config/logger.config');
+const logger = require('@config/logger.config');
 
 /**
  * Support Namespace Controller (/support)
@@ -103,7 +103,9 @@ exports.handleConnection = (namespace, socket) => {
         timestamp: new Date(),
       });
 
-      logger.info(`Support agent ${userId} sent message for ticket ${ticketId}`);
+      logger.info(
+        `Support agent ${userId} sent message for ticket ${ticketId}`
+      );
 
       if (callback) {
         callback({ success: true, message: 'Message sent' });
@@ -147,7 +149,9 @@ exports.handleConnection = (namespace, socket) => {
         timestamp: new Date(),
       });
 
-      logger.info(`Ticket ${ticketId} assigned to agent ${assignToAgentId} by ${userId}`);
+      logger.info(
+        `Ticket ${ticketId} assigned to agent ${assignToAgentId} by ${userId}`
+      );
 
       if (callback) {
         callback({ success: true, message: 'Ticket assigned' });
@@ -182,7 +186,9 @@ exports.handleConnection = (namespace, socket) => {
         timestamp: new Date(),
       });
 
-      logger.info(`Ticket ${ticketId} status updated to ${status} by agent ${userId}`);
+      logger.info(
+        `Ticket ${ticketId} status updated to ${status} by agent ${userId}`
+      );
 
       if (callback) {
         callback({ success: true, message: 'Ticket status updated' });
@@ -215,7 +221,10 @@ exports.handleConnection = (namespace, socket) => {
         timestamp: new Date(),
       });
 
-      logger.info(`Ticket ${ticketId} escalated by agent ${userId}`, { reason, priority });
+      logger.info(`Ticket ${ticketId} escalated by agent ${userId}`, {
+        reason,
+        priority,
+      });
 
       if (callback) {
         callback({ success: true, message: 'Ticket escalated' });
@@ -257,7 +266,9 @@ exports.handleConnection = (namespace, socket) => {
 
       // This would call user service to get details
       // For now, just acknowledge
-      logger.info(`Support agent ${socket.user.id} requested details for user ${userId}`);
+      logger.info(
+        `Support agent ${socket.user.id} requested details for user ${userId}`
+      );
 
       if (callback) {
         callback({

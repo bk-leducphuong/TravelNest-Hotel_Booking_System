@@ -1,4 +1,4 @@
-const { logger } = require('@config/logger.config');
+const logger = require('@config/logger.config');
 
 /**
  * Admin Namespace Controller (/admin)
@@ -139,7 +139,9 @@ exports.handleConnection = (namespace, socket) => {
         // Broadcast to specific namespace
         const targetNs = namespace.server.of(targetNamespace);
         targetNs.emit('admin:broadcast', broadcastData);
-        logger.info(`Admin ${userId} broadcasted to namespace ${targetNamespace}`);
+        logger.info(
+          `Admin ${userId} broadcasted to namespace ${targetNamespace}`
+        );
       } else if (targetGroup) {
         // Broadcast to specific group across all namespaces
         namespace.server.emit('admin:broadcast', {
@@ -187,7 +189,9 @@ exports.handleConnection = (namespace, socket) => {
             reason: 'Administrative action',
             by: userId,
           });
-          logger.info(`Admin ${socket.user.id} terminated session for user ${userId}`);
+          logger.info(
+            `Admin ${socket.user.id} terminated session for user ${userId}`
+          );
           break;
 
         case 'suspend':
@@ -271,7 +275,10 @@ exports.handleConnection = (namespace, socket) => {
 
       socket.join('system_logs');
 
-      logger.info(`Admin ${userId} subscribed to system logs`, { level, service });
+      logger.info(`Admin ${userId} subscribed to system logs`, {
+        level,
+        service,
+      });
 
       if (callback) {
         callback({ success: true, message: 'Subscribed to system logs' });
@@ -297,7 +304,9 @@ exports.handleConnection = (namespace, socket) => {
         timestamp: new Date(),
       });
 
-      logger.warn(`Admin ${userId} ${enabled ? 'enabled' : 'disabled'} maintenance mode`);
+      logger.warn(
+        `Admin ${userId} ${enabled ? 'enabled' : 'disabled'} maintenance mode`
+      );
 
       if (callback) {
         callback({
@@ -308,7 +317,10 @@ exports.handleConnection = (namespace, socket) => {
     } catch (error) {
       logger.error('Error toggling maintenance mode:', error);
       if (callback) {
-        callback({ success: false, message: 'Failed to toggle maintenance mode' });
+        callback({
+          success: false,
+          message: 'Failed to toggle maintenance mode',
+        });
       }
     }
   });

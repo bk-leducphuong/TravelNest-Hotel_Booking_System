@@ -1,4 +1,4 @@
-const { logger } = require('@config/logger.config');
+const logger = require('@config/logger.config');
 
 /**
  * Public Namespace Controller (/public)
@@ -39,7 +39,9 @@ exports.handleConnection = (namespace, socket) => {
       const roomName = `hotel_page_${hotelId}`;
       socket.join(roomName);
 
-      logger.info(`Guest joined hotel page: ${hotelId}`, { socketId: socket.id });
+      logger.info(`Guest joined hotel page: ${hotelId}`, {
+        socketId: socket.id,
+      });
 
       const response = {
         success: true,
@@ -49,7 +51,10 @@ exports.handleConnection = (namespace, socket) => {
       if (callback) callback(response);
     } catch (error) {
       logger.error('Error joining hotel page:', error);
-      const errorResponse = { success: false, message: 'Failed to join hotel page' };
+      const errorResponse = {
+        success: false,
+        message: 'Failed to join hotel page',
+      };
       if (callback) callback(errorResponse);
     }
   });
@@ -65,7 +70,8 @@ exports.handleConnection = (namespace, socket) => {
       if (callback) callback({ success: true });
     } catch (error) {
       logger.error('Error leaving hotel page:', error);
-      if (callback) callback({ success: false, message: 'Failed to leave hotel page' });
+      if (callback)
+        callback({ success: false, message: 'Failed to leave hotel page' });
     }
   });
 
@@ -77,7 +83,11 @@ exports.handleConnection = (namespace, socket) => {
 
       // This would typically call a service to check availability
       // For now, just acknowledge the request
-      logger.info('Availability check requested', { hotelId, roomId, socketId: socket.id });
+      logger.info('Availability check requested', {
+        hotelId,
+        roomId,
+        socketId: socket.id,
+      });
 
       if (callback) {
         callback({
@@ -113,7 +123,11 @@ exports.handleConnection = (namespace, socket) => {
  * @param {string} hotelId - Hotel ID
  * @param {Object} availabilityData - Availability update data
  */
-exports.broadcastAvailabilityUpdate = (namespace, hotelId, availabilityData) => {
+exports.broadcastAvailabilityUpdate = (
+  namespace,
+  hotelId,
+  availabilityData
+) => {
   const roomName = `hotel_page_${hotelId}`;
   namespace.to(roomName).emit('availability:updated', availabilityData);
   logger.info(`Broadcasted availability update to hotel page ${hotelId}`);

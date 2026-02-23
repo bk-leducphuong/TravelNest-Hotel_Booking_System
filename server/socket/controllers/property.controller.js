@@ -1,4 +1,4 @@
-const { logger } = require('@config/logger.config');
+const logger = require('@config/logger.config');
 const { ROLES, HOTEL_ROLES } = require('@constants/roles');
 
 /**
@@ -109,7 +109,10 @@ exports.handleConnection = (namespace, socket) => {
       logger.info(`Property user ${userId} subscribed to booking ${bookingId}`);
 
       if (callback) {
-        callback({ success: true, message: `Subscribed to booking ${bookingId}` });
+        callback({
+          success: true,
+          message: `Subscribed to booking ${bookingId}`,
+        });
       }
     } catch (error) {
       logger.error('Error subscribing to booking:', error);
@@ -153,7 +156,9 @@ exports.handleConnection = (namespace, socket) => {
         timestamp: new Date(),
       });
 
-      logger.info(`Booking ${bookingId} status updated to ${status} by user ${userId}`);
+      logger.info(
+        `Booking ${bookingId} status updated to ${status} by user ${userId}`
+      );
 
       if (callback) {
         callback({ success: true, message: 'Booking status updated' });
@@ -161,7 +166,10 @@ exports.handleConnection = (namespace, socket) => {
     } catch (error) {
       logger.error('Error updating booking status:', error);
       if (callback) {
-        callback({ success: false, message: 'Failed to update booking status' });
+        callback({
+          success: false,
+          message: 'Failed to update booking status',
+        });
       }
     }
   });
@@ -247,7 +255,9 @@ exports.handleConnection = (namespace, socket) => {
       const analyticsRoom = `analytics_${hotelId}`;
       socket.join(analyticsRoom);
 
-      logger.info(`User ${userId} subscribed to analytics for hotel ${hotelId}`);
+      logger.info(
+        `User ${userId} subscribed to analytics for hotel ${hotelId}`
+      );
 
       if (callback) {
         callback({
@@ -258,7 +268,10 @@ exports.handleConnection = (namespace, socket) => {
     } catch (error) {
       logger.error('Error subscribing to analytics:', error);
       if (callback) {
-        callback({ success: false, message: 'Failed to subscribe to analytics' });
+        callback({
+          success: false,
+          message: 'Failed to subscribe to analytics',
+        });
       }
     }
   });

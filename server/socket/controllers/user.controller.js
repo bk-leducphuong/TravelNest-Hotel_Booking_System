@@ -1,4 +1,4 @@
-const { logger } = require('@config/logger.config');
+const logger = require('@config/logger.config');
 const notificationService = require('@services/notification.service');
 
 /**

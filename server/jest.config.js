@@ -40,7 +40,7 @@ module.exports = {
     '^@interfaces(.*)$': '<rootDir>/interfaces$1',
     '^@queues(.*)$': '<rootDir>/queues$1',
     '^@workers(.*)$': '<rootDir>/workers$1',
-    '^@socket(.*)$': '<rootDir>/socket$1',
+    '^@socket/(.*)$': '<rootDir>/socket/$1',
   },
   testTimeout: 10000,
   verbose: true,
