@@ -13,13 +13,11 @@ const asyncHandler = require('@utils/asyncHandler');
  */
 const createPaymentIntent = asyncHandler(async (req, res) => {
   const userId = req.session.user.user_id;
-  const { paymentMethodId, amount, currency, bookingDetails } = req.body;
+  const { paymentMethodId, currency } = req.body;
 
   const result = await paymentService.createPaymentIntent(userId, {
     paymentMethodId,
-    amount,
     currency,
-    bookingDetails,
   });
 
   res.status(201).json({

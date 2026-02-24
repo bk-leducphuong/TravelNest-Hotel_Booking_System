@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Failed</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background-color: #f5f5f5;
+      }
+
+      .email-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+      }
+
+      .email-header {
+        background-color: #dc3545;
+        padding: 20px;
+        text-align: center;
+      }
+
+      .logo {
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+      }
+
+      .email-content {
+        padding: 40px 30px;
+      }
+
+      .error-message {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 4px;
+        padding: 15px;
+        margin: 20px 0;
+        color: #721c24;
+      }
+
+      .cta-button {
+        text-align: center;
+        margin: 30px 0;
+      }
+
+      .button {
+        display: inline-block;
+        padding: 12px 30px;
+        background-color: #003580;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+
+      .email-footer {
+        background-color: #f8f9fa;
+        padding: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: #666;
+      }
+
+      @media only screen and (max-width: 600px) {
+        .email-content {
+          padding: 20px 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <div class="email-header">
+        <div class="logo">TravelNest</div>
+      </div>
+
+      <div class="email-content">
+        <h1>Payment Failed</h1>
+        <p>Dear {{buyerName}},</p>
+        <p>We regret to inform you that your payment could not be processed.</p>
+        {{#if bookingCode}}
+        <p><strong>Booking Code:</strong> {{bookingCode}}</p>
+        {{/if}}
+        <div class="error-message">
+          <strong>Error:</strong> {{failureMessage}}
+        </div>
+        <p>Please try the following:</p>
+        <ul>
+          <li>Check your payment method details</li>
+          <li>Ensure you have sufficient funds</li>
+          <li>Try using a different payment method</li>
+          <li>Contact your bank if the issue persists</li>
+        </ul>
+        <div class="cta-button">
+          <a href="{{retryUrl}}" class="button">Try Again</a>
+        </div>
+        <p>
+          If you continue to experience issues, please contact our support team.
+        </p>
+        <p>Best regards,<br />The TravelNest Team</p>
+      </div>
+
+      <div class="email-footer">
+        <p>© {{year}} TravelNest. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>
+

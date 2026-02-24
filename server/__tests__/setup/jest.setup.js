@@ -15,6 +15,12 @@ jest.mock('@config/logger.config', () => ({
   error: jest.fn(),
   warn: jest.fn(),
   debug: jest.fn(),
+  withRequest: jest.fn(() => ({
+    error: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  })),
 }));
 
 // Clear all mocks after each test

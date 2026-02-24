@@ -46,12 +46,34 @@ class BookingRepository {
   }
 
   /**
-   * Find booking by booking code
+   * Find booking by booking code (single record)
    */
-  async findByBookingCode(bookingCode) {
+  async findByBookingCode(bookingCode, options = {}) {
     return await Bookings.findOne({
       where: { booking_code: bookingCode },
+      ...options,
     });
+  }
+
+  /**
+   * Find all bookings by booking code (one code can have multiple rows for multiple rooms)
+   */
+  async findAllByBookingCode(bookingCode, options = {}) {
+    return await Bookings.findAll({
+      where: { booking_code: bookingCode },
+      ...options,
+    });
+  }
+
+  /**
+   * Update all bookings with the given booking code
+   */
+  async updateByBookingCode(bookingCode, updateData, options = {}) {
+    const [count] = await Bookings.update(updateData, {
+      where: { booking_code: bookingCode },
+      ...options,
+    });
+    return count;
   }
 
   /**
@@ -162,6 +184,15 @@ class BookingRepository {
         },
       ],
     });
+  }
+
+  /**
+   * Create a booking record
+   * @param {Object} bookingData
+   * @param {Object} options - Sequelize options (transaction, etc.)
+   */
+  async create(bookingData, options = {}) {
+    return await Bookings.create(bookingData, options);
   }
 }
 

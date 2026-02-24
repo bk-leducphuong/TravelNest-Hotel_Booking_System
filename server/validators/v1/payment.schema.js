@@ -113,14 +113,12 @@ exports.getUserPayments = {
 
 /**
  * POST /api/payments
- * Create a payment intent for booking
+ * Create a payment intent for booking using the current active hold
  */
 exports.createPaymentIntent = {
   body: Joi.object({
     paymentMethodId: paymentMethodIdSchema,
-    amount: amountSchema,
-    currency: currencySchema,
-    bookingDetails: bookingDetailsSchema,
+    currency: currencySchema.optional(),
   }).required(),
 };
 

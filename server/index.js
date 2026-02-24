@@ -98,6 +98,8 @@ const initServer = async () => {
     imageProcessingQueue,
     hotelSnapshotQueue,
     searchLogQueue,
+    emailQueue,
+    notificationQueue,
   } = require('@queues/index');
 
   const serverAdapter = new ExpressAdapter();
@@ -108,6 +110,8 @@ const initServer = async () => {
       new BullMQAdapter(imageProcessingQueue),
       new BullMQAdapter(hotelSnapshotQueue),
       new BullMQAdapter(searchLogQueue),
+      new BullMQAdapter(emailQueue),
+      new BullMQAdapter(notificationQueue),
     ],
     serverAdapter,
   });

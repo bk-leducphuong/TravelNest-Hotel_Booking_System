@@ -37,7 +37,7 @@
     "seed:nearby_place": "cross-env NODE_ENV=development node infra/database/seeders/nearby_place.seed.js",
     "seed:notification": "cross-env NODE_ENV=development node infra/database/seeders/notification.seed.js",
     "migrate": "sequelize-cli db:migrate",
-    "migrate:undo": "sequelize-cli db:migrate:undo",
+    "migrate:undo": "sequelize-cli db:migrate:undo --name",
     "migrate:undo:all": "sequelize-cli db:migrate:undo:all",
     "migrate:status": "sequelize-cli db:migrate:status",
     "migrate:create": "sequelize-cli migration:generate --name",
@@ -148,6 +148,7 @@
     "prettier": "^3.7.4",
     "sequelize-cli": "^6.6.5",
     "sinon": "^21.0.1",
+    "socket.io-client": "^4.8.3",
     "supertest": "^7.2.2"
   }
 }

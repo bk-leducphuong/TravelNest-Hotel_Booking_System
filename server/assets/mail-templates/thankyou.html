@@ -170,7 +170,7 @@
           <p>We're excited to welcome you to our hotel</p>
         </div>
 
-        <p>Dear Le Duc Phuong,</p>
+        <p>Dear {{buyerName}},</p>
         <p>
           Thank you for choosing our hotel for your upcoming stay. We are
           delighted to confirm your reservation and look forward to providing
@@ -188,11 +188,11 @@
                 </div> -->
           <div class="detail-row">
             <span class="detail-label">Hotel:</span>
-            <span>The Poppy Villa & Hotel</span>
+            <span>{{hotelName}}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Room Type:</span>
-            <span>Deluxe Ocean View</span>
+            <span>{{roomType}}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Check-in:</span>
@@ -217,7 +217,7 @@
         </div>
 
         <div class="cta-button">
-          <a href="#" class="button" style="color: #fff"
+          <a href="{{bookingDetailsUrl}}" class="button" style="color: #fff"
             >View Booking Details</a
           >
         </div>
@@ -247,7 +247,7 @@
           <a href="#">Twitter</a>
           <a href="#">Instagram</a>
         </div>
-        <p>© 2024 TravelBooking. All rights reserved.</p>
+        <p>© {{year}} TravelNest. All rights reserved.</p>
         <p>123 Travel Street, City, Country</p>
         <p>
           <a href="#">Privacy Policy</a> | <a href="#">Terms & Conditions</a>

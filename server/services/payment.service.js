@@ -1,25 +1,15 @@
 const paymentRepository = require('@repositories/payment.repository');
 const bookingRepository = require('@repositories/booking.repository');
 const transactionRepository = require('@repositories/transaction.repository');
+const holdRepository = require('@repositories/hold.repository');
+const holdService = require('@services/hold.service');
+const inventoryService = require('@services/inventory.service');
 const ApiError = require('@utils/ApiError');
 const logger = require('@config/logger.config');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 const sequelize = require('@config/database.config');
+const { generateBookingCode } = require('@utils/booking.utils');
 
-/**
- * Refactored Payment Service
- *
- * Responsibilities:
- * - Business logic for payments
- * - Idempotent state transitions
- * - Database transactions
- * - Coordinating between entities (bookings, payments, invoices)
- *
- * Does NOT:
- * - Parse webhooks (that's adapter's job)
- * - Know about Stripe-specific details
- * - Handle HTTP requests (that's controller's job)
- */
 class PaymentService {
   constructor() {
     // Default to Stripe, but can be swapped with PayPal, etc.
@@ -34,67 +24,148 @@ class PaymentService {
   }
 
   /**
-   * Create a payment intent
+   * Create a payment intent based on the user's current active hold.
+   * Flow:
+   * - Find active hold for user (with rooms)
+   * - Within a DB transaction:
+   *   - Release held rooms and reserve them for booking
+   *   - Mark hold as completed
+   *   - Create pending booking records linked to the hold
+   *   - Create payment intent using hold total price and booking details
    */
   async createPaymentIntent(userId, paymentData) {
-    const { paymentMethodId, amount, currency, bookingDetails } = paymentData;
+    const { paymentMethodId, currency } = paymentData;
 
-    // Validate required fields
-    if (!paymentMethodId || !amount || !currency || !bookingDetails) {
+    if (!paymentMethodId) {
       throw new ApiError(
         400,
         'MISSING_REQUIRED_FIELDS',
-        'paymentMethodId, amount, currency, and bookingDetails are required'
+        'paymentMethodId is required'
       );
     }
 
-    // Validate booking details
-    if (
-      !bookingDetails.bookingCode ||
-      !bookingDetails.hotelId ||
-      !bookingDetails.checkInDate ||
-      !bookingDetails.checkOutDate ||
-      !bookingDetails.numberOfGuests
-    ) {
+    // 1. Find active hold for user
+    const activeHolds = await holdRepository.findActiveByUserId(userId);
+
+    if (!activeHolds || activeHolds.length === 0) {
       throw new ApiError(
         400,
-        'INVALID_BOOKING_DETAILS',
-        'bookingDetails must include bookingCode, hotelId, checkInDate, checkOutDate, and numberOfGuests'
+        'NO_ACTIVE_HOLD',
+        'No active hold found for this user. Please create a hold before starting payment.'
       );
     }
 
-    // Validate amount
-    if (amount <= 0) {
+    const hold = activeHolds[0];
+    const holdData = hold.toJSON ? hold.toJSON() : hold;
+
+    if (new Date(holdData.expires_at) <= new Date()) {
       throw new ApiError(
         400,
-        'INVALID_AMOUNT',
-        'Amount must be greater than 0'
+        'HOLD_EXPIRED',
+        'Your room hold has expired. Please start a new booking.'
       );
     }
+
+    const rooms =
+      (holdData.holdRooms || hold.holdRooms || []).map((hr) => ({
+        roomId: hr.room_id,
+        quantity: hr.quantity,
+      })) || [];
+
+    if (rooms.length === 0) {
+      throw new ApiError(
+        400,
+        'HOLD_HAS_NO_ROOMS',
+        'Active hold does not contain any rooms.'
+      );
+    }
+
+    const bookingCode = generateBookingCode();
+    const holdCurrency = (holdData.currency || currency || 'USD').toUpperCase();
+    const amount = parseFloat(holdData.total_price);
+
+    if (!amount || amount <= 0) {
+      throw new ApiError(
+        400,
+        'INVALID_HOLD_AMOUNT',
+        'Hold total price is invalid.'
+      );
+    }
+
+    const transaction = await sequelize.transaction();
 
     try {
-      // Create payment through adapter
+      const checkInDate = holdData.check_in_date;
+      const checkOutDate = holdData.check_out_date;
+      const numberOfGuests = holdData.number_of_guests;
+
+      // 2. Release hold (held rooms + hold status) using hold service, inside this transaction
+      await holdService.releaseHold(holdData.id, userId, 'completed', {
+        transaction,
+      });
+
+      const bookedRooms = rooms.map((r) => ({
+        room_id: r.roomId,
+        roomQuantity: r.quantity,
+      }));
+
+      // 3. Reserve rooms for the booking
+      await inventoryService.reserveRooms(
+        {
+          bookedRooms,
+          checkInDate,
+          checkOutDate,
+        },
+        { transaction }
+      );
+
+      // 4. Create pending bookings linked to this hold
+      for (const room of rooms) {
+        await bookingRepository.create(
+          {
+            buyer_id: userId,
+            hotel_id: holdData.hotel_id,
+            room_id: room.roomId,
+            hold_id: holdData.id,
+            check_in_date: checkInDate,
+            check_out_date: checkOutDate,
+            total_price: amount,
+            currency: holdCurrency,
+            status: 'pending',
+            number_of_guests: numberOfGuests,
+            quantity: room.quantity,
+            booking_code: bookingCode,
+          },
+          { transaction }
+        );
+      }
+
+      // 5. Create payment intent through adapter
       const payment = await this.paymentProvider.createPayment({
         amount,
-        currency,
+        currency: holdCurrency,
         paymentMethodId,
         returnUrl: process.env.CLIENT_HOST
           ? `${process.env.CLIENT_HOST}/book/complete`
           : 'http://localhost:5173/book/complete',
         metadata: {
-          booking_code: bookingDetails.bookingCode,
-          hotel_id: bookingDetails.hotelId.toString(),
+          booking_code: bookingCode,
+          hotel_id: holdData.hotel_id.toString(),
           buyer_id: userId.toString(),
-          booked_rooms: JSON.stringify(bookingDetails.bookedRooms || []),
-          check_in_date: bookingDetails.checkInDate,
-          check_out_date: bookingDetails.checkOutDate,
-          number_of_guests: bookingDetails.numberOfGuests.toString(),
+          booked_rooms: JSON.stringify(bookedRooms),
+          check_in_date: checkInDate,
+          check_out_date: checkOutDate,
+          number_of_guests: numberOfGuests.toString(),
         },
       });
 
-      logger.info('Payment intent created', {
+      await transaction.commit();
+
+      logger.info('Payment intent created from hold', {
         paymentId: payment.id,
         userId,
+        holdId: holdData.id,
+        bookingCode,
         amount,
         provider: payment.provider,
       });
@@ -103,9 +174,11 @@ class PaymentService {
         clientSecret: payment.clientSecret,
         paymentIntentId: payment.id,
         status: payment.status,
+        bookingCode,
       };
     } catch (error) {
-      logger.error('Failed to create payment intent:', error);
+      await transaction.rollback();
+      logger.error('Failed to create payment intent from hold:', error);
       throw new ApiError(
         error.statusCode || 500,
         error.code || 'PAYMENT_CREATION_FAILED',
@@ -216,8 +289,8 @@ class PaymentService {
         );
       }
 
-      // 4. Create bookings (if not already created)
-      const existingBookings = await bookingRepository.findByBookingCode(
+      // 4. Create bookings (if not already created) and reserve room inventory in same transaction
+      const existingBookings = await bookingRepository.findAllByBookingCode(
         bookingCode,
         { transaction }
       );
@@ -243,6 +316,13 @@ class PaymentService {
             { transaction }
           );
         }
+      } else {
+        // Update existing pending bookings to confirmed
+        await bookingRepository.updateByBookingCode(
+          bookingCode,
+          { status: 'confirmed' },
+          { transaction }
+        );
       }
 
       // 5. Create invoice (will be done separately or here)
@@ -340,7 +420,15 @@ class PaymentService {
    * Idempotent
    */
   async handleRefundSucceeded(context) {
-    const { chargeId, refundId, refundAmount, bookingCode } = context;
+    const {
+      chargeId,
+      refundId,
+      refundAmount,
+      bookingCode,
+      bookedRooms,
+      checkInDate,
+      checkOutDate,
+    } = context;
 
     logger.info('Processing refund succeeded', {
       chargeId,
@@ -370,11 +458,23 @@ class PaymentService {
         { transaction }
       );
 
-      // Create refund record (if not exists)
-      // ... refund repository logic
-
-      // Update room inventory (release reserved rooms)
-      // ... inventory update logic
+      // Release room inventory atomically with refund
+      if (
+        bookedRooms &&
+        Array.isArray(bookedRooms) &&
+        bookedRooms.length > 0 &&
+        checkInDate &&
+        checkOutDate
+      ) {
+        await inventoryService.releaseRooms(
+          {
+            bookedRooms,
+            checkInDate,
+            checkOutDate,
+          },
+          { transaction }
+        );
+      }
 
       await transaction.commit();
 
