@@ -2,7 +2,7 @@
 require('module-alias/register');
 
 // Mock environment variables for testing (can be overridden by Testcontainers)
-process.env.NODE_ENV = process.env.NODE_ENV || 'test';
+process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Global test timeout (can be overridden in specific suites)
 jest.setTimeout(10000);

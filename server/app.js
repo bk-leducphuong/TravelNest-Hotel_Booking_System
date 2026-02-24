@@ -46,7 +46,7 @@ const createApp = async () => {
   app.use(express.static('public'));
   app.use(
     cors({
-      origin: process.env.CLIENT_HOST,
+      origin: process.env.CLIENT_HOST || '*',
       methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE', 'PATCH'],
       allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true,

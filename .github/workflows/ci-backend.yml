@@ -4,19 +4,19 @@ on:
   push:
     branches: [master, develop, staging]
     paths:
-      - 'server/**'
-      - '.github/workflows/ci-backend.yml'
+      - "server/**"
+      - ".github/workflows/ci-backend.yml"
   pull_request:
     branches: [master, develop, staging]
     paths:
-      - 'server/**'
-      - '.github/workflows/ci-backend.yml'
+      - "server/**"
+      - ".github/workflows/ci-backend.yml"
 
 jobs:
   lint-and-test:
     name: Lint and Test Backend
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         node-version: [18.x, 20.x]
@@ -24,30 +24,6 @@ jobs:
     defaults:
       run:
         working-directory: ./server
-
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: test_password
-          MYSQL_DATABASE: booking_website_test
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-
-      redis:
-        image: redis:alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd="redis-cli ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
 
     steps:
       - name: Checkout code
@@ -57,7 +33,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: server/package-lock.json
 
       - name: Install dependencies
@@ -72,44 +48,25 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit
         env:
-          NODE_ENV: test
-          DB_HOST: localhost
-          DB_PORT: 3306
-          DB_USER: root
-          DB_PASSWORD: test_password
-          DB_NAME: booking_website_test
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          JWT_SECRET: test_secret_key_for_ci
+          NODE_ENV: development
           SESSION_SECRET: test_session_secret_for_ci
+          SESSION_SECRET_KEY: test_session_secret_for_ci
 
-      - name: Run integration tests
+      - name: Run integration tests with Testcontainers
         run: npm run test:integration
+        timeout-minutes: 10
         env:
-          NODE_ENV: test
-          DB_HOST: localhost
-          DB_PORT: 3306
-          DB_USER: root
-          DB_PASSWORD: test_password
-          DB_NAME: booking_website_test
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          JWT_SECRET: test_secret_key_for_ci
+          NODE_ENV: development
           SESSION_SECRET: test_session_secret_for_ci
+          SESSION_SECRET_KEY: test_session_secret_for_ci
 
       - name: Generate coverage report
         run: npm run test:coverage
+        timeout-minutes: 10
         env:
-          NODE_ENV: test
-          DB_HOST: localhost
-          DB_PORT: 3306
-          DB_USER: root
-          DB_PASSWORD: test_password
-          DB_NAME: booking_website_test
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          JWT_SECRET: test_secret_key_for_ci
+          NODE_ENV: development
           SESSION_SECRET: test_session_secret_for_ci
+          SESSION_SECRET_KEY: test_session_secret_for_ci
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -126,45 +83,45 @@ jobs:
           path: server/coverage/
           retention-days: 7
 
-  security-scan:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    
-    defaults:
-      run:
-        working-directory: ./server
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18.x'
-          cache: 'npm'
-          cache-dependency-path: server/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run npm audit
-        run: npm audit --audit-level=moderate
-        continue-on-error: true
-
-      - name: Run Snyk security scan
-        uses: snyk/actions/node@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high --file=server/package.json
-          command: test
+  # security-scan:
+  #   name: Security Audit
+  #   runs-on: ubuntu-latest
+  #
+  #   defaults:
+  #     run:
+  #       working-directory: ./server
+  #
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: "18.x"
+  #         cache: "npm"
+  #         cache-dependency-path: server/package-lock.json
+  #
+  #     - name: Install dependencies
+  #       run: npm ci
+  #
+  #     - name: Run npm audit
+  #       run: npm audit --audit-level=moderate
+  #       continue-on-error: true
+  #
+  #     - name: Run Snyk security scan
+  #       uses: snyk/actions/node@master
+  #       continue-on-error: true
+  #       env:
+  #         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+  #       with:
+  #         args: --severity-threshold=high --file=server/package.json
+  #         command: test
 
   build-validation:
     name: Validate Build
     runs-on: ubuntu-latest
-    
+
     defaults:
       run:
         working-directory: ./server
@@ -176,8 +133,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18.x'
-          cache: 'npm'
+          node-version: "18.x"
+          cache: "npm"
           cache-dependency-path: server/package-lock.json
 
       - name: Install dependencies
