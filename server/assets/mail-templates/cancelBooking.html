@@ -169,9 +169,9 @@
                 <h1>Your Reservation Has Been Cancelled</h1>
             </div>
 
-            <p>Dear {{username}},</p>
-            <p>We're sorry to inform you that your reservation has been cancelled because this room is expreiencing a sudden problem so it can not serve customers. We are very sorry for the inconvenience.</p>
-            <p>Dont worry we will refund your money within 24 hours. if you don't recieve the refund, please contact us to support.</p>
+            <p>Dear {{buyerName}},</p>
+            <p>We're sorry to inform you that your reservation has been cancelled.</p>
+            <p>Reason: {{reason}}</p>
             <div class="booking-details">
                 <div class="detail-row">
                     <span class="detail-label">Booking Code:</span>
@@ -199,9 +199,11 @@
                 </div>
             </div>
 
-            <p>If you need to book another rooms or hotels, dont worry we have found for you similar choices to this. Click to this below button to view details</p>
-             <div class="cta-button">
-                <a href="#" style="color: #fff;" class="button">View Details</a>
+            <div class="price-summary">
+                <div class="price-row total-row">
+                    <span>Refund Amount:</span>
+                    <span>{{refundAmount}}</span>
+                </div>
             </div>
 
             <p>And if you have any questions or special requests, please don't hesitate to contact us. We're here to help make your stay memorable.</p>

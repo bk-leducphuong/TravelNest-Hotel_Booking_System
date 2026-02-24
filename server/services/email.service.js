@@ -1,121 +1,239 @@
-const transporter = require('@config/nodemailer.config');
-const logger = require('@config/logger.config');
-const fs = require('fs');
+const fs = require('fs/promises');
 const path = require('path');
+const handlebars = require('handlebars');
+const { htmlToText } = require('html-to-text');
+const defaultTransporter = require('@config/nodemailer.config');
+const logger = require('@config/logger.config');
 
-/**
- * Email Service
- * Handles all email sending operations using nodemailer
- */
+const TEMPLATE_DIR = path.join(__dirname, '..', 'assets/mail-templates');
+const templateCache = new Map();
+
 class EmailService {
-  /**
-   * Load and process email template
-   * @param {string} templateName - Name of the template file (without .html extension)
-   * @param {Object} variables - Variables to replace in template
-   * @returns {Promise<string>} Processed HTML content
-   */
-  async loadTemplate(templateName, variables = {}) {
+  constructor(transporter = defaultTransporter) {
+    this.transporter = transporter;
+    this.defaultFrom = process.env.DEFAULT_FROM_EMAIL || process.env.SMTP_USER;
+    this.clientHost = process.env.CLIENT_HOST || 'http://localhost:5173';
+
+    handlebars.registerHelper('uppercase', (str) => (str || '').toUpperCase());
+  }
+
+  async compileTemplate(templateName) {
+    const cacheKey = templateName;
+    if (templateCache.has(cacheKey)) {
+      return templateCache.get(cacheKey);
+    }
+
+    const templatePath = path.join(TEMPLATE_DIR, `${templateName}.html`);
+
+    let source;
     try {
-      const templatePath = path.join(
-        __dirname,
-        '..',
-        'email-templates',
-        `${templateName}.html`
-      );
+      source = await fs.readFile(templatePath, 'utf8');
+    } catch (err) {
+      logger.error(`Email template not found: ${templateName}`, { err });
+      throw new Error(`Email template not found: ${templateName}`);
+    }
 
-      if (!fs.existsSync(templatePath)) {
-        throw new Error(`Email template not found: ${templateName}.html`);
-      }
+    const template = handlebars.compile(source);
+    templateCache.set(cacheKey, template);
+    return template;
+  }
 
-      let template = fs.readFileSync(templatePath, 'utf8');
+  async renderTemplate(templateName, variables = {}) {
+    try {
+      const template = await this.compileTemplate(templateName);
 
-      // Replace variables in template
-      Object.keys(variables).forEach((key) => {
-        const value = variables[key];
-        const regex = new RegExp(`{{${key}}}`, 'g');
-        template = template.replace(regex, value);
+      const safeVars = {
+        clientHost: this.clientHost,
+        year: new Date().getFullYear(),
+        ...variables,
+      };
+
+      return template(safeVars);
+    } catch (err) {
+      logger.error(`Error rendering email template "${templateName}"`, {
+        err,
+        variables,
       });
-
-      return template;
-    } catch (error) {
-      logger.error(`Error loading email template ${templateName}:`, error);
-      throw error;
+      throw err;
     }
   }
 
-  /**
-   * Send email using nodemailer
-   * @param {Object} options - Email options
-   * @param {string} options.to - Recipient email address
-   * @param {string} options.subject - Email subject
-   * @param {string} options.html - HTML content
-   * @param {string} options.text - Plain text content (optional)
-   * @param {string} options.from - Sender email (optional, defaults to env variable)
-   * @returns {Promise<Object>} Nodemailer send result
-   */
-  async sendEmail(options) {
-    const { to, subject, html, text, from } = options;
-
+  async sendEmail({ to, subject, html, text, from, cc, bcc, replyTo }) {
     if (!to || !subject || !html) {
-      throw new Error('Missing required email fields: to, subject, html');
+      const error = new Error(
+        'Missing required email fields: to, subject, html'
+      );
+      error.code = 'EMAIL_VALIDATION_ERROR';
+      throw error;
     }
 
+    const mailOptions = {
+      from: from || this.defaultFrom,
+      to,
+      subject,
+      html,
+      text:
+        text ||
+        htmlToText(html, {
+          wordwrap: 130,
+        }),
+      cc,
+      bcc,
+      replyTo,
+    };
+
     try {
-      const mailOptions = {
-        from: from || process.env.NODEMAILER_EMAIL,
-        to,
-        subject,
-        html,
-        text: text || this.htmlToText(html), // Convert HTML to plain text if text not provided
-      };
-
-      const info = await transporter.sendMail(mailOptions);
-
+      const info = await this.transporter.sendMail(mailOptions);
       logger.info('Email sent successfully', {
         to,
         subject,
         messageId: info.messageId,
       });
-
       return info;
-    } catch (error) {
-      logger.error('Error sending email:', error);
-      throw error;
+    } catch (err) {
+      logger.error('Error sending email', { err, to, subject });
+      throw err;
     }
   }
 
-  /**
-   * Convert HTML to plain text (simple implementation)
-   * @param {string} html - HTML content
-   * @returns {string} Plain text
-   */
-  htmlToText(html) {
-    return html
-      .replace(/<style[^>]*>.*?<\/style>/gi, '') // Remove style tags
-      .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove script tags
-      .replace(/<[^>]+>/g, '') // Remove HTML tags
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .trim();
+  async sendTemplateEmail({
+    email,
+    subject,
+    templateName,
+    variables = {},
+    ...rest
+  }) {
+    const html = await this.renderTemplate(templateName, variables);
+
+    return this.sendEmail({
+      to: email,
+      subject,
+      html,
+      ...rest,
+    });
   }
 
-  /**
-   * Format price/amount for display
-   * @param {number} amount - Amount in smallest currency unit (e.g., cents)
-   * @param {string} currency - Currency code (e.g., 'USD', 'VND')
-   * @returns {string} Formatted price string
-   */
+  async sendBookingConfirmation(data) {
+    const {
+      email,
+      bookingCode,
+      checkInDate,
+      checkOutDate,
+      numberOfGuests,
+      totalPrice,
+      currency = 'USD',
+      hotelName = 'Our Hotel',
+      roomType = 'Standard Room',
+      buyerName = 'Guest',
+    } = data;
+
+    return this.sendTemplateEmail({
+      email,
+      subject: `Booking Confirmation - ${bookingCode}`,
+      templateName: 'thankyou',
+      variables: {
+        bookingCode: bookingCode || 'N/A',
+        checkInDate: this.formatDate(checkInDate),
+        checkOutDate: this.formatDate(checkOutDate),
+        numberOfGuests: numberOfGuests || 1,
+        totalPrice: this.formatPrice(totalPrice, currency),
+        hotelName,
+        roomType,
+        buyerName,
+        bookingDetailsUrl: `${this.clientHost}/booking/${bookingCode}`,
+      },
+    });
+  }
+
+  async sendPaymentFailure(data) {
+    const { email, failureMessage, bookingCode, buyerName = 'Guest' } = data;
+
+    return this.sendTemplateEmail({
+      email,
+      subject: 'Payment Failed - Action Required',
+      templateName: 'paymentFailure',
+      variables: {
+        failureMessage:
+          failureMessage || 'Payment processing failed. Please try again.',
+        bookingCode,
+        buyerName,
+        retryUrl: `${this.clientHost}/book`,
+      },
+    });
+  }
+
+  async sendRefundConfirmation(data) {
+    const {
+      email,
+      bookingCode,
+      refundAmount,
+      currency = 'USD',
+      buyerName = 'Guest',
+      reason = 'Requested by customer',
+      hotelName,
+      bookedRooms,
+      checkInDate,
+      checkOutDate,
+      numberOfGuests,
+    } = data;
+
+    return this.sendTemplateEmail({
+      email,
+      subject: `Refund Processed - Booking ${bookingCode}`,
+      templateName: 'cancelBooking',
+      variables: {
+        bookingCode: bookingCode || 'N/A',
+        refundAmount: this.formatPrice(refundAmount, currency),
+        buyerName,
+        reason,
+        hotelName,
+        bookedRooms,
+        checkInDate: this.formatDate(checkInDate),
+        checkOutDate: this.formatDate(checkOutDate),
+        numberOfGuests,
+      },
+    });
+  }
+
+  async sendOTPVerification(data) {
+    const { email, otp, userName = 'User' } = data;
+
+    return this.sendTemplateEmail({
+      email,
+      subject: 'Verify Your Email - OTP Code',
+      templateName: 'otpVerification',
+      variables: {
+        otp,
+        userName,
+      },
+    });
+  }
+
+  async sendCustomEmail({ email, subject, html, text }) {
+    return this.sendEmail({ to: email, subject, html, text });
+  }
+
+  async verifyConnection() {
+    try {
+      await this.transporter.verify();
+      logger.info('Email transporter connection verified');
+      return true;
+    } catch (err) {
+      logger.error('Email transporter verification failed', { err });
+      return false;
+    }
+  }
+
   formatPrice(amount, currency = 'USD') {
     const numericAmount =
       typeof amount === 'string' ? parseFloat(amount) : amount;
 
-    // Convert from cents to dollars for USD
     const displayAmount =
       currency === 'USD' ? numericAmount / 100 : numericAmount;
+
+    if (!Number.isFinite(displayAmount)) {
+      return '';
+    }
 
     if (currency === 'VND') {
       return new Intl.NumberFormat('vi-VN', {
@@ -130,14 +248,11 @@ class EmailService {
     }).format(displayAmount);
   }
 
-  /**
-   * Format date for display
-   * @param {string|Date} date - Date string or Date object
-   * @param {string} locale - Locale string (default: 'en-US')
-   * @returns {string} Formatted date string
-   */
   formatDate(date, locale = 'en-US') {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (!(dateObj instanceof Date) || Number.isNaN(dateObj.getTime())) {
+      return '';
+    }
 
     return new Intl.DateTimeFormat(locale, {
       year: 'numeric',
@@ -145,308 +260,7 @@ class EmailService {
       day: 'numeric',
     }).format(dateObj);
   }
-
-  /**
-   * Send booking confirmation email
-   * @param {Object} data - Booking confirmation data
-   * @param {string} data.email - Recipient email
-   * @param {string} data.bookingCode - Booking code
-   * @param {string} data.checkInDate - Check-in date
-   * @param {string} data.checkOutDate - Check-out date
-   * @param {number} data.numberOfGuests - Number of guests
-   * @param {number} data.totalPrice - Total price (in cents)
-   * @param {string} data.currency - Currency code (default: 'USD')
-   * @param {string} data.hotelName - Hotel name (optional)
-   * @param {string} data.roomType - Room type (optional)
-   * @param {string} data.buyerName - Buyer name (optional)
-   * @returns {Promise<Object>} Email send result
-   */
-  async sendBookingConfirmation(data) {
-    const {
-      email,
-      bookingCode,
-      checkInDate,
-      checkOutDate,
-      numberOfGuests,
-      totalPrice,
-      currency = 'USD',
-      hotelName,
-      roomType,
-      buyerName = 'Guest',
-    } = data;
-
-    try {
-      const html = await this.loadTemplate('thankyou', {
-        bookingCode: bookingCode || 'N/A',
-        checkInDate: this.formatDate(checkInDate),
-        checkOutDate: this.formatDate(checkOutDate),
-        numberOfGuests: numberOfGuests || 1,
-        totalPrice: this.formatPrice(totalPrice, currency),
-        hotelName: hotelName || 'Our Hotel',
-        roomType: roomType || 'Standard Room',
-        buyerName: buyerName,
-      });
-
-      return await this.sendEmail({
-        to: email,
-        subject: `Booking Confirmation - ${bookingCode}`,
-        html,
-      });
-    } catch (error) {
-      logger.error('Error sending booking confirmation email:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Send payment failure email
-   * @param {Object} data - Payment failure data
-   * @param {string} data.email - Recipient email
-   * @param {string} data.failureMessage - Failure message
-   * @param {string} data.bookingCode - Booking code (optional)
-   * @param {string} data.buyerName - Buyer name (optional)
-   * @returns {Promise<Object>} Email send result
-   */
-  async sendPaymentFailure(data) {
-    const { email, failureMessage, bookingCode, buyerName = 'Guest' } = data;
-
-    try {
-      // Create a simple failure email template
-      const html = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Payment Failed</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              line-height: 1.6;
-              color: #333;
-              background-color: #f5f5f5;
-            }
-            .email-container {
-              max-width: 600px;
-              margin: 0 auto;
-              background-color: #ffffff;
-            }
-            .email-header {
-              background-color: #dc3545;
-              padding: 20px;
-              text-align: center;
-            }
-            .logo {
-              color: white;
-              font-size: 24px;
-              font-weight: bold;
-            }
-            .email-content {
-              padding: 40px 30px;
-            }
-            .error-message {
-              background-color: #f8d7da;
-              border: 1px solid #f5c6cb;
-              border-radius: 4px;
-              padding: 15px;
-              margin: 20px 0;
-              color: #721c24;
-            }
-            .cta-button {
-              text-align: center;
-              margin: 30px 0;
-            }
-            .button {
-              display: inline-block;
-              padding: 12px 30px;
-              background-color: #003580;
-              color: white;
-              text-decoration: none;
-              border-radius: 4px;
-              font-weight: bold;
-            }
-            .email-footer {
-              background-color: #f8f9fa;
-              padding: 20px;
-              text-align: center;
-              font-size: 12px;
-              color: #666;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="email-container">
-            <div class="email-header">
-              <div class="logo">TravelNest</div>
-            </div>
-            <div class="email-content">
-              <h1>Payment Failed</h1>
-              <p>Dear ${buyerName},</p>
-              <p>We regret to inform you that your payment could not be processed.</p>
-              ${bookingCode ? `<p><strong>Booking Code:</strong> ${bookingCode}</p>` : ''}
-              <div class="error-message">
-                <strong>Error:</strong> ${failureMessage || 'Payment processing failed. Please try again.'}
-              </div>
-              <p>Please try the following:</p>
-              <ul>
-                <li>Check your payment method details</li>
-                <li>Ensure you have sufficient funds</li>
-                <li>Try using a different payment method</li>
-                <li>Contact your bank if the issue persists</li>
-              </ul>
-              <div class="cta-button">
-                <a href="${process.env.CLIENT_HOST || 'http://localhost:5173'}/book" class="button">Try Again</a>
-              </div>
-              <p>If you continue to experience issues, please contact our support team.</p>
-              <p>Best regards,<br />The TravelNest Team</p>
-            </div>
-            <div class="email-footer">
-              <p>© ${new Date().getFullYear()} TravelNest. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
-
-      return await this.sendEmail({
-        to: email,
-        subject: 'Payment Failed - Action Required',
-        html,
-      });
-    } catch (error) {
-      logger.error('Error sending payment failure email:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Send refund confirmation email
-   * @param {Object} data - Refund data
-   * @param {string} data.email - Recipient email
-   * @param {string} data.bookingCode - Booking code
-   * @param {number} data.refundAmount - Refund amount (in cents)
-   * @param {string} data.currency - Currency code (default: 'USD')
-   * @param {string} data.buyerName - Buyer name (optional)
-   * @param {string} data.reason - Refund reason (optional)
-   * @returns {Promise<Object>} Email send result
-   */
-  async sendRefundConfirmation(data) {
-    const {
-      email,
-      bookingCode,
-      refundAmount,
-      currency = 'USD',
-      buyerName = 'Guest',
-      reason,
-    } = data;
-
-    try {
-      const html = await this.loadTemplate('cancelBooking', {
-        bookingCode: bookingCode || 'N/A',
-        refundAmount: this.formatPrice(refundAmount, currency),
-        buyerName: buyerName,
-        reason: reason || 'Requested by customer',
-      });
-
-      return await this.sendEmail({
-        to: email,
-        subject: `Refund Processed - Booking ${bookingCode}`,
-        html,
-      });
-    } catch (error) {
-      logger.error('Error sending refund confirmation email:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Send OTP verification email
-   * @param {Object} data - OTP data
-   * @param {string} data.email - Recipient email
-   * @param {string} data.otp - OTP code
-   * @param {string} data.userName - User name (optional)
-   * @returns {Promise<Object>} Email send result
-   */
-  async sendOTPVerification(data) {
-    const { email, otp, userName = 'User' } = data;
-
-    try {
-      const html = await this.loadTemplate('otpVerification', {
-        otp: otp,
-        userName: userName,
-      });
-
-      return await this.sendEmail({
-        to: email,
-        subject: 'Verify Your Email - OTP Code',
-        html,
-      });
-    } catch (error) {
-      logger.error('Error sending OTP verification email:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Send generic email with custom template
-   * @param {Object} data - Email data
-   * @param {string} data.email - Recipient email
-   * @param {string} data.subject - Email subject
-   * @param {string} data.templateName - Template name (without .html)
-   * @param {Object} data.variables - Template variables
-   * @returns {Promise<Object>} Email send result
-   */
-  async sendTemplateEmail(data) {
-    const { email, subject, templateName, variables = {} } = data;
-
-    try {
-      const html = await this.loadTemplate(templateName, variables);
-
-      return await this.sendEmail({
-        to: email,
-        subject,
-        html,
-      });
-    } catch (error) {
-      logger.error(`Error sending template email (${templateName}):`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Send custom HTML email
-   * @param {Object} data - Email data
-   * @param {string} data.email - Recipient email
-   * @param {string} data.subject - Email subject
-   * @param {string} data.html - HTML content
-   * @param {string} data.text - Plain text content (optional)
-   * @returns {Promise<Object>} Email send result
-   */
-  async sendCustomEmail(data) {
-    const { email, subject, html, text } = data;
-
-    return await this.sendEmail({
-      to: email,
-      subject,
-      html,
-      text,
-    });
-  }
-
-  /**
-   * Verify email transporter connection
-   * @returns {Promise<boolean>} True if connection is successful
-   */
-  async verifyConnection() {
-    try {
-      await transporter.verify();
-      logger.info('Email transporter connection verified');
-      return true;
-    } catch (error) {
-      logger.error('Email transporter verification failed:', error);
-      return false;
-    }
-  }
 }
 
 module.exports = new EmailService();
+module.exports.EmailService = EmailService;

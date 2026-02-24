@@ -1,21 +1,27 @@
 const nodemailer = require('nodemailer');
-require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'production'
-      ? '.env.production'
-      : '.env.development',
-});
 
-// Email transporter configuration
+const { SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, NODE_ENV } =
+  process.env;
+
+if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
+  throw new Error('Missing SMTP configuration environment variables');
+}
+
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // Sử dụng Gmail SMTP server
+  host: SMTP_HOST,
+  port: Number(SMTP_PORT),
+  secure: SMTP_SECURE === 'true',
   auth: {
-    user: process.env.NODEMAILER_EMAIL,
-    pass: process.env.NODEMAILER_PASSWORD,
+    user: SMTP_USER,
+    pass: SMTP_PASS,
   },
-  tls: {
-    rejectUnauthorized: false, // Tắt xác thực chứng chỉ
-  },
+  ...(NODE_ENV !== 'production'
+    ? {
+        tls: {
+          rejectUnauthorized: false,
+        },
+      }
+    : {}),
 });
 
 module.exports = transporter;
