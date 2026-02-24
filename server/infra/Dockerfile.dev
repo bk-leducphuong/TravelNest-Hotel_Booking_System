@@ -1,5 +1,4 @@
-ARG ENV_FILE
-# Use Node.js as base image
+# Development Dockerfile
 FROM node:18-alpine
 
 # Create app directory
@@ -8,16 +7,14 @@ WORKDIR /usr/src/app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
+# Install all dependencies (including devDependencies)
 RUN npm install
 
 # Copy source code
 COPY . .
 
-COPY ${ENV_FILE} .env
-
 # Expose port
 EXPOSE 3000
 
-# Start the server
+# Start the server in development mode
 CMD ["npm", "run", "dev"]
