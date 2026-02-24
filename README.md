@@ -1,4 +1,9 @@
 # TravelNest - Hotel booking website
+
+[![Backend CI](https://github.com/bk-leducphuong/TravelNest/actions/workflows/ci-backend.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest/actions/workflows/ci-backend.yml)
+[![Frontend CI](https://github.com/bk-leducphuong/TravelNest/actions/workflows/ci-frontend.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest/actions/workflows/ci-frontend.yml)
+[![Docker Build](https://github.com/bk-leducphuong/TravelNest/actions/workflows/docker-build-push.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest/actions/workflows/docker-build-push.yml)
+
 <p align="center">
 <img src="https://github.com/bk-leducphuong/TravelNest/blob/master/client/src/assets/images/logo.png" width="300" title="Login With Custom URL">
 </p>
@@ -48,6 +53,39 @@ This project was inspired by [booking.com](https://booking.com)
 - **Realtime notification**: SocketIO
 - **Cloud storage**: Cloudinary 
 - **Hosting**: 
+
+---
+
+## CI/CD Pipeline
+
+This project includes a comprehensive CI/CD pipeline using GitHub Actions for automated testing, building, and deployment.
+
+### Features
+- ✅ Automated testing (unit & integration tests)
+- ✅ Code quality checks (ESLint, Prettier)
+- ✅ Security scanning (npm audit, Snyk, Trivy)
+- ✅ Docker image building and publishing
+- ✅ Multi-environment deployment (dev, staging, production)
+- ✅ Health checks and automatic rollback
+- ✅ Slack notifications (optional)
+
+### Quick Start
+
+**1. Setup GitHub Secrets:**
+- `DOCKERHUB_USERNAME` - Your Docker Hub username
+- `DOCKERHUB_TOKEN` - Docker Hub access token
+- `DEPLOY_HOST` - Your deployment server IP/domain
+- `DEPLOY_USER` - SSH username
+- `DEPLOY_SSH_KEY` - SSH private key
+
+**2. Push to branches:**
+- `develop` → Auto-deploy to development
+- `staging` → Auto-deploy to staging
+- `master` → Requires manual approval for production
+
+### Documentation
+- **[Quick Setup Guide](docs/CI-CD-SETUP.md)** - Get started in 30 minutes
+- **[Full Documentation](docs/CI-CD.md)** - Comprehensive CI/CD guide
 
 ---
 

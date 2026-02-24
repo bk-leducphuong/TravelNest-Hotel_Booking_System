@@ -23,8 +23,15 @@ module.exports = {
     },
   },
   testMatch: ['**/__tests__/**/*.test.js'],
+
+  // ignore patterns
   testPathIgnorePatterns: ['/node_modules/', '/coverage/', '.babelrc.test.js'],
-  setupFilesAfterEnv: ['<rootDir>/__tests__/setup/jest.setup.js'],
+
+  // setup files
+  setupFilesAfterEnv: ['<rootDir>/__tests__/setup.js'],
+  globalSetup: '<rootDir>/__tests__/globalSetup.js',
+  globalTeardown: '<rootDir>/__tests__/globalTeardown.js',
+
   moduleNameMapper: {
     '^@controllers(.*)$': '<rootDir>/controllers$1',
     '^@services(.*)$': '<rootDir>/services$1',
@@ -41,9 +48,23 @@ module.exports = {
     '^@queues(.*)$': '<rootDir>/queues$1',
     '^@workers(.*)$': '<rootDir>/workers$1',
     '^@socket/(.*)$': '<rootDir>/socket/$1',
+    '^@routes(.*)$': '<rootDir>/routes$1',
+    '^@email-templates(.*)$': '<rootDir>/email-templates$1',
+    '^@public(.*)$': '<rootDir>/public$1',
   },
+
+  // timeout
   testTimeout: 10000,
+
+  // verbose output
   verbose: true,
+
+  // clear mocks between tests
+  clearMocks: true,
+  resetMocks: true,
+  restoreMocks: true,
+
+  // coverage
   coveragePathIgnorePatterns: ['/node_modules/', '/coverage/', '/__tests__/'],
   transformIgnorePatterns: ['node_modules/(?!(@faker-js)/)'],
   transform: {

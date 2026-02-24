@@ -1,11 +1,5 @@
 /*********************** External Libraries ************************/
 require('module-alias/register');
-require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
-});
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -26,9 +20,10 @@ const requestLogger = require('@middlewares/request-logger.middleware');
 
 /*********************** Routes ************************/
 const v1Routes = require('@routes/v1/index.js');
+const healthRoutes = require('@routes/health.routes.js');
 
 /*********************** Init Server ************************/
-const initServer = async () => {
+const createApp = async () => {
   // Connect and sync database
   await db.sequelize.authenticate();
   // await db.sequelize.sync({ alter: false, force: false });
@@ -51,7 +46,7 @@ const initServer = async () => {
   app.use(express.static('public'));
   app.use(
     cors({
-      origin: process.env.CLIENT_HOST,
+      origin: process.env.CLIENT_HOST || '*',
       methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE', 'PATCH'],
       allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true,
@@ -121,6 +116,9 @@ const initServer = async () => {
 
   logger.info('Bull Board dashboard available at /admin/queues');
 
+  // Health check routes (root-level)
+  app.use('/health', healthRoutes);
+
   // API v1 routes
   app.use('/api/v1', v1Routes);
 
@@ -131,11 +129,7 @@ const initServer = async () => {
     res.send('Welcome to the Hotel Booking API');
   });
 
-  // Start the server
-  const PORT = process.env.PORT || 3000;
-  server.listen(PORT, async () => {
-    logger.info(`Server running on port ${PORT}`);
-  });
+  return app;
 };
 
-initServer();
+module.exports = createApp;
