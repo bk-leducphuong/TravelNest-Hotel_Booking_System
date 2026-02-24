@@ -7,14 +7,7 @@ const asyncHandler = require('@utils/asyncHandler');
  */
 const createHold = asyncHandler(async (req, res) => {
   const userId = req.session.user.user_id;
-  const {
-    hotelId,
-    checkInDate,
-    checkOutDate,
-    numberOfGuests,
-    rooms,
-    currency,
-  } = req.body;
+  const { hotelId, checkInDate, checkOutDate, numberOfGuests, rooms, currency } = req.body;
 
   const result = await holdService.createHold({
     userId,

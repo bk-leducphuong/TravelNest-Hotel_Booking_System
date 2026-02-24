@@ -1,10 +1,4 @@
-const {
-  Transactions,
-  Bookings,
-  Hotels,
-  Users,
-  Payments,
-} = require('@models/index.js');
+const { Transactions, Bookings, Hotels, Users, Payments } = require('@models/index.js');
 const { Op } = require('sequelize');
 const logger = require('@config/logger.config');
 
@@ -139,14 +133,7 @@ class TransactionRepository {
           {
             model: Payments,
             as: 'payments',
-            attributes: [
-              'id',
-              'payment_method',
-              'payment_status',
-              'amount',
-              'currency',
-              'paid_at',
-            ],
+            attributes: ['id', 'payment_method', 'payment_status', 'amount', 'currency', 'paid_at'],
           },
           {
             model: Hotels,
@@ -156,12 +143,7 @@ class TransactionRepository {
           {
             model: Bookings,
             as: 'booking',
-            attributes: [
-              'id',
-              'booking_code',
-              'check_in_date',
-              'check_out_date',
-            ],
+            attributes: ['id', 'booking_code', 'check_in_date', 'check_out_date'],
           },
         ],
         limit: limit || undefined,
@@ -234,22 +216,16 @@ class TransactionRepository {
     try {
       // Map common field names to database column names
       const mappedData = {};
-      if (updateData.status !== undefined)
-        mappedData.status = updateData.status;
-      if (updateData.chargeId !== undefined)
-        mappedData.stripe_charge_id = updateData.chargeId;
+      if (updateData.status !== undefined) mappedData.status = updateData.status;
+      if (updateData.chargeId !== undefined) mappedData.stripe_charge_id = updateData.chargeId;
       if (updateData.paymentIntentId !== undefined)
         mappedData.stripe_payment_intent_id = updateData.paymentIntentId;
-      if (updateData.refundId !== undefined)
-        mappedData.stripe_refund_id = updateData.refundId;
-      if (updateData.failureCode !== undefined)
-        mappedData.failure_code = updateData.failureCode;
+      if (updateData.refundId !== undefined) mappedData.stripe_refund_id = updateData.refundId;
+      if (updateData.failureCode !== undefined) mappedData.failure_code = updateData.failureCode;
       if (updateData.failureMessage !== undefined)
         mappedData.failure_message = updateData.failureMessage;
-      if (updateData.metadata !== undefined)
-        mappedData.metadata = updateData.metadata;
-      if (updateData.completedAt !== undefined)
-        mappedData.completed_at = updateData.completedAt;
+      if (updateData.metadata !== undefined) mappedData.metadata = updateData.metadata;
+      if (updateData.completedAt !== undefined) mappedData.completed_at = updateData.completedAt;
       if (updateData.paymentMethod !== undefined)
         mappedData.payment_method = updateData.paymentMethod;
 
@@ -287,23 +263,14 @@ class TransactionRepository {
    */
   async findAll(filters = {}, options = {}) {
     try {
-      const {
-        page,
-        limit: limitOption,
-        offset,
-        include,
-        order,
-        ...restOptions
-      } = options;
+      const { page, limit: limitOption, offset, include, order, ...restOptions } = options;
 
       const where = {};
       if (filters.buyerId) where.buyer_id = filters.buyerId;
       if (filters.hotelId) where.hotel_id = filters.hotelId;
       if (filters.status) where.status = filters.status;
-      if (filters.transactionType)
-        where.transaction_type = filters.transactionType;
-      if (filters.paymentIntentId)
-        where.stripe_payment_intent_id = filters.paymentIntentId;
+      if (filters.transactionType) where.transaction_type = filters.transactionType;
+      if (filters.paymentIntentId) where.stripe_payment_intent_id = filters.paymentIntentId;
       if (filters.dateFrom || filters.dateTo) {
         where.created_at = {};
         if (filters.dateFrom) where.created_at[Op.gte] = filters.dateFrom;
@@ -311,8 +278,7 @@ class TransactionRepository {
       }
 
       const calculatedLimit = limitOption || (page ? 20 : undefined);
-      const calculatedOffset =
-        offset || (page ? (page - 1) * calculatedLimit : undefined);
+      const calculatedOffset = offset || (page ? (page - 1) * calculatedLimit : undefined);
 
       return await Transactions.findAndCountAll({
         where,
@@ -366,8 +332,7 @@ class TransactionRepository {
 
       transactions.forEach((tx) => {
         if (tx.status === 'completed') stats.completed++;
-        else if (tx.status === 'pending' || tx.status === 'processing')
-          stats.pending++;
+        else if (tx.status === 'pending' || tx.status === 'processing') stats.pending++;
         else if (tx.status === 'failed') stats.failed++;
 
         if (tx.status === 'completed') {
@@ -406,8 +371,7 @@ class TransactionRepository {
 
       transactions.forEach((tx) => {
         if (tx.status === 'completed') stats.completed++;
-        else if (tx.status === 'pending' || tx.status === 'processing')
-          stats.pending++;
+        else if (tx.status === 'pending' || tx.status === 'processing') stats.pending++;
         else if (tx.status === 'failed') stats.failed++;
 
         if (tx.status === 'completed') {

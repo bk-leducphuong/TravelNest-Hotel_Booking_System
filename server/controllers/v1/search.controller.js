@@ -20,9 +20,7 @@ const searchHotels = asyncHandler(async (req, res) => {
     city: req.query.city,
     country: req.query.country,
     latitude: req.query.latitude ? parseFloat(req.query.latitude) : undefined,
-    longitude: req.query.longitude
-      ? parseFloat(req.query.longitude)
-      : undefined,
+    longitude: req.query.longitude ? parseFloat(req.query.longitude) : undefined,
     radius: req.query.radius ? parseFloat(req.query.radius) : undefined,
 
     // Dates (required)
@@ -37,9 +35,7 @@ const searchHotels = asyncHandler(async (req, res) => {
     // Filters
     minPrice: req.query.minPrice ? parseFloat(req.query.minPrice) : undefined,
     maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice) : undefined,
-    minRating: req.query.minRating
-      ? parseFloat(req.query.minRating)
-      : undefined,
+    minRating: req.query.minRating ? parseFloat(req.query.minRating) : undefined,
     hotelClass: req.query.hotelClass,
     amenities: req.query.amenities,
     freeCancellation: req.query.freeCancellation,
@@ -115,11 +111,7 @@ const saveSearchInformation = asyncHandler(async (req, res) => {
   const userId = req.session?.user?.user_id || null;
   const searchData = req.body;
 
-  const result = await searchService.saveSearchLog(
-    searchData,
-    userId,
-    req.body.metadata || {}
-  );
+  const result = await searchService.saveSearchLog(searchData, userId, req.body.metadata || {});
 
   res.status(201).json({
     success: true,

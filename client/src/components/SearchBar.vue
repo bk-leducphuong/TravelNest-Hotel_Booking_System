@@ -16,7 +16,7 @@
         <div class="search-bar">
           <!-- Location input with autocomplete -->
           <div class="location-autocomplete">
-            <el-autocomplete
+            <ElAutocomplete
               v-model="selectedLocation"
               :fetch-suggestions="querySearch"
               :placeholder="$t('userHeader.locationInputPlaceholder')"
@@ -31,12 +31,12 @@
                   <div class="location-country">{{ item.country }}</div>
                 </div>
               </template>
-            </el-autocomplete>
+            </ElAutocomplete>
           </div>
 
           <!-- Date picker input -->
           <div class="date-picker">
-            <el-date-picker
+            <ElDatePicker
               v-model="dateRange"
               type="daterange"
               range-separator="đến"
@@ -65,7 +65,7 @@
             <div v-if="showGuestSelector" class="guest-room-selector" id="guest-room-selector">
               <div class="selector-item">
                 <span>{{ $t('userHeader.guestInputPlaceholder_1') }}</span>
-                <el-input-number
+                <ElInputNumber
                   v-model="adults"
                   :min="1"
                   :max="30"
@@ -77,7 +77,7 @@
                 <span
                   >{{ $t('userHeader.guestInputPlaceholder_2') }} <small>(0 - 17 tuổi)</small></span
                 >
-                <el-input-number
+                <ElInputNumber
                   v-model="children"
                   :min="0"
                   :max="10"
@@ -87,7 +87,7 @@
               </div>
               <div class="selector-item">
                 <span>{{ $t('userHeader.guestInputPlaceholder_3') }}</span>
-                <el-input-number
+                <ElInputNumber
                   v-model="rooms"
                   :min="1"
                   :max="30"

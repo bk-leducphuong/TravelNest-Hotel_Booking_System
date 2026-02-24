@@ -112,9 +112,7 @@ function requirePermission(permissionName, options = {}) {
         });
       }
 
-      const permissionNames = Array.isArray(permissionName)
-        ? permissionName
-        : [permissionName];
+      const permissionNames = Array.isArray(permissionName) ? permissionName : [permissionName];
 
       // Get user's global roles and their permissions
       const userRoleIds = req.user.roles?.map((ur) => ur.role.id) || [];
@@ -128,15 +126,12 @@ function requirePermission(permissionName, options = {}) {
       });
 
       // Check if user has any of the required permissions via global roles
-      const hasGlobalPermission = permissionNames.some((perm) =>
-        userPermissions.has(perm)
-      );
+      const hasGlobalPermission = permissionNames.some((perm) => userPermissions.has(perm));
 
       // If hotel context is required, check hotel-specific permissions
       if (requireHotelContext) {
         const sessionContext = req.session?.context;
-        const hotelId =
-          sessionContext?.hotelId || req.params?.hotelId || req.body?.hotelId;
+        const hotelId = sessionContext?.hotelId || req.params?.hotelId || req.body?.hotelId;
 
         if (!hotelId) {
           return res.status(400).json({
@@ -146,9 +141,7 @@ function requirePermission(permissionName, options = {}) {
         }
 
         // Check if user has a role at this hotel
-        const hotelUser = req.user.hotel_roles?.find(
-          (hr) => hr.hotel_id === hotelId
-        );
+        const hotelUser = req.user.hotel_roles?.find((hr) => hr.hotel_id === hotelId);
 
         if (!hotelUser) {
           return res.status(403).json({

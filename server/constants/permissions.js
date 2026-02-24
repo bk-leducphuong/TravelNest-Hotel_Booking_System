@@ -132,11 +132,7 @@ const PERMISSION_DESCRIPTIONS = {
  */
 const ROLE_PERMISSIONS = {
   // Guest - minimal permissions (not logged in)
-  guest: [
-    PERMISSIONS.HOTEL_READ,
-    PERMISSIONS.ROOM_READ,
-    PERMISSIONS.REVIEW_READ,
-  ],
+  guest: [PERMISSIONS.HOTEL_READ, PERMISSIONS.ROOM_READ, PERMISSIONS.REVIEW_READ],
 
   // Regular user - can book and review
   user: [

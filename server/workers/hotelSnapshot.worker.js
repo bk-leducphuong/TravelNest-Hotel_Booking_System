@@ -20,12 +20,9 @@ const syncToElasticsearch = async (hotelId, snapshotData, retryCount = 0) => {
     logger.info(`[ES Sync] Successfully synced hotel ${hotelId}`);
     return true;
   } catch (error) {
-    logger.error(
-      `[ES Sync] Failed to sync hotel ${hotelId} (attempt ${retryCount + 1})`,
-      {
-        error: error.message,
-      }
-    );
+    logger.error(`[ES Sync] Failed to sync hotel ${hotelId} (attempt ${retryCount + 1})`, {
+      error: error.message,
+    });
 
     if (retryCount < MAX_ELASTICSEARCH_RETRIES) {
       const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
@@ -41,10 +38,7 @@ const syncToElasticsearch = async (hotelId, snapshotData, retryCount = 0) => {
 const eventHandlers = {
   'hotel.created': async (payload) => {
     const { hotelId, hotelData } = payload;
-    const snapshot = await snapshotRepo.createInitialSnapshot(
-      hotelId,
-      hotelData
-    );
+    const snapshot = await snapshotRepo.createInitialSnapshot(hotelId, hotelData);
     await syncToElasticsearch(hotelId, snapshot.toJSON());
     return { success: true, hotelId };
   },
@@ -64,8 +58,7 @@ const eventHandlers = {
     const basicInfo = await snapshotRepo.getHotelBasicInfo(hotelId);
     await snapshotRepo.partialUpdate(hotelId, {
       ...pricingData,
-      is_available:
-        pricingData.has_available_rooms && basicInfo.status === 'active',
+      is_available: pricingData.has_available_rooms && basicInfo.status === 'active',
     });
     const snapshot = await snapshotRepo.getByHotelId(hotelId);
     await syncToElasticsearch(hotelId, snapshot.toJSON());
@@ -96,8 +89,7 @@ const eventHandlers = {
     const pricingData = await snapshotRepo.recomputePricing(hotelId);
     const basicInfo = await snapshotRepo.getHotelBasicInfo(hotelId);
     await snapshotRepo.partialUpdate(hotelId, {
-      is_available:
-        pricingData.has_available_rooms && basicInfo.status === 'active',
+      is_available: pricingData.has_available_rooms && basicInfo.status === 'active',
       has_available_rooms: pricingData.has_available_rooms,
     });
     const snapshot = await snapshotRepo.getByHotelId(hotelId);
@@ -135,14 +127,10 @@ const processHotelSnapshotJob = async (job) => {
   return result;
 };
 
-const hotelSnapshotWorker = new Worker(
-  queueName,
-  processHotelSnapshotJob,
-  {
-    ...workerOptions,
-    concurrency: workerOptions.concurrency,
-  }
-);
+const hotelSnapshotWorker = new Worker(queueName, processHotelSnapshotJob, {
+  ...workerOptions,
+  concurrency: workerOptions.concurrency,
+});
 
 hotelSnapshotWorker.on('completed', (job) => {
   logger.info(`Hotel snapshot job completed: ${job.id}`, {

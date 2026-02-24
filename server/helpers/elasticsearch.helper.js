@@ -167,10 +167,7 @@ class ElasticsearchHelper {
         return [{ min_price: { order: 'desc' } }];
 
       case 'rating':
-        return [
-          { avg_rating: { order: 'desc' } },
-          { review_count: { order: 'desc' } },
-        ];
+        return [{ avg_rating: { order: 'desc' } }, { review_count: { order: 'desc' } }];
 
       case 'distance':
         if (latitude && longitude) {
@@ -195,10 +192,7 @@ class ElasticsearchHelper {
       case 'relevance':
       default:
         // Smart ranking: combine score with rating
-        return [
-          { _score: { order: 'desc' } },
-          { avg_rating: { order: 'desc' } },
-        ];
+        return [{ _score: { order: 'desc' } }, { avg_rating: { order: 'desc' } }];
     }
   }
 
@@ -224,11 +218,7 @@ class ElasticsearchHelper {
         };
 
         // Add distance if geo sort was used
-        if (
-          hit.sort &&
-          hit.sort.length > 0 &&
-          typeof hit.sort[0] === 'number'
-        ) {
+        if (hit.sort && hit.sort.length > 0 && typeof hit.sort[0] === 'number') {
           result.distance_km = parseFloat(hit.sort[0].toFixed(2));
         }
 

@@ -1,20 +1,17 @@
 require('module-alias/register');
-const { Worker } = require('bullmq');
 const path = require('path');
+
+const { Worker } = require('bullmq');
 const config = require('@config/bullmq.config');
 const logger = require('@config/logger.config');
 
 const queueName = config.queues.imageProcessing.name;
 const workerOptions = config.queues.imageProcessing.workerOptions;
 
-const imageWorker = new Worker(
-  queueName,
-  path.join(__dirname, 'processors/image.processor.js'),
-  {
-    ...workerOptions,
-    concurrency: workerOptions.concurrency,
-  }
-);
+const imageWorker = new Worker(queueName, path.join(__dirname, 'processors/image.processor.js'), {
+  ...workerOptions,
+  concurrency: workerOptions.concurrency,
+});
 
 imageWorker.on('completed', (job) => {
   logger.info(

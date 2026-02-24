@@ -36,7 +36,7 @@ export default {
       }
 
       // save search information to localStorage
-      let searchHistory = localStorage.getItem('recentSearches')
+      const searchHistory = localStorage.getItem('recentSearches')
         ? JSON.parse(localStorage.getItem('recentSearches'))
         : []
       if (searchHistory.length > 10) {

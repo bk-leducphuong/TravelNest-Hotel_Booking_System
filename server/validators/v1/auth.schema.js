@@ -19,8 +19,7 @@ const phoneNumberSchema = Joi.string()
   .max(20)
   .required()
   .messages({
-    'string.pattern.base':
-      'Phone number must be in international format (e.g., +1234567890)',
+    'string.pattern.base': 'Phone number must be in international format (e.g., +1234567890)',
   });
 const otpSchema = Joi.string()
   .pattern(/^\d{4}$/)

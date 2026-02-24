@@ -113,9 +113,7 @@ const createMockUserWithHotelContext = (overrides = {}) => {
 
   return createMockAuthUser({
     roles: [createMockUserRole({ role, role_id: role.id })],
-    hotel_roles: [
-      createMockHotelUser({ role: hotelRole, role_id: hotelRole.id }),
-    ],
+    hotel_roles: [createMockHotelUser({ role: hotelRole, role_id: hotelRole.id })],
     ...overrides,
   });
 };
@@ -182,9 +180,7 @@ const createHashedPassword = async (password = 'password123') => {
  * Create multiple mock users
  */
 const createMockUsers = (count = 3, overrides = {}) => {
-  return Array.from({ length: count }, () =>
-    createMockAuthUser(overrides)
-  );
+  return Array.from({ length: count }, () => createMockAuthUser(overrides));
 };
 
 module.exports = {

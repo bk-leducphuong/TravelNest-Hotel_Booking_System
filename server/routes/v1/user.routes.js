@@ -29,27 +29,14 @@ router.patch('/', validate(userSchema.updateCurrentUser), updateCurrentUser);
 router.patch('/password', validate(userSchema.updatePassword), updatePassword);
 
 // PATCH /api/user/avatar - Update avatar
-router.patch(
-  '/avatar',
-  upload.single('avatar'),
-  validate(userSchema.updateAvatar),
-  updateAvatar
-);
+router.patch('/avatar', upload.single('avatar'), validate(userSchema.updateAvatar), updateAvatar);
 
 // Favorite hotels nested resource
 // GET /api/user/favorite-hotels - Get favorite hotels (with pagination)
-router.get(
-  '/favorite-hotels',
-  validate(userSchema.getFavoriteHotels),
-  getFavoriteHotels
-);
+router.get('/favorite-hotels', validate(userSchema.getFavoriteHotels), getFavoriteHotels);
 
 // POST /api/user/favorite-hotels - Add favorite hotel
-router.post(
-  '/favorite-hotels',
-  validate(userSchema.addFavoriteHotel),
-  addFavoriteHotel
-);
+router.post('/favorite-hotels', validate(userSchema.addFavoriteHotel), addFavoriteHotel);
 
 // GET /api/user/favorite-hotels/:hotelId - Check if hotel is favorite
 router.get(

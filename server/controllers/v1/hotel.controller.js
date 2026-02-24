@@ -9,8 +9,7 @@ const { computeNumberOfNights } = require('@helpers/hotel.helpers');
  */
 const getHotelDetails = asyncHandler(async (req, res) => {
   const { hotelId } = req.params;
-  const { checkInDate, checkOutDate, numberOfRooms, numberOfGuests } =
-    req.query;
+  const { checkInDate, checkOutDate, numberOfRooms, numberOfGuests } = req.query;
 
   const numberOfNights = computeNumberOfNights(checkInDate, checkOutDate);
 
@@ -35,14 +34,7 @@ const getHotelDetails = asyncHandler(async (req, res) => {
  */
 const searchRooms = asyncHandler(async (req, res) => {
   const { hotelId } = req.params;
-  const {
-    checkInDate,
-    checkOutDate,
-    numberOfRooms,
-    numberOfGuests,
-    page,
-    limit,
-  } = req.query;
+  const { checkInDate, checkOutDate, numberOfRooms, numberOfGuests, page, limit } = req.query;
 
   const numberOfNights = computeNumberOfNights(checkInDate, checkOutDate);
 

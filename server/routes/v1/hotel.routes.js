@@ -261,11 +261,7 @@ router.get('/:hotelId', validate(hotelSchema.getHotelDetails), getHotelDetails);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get(
-  '/:hotelId/policies',
-  validate(hotelSchema.getHotelPolicies),
-  getHotelPolicies
-);
+router.get('/:hotelId/policies', validate(hotelSchema.getHotelPolicies), getHotelPolicies);
 
 /**
  * @swagger
@@ -357,11 +353,7 @@ router.get(
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get(
-  '/:hotelId/nearby-places',
-  validate(hotelSchema.getNearbyPlaces),
-  getNearbyPlaces
-);
+router.get('/:hotelId/nearby-places', validate(hotelSchema.getNearbyPlaces), getNearbyPlaces);
 
 /**
  * @swagger

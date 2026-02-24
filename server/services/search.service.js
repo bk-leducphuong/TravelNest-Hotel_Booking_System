@@ -9,10 +9,11 @@
  * Phase 6: Format and paginate response
  */
 
-const elasticsearchHelper = require('../helpers/elasticsearch.helper');
-const searchRepository = require('../repositories/search.repository');
 const { searchLogQueue } = require('@queues/index');
 const { addJob } = require('@utils/bullmq.utils');
+
+const elasticsearchHelper = require('../helpers/elasticsearch.helper');
+const searchRepository = require('../repositories/search.repository');
 const ApiError = require('../utils/ApiError');
 const logger = require('../config/logger.config');
 
@@ -49,32 +50,20 @@ class SearchService {
       const hotelIds = candidateHotels.map((h) => h.hotel_id);
 
       // Phase 2: Database - Check date-specific availability
-      const availableHotels = await this._phase2_checkAvailability(
-        hotelIds,
-        validated
-      );
+      const availableHotels = await this._phase2_checkAvailability(hotelIds, validated);
 
       if (availableHotels.length === 0) {
         return this._formatEmptyResponse(validated, startTime);
       }
 
       // Phase 3: Database - Get room details and pricing
-      const hotelsWithRooms = await this._phase3_getRoomDetails(
-        availableHotels,
-        validated
-      );
+      const hotelsWithRooms = await this._phase3_getRoomDetails(availableHotels, validated);
 
       // Phase 4: Merge ES data with DB data
-      const enrichedHotels = await this._phase4_mergeData(
-        candidateHotels,
-        hotelsWithRooms
-      );
+      const enrichedHotels = await this._phase4_mergeData(candidateHotels, hotelsWithRooms);
 
       // Phase 5: Re-rank and sort
-      const rankedHotels = this._phase5_rankAndSort(
-        enrichedHotels,
-        validated.sortBy
-      );
+      const rankedHotels = this._phase5_rankAndSort(enrichedHotels, validated.sortBy);
 
       // Phase 6: Format and paginate response
       const response = this._phase6_formatResponse(
@@ -245,16 +234,12 @@ class SearchService {
     switch (sortBy) {
       case 'price_asc':
         sorted.sort(
-          (a, b) =>
-            (a.min_price_for_dates || Infinity) -
-            (b.min_price_for_dates || Infinity)
+          (a, b) => (a.min_price_for_dates || Infinity) - (b.min_price_for_dates || Infinity)
         );
         break;
 
       case 'price_desc':
-        sorted.sort(
-          (a, b) => (b.min_price_for_dates || 0) - (a.min_price_for_dates || 0)
-        );
+        sorted.sort((a, b) => (b.min_price_for_dates || 0) - (a.min_price_for_dates || 0));
         break;
 
       case 'rating':
@@ -267,15 +252,11 @@ class SearchService {
         break;
 
       case 'distance':
-        sorted.sort(
-          (a, b) => (a.distance_km || Infinity) - (b.distance_km || Infinity)
-        );
+        sorted.sort((a, b) => (a.distance_km || Infinity) - (b.distance_km || Infinity));
         break;
 
       case 'popularity':
-        sorted.sort(
-          (a, b) => (b.total_bookings || 0) - (a.total_bookings || 0)
-        );
+        sorted.sort((a, b) => (b.total_bookings || 0) - (a.total_bookings || 0));
         break;
 
       case 'relevance':
@@ -427,11 +408,7 @@ class SearchService {
     });
 
     if (availability.length === 0) {
-      throw new ApiError(
-        404,
-        'NOT_AVAILABLE',
-        'Hotel not available for selected dates'
-      );
+      throw new ApiError(404, 'NOT_AVAILABLE', 'Hotel not available for selected dates');
     }
 
     // Get room details
@@ -458,9 +435,7 @@ class SearchService {
         search_params: {
           checkIn,
           checkOut,
-          nights: Math.ceil(
-            (new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)
-          ),
+          nights: Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)),
           adults,
           children,
           rooms,
@@ -478,10 +453,7 @@ class SearchService {
    */
   async getAutocompleteSuggestions(query, limit = 10) {
     try {
-      const suggestions = await elasticsearchHelper.getSuggestions(
-        query,
-        limit
-      );
+      const suggestions = await elasticsearchHelper.getSuggestions(query, limit);
 
       return {
         success: true,

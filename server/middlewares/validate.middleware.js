@@ -18,9 +18,7 @@ module.exports = (schema) => (req, res, next) => {
           fields[fieldPath] = detail.message;
         });
 
-        return next(
-          new ApiError(400, 'VALIDATION_ERROR', 'Invalid request data', fields)
-        );
+        return next(new ApiError(400, 'VALIDATION_ERROR', 'Invalid request data', fields));
       }
 
       // Replace with sanitized data

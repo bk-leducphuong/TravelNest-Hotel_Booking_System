@@ -24,11 +24,7 @@ router.get('/', validate(paymentSchema.getUserPayments), getUserPayments);
  * POST /api/payments
  * Create a payment intent for booking
  */
-router.post(
-  '/',
-  validate(paymentSchema.createPaymentIntent),
-  createPaymentIntent
-);
+router.post('/', validate(paymentSchema.createPaymentIntent), createPaymentIntent);
 
 /**
  * GET /api/payments/bookings/:bookingId

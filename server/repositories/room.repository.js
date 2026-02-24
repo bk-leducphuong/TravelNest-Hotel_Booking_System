@@ -1,10 +1,4 @@
-const {
-  Rooms,
-  RoomInventories,
-  Amenities,
-  Images,
-  ImageVariants,
-} = require('../models/index.js');
+const { Rooms, RoomInventories, Amenities, Images, ImageVariants } = require('../models/index.js');
 
 /**
  * Room Repository - Contains all database operations for rooms
@@ -17,13 +11,7 @@ class RoomRepository {
    * Uses Sequelize ORM with proper associations
    */
   async findAvailableRooms(hotelId, checkInDate, checkOutDate, options = {}) {
-    const {
-      numberOfRooms = 1,
-      numberOfNights,
-      numberOfGuests,
-      limit,
-      offset,
-    } = options;
+    const { numberOfRooms = 1, numberOfNights, numberOfGuests, limit, offset } = options;
 
     const sequelize = require('../config/database.config');
     const { Op } = require('sequelize');
@@ -130,14 +118,7 @@ class RoomRepository {
             {
               model: ImageVariants,
               as: 'image_variants',
-              attributes: [
-                'id',
-                'variant_type',
-                'bucket_name',
-                'object_key',
-                'width',
-                'height',
-              ],
+              attributes: ['id', 'variant_type', 'bucket_name', 'object_key', 'width', 'height'],
               required: false,
             },
           ],
@@ -211,14 +192,7 @@ class RoomRepository {
             {
               model: ImageVariants,
               as: 'image_variants',
-              attributes: [
-                'id',
-                'variant_type',
-                'bucket_name',
-                'object_key',
-                'width',
-                'height',
-              ],
+              attributes: ['id', 'variant_type', 'bucket_name', 'object_key', 'width', 'height'],
               required: false,
             },
           ],
@@ -233,15 +207,7 @@ class RoomRepository {
   async findByHotelId(hotelId) {
     return await Rooms.findAll({
       where: { hotel_id: hotelId, status: 'active' },
-      attributes: [
-        'id',
-        'room_name',
-        'max_guests',
-        'room_size',
-        'room_type',
-        'quantity',
-        'status',
-      ],
+      attributes: ['id', 'room_name', 'max_guests', 'room_size', 'room_type', 'quantity', 'status'],
       include: [
         {
           model: Amenities,
@@ -273,14 +239,7 @@ class RoomRepository {
             {
               model: ImageVariants,
               as: 'image_variants',
-              attributes: [
-                'id',
-                'variant_type',
-                'bucket_name',
-                'object_key',
-                'width',
-                'height',
-              ],
+              attributes: ['id', 'variant_type', 'bucket_name', 'object_key', 'width', 'height'],
               required: false,
             },
           ],

@@ -19,13 +19,11 @@
  */
 
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
+  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
 });
 
 const { faker } = require('@faker-js/faker');
+
 const db = require('../../../models');
 const sequelize = require('../../../config/database.config');
 const { CURRENCIES } = require('../../../constants/common');
@@ -52,13 +50,7 @@ function toDateOnly(d) {
  * @param {Object} options - priceMin, priceMax, currency
  * @returns {Array<Object>}
  */
-function generateInventoryForRoom(
-  roomId,
-  quantity,
-  startDate,
-  endDate,
-  options = {}
-) {
+function generateInventoryForRoom(roomId, quantity, startDate, endDate, options = {}) {
   const { priceMin = 80, priceMax = 350, currency = 'USD' } = options;
 
   const records = [];
@@ -123,9 +115,7 @@ async function seedRoomInventory(options = {}) {
   } = options;
 
   if (!CURRENCIES.includes(currency)) {
-    throw new Error(
-      `Invalid currency: ${currency}. Must be one of: ${CURRENCIES.join(', ')}`
-    );
+    throw new Error(`Invalid currency: ${currency}. Must be one of: ${CURRENCIES.join(', ')}`);
   }
 
   try {
@@ -159,13 +149,7 @@ async function seedRoomInventory(options = {}) {
 
     for (const room of roomList) {
       const quantity = Math.max(1, Number(room.quantity) || 1);
-      const records = generateInventoryForRoom(
-        room.id,
-        quantity,
-        startDate,
-        endDate,
-        opts
-      );
+      const records = generateInventoryForRoom(room.id, quantity, startDate, endDate, opts);
       allRecords.push(...records);
     }
 

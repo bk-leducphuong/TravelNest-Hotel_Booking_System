@@ -52,7 +52,7 @@ export default {
     },
   },
   mounted() {
-    let language = localStorage.getItem('language') ? localStorage.getItem('language') : navigator.language || navigator.userLanguage
+    const language = localStorage.getItem('language') ? localStorage.getItem('language') : navigator.language || navigator.userLanguage
     this.updateUserLanguage(language)
     this.$i18n.locale = language.split('-')[0]
 

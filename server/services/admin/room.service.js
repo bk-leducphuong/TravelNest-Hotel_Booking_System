@@ -1,11 +1,8 @@
+const sharp = require('sharp');
+
 const adminRoomRepository = require('../../repositories/admin/room.repository');
 const ApiError = require('../../utils/ApiError');
-const {
-  minioClient,
-  bucketName,
-  getObjectUrl,
-} = require('../../config/minio.config');
-const sharp = require('sharp');
+const { minioClient, bucketName, getObjectUrl } = require('../../config/minio.config');
 
 /**
  * Admin Room Service - Contains main business logic for admin room management
@@ -17,17 +14,10 @@ class AdminRoomService {
    * Verify hotel ownership for all operations
    */
   async verifyAccess(hotelId, ownerId) {
-    const isOwner = await adminRoomRepository.verifyHotelOwnership(
-      hotelId,
-      ownerId
-    );
+    const isOwner = await adminRoomRepository.verifyHotelOwnership(hotelId, ownerId);
 
     if (!isOwner) {
-      throw new ApiError(
-        403,
-        'FORBIDDEN',
-        'You do not have permission to access this hotel'
-      );
+      throw new ApiError(403, 'FORBIDDEN', 'You do not have permission to access this hotel');
     }
   }
 
@@ -114,21 +104,14 @@ class AdminRoomService {
     await this.verifyRoomAccess(roomId, ownerId);
 
     const updatePayload = {};
-    if (updateData.roomName !== undefined)
-      updatePayload.room_name = updateData.roomName;
-    if (updateData.roomType !== undefined)
-      updatePayload.room_type = updateData.roomType;
-    if (updateData.quantity !== undefined)
-      updatePayload.quantity = updateData.quantity;
-    if (updateData.roomSize !== undefined)
-      updatePayload.room_size = updateData.roomSize;
+    if (updateData.roomName !== undefined) updatePayload.room_name = updateData.roomName;
+    if (updateData.roomType !== undefined) updatePayload.room_type = updateData.roomType;
+    if (updateData.quantity !== undefined) updatePayload.quantity = updateData.quantity;
+    if (updateData.roomSize !== undefined) updatePayload.room_size = updateData.roomSize;
     if (updateData.roomAmenities !== undefined)
       updatePayload.room_amenities = updateData.roomAmenities;
 
-    const [updatedCount] = await adminRoomRepository.update(
-      roomId,
-      updatePayload
-    );
+    const [updatedCount] = await adminRoomRepository.update(roomId, updatePayload);
 
     if (updatedCount === 0) {
       throw new ApiError(500, 'UPDATE_FAILED', 'Failed to update room');
@@ -187,14 +170,10 @@ class AdminRoomService {
     // Process and upload files to MinIO
     const uploadedUrls = await Promise.all(
       files.map(async (file) => {
-        const timestamp = new Date()
-          .toISOString()
-          .replace(/[^a-zA-Z0-9_\-]/g, '-');
+        const timestamp = new Date().toISOString().replace(/[^a-zA-Z0-9_-]/g, '-');
 
         // Convert image to AVIF using sharp
-        const avifBuffer = await sharp(file.buffer)
-          .avif({ quality: 50 })
-          .toBuffer();
+        const avifBuffer = await sharp(file.buffer).avif({ quality: 50 }).toBuffer();
 
         const objectName = `hotels/${hotelId}/rooms/${roomId}/${timestamp}.avif`;
 
@@ -210,10 +189,7 @@ class AdminRoomService {
     const currentImageUrls = room.image_urls ? JSON.parse(room.image_urls) : [];
     const newImageUrls = [...currentImageUrls, ...uploadedUrls];
 
-    await adminRoomRepository.updateImageUrls(
-      roomId,
-      JSON.stringify(newImageUrls)
-    );
+    await adminRoomRepository.updateImageUrls(roomId, JSON.stringify(newImageUrls));
 
     return {
       roomId,
@@ -236,9 +212,7 @@ class AdminRoomService {
     const currentImageUrls = room.image_urls ? JSON.parse(room.image_urls) : [];
 
     // Remove the specified URLs
-    const newImageUrls = currentImageUrls.filter(
-      (url) => !photoUrls.includes(url)
-    );
+    const newImageUrls = currentImageUrls.filter((url) => !photoUrls.includes(url));
 
     // Extract object names from MinIO URLs and delete from bucket
     const deletePromises = photoUrls.map(async (url) => {
@@ -257,10 +231,7 @@ class AdminRoomService {
     await Promise.all(deletePromises);
 
     // Update room image URLs
-    await adminRoomRepository.updateImageUrls(
-      roomId,
-      JSON.stringify(newImageUrls)
-    );
+    await adminRoomRepository.updateImageUrls(roomId, JSON.stringify(newImageUrls));
 
     return {
       roomId,
@@ -309,14 +280,10 @@ class AdminRoomService {
     // Process and upload files to MinIO
     const uploadedUrls = await Promise.all(
       files.map(async (file) => {
-        const timestamp = new Date()
-          .toISOString()
-          .replace(/[^a-zA-Z0-9_\-]/g, '-');
+        const timestamp = new Date().toISOString().replace(/[^a-zA-Z0-9_-]/g, '-');
 
         // Convert image to AVIF using sharp
-        const avifBuffer = await sharp(file.buffer)
-          .avif({ quality: 50 })
-          .toBuffer();
+        const avifBuffer = await sharp(file.buffer).avif({ quality: 50 }).toBuffer();
 
         const objectName = `hotels/${hotelId}/${timestamp}.avif`;
 
@@ -329,15 +296,10 @@ class AdminRoomService {
     );
 
     // Update hotel image URLs
-    const currentImageUrls = hotel.image_urls
-      ? JSON.parse(hotel.image_urls)
-      : [];
+    const currentImageUrls = hotel.image_urls ? JSON.parse(hotel.image_urls) : [];
     const newImageUrls = [...currentImageUrls, ...uploadedUrls];
 
-    await adminRoomRepository.updateHotelImageUrls(
-      hotelId,
-      JSON.stringify(newImageUrls)
-    );
+    await adminRoomRepository.updateHotelImageUrls(hotelId, JSON.stringify(newImageUrls));
 
     return {
       hotelId,
@@ -363,14 +325,10 @@ class AdminRoomService {
     }
 
     // Get current image URLs
-    const currentImageUrls = hotel.image_urls
-      ? JSON.parse(hotel.image_urls)
-      : [];
+    const currentImageUrls = hotel.image_urls ? JSON.parse(hotel.image_urls) : [];
 
     // Remove the specified URLs
-    const newImageUrls = currentImageUrls.filter(
-      (url) => !photoUrls.includes(url)
-    );
+    const newImageUrls = currentImageUrls.filter((url) => !photoUrls.includes(url));
 
     // Extract object names from MinIO URLs and delete from bucket
     const deletePromises = photoUrls.map(async (url) => {
@@ -389,10 +347,7 @@ class AdminRoomService {
     await Promise.all(deletePromises);
 
     // Update hotel image URLs
-    await adminRoomRepository.updateHotelImageUrls(
-      hotelId,
-      JSON.stringify(newImageUrls)
-    );
+    await adminRoomRepository.updateHotelImageUrls(hotelId, JSON.stringify(newImageUrls));
 
     return {
       hotelId,
@@ -407,18 +362,10 @@ class AdminRoomService {
   async getRoomInventory(roomId, ownerId, startDate, endDate) {
     await this.verifyRoomAccess(roomId, ownerId);
 
-    const inventories = await adminRoomRepository.findInventoryByRoomId(
-      roomId,
-      startDate,
-      endDate
-    );
+    const inventories = await adminRoomRepository.findInventoryByRoomId(roomId, startDate, endDate);
 
     // Get statistics
-    const stats = await adminRoomRepository.getRoomInventoryStats(
-      roomId,
-      startDate,
-      endDate
-    );
+    const stats = await adminRoomRepository.getRoomInventoryStats(roomId, startDate, endDate);
 
     return {
       roomId,
@@ -456,11 +403,7 @@ class AdminRoomService {
       const dateOnly = new Date(inventory.date);
       dateOnly.setHours(0, 0, 0, 0);
 
-      return await adminRoomRepository.upsertInventory(
-        roomId,
-        dateOnly,
-        updateData
-      );
+      return await adminRoomRepository.upsertInventory(roomId, dateOnly, updateData);
     });
 
     await Promise.all(updatePromises);

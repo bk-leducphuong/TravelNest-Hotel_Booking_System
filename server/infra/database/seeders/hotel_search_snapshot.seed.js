@@ -17,10 +17,7 @@
  */
 
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
+  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
 });
 
 const db = require('../../../models');
@@ -48,11 +45,7 @@ const { hotels: Hotels, hotel_search_snapshots: HotelSearchSnapshots } = db;
  * @returns {Promise<{ created: number, updated: number, failed: number }>}
  */
 async function seedHotelSearchSnapshots(options = {}) {
-  const {
-    hotelIds = null,
-    clearExisting = false,
-    useFullRefresh = true,
-  } = options;
+  const { hotelIds = null, clearExisting = false, useFullRefresh = true } = options;
 
   try {
     console.log('🌱 Starting hotel search snapshot seeding...');
@@ -117,22 +110,16 @@ async function seedHotelSearchSnapshots(options = {}) {
           updated++;
         } else {
           // Check if snapshot already exists
-          const existingSnapshot = await HotelSearchSnapshots.findByPk(
-            hotel.id
-          );
+          const existingSnapshot = await HotelSearchSnapshots.findByPk(hotel.id);
 
           if (existingSnapshot) {
             // Update existing snapshot
-            console.log(
-              `🔄 Updating snapshot for hotel: ${hotel.name} (${hotel.id})`
-            );
+            console.log(`🔄 Updating snapshot for hotel: ${hotel.name} (${hotel.id})`);
             await fullRefresh(hotel.id);
             updated++;
           } else {
             // Create initial snapshot
-            console.log(
-              `➕ Creating snapshot for hotel: ${hotel.name} (${hotel.id})`
-            );
+            console.log(`➕ Creating snapshot for hotel: ${hotel.name} (${hotel.id})`);
             await createInitialSnapshot(hotel.id, {
               name: hotel.name,
               city: hotel.city,
@@ -148,16 +135,11 @@ async function seedHotelSearchSnapshots(options = {}) {
 
         // Log progress every 10 hotels
         if ((created + updated) % 10 === 0) {
-          console.log(
-            `📊 Progress: ${created + updated}/${hotels.length} processed`
-          );
+          console.log(`📊 Progress: ${created + updated}/${hotels.length} processed`);
         }
       } catch (error) {
         failed++;
-        console.error(
-          `❌ Failed to process hotel ${hotel.name} (${hotel.id}):`,
-          error.message
-        );
+        console.error(`❌ Failed to process hotel ${hotel.name} (${hotel.id}):`, error.message);
       }
     }
 
@@ -165,9 +147,7 @@ async function seedHotelSearchSnapshots(options = {}) {
     console.log(`   - Created: ${created}`);
     console.log(`   - Updated: ${updated}`);
     console.log(`   - Failed: ${failed}`);
-    console.log(
-      `🎉 Total snapshots in database: ${await HotelSearchSnapshots.count()}`
-    );
+    console.log(`🎉 Total snapshots in database: ${await HotelSearchSnapshots.count()}`);
 
     return { created, updated, failed };
   } catch (error) {
@@ -194,10 +174,7 @@ async function seedHotelSearchSnapshotsByFilter(filters = {}) {
   if (status) whereClause.status = status;
   if (hotel_class) whereClause.hotel_class = hotel_class;
 
-  console.log(
-    `🔍 Finding hotels with filters:`,
-    JSON.stringify(whereClause, null, 2)
-  );
+  console.log(`🔍 Finding hotels with filters:`, JSON.stringify(whereClause, null, 2));
 
   const hotels = await Hotels.findAll({
     where: whereClause,

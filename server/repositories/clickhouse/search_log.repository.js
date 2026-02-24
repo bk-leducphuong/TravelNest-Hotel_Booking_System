@@ -18,15 +18,7 @@ class SearchLogClickHouseRepository {
    * @returns {Promise<Object>} Created log with search_id
    */
   async createSearchLog(searchData) {
-    const {
-      location,
-      userId,
-      checkInDate,
-      checkOutDate,
-      adults,
-      children = 0,
-      rooms,
-    } = searchData;
+    const { location, userId, checkInDate, checkOutDate, adults, children = 0, rooms } = searchData;
 
     const searchId = uuidv4();
 
@@ -45,10 +37,7 @@ class SearchLogClickHouseRepository {
             search_id: searchId,
             user_id: userId || null,
             location,
-            search_time: new Date()
-              .toISOString()
-              .slice(0, 19)
-              .replace('T', ' '),
+            search_time: new Date().toISOString().slice(0, 19).replace('T', ' '),
             adults,
             children,
             rooms,

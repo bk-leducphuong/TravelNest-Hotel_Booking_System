@@ -237,11 +237,11 @@ export default {
           <div class="container1" v-if="isNameEdit">
             <div class="edit-container">
               <div style="width: 50%; padding-right: 30px">
-                <p1>First name(s)</p1><br /><br />
+                <P1>First name(s)</P1><br /><br />
                 <input type="text" v-model="firstName" />
               </div>
               <div style="width: 50%; padding-right: 30px">
-                <p1>Last name(s)</p1><br /><br />
+                <P1>Last name(s)</P1><br /><br />
                 <input type="text" v-model="lastName" />
               </div>
             </div>
@@ -263,7 +263,7 @@ export default {
           <div class="container1" v-if="isDisplayNameEdit">
             <div class="edit-container">
               <div style="width: 300px; padding-right: 30px">
-                <p1>Display name</p1><br /><br />
+                <P1>Display name</P1><br /><br />
                 <input type="text" style="width: 100%" v-model="displayName" />
               </div>
             </div>
@@ -284,7 +284,7 @@ export default {
           <div class="container1" v-if="isEmailEdit">
             <div class="edit-container">
               <div style="width: 430px; padding-right: 30px">
-                <p1>Email address</p1><br /><br />
+                <P1>Email address</P1><br /><br />
                 <input type="text" style="width: 100%" v-model="email" />
                 <p>
                   We'll send a verification link to your new email address. Please check your inbox.
@@ -307,7 +307,7 @@ export default {
           <div class="container1" v-if="isPhoneNumberEdit">
             <div class="edit-container">
               <div style="width: 300px; padding-right: 30px">
-                <p1>Phone number</p1><br /><br />
+                <P1>Phone number</P1><br /><br />
                 <input type="text" style="width: 100%" v-model="phoneNumber" />
               </div>
             </div>
@@ -328,7 +328,7 @@ export default {
           <div class="container1" v-if="isDateOfBirthEdit">
             <div class="edit-container">
               <div style="width: 430px; padding-right: 30px">
-                <p1>Date of birth</p1><br /><br />
+                <P1>Date of birth</P1><br /><br />
                 <input type="date" v-model="dateOfBirth" />
               </div>
             </div>
@@ -349,7 +349,7 @@ export default {
           <div class="container1" v-if="isNationalityEdit">
             <div class="edit-container">
               <div style="width: 300px; padding-right: 30px">
-                <p1>Nationality</p1><br /><br />
+                <P1>Nationality</P1><br /><br />
                 <input type="text" style="width: 100%" v-model="nationality" />
               </div>
             </div>
@@ -370,7 +370,7 @@ export default {
           <div class="container1" v-if="isGenderEdit">
             <div class="edit-container">
               <div style="width: 300px; padding-right: 30px">
-                <p1>Gender</p1><br /><br />
+                <P1>Gender</P1><br /><br />
                 <select
                   style="
                     border-radius: 5px;
@@ -407,20 +407,20 @@ export default {
           <div class="container1" v-if="isAddressEdit">
             <div class="edit-container" style="flex-direction: column">
               <div style="padding-right: 30px">
-                <p1>National</p1><br />
+                <P1>National</P1><br />
                 <input type="text" style="width: 100%" placeholder="Chọn quốc gia nơi bạn sống" v-model="country"/>
               </div>
               <div style="padding-right: 30px">
-                <p1>Address</p1><br />
+                <P1>Address</P1><br />
                 <input type="text" placeholder="Tên đường và số nhà/căn hộ" v-model="address" style="width: 100%" />
               </div>
               <div style="display: flex; justify-content: space-between">
                 <div style="padding-right: 30px">
-                  <p1>Town/City</p1><br />
+                  <P1>Town/City</P1><br />
                   <input type="text" style="width: 100%" v-model="city"/>
                 </div>
                 <div style="padding-right: 30px">
-                  <p1>Postal code</p1><br />
+                  <P1>Postal code</P1><br />
                   <input type="text" style="width: 100%" v-model="postalCode"/>
                 </div>
               </div>

@@ -1,5 +1,6 @@
 require('module-alias/register');
 const request = require('supertest');
+
 const createApp = require('../../../app');
 
 describe('Auth API Integration Tests', () => {
@@ -25,10 +26,7 @@ describe('Auth API Integration Tests', () => {
 
       expect(res.status).toBe(201);
       expect(res.body).toHaveProperty('data.session');
-      expect(res.body.data).toHaveProperty(
-        'message',
-        'User registered successfully'
-      );
+      expect(res.body.data).toHaveProperty('message', 'User registered successfully');
       expect(res.headers['set-cookie']).toBeDefined();
     });
 

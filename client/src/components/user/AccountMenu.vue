@@ -62,7 +62,7 @@ export default {
     </button>
 
     <!-- Popup Content -->
-    <transition name="fade">
+    <Transition name="fade">
       <div v-if="this.showPopup" class="popup">
         <div class="popup-arrow"></div>
 
@@ -171,7 +171,7 @@ export default {
           </a>
         </nav>
       </div>
-    </transition>
+    </Transition>
   </div>
 </template>
 <style scoped>

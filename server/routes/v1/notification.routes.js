@@ -18,21 +18,13 @@ router.use(authenticate);
  * GET /api/notifications
  * Get notifications for authenticated user (with pagination)
  */
-router.get(
-  '/',
-  validate(notificationSchema.getNotifications),
-  getNotifications
-);
+router.get('/', validate(notificationSchema.getNotifications), getNotifications);
 
 /**
  * GET /api/notifications/unread-count
  * Get unread notification count
  */
-router.get(
-  '/unread-count',
-  validate(notificationSchema.getUnreadCount),
-  getUnreadCount
-);
+router.get('/unread-count', validate(notificationSchema.getUnreadCount), getUnreadCount);
 
 /**
  * PATCH /api/notifications/read-all

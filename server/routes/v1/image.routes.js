@@ -222,14 +222,14 @@ const upload = require('@config/multer.config');
  *     description: |
  *       Retrieve all active images for a specific entity (hotel, room, review, or user avatar).
  *       Returns images with pre-signed URLs for the original and all variants.
- *       
+ *
  *       **Image Variants:**
  *       Each image includes 8 variants (4 sizes × 2 formats):
  *       - `thumbnail` (150×150px) - JPEG & WebP
  *       - `small` (400×400px) - JPEG & WebP
  *       - `medium` (800×800px) - JPEG & WebP
  *       - `large` (1920×1920px) - JPEG & WebP
- *       
+ *
  *       **URL Expiration:**
  *       Pre-signed URLs are valid for 24 hours.
  *     tags:
@@ -285,15 +285,15 @@ router.get('/:entityType/:entityId', getImages);
  *       3. Added to BullMQ queue for background processing
  *       4. Worker generates 8 variants (4 sizes × 2 formats)
  *       5. Status updated to `active` when complete
- *       
+ *
  *       **Supported Formats:**
  *       - JPEG (.jpg, .jpeg)
  *       - PNG (.png)
  *       - WebP (.webp)
- *       
+ *
  *       **Primary Image:**
  *       Set `is_primary: true` to designate this as the main image. Only one image per entity can be primary.
- *       
+ *
  *       **Processing Time:**
  *       Background processing typically takes 2-5 seconds per image.
  *     tags:
@@ -379,12 +379,12 @@ router.post('/:entityType/:entityId', upload.single('file'), uploadImage);
  *     description: |
  *       Designate a specific image as the primary (main) image for an entity.
  *       This will automatically unset any previously primary image for the same entity.
- *       
+ *
  *       **Requirements:**
  *       - Image must exist and belong to the specified entity
  *       - Image status must be `active` (not `processing` or `deleted`)
  *       - Only one image per entity can be primary at a time
- *       
+ *
  *       **Use Cases:**
  *       - Hotel: Main photo displayed in search results
  *       - Room: Featured room photo
@@ -485,11 +485,11 @@ router.put('/:entityType/:entityId/primary/:imageId', setPrimaryImage);
  *     description: |
  *       Soft delete an image by setting its status to `deleted`.
  *       The image and its variants remain in MinIO and the database but are no longer accessible via the API.
- *       
+ *
  *       **Soft Delete vs Hard Delete:**
  *       - **Soft Delete** (this endpoint): Status set to `deleted`, files remain in storage
  *       - **Hard Delete** (admin only): Permanently removes files from MinIO and database records
- *       
+ *
  *       **Note:**
  *       - Deleted images can be recovered by updating the status back to `active` (admin operation)
  *       - A cleanup job may permanently delete old soft-deleted images after a retention period

@@ -37,11 +37,7 @@ class PaymentService {
     const { paymentMethodId, currency } = paymentData;
 
     if (!paymentMethodId) {
-      throw new ApiError(
-        400,
-        'MISSING_REQUIRED_FIELDS',
-        'paymentMethodId is required'
-      );
+      throw new ApiError(400, 'MISSING_REQUIRED_FIELDS', 'paymentMethodId is required');
     }
 
     // 1. Find active hold for user
@@ -73,11 +69,7 @@ class PaymentService {
       })) || [];
 
     if (rooms.length === 0) {
-      throw new ApiError(
-        400,
-        'HOLD_HAS_NO_ROOMS',
-        'Active hold does not contain any rooms.'
-      );
+      throw new ApiError(400, 'HOLD_HAS_NO_ROOMS', 'Active hold does not contain any rooms.');
     }
 
     const bookingCode = generateBookingCode();
@@ -85,11 +77,7 @@ class PaymentService {
     const amount = parseFloat(holdData.total_price);
 
     if (!amount || amount <= 0) {
-      throw new ApiError(
-        400,
-        'INVALID_HOLD_AMOUNT',
-        'Hold total price is invalid.'
-      );
+      throw new ApiError(400, 'INVALID_HOLD_AMOUNT', 'Hold total price is invalid.');
     }
 
     const transaction = await sequelize.transaction();
@@ -192,8 +180,7 @@ class PaymentService {
    * Idempotent - can be called multiple times safely
    */
   async handlePaymentSucceeded(context) {
-    const { paymentIntentId, bookingCode, hotelId, buyerId, amount, currency } =
-      context;
+    const { paymentIntentId, bookingCode, hotelId, buyerId, amount, currency } = context;
 
     logger.info('Processing payment succeeded', {
       paymentIntentId,
@@ -205,10 +192,9 @@ class PaymentService {
 
     try {
       // 1. Check if transaction already exists (idempotency)
-      let dbTransaction = await transactionRepository.findByPaymentIntentId(
-        paymentIntentId,
-        { transaction }
-      );
+      let dbTransaction = await transactionRepository.findByPaymentIntentId(paymentIntentId, {
+        transaction,
+      });
 
       if (dbTransaction && dbTransaction.status === 'completed') {
         logger.info('Payment already processed (idempotent)', {
@@ -248,10 +234,9 @@ class PaymentService {
       }
 
       // 3. Create or update payment record
-      const existingPayment = await paymentRepository.findByTransactionId(
-        dbTransaction.id,
-        { transaction }
-      );
+      const existingPayment = await paymentRepository.findByTransactionId(dbTransaction.id, {
+        transaction,
+      });
 
       if (!existingPayment) {
         await paymentRepository.create(
@@ -290,14 +275,12 @@ class PaymentService {
       }
 
       // 4. Create bookings (if not already created) and reserve room inventory in same transaction
-      const existingBookings = await bookingRepository.findAllByBookingCode(
-        bookingCode,
-        { transaction }
-      );
+      const existingBookings = await bookingRepository.findAllByBookingCode(bookingCode, {
+        transaction,
+      });
 
       if (existingBookings.length === 0) {
-        const { bookedRooms, checkInDate, checkOutDate, numberOfGuests } =
-          context;
+        const { bookedRooms, checkInDate, checkOutDate, numberOfGuests } = context;
 
         for (const room of bookedRooms) {
           await bookingRepository.create(
@@ -352,22 +335,14 @@ class PaymentService {
    * Idempotent
    */
   async handlePaymentFailed(context) {
-    const {
-      paymentIntentId,
-      buyerId,
-      hotelId,
-      amount,
-      currency,
-      failureCode,
-      failureMessage,
-    } = context;
+    const { paymentIntentId, buyerId, hotelId, amount, currency, failureCode, failureMessage } =
+      context;
 
     logger.info('Processing payment failed', { paymentIntentId });
 
     try {
       // Check if already recorded
-      const existing =
-        await transactionRepository.findByPaymentIntentId(paymentIntentId);
+      const existing = await transactionRepository.findByPaymentIntentId(paymentIntentId);
 
       if (existing && existing.status === 'failed') {
         logger.info('Payment failure already recorded (idempotent)', {
@@ -440,12 +415,9 @@ class PaymentService {
 
     try {
       // Find transaction by charge ID
-      const dbTransaction = await transactionRepository.findByChargeId(
-        chargeId,
-        {
-          transaction,
-        }
-      );
+      const dbTransaction = await transactionRepository.findByChargeId(chargeId, {
+        transaction,
+      });
 
       if (!dbTransaction) {
         throw new Error(`Transaction not found for charge: ${chargeId}`);
@@ -503,11 +475,7 @@ class PaymentService {
 
     // Verify authorization
     if (payment.buyer_id !== userId) {
-      throw new ApiError(
-        403,
-        'FORBIDDEN',
-        'You do not have permission to view this payment'
-      );
+      throw new ApiError(403, 'FORBIDDEN', 'You do not have permission to view this payment');
     }
 
     return payment;

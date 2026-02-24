@@ -21,7 +21,7 @@
       "@helpers/*": ["helpers/*"],
       "@infra/*": ["infra/*"],
       "@queues/*": ["queues/*"],
-      "@workers/*": ["workers/*"],
+      "@workers/*": ["workers/*"]
     },
     "module": "commonjs",
     "target": "ES2020",

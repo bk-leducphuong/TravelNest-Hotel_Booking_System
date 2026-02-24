@@ -1,15 +1,14 @@
 require('module-alias/register');
 const fs = require('fs');
 const path = require('path');
-const FormData = require('form-data');
+
+const NodeFormData = require('form-data');
 const axios = require('axios');
+
 const db = require('../../../models');
 const logger = require('../../../config/logger.config');
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
+  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
 });
 
 const Hotels = db.hotels;
@@ -36,9 +35,7 @@ const stats = {
 function printBanner() {
   console.log('\n' + '='.repeat(70));
   console.log('  IMAGE PROCESSING PIPELINE TEST');
-  console.log(
-    '  Testing: Routes → Controller → Service → Queue → Worker → MinIO'
-  );
+  console.log('  Testing: Routes → Controller → Service → Queue → Worker → MinIO');
   console.log('='.repeat(70) + '\n');
 }
 
@@ -50,9 +47,7 @@ function printStats() {
   console.log(`Total Rooms:        ${stats.totalRooms}`);
   console.log(`Images Uploaded:    ${stats.imagesUploaded}`);
   console.log(`Images Failed:      ${stats.imagesFailed}`);
-  console.log(
-    `Duration:           ${((stats.endTime - stats.startTime) / 1000).toFixed(2)}s`
-  );
+  console.log(`Duration:           ${((stats.endTime - stats.startTime) / 1000).toFixed(2)}s`);
   console.log(
     `Success Rate:       ${(
       (stats.imagesUploaded / (stats.imagesUploaded + stats.imagesFailed)) *
@@ -79,28 +74,23 @@ function printStats() {
 async function uploadImage(entityType, entityId, imagePath, isPrimary = false) {
   try {
     const imageBuffer = fs.readFileSync(imagePath);
-    const form = new FormData();
+    const form = new NodeFormData();
     form.append('file', imageBuffer, {
       filename: path.basename(imagePath),
       contentType: `image/${path.extname(imagePath).substring(1)}`,
     });
     form.append('is_primary', isPrimary.toString());
 
-    const response = await axios.post(
-      `${API_BASE_URL}/images/${entityType}/${entityId}`,
-      form,
-      {
-        headers: {
-          ...form.getHeaders(),
-        },
-        timeout: 30000,
-      }
-    );
+    const response = await axios.post(`${API_BASE_URL}/images/${entityType}/${entityId}`, form, {
+      headers: {
+        ...form.getHeaders(),
+      },
+      timeout: 30000,
+    });
 
     return { success: true, data: response.data };
   } catch (error) {
-    const errorMessage =
-      error.response?.data?.message || error.message || 'Unknown error';
+    const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
     return {
       success: false,
       error: errorMessage,
@@ -129,16 +119,9 @@ async function processEntity(entityType, entityId, entityName, imageFiles) {
       continue;
     }
 
-    process.stdout.write(
-      `  📤 Uploading ${imageFile} ${isPrimary ? '(PRIMARY)' : ''}... `
-    );
+    process.stdout.write(`  📤 Uploading ${imageFile} ${isPrimary ? '(PRIMARY)' : ''}... `);
 
-    const result = await uploadImage(
-      entityType,
-      entityId,
-      imagePath,
-      isPrimary
-    );
+    const result = await uploadImage(entityType, entityId, imagePath, isPrimary);
 
     if (result.success) {
       console.log(`✅ Success (ID: ${result.data.data.id})`);
@@ -315,9 +298,7 @@ async function main() {
     printStats();
 
     console.log('✨ Image processing test completed!\n');
-    console.log(
-      '💡 To monitor job processing, check the BullMQ dashboard or worker logs.\n'
-    );
+    console.log('💡 To monitor job processing, check the BullMQ dashboard or worker logs.\n');
     console.log('📝 Next steps:');
     console.log('   1. Check worker logs: npm run dev:bullmq-worker');
     console.log('   2. Verify images in MinIO');

@@ -17,12 +17,10 @@
  */
 
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
+  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
 });
 const { faker } = require('@faker-js/faker');
+
 const db = require('../models');
 const sequelize = require('../config/database.config');
 const { bookings, hotels, rooms, users, room_inventory } = db;
@@ -63,10 +61,7 @@ function calculateNights(checkIn, checkOut) {
  * @returns {string} Booking status
  */
 function generateBookingStatus() {
-  const totalWeight = BOOKING_STATUSES.reduce(
-    (sum, item) => sum + item.weight,
-    0
-  );
+  const totalWeight = BOOKING_STATUSES.reduce((sum, item) => sum + item.weight, 0);
   let random = faker.number.int({ min: 1, max: totalWeight });
 
   for (const item of BOOKING_STATUSES) {
@@ -173,9 +168,7 @@ async function getRoomPrice(roomId, checkInDate) {
  * @returns {Promise<Object>} Booking data object
  */
 async function generateBooking(buyerId, hotelId, roomId, options = {}) {
-  const { checkInDate, checkOutDate, nights } = generateBookingDates(
-    options.dateRange || {}
-  );
+  const { checkInDate, checkOutDate, nights } = generateBookingDates(options.dateRange || {});
 
   // Get room details
   const room = await rooms.findByPk(roomId, {
@@ -268,9 +261,7 @@ async function seedBookings(options = {}) {
     });
 
     if (existingCustomers.length === 0) {
-      console.log(
-        '❌ No customers found in database. Please seed users first.'
-      );
+      console.log('❌ No customers found in database. Please seed users first.');
       return;
     }
 
@@ -302,9 +293,7 @@ async function seedBookings(options = {}) {
       });
 
       if (hotelRooms.length === 0) {
-        console.log(
-          `   ⚠️  Skipping hotel ${hotelId}: No rooms found`
-        );
+        console.log(`   ⚠️  Skipping hotel ${hotelId}: No rooms found`);
         continue;
       }
 
@@ -323,38 +312,23 @@ async function seedBookings(options = {}) {
       for (let i = 0; i < numBookings; i++) {
         // Select a random customer
         const randomCustomer =
-          existingCustomers[
-            faker.number.int({ min: 0, max: existingCustomers.length - 1 })
-          ];
-        const buyerId =
-          randomCustomer.id || randomCustomer.get?.('id');
+          existingCustomers[faker.number.int({ min: 0, max: existingCustomers.length - 1 })];
+        const buyerId = randomCustomer.id || randomCustomer.get?.('id');
 
         // Select a random room from this hotel
-        const randomRoom =
-          hotelRooms[
-            faker.number.int({ min: 0, max: hotelRooms.length - 1 })
-          ];
+        const randomRoom = hotelRooms[faker.number.int({ min: 0, max: hotelRooms.length - 1 })];
         const roomId = randomRoom.id || randomRoom.get?.('id');
 
-        const booking = await generateBooking(
-          buyerId,
-          hotelId,
-          roomId,
-          { dateRange }
-        );
+        const booking = await generateBooking(buyerId, hotelId, roomId, { dateRange });
         bookingsToCreate.push(booking);
       }
 
-      console.log(
-        `   📅 Generated ${numBookings} booking(s) for hotel ID ${hotelId}`
-      );
+      console.log(`   📅 Generated ${numBookings} booking(s) for hotel ID ${hotelId}`);
     }
 
     // Bulk create all bookings
     if (bookingsToCreate.length > 0) {
-      console.log(
-        `\n💾 Creating ${bookingsToCreate.length} booking(s) in database...`
-      );
+      console.log(`\n💾 Creating ${bookingsToCreate.length} booking(s) in database...`);
       await bookings.bulkCreate(bookingsToCreate, {
         validate: true,
         ignoreDuplicates: true,
@@ -375,10 +349,7 @@ async function seedBookings(options = {}) {
     });
 
     const bookingsByStatus = await bookings.findAll({
-      attributes: [
-        'status',
-        [sequelize.fn('COUNT', sequelize.col('booking_id')), 'count'],
-      ],
+      attributes: ['status', [sequelize.fn('COUNT', sequelize.col('booking_id')), 'count']],
       group: ['status'],
       raw: true,
     });
@@ -445,23 +416,13 @@ async function seedBookingsForHotel(hotelId, count = 30, dateRange = {}) {
 
     for (let i = 0; i < count; i++) {
       const randomCustomer =
-        existingCustomers[
-          faker.number.int({ min: 0, max: existingCustomers.length - 1 })
-        ];
+        existingCustomers[faker.number.int({ min: 0, max: existingCustomers.length - 1 })];
       const buyerId = randomCustomer.id || randomCustomer.get?.('id');
 
-      const randomRoom =
-        hotelRooms[
-          faker.number.int({ min: 0, max: hotelRooms.length - 1 })
-        ];
+      const randomRoom = hotelRooms[faker.number.int({ min: 0, max: hotelRooms.length - 1 })];
       const roomId = randomRoom.room_id || randomRoom.get?.('room_id');
 
-      const booking = await generateBooking(
-        buyerId,
-        hotelId,
-        roomId,
-        { dateRange }
-      );
+      const booking = await generateBooking(buyerId, hotelId, roomId, { dateRange });
       bookingsToCreate.push(booking);
     }
 
@@ -469,9 +430,7 @@ async function seedBookingsForHotel(hotelId, count = 30, dateRange = {}) {
       validate: true,
     });
 
-    console.log(
-      `✅ Created ${createdBookings.length} booking(s) for hotel ${hotelId}`
-    );
+    console.log(`✅ Created ${createdBookings.length} booking(s) for hotel ${hotelId}`);
     return createdBookings;
   } catch (error) {
     console.error(`❌ Error seeding bookings for hotel ${hotelId}:`, error);

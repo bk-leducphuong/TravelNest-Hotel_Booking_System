@@ -1,11 +1,6 @@
-const {
-  Bookings,
-  Hotels,
-  Rooms,
-  Transactions,
-  Refunds,
-} = require('../models/index.js');
 const { Op } = require('sequelize');
+
+const { Bookings, Hotels, Rooms, Transactions, Refunds } = require('../models/index.js');
 const sequelize = require('../config/database.config');
 
 /**

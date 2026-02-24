@@ -31,30 +31,18 @@ router.get('/:reviewId', validate(reviewSchema.getReviewById), getReviewById);
  * POST /api/admin/reviews/:reviewId/reply
  * Reply to a review
  */
-router.post(
-  '/:reviewId/reply',
-  validate(reviewSchema.replyToReview),
-  replyToReview
-);
+router.post('/:reviewId/reply', validate(reviewSchema.replyToReview), replyToReview);
 
 /**
  * PATCH /api/admin/reviews/:reviewId/reply
  * Update a reply to a review
  */
-router.patch(
-  '/:reviewId/reply',
-  validate(reviewSchema.updateReply),
-  updateReply
-);
+router.patch('/:reviewId/reply', validate(reviewSchema.updateReply), updateReply);
 
 /**
  * DELETE /api/admin/reviews/:reviewId/reply
  * Delete a reply to a review
  */
-router.delete(
-  '/:reviewId/reply',
-  validate(reviewSchema.deleteReply),
-  deleteReply
-);
+router.delete('/:reviewId/reply', validate(reviewSchema.deleteReply), deleteReply);
 
 module.exports = router;

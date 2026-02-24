@@ -1,5 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
+
 const handlebars = require('handlebars');
 const { htmlToText } = require('html-to-text');
 const defaultTransporter = require('@config/nodemailer.config');
@@ -60,9 +61,7 @@ class EmailService {
 
   async sendEmail({ to, subject, html, text, from, cc, bcc, replyTo }) {
     if (!to || !subject || !html) {
-      const error = new Error(
-        'Missing required email fields: to, subject, html'
-      );
+      const error = new Error('Missing required email fields: to, subject, html');
       error.code = 'EMAIL_VALIDATION_ERROR';
       throw error;
     }
@@ -96,13 +95,7 @@ class EmailService {
     }
   }
 
-  async sendTemplateEmail({
-    email,
-    subject,
-    templateName,
-    variables = {},
-    ...rest
-  }) {
+  async sendTemplateEmail({ email, subject, templateName, variables = {}, ...rest }) {
     const html = await this.renderTemplate(templateName, variables);
 
     return this.sendEmail({
@@ -153,8 +146,7 @@ class EmailService {
       subject: 'Payment Failed - Action Required',
       templateName: 'paymentFailure',
       variables: {
-        failureMessage:
-          failureMessage || 'Payment processing failed. Please try again.',
+        failureMessage: failureMessage || 'Payment processing failed. Please try again.',
         bookingCode,
         buyerName,
         retryUrl: `${this.clientHost}/book`,
@@ -225,11 +217,9 @@ class EmailService {
   }
 
   formatPrice(amount, currency = 'USD') {
-    const numericAmount =
-      typeof amount === 'string' ? parseFloat(amount) : amount;
+    const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
 
-    const displayAmount =
-      currency === 'USD' ? numericAmount / 100 : numericAmount;
+    const displayAmount = currency === 'USD' ? numericAmount / 100 : numericAmount;
 
     if (!Number.isFinite(displayAmount)) {
       return '';

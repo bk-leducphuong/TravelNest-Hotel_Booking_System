@@ -1,5 +1,6 @@
 const Sequelize = require('sequelize');
 const { uuidv7 } = require('uuidv7');
+
 const { POLICY_TYPES } = require('../constants/hotels');
 
 module.exports = function (sequelize, DataTypes) {
@@ -94,11 +95,7 @@ module.exports = function (sequelize, DataTypes) {
         {
           name: 'idx_hotel_active_order',
           using: 'BTREE',
-          fields: [
-            { name: 'hotel_id' },
-            { name: 'is_active' },
-            { name: 'display_order' },
-          ],
+          fields: [{ name: 'hotel_id' }, { name: 'is_active' }, { name: 'display_order' }],
           comment: 'Index for fetching active policies in display order',
         },
       ],

@@ -1,12 +1,4 @@
-const ROOM_TYPES = [
-  'single',
-  'double',
-  'twin',
-  'suite',
-  'deluxe',
-  'family',
-  'studio',
-];
+const ROOM_TYPES = ['single', 'double', 'twin', 'suite', 'deluxe', 'family', 'studio'];
 
 const ROOM_STATUSES = ['active', 'inactive', 'maintenance'];
 

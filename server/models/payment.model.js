@@ -1,5 +1,6 @@
 const Sequelize = require('sequelize');
 const { uuidv7 } = require('uuidv7');
+
 const { CURRENCIES } = require('../constants/common');
 const { PAYMENT_METHODS, PAYMENT_STATUSES } = require('../constants/payment');
 

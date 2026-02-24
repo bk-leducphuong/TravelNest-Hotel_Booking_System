@@ -1,8 +1,9 @@
 const { bucketName } = require('@config/minio.config');
+const { getPresignedUrl } = require('@utils/minio.utils');
+
 const hotelRepository = require('../repositories/hotel.repository');
 const roomRepository = require('../repositories/room.repository');
 const ApiError = require('../utils/ApiError');
-const { getPresignedUrl } = require('@utils/minio.utils');
 
 /**
  * Hotel Service - Contains main business logic
@@ -17,59 +18,41 @@ class HotelService {
    * @returns {Promise<Object>} Hotel details with related data
    */
   async getHotelDetails(hotelId, options = {}) {
-    const {
-      checkInDate,
-      checkOutDate,
-      numberOfNights,
-      numberOfRooms,
-      numberOfGuests,
-    } = options;
+    const { checkInDate, checkOutDate, numberOfNights, numberOfRooms, numberOfGuests } = options;
 
     // Fetch all data in parallel for better performance
-    const [
-      hotel,
-      ratingSummary,
-      reviewsResult,
-      reviewCriteria,
-      nearbyPlaces,
-      policies,
-      rooms,
-    ] = await Promise.all([
-      // 1. Hotel basic info with amenities and images (already included via associations)
-      hotelRepository.findById(hotelId),
+    const [hotel, ratingSummary, reviewsResult, reviewCriteria, nearbyPlaces, policies, rooms] =
+      await Promise.all([
+        // 1. Hotel basic info with amenities and images (already included via associations)
+        hotelRepository.findById(hotelId),
 
-      // 2. Rating summary
-      hotelRepository.findRatingSummaryByHotelId(hotelId),
+        // 2. Rating summary
+        hotelRepository.findRatingSummaryByHotelId(hotelId),
 
-      // 3. Reviews with user info, replies, and media
-      hotelRepository.findReviewsByHotelId(hotelId, {
-        limit: 10,
-        offset: 0,
-      }),
+        // 3. Reviews with user info, replies, and media
+        hotelRepository.findReviewsByHotelId(hotelId, {
+          limit: 10,
+          offset: 0,
+        }),
 
-      // 4. Review criteria averages
-      hotelRepository.findReviewCriteriasByHotelId(hotelId),
+        // 4. Review criteria averages
+        hotelRepository.findReviewCriteriasByHotelId(hotelId),
 
-      // 5. Nearby places
-      hotelRepository.findNearbyPlacesByHotelId(hotelId, { limit: 20 }),
+        // 5. Nearby places
+        hotelRepository.findNearbyPlacesByHotelId(hotelId, { limit: 20 }),
 
-      // 6. Hotel policies
-      hotelRepository.findPoliciesByHotelId(hotelId),
+        // 6. Hotel policies
+        hotelRepository.findPoliciesByHotelId(hotelId),
 
-      // 7. Available rooms (only if search params provided)
-      checkInDate && checkOutDate && numberOfNights && numberOfRooms
-        ? roomRepository.findAvailableRooms(
-            hotelId,
-            checkInDate,
-            checkOutDate,
-            {
+        // 7. Available rooms (only if search params provided)
+        checkInDate && checkOutDate && numberOfNights && numberOfRooms
+          ? roomRepository.findAvailableRooms(hotelId, checkInDate, checkOutDate, {
               numberOfRooms,
               numberOfNights,
               numberOfGuests,
-            }
-          )
-        : Promise.resolve([]),
-    ]);
+            })
+          : Promise.resolve([]),
+      ]);
 
     if (!hotel) {
       throw new ApiError(404, 'HOTEL_NOT_FOUND', 'Hotel not found');
@@ -90,11 +73,7 @@ class HotelService {
         const variants = await Promise.all(
           variantList.map(async (v) => {
             const variantBucket = v.bucket_name || bucketName;
-            const variantUrl = await getPresignedUrl(
-              variantBucket,
-              v.object_key,
-              3600
-            );
+            const variantUrl = await getPresignedUrl(variantBucket, v.object_key, 3600);
             return {
               id: v.id,
               variantType: v.variant_type,
@@ -158,18 +137,12 @@ class HotelService {
       cleanliness: reviewCriteria.cleanliness
         ? parseFloat(reviewCriteria.cleanliness).toFixed(1)
         : null,
-      location: reviewCriteria.location
-        ? parseFloat(reviewCriteria.location).toFixed(1)
-        : null,
-      service: reviewCriteria.service
-        ? parseFloat(reviewCriteria.service).toFixed(1)
-        : null,
+      location: reviewCriteria.location ? parseFloat(reviewCriteria.location).toFixed(1) : null,
+      service: reviewCriteria.service ? parseFloat(reviewCriteria.service).toFixed(1) : null,
       valueForMoney: reviewCriteria.value_for_money
         ? parseFloat(reviewCriteria.value_for_money).toFixed(1)
         : null,
-      overall: reviewCriteria.overall
-        ? parseFloat(reviewCriteria.overall).toFixed(1)
-        : null,
+      overall: reviewCriteria.overall ? parseFloat(reviewCriteria.overall).toFixed(1) : null,
     };
 
     // Format reviews
@@ -181,15 +154,9 @@ class HotelService {
         ratingCleanliness: reviewData.rating_cleanliness
           ? parseFloat(reviewData.rating_cleanliness)
           : null,
-        ratingLocation: reviewData.rating_location
-          ? parseFloat(reviewData.rating_location)
-          : null,
-        ratingService: reviewData.rating_service
-          ? parseFloat(reviewData.rating_service)
-          : null,
-        ratingValue: reviewData.rating_value
-          ? parseFloat(reviewData.rating_value)
-          : null,
+        ratingLocation: reviewData.rating_location ? parseFloat(reviewData.rating_location) : null,
+        ratingService: reviewData.rating_service ? parseFloat(reviewData.rating_service) : null,
+        ratingValue: reviewData.rating_value ? parseFloat(reviewData.rating_value) : null,
         title: reviewData.title,
         comment: reviewData.comment,
         isVerified: reviewData.is_verified,
@@ -263,9 +230,7 @@ class HotelService {
       availableRooms: room.available_rooms || 0,
       totalPrice:
         numberOfNights && room.price_per_night
-          ? parseFloat(
-              (parseFloat(room.price_per_night) * numberOfNights).toFixed(2)
-            )
+          ? parseFloat((parseFloat(room.price_per_night) * numberOfNights).toFixed(2))
           : null,
     }));
 
@@ -361,18 +326,13 @@ class HotelService {
     const offset = (page - 1) * validatedLimit;
 
     // Get available rooms
-    const rooms = await roomRepository.findAvailableRooms(
-      hotelId,
-      checkInDate,
-      checkOutDate,
-      {
-        numberOfRooms,
-        numberOfNights,
-        numberOfGuests,
-        limit: validatedLimit,
-        offset,
-      }
-    );
+    const rooms = await roomRepository.findAvailableRooms(hotelId, checkInDate, checkOutDate, {
+      numberOfRooms,
+      numberOfNights,
+      numberOfGuests,
+      limit: validatedLimit,
+      offset,
+    });
 
     return {
       rooms: rooms.map((room) => ({
@@ -429,10 +389,7 @@ class HotelService {
       throw new ApiError(404, 'HOTEL_NOT_FOUND', 'Hotel not found');
     }
 
-    const places = await hotelRepository.findNearbyPlacesByHotelId(
-      hotelId,
-      options
-    );
+    const places = await hotelRepository.findNearbyPlacesByHotelId(hotelId, options);
 
     return places.map((place) => ({
       id: place.id,
@@ -466,8 +423,7 @@ class HotelService {
       throw new ApiError(404, 'HOTEL_NOT_FOUND', 'Hotel not found');
     }
 
-    const groupedPlaces =
-      await hotelRepository.findNearbyPlacesGroupedByCategory(hotelId);
+    const groupedPlaces = await hotelRepository.findNearbyPlacesGroupedByCategory(hotelId);
 
     return groupedPlaces.map((group) => ({
       category: group.category,

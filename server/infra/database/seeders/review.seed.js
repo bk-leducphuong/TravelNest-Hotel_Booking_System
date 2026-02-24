@@ -17,12 +17,10 @@
  */
 
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
+  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
 });
 const { faker } = require('@faker-js/faker');
+
 const db = require('../../../models');
 const sequelize = require('../../../config/database.config');
 const { REVIEW_STATUSES } = require('../../../constants/reviews');
@@ -44,20 +42,8 @@ const REVIEW_TITLES = {
     'Wonderful Experience',
     'Really Enjoyed It',
   ],
-  5: [
-    'Decent Stay',
-    'Average Experience',
-    'It Was Okay',
-    'Nothing Special',
-    'Mixed Feelings',
-  ],
-  3: [
-    'Disappointing',
-    'Below Expectations',
-    'Not Great',
-    'Had Some Issues',
-    'Could Be Better',
-  ],
+  5: ['Decent Stay', 'Average Experience', 'It Was Okay', 'Nothing Special', 'Mixed Feelings'],
+  3: ['Disappointing', 'Below Expectations', 'Not Great', 'Had Some Issues', 'Could Be Better'],
   1: [
     'Terrible Experience',
     'Very Disappointing',
@@ -207,8 +193,7 @@ function generateCriteriaRatings(overallRating) {
   const variation = 1.5; // Max variation from overall rating
 
   const generateScore = () => {
-    const score =
-      overallRating + faker.number.float({ min: -variation, max: variation });
+    const score = overallRating + faker.number.float({ min: -variation, max: variation });
     // Clamp between 1.0 and 10.0 and round to 1 decimal
     return parseFloat(Math.max(1.0, Math.min(10.0, score)).toFixed(1));
   };
@@ -254,7 +239,7 @@ function generateReview(userId, hotelId, options = {}) {
 
   const overallRating = parseFloat(rating.toFixed(1));
   const criteriaRatings = generateCriteriaRatings(overallRating);
-  
+
   // Determine status (most are published)
   const statusDistribution = faker.number.int({ min: 1, max: 100 });
   let status;
@@ -330,9 +315,7 @@ async function seedReviews(options = {}) {
     });
 
     if (customerRoles.length === 0) {
-      console.log(
-        '❌ No customer roles (user/guest) found in database. Please seed roles first.'
-      );
+      console.log('❌ No customer roles (user/guest) found in database. Please seed roles first.');
       return;
     }
 
@@ -352,9 +335,7 @@ async function seedReviews(options = {}) {
     });
 
     if (existingCustomers.length === 0) {
-      console.log(
-        '❌ No customers found in database. Please seed users first.'
-      );
+      console.log('❌ No customers found in database. Please seed users first.');
       return;
     }
 
@@ -406,8 +387,7 @@ async function seedReviews(options = {}) {
       const hotelBookings = useBookings
         ? existingBookings.filter(
             (b) =>
-              (b.hotel_id || b.get?.('hotel_id')) === hotelId &&
-              (b.buyer_id || b.get?.('buyer_id'))
+              (b.hotel_id || b.get?.('hotel_id')) === hotelId && (b.buyer_id || b.get?.('buyer_id'))
           )
         : [];
 
@@ -415,18 +395,14 @@ async function seedReviews(options = {}) {
       for (let i = 0; i < numReviews; i++) {
         // Select a random customer
         const randomCustomer =
-          existingCustomers[
-            faker.number.int({ min: 0, max: existingCustomers.length - 1 })
-          ];
+          existingCustomers[faker.number.int({ min: 0, max: existingCustomers.length - 1 })];
         const userId = randomCustomer.id || randomCustomer.get?.('id');
 
         // Try to use a booking if available and useBookings is true
         let bookingId = null;
         if (hotelBookings.length > 0 && faker.datatype.boolean()) {
           const randomBooking =
-            hotelBookings[
-              faker.number.int({ min: 0, max: hotelBookings.length - 1 })
-            ];
+            hotelBookings[faker.number.int({ min: 0, max: hotelBookings.length - 1 })];
           bookingId = randomBooking.id || randomBooking.get?.('id');
         }
 
@@ -436,16 +412,12 @@ async function seedReviews(options = {}) {
         reviewsToCreate.push(review);
       }
 
-      console.log(
-        `   ⭐ Generated ${numReviews} review(s) for hotel ID ${hotelId}`
-      );
+      console.log(`   ⭐ Generated ${numReviews} review(s) for hotel ID ${hotelId}`);
     }
 
     // Bulk create all reviews
     if (reviewsToCreate.length > 0) {
-      console.log(
-        `\n💾 Creating ${reviewsToCreate.length} review(s) in database...`
-      );
+      console.log(`\n💾 Creating ${reviewsToCreate.length} review(s) in database...`);
       const createdReviews = await reviews.bulkCreate(reviewsToCreate, {
         validate: true,
         returning: true,
@@ -547,17 +519,13 @@ async function seedReviewsForHotel(hotelId, count = 20, useBookings = false) {
 
     for (let i = 0; i < count; i++) {
       const randomCustomer =
-        existingCustomers[
-          faker.number.int({ min: 0, max: existingCustomers.length - 1 })
-        ];
+        existingCustomers[faker.number.int({ min: 0, max: existingCustomers.length - 1 })];
       const userId = randomCustomer.id || randomCustomer.get?.('id');
 
       let bookingId = null;
       if (hotelBookings.length > 0 && faker.datatype.boolean()) {
         const randomBooking =
-          hotelBookings[
-            faker.number.int({ min: 0, max: hotelBookings.length - 1 })
-          ];
+          hotelBookings[faker.number.int({ min: 0, max: hotelBookings.length - 1 })];
         bookingId = randomBooking.id || randomBooking.get?.('id');
       }
 
@@ -572,9 +540,7 @@ async function seedReviewsForHotel(hotelId, count = 20, useBookings = false) {
       returning: true,
     });
 
-    console.log(
-      `✅ Created ${createdReviews.length} review(s) for hotel ${hotelId}`
-    );
+    console.log(`✅ Created ${createdReviews.length} review(s) for hotel ${hotelId}`);
     return createdReviews;
   } catch (error) {
     console.error(`❌ Error seeding reviews for hotel ${hotelId}:`, error);

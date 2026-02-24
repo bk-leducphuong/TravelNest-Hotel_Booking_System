@@ -1,5 +1,6 @@
-const { Hotels, Rooms } = require('../../models/index.js');
 const { Op } = require('sequelize');
+
+const { Hotels, Rooms } = require('../../models/index.js');
 
 /**
  * Admin Hotel Repository - Contains all database operations for admin hotel management

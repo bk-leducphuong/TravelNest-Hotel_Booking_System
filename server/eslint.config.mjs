@@ -61,16 +61,11 @@ export default [
       'import/order': [
         'error',
         {
-          groups: [
-            'builtin',
-            'external',
-            'internal',
-            ['parent', 'sibling', 'index'],
-          ],
-          'newlines-between': 'always',
+          groups: ['builtin', 'external', 'internal', ['parent', 'sibling', 'index']],
         },
       ],
       'import/no-unresolved': 'off',
+      'no-multiple-empty-lines': 'off',
 
       /* Cleanup */
       'unused-imports/no-unused-imports': 'error',

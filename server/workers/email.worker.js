@@ -88,10 +88,7 @@ emailWorker.on('error', (err) => {
 });
 
 emailWorker.on('active', (job) => {
-  logger.debug(
-    { jobId: job.id, type: job.data?.type },
-    `Email job started: ${job.id}`
-  );
+  logger.debug({ jobId: job.id, type: job.data?.type }, `Email job started: ${job.id}`);
 });
 
 module.exports = emailWorker;

@@ -37,12 +37,7 @@ const createMockRoom = (overrides = {}) => ({
   price_per_night: faker.number.float({ min: 50, max: 500, precision: 0.01 }),
   available_rooms: faker.number.int({ min: 0, max: 10 }),
   room_size: faker.number.int({ min: 20, max: 100 }),
-  room_type: faker.helpers.arrayElement([
-    'Single',
-    'Double',
-    'Suite',
-    'Deluxe',
-  ]),
+  room_type: faker.helpers.arrayElement(['Single', 'Double', 'Suite', 'Deluxe']),
   quantity: faker.number.int({ min: 1, max: 20 }),
   ...overrides,
 });
@@ -94,12 +89,7 @@ const createMockBooking = (overrides = {}) => ({
   check_out_date: faker.date.future(),
   number_of_guests: faker.number.int({ min: 1, max: 6 }),
   total_price: faker.number.float({ min: 100, max: 5000, precision: 0.01 }),
-  status: faker.helpers.arrayElement([
-    'pending',
-    'confirmed',
-    'cancelled',
-    'completed',
-  ]),
+  status: faker.helpers.arrayElement(['pending', 'confirmed', 'cancelled', 'completed']),
   created_at: faker.date.recent(),
   ...overrides,
 });

@@ -1,14 +1,6 @@
-const {
-  authenticate,
-  requirePermission,
-} = require('@middlewares/auth.middleware');
-const {
-  Users,
-  UserRoles,
-  Roles,
-  Permissions,
-  HotelUsers,
-} = require('@models/index.js');
+const { authenticate, requirePermission } = require('@middlewares/auth.middleware');
+const { Users, UserRoles, Roles, Permissions, HotelUsers } = require('@models/index.js');
+
 const {
   createMockAuthUser,
   createMockUserWithContext,
@@ -236,9 +228,7 @@ describe('Auth Middleware', () => {
     describe('with hotel context', () => {
       it('should allow access when user has hotel context and permission', async () => {
         // Arrange
-        const permissions = [
-          createMockPermission({ name: 'hotel.manage_staff' }),
-        ];
+        const permissions = [createMockPermission({ name: 'hotel.manage_staff' })];
         const role = createMockRole({ permissions });
         const hotelRole = createMockRole({ id: 5, name: 'hotel_manager' });
 
@@ -347,9 +337,7 @@ describe('Auth Middleware', () => {
       it('should deny access when user has wrong hotel role', async () => {
         // Arrange
         const staffRole = createMockRole({ name: 'hotel_staff' });
-        const permissions = [
-          createMockPermission({ name: 'hotel.manage_staff' }),
-        ];
+        const permissions = [createMockPermission({ name: 'hotel.manage_staff' })];
         const globalRole = createMockRole({ permissions });
 
         const mockUser = createMockUserWithHotelContext({
@@ -378,9 +366,7 @@ describe('Auth Middleware', () => {
 
       it('should get hotelId from session context', async () => {
         // Arrange
-        const permissions = [
-          createMockPermission({ name: 'hotel.manage_staff' }),
-        ];
+        const permissions = [createMockPermission({ name: 'hotel.manage_staff' })];
         const role = createMockRole({ permissions });
         const hotelRole = createMockRole({ name: 'hotel_manager' });
 

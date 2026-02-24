@@ -17,12 +17,10 @@
  */
 
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
+  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
 });
 const { faker } = require('@faker-js/faker');
+
 const db = require('../models');
 const sequelize = require('../config/database.config');
 const { notifications, hotels, users, bookings } = db;
@@ -71,7 +69,7 @@ const NOTIFICATION_MESSAGES = {
   update: [
     'Booking updated: {customerName} modified their reservation',
     'Reservation change: {customerName} updated their booking details',
-    'Update notification: Changes made to {customerName}\'s booking',
+    "Update notification: Changes made to {customerName}'s booking",
   ],
   system: [
     'System maintenance scheduled for tonight',
@@ -137,9 +135,8 @@ function generateNotification(senderId, receiverId, options = {}) {
   });
 
   // Determine if notification is read (older notifications more likely to be read)
-  const isRead = options.isRead !== undefined
-    ? options.isRead
-    : faker.datatype.boolean({ probability: 0.3 }); // 30% chance of being read
+  const isRead =
+    options.isRead !== undefined ? options.isRead : faker.datatype.boolean({ probability: 0.3 }); // 30% chance of being read
 
   const notification = {
     sender_id: senderId,
@@ -240,9 +237,7 @@ async function seedNotifications(options = {}) {
 
       // Get bookings for this hotel if using bookings
       const hotelBookings = useBookings
-        ? existingBookings.filter(
-            (b) => (b.hotel_id || b.get?.('hotel_id')) === hotelId
-          )
+        ? existingBookings.filter((b) => (b.hotel_id || b.get?.('hotel_id')) === hotelId)
         : [];
 
       // Determine number of notifications for this hotel
@@ -264,43 +259,29 @@ async function seedNotifications(options = {}) {
 
         if (!useSystemSender) {
           const randomUser =
-            existingUsers[
-              faker.number.int({ min: 0, max: existingUsers.length - 1 })
-            ];
+            existingUsers[faker.number.int({ min: 0, max: existingUsers.length - 1 })];
           senderId = randomUser.id || randomUser.get?.('id');
         }
 
         // Determine notification type
-        let notificationType = faker.helpers.arrayElement(NOTIFICATION_TYPES);
+        const notificationType = faker.helpers.arrayElement(NOTIFICATION_TYPES);
         let notificationData = {};
 
         // If using bookings and type is booking-related, use real booking data
         if (
           useBookings &&
           hotelBookings.length > 0 &&
-          ['booking', 'cancellation', 'payment', 'reminder', 'update'].includes(
-            notificationType
-          ) &&
+          ['booking', 'cancellation', 'payment', 'reminder', 'update'].includes(notificationType) &&
           faker.datatype.boolean()
         ) {
           const randomBooking =
-            hotelBookings[
-              faker.number.int({ min: 0, max: hotelBookings.length - 1 })
-            ];
-          const bookingCode =
-            randomBooking.booking_code || randomBooking.get?.('booking_code');
-          const buyerId =
-            randomBooking.buyer_id || randomBooking.get?.('buyer_id');
-          const checkIn =
-            randomBooking.check_in_date || randomBooking.get?.('check_in_date');
-          const checkOut =
-            randomBooking.check_out_date ||
-            randomBooking.get?.('check_out_date');
-          const guests =
-            randomBooking.number_of_guests ||
-            randomBooking.get?.('number_of_guests');
-          const rooms =
-            randomBooking.quantity || randomBooking.get?.('quantity');
+            hotelBookings[faker.number.int({ min: 0, max: hotelBookings.length - 1 })];
+          const bookingCode = randomBooking.booking_code || randomBooking.get?.('booking_code');
+          const buyerId = randomBooking.buyer_id || randomBooking.get?.('buyer_id');
+          const checkIn = randomBooking.check_in_date || randomBooking.get?.('check_in_date');
+          const checkOut = randomBooking.check_out_date || randomBooking.get?.('check_out_date');
+          const guests = randomBooking.number_of_guests || randomBooking.get?.('number_of_guests');
+          const rooms = randomBooking.quantity || randomBooking.get?.('quantity');
 
           // Get customer name
           const buyer = await users.findByPk(buyerId, {
@@ -315,10 +296,7 @@ async function seedNotifications(options = {}) {
             checkOut: new Date(checkOut).toLocaleDateString(),
             guests,
             rooms,
-            nights: Math.ceil(
-              (new Date(checkOut) - new Date(checkIn)) /
-                (1000 * 60 * 60 * 24)
-            ),
+            nights: Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)),
           };
 
           // Override sender to booking buyer for booking-related notifications
@@ -335,24 +313,18 @@ async function seedNotifications(options = {}) {
         notificationsToCreate.push(notification);
       }
 
-      console.log(
-        `   🔔 Generated ${numNotifications} notification(s) for hotel ID ${hotelId}`
-      );
+      console.log(`   🔔 Generated ${numNotifications} notification(s) for hotel ID ${hotelId}`);
     }
 
     // Bulk create all notifications
     if (notificationsToCreate.length > 0) {
-      console.log(
-        `\n💾 Creating ${notificationsToCreate.length} notification(s) in database...`
-      );
+      console.log(`\n💾 Creating ${notificationsToCreate.length} notification(s) in database...`);
       await notifications.bulkCreate(notificationsToCreate, {
         validate: true,
         ignoreDuplicates: true,
       });
       totalNotificationsCreated = notificationsToCreate.length;
-      console.log(
-        `✅ ${totalNotificationsCreated} notification(s) created successfully`
-      );
+      console.log(`✅ ${totalNotificationsCreated} notification(s) created successfully`);
     }
 
     // Display summary
@@ -360,10 +332,7 @@ async function seedNotifications(options = {}) {
     const notificationsByHotel = await notifications.findAll({
       attributes: [
         'reciever_id',
-        [
-          sequelize.fn('COUNT', sequelize.col('notification_id')),
-          'notification_count',
-        ],
+        [sequelize.fn('COUNT', sequelize.col('notification_id')), 'notification_count'],
       ],
       group: ['reciever_id'],
       raw: true,
@@ -372,10 +341,7 @@ async function seedNotifications(options = {}) {
     const notificationsByType = await notifications.findAll({
       attributes: [
         'notification_type',
-        [
-          sequelize.fn('COUNT', sequelize.col('notification_id')),
-          'count',
-        ],
+        [sequelize.fn('COUNT', sequelize.col('notification_id')), 'count'],
       ],
       group: ['notification_type'],
       raw: true,
@@ -393,18 +359,14 @@ async function seedNotifications(options = {}) {
     if (notificationsByType.length > 0) {
       console.log('\n   Notifications by type:');
       notificationsByType.forEach((item) => {
-        console.log(
-          `     ${item.notification_type || 'null'}: ${item.count}`
-        );
+        console.log(`     ${item.notification_type || 'null'}: ${item.count}`);
       });
     }
 
     if (notificationsByHotel.length > 0 && notificationsByHotel.length <= 10) {
       console.log('\n   Notifications per hotel:');
       notificationsByHotel.forEach((item) => {
-        console.log(
-          `     Hotel ${item.reciever_id}: ${item.notification_count} notification(s)`
-        );
+        console.log(`     Hotel ${item.reciever_id}: ${item.notification_count} notification(s)`);
       });
     }
   } catch (error) {
@@ -420,11 +382,7 @@ async function seedNotifications(options = {}) {
  * @param {boolean} useBookings - Whether to use existing bookings
  * @returns {Promise<Array>} Created notifications
  */
-async function seedNotificationsForHotel(
-  hotelId,
-  count = 20,
-  useBookings = false
-) {
+async function seedNotificationsForHotel(hotelId, count = 20, useBookings = false) {
   try {
     // Verify hotel exists
     const hotel = await hotels.findByPk(hotelId);
@@ -466,41 +424,27 @@ async function seedNotificationsForHotel(
 
       if (!useSystemSender) {
         const randomUser =
-          existingUsers[
-            faker.number.int({ min: 0, max: existingUsers.length - 1 })
-          ];
+          existingUsers[faker.number.int({ min: 0, max: existingUsers.length - 1 })];
         senderId = randomUser.user_id || randomUser.get?.('user_id');
       }
 
-      let notificationType = faker.helpers.arrayElement(NOTIFICATION_TYPES);
+      const notificationType = faker.helpers.arrayElement(NOTIFICATION_TYPES);
       let notificationData = {};
 
       if (
         useBookings &&
         hotelBookings.length > 0 &&
-        ['booking', 'cancellation', 'payment', 'reminder', 'update'].includes(
-          notificationType
-        ) &&
+        ['booking', 'cancellation', 'payment', 'reminder', 'update'].includes(notificationType) &&
         faker.datatype.boolean()
       ) {
         const randomBooking =
-          hotelBookings[
-            faker.number.int({ min: 0, max: hotelBookings.length - 1 })
-          ];
-        const bookingCode =
-          randomBooking.booking_code || randomBooking.get?.('booking_code');
-        const buyerId =
-          randomBooking.buyer_id || randomBooking.get?.('buyer_id');
-        const checkIn =
-          randomBooking.check_in_date || randomBooking.get?.('check_in_date');
-        const checkOut =
-          randomBooking.check_out_date ||
-          randomBooking.get?.('check_out_date');
-        const guests =
-          randomBooking.number_of_guests ||
-          randomBooking.get?.('number_of_guests');
-        const rooms =
-          randomBooking.quantity || randomBooking.get?.('quantity');
+          hotelBookings[faker.number.int({ min: 0, max: hotelBookings.length - 1 })];
+        const bookingCode = randomBooking.booking_code || randomBooking.get?.('booking_code');
+        const buyerId = randomBooking.buyer_id || randomBooking.get?.('buyer_id');
+        const checkIn = randomBooking.check_in_date || randomBooking.get?.('check_in_date');
+        const checkOut = randomBooking.check_out_date || randomBooking.get?.('check_out_date');
+        const guests = randomBooking.number_of_guests || randomBooking.get?.('number_of_guests');
+        const rooms = randomBooking.quantity || randomBooking.get?.('quantity');
 
         const buyer = await users.findByPk(buyerId, {
           attributes: ['full_name'],
@@ -514,9 +458,7 @@ async function seedNotificationsForHotel(
           checkOut: new Date(checkOut).toLocaleDateString(),
           guests,
           rooms,
-          nights: Math.ceil(
-            (new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)
-          ),
+          nights: Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)),
         };
 
         if (notificationType === 'booking' && buyerId) {
@@ -532,16 +474,11 @@ async function seedNotificationsForHotel(
       notificationsToCreate.push(notification);
     }
 
-    const createdNotifications = await notifications.bulkCreate(
-      notificationsToCreate,
-      {
-        validate: true,
-      }
-    );
+    const createdNotifications = await notifications.bulkCreate(notificationsToCreate, {
+      validate: true,
+    });
 
-    console.log(
-      `✅ Created ${createdNotifications.length} notification(s) for hotel ${hotelId}`
-    );
+    console.log(`✅ Created ${createdNotifications.length} notification(s) for hotel ${hotelId}`);
     return createdNotifications;
   } catch (error) {
     console.error(`❌ Error seeding notifications for hotel ${hotelId}:`, error);

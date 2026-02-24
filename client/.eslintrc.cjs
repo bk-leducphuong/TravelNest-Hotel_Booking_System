@@ -5,7 +5,7 @@ module.exports = {
   env: {
     browser: true,
     node: true,
-    es2021: true
+    es2021: true,
   },
 
   parser: 'vue-eslint-parser',
@@ -13,7 +13,7 @@ module.exports = {
   parserOptions: {
     parser: 'espree',
     ecmaVersion: 2021,
-    sourceType: 'script' // IMPORTANT for CommonJS
+    sourceType: 'module',
   },
 
   extends: [
@@ -22,7 +22,7 @@ module.exports = {
     'plugin:import/errors',
     'plugin:import/warnings',
     'plugin:promise/recommended',
-    'prettier'
+    'prettier',
   ],
 
   plugins: ['vue', 'import', 'promise'],
@@ -31,35 +31,26 @@ module.exports = {
     process: 'readonly',
     module: 'readonly',
     require: 'readonly',
-    __dirname: 'readonly'
+    __dirname: 'readonly',
   },
 
   rules: {
-    /* =========================
-     * General JavaScript
-     * ========================= */
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
     'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     'prefer-const': 'error',
     'no-var': 'error',
 
-    /* =========================
-     * CommonJS rules
-     * ========================= */
     'import/no-commonjs': 'off',
     'import/no-amd': 'error',
     'import/no-unresolved': 'off',
 
-    /* =========================
-     * Vue specific
-     * ========================= */
     'vue/component-name-in-template-casing': [
       'error',
       'PascalCase',
       {
-        registeredComponentsOnly: false
-      }
+        registeredComponentsOnly: false,
+      },
     ],
 
     'vue/component-definition-name-casing': ['error', 'PascalCase'],
@@ -91,29 +82,23 @@ module.exports = {
           'created',
           'mounted',
           'methods',
-          'render'
-        ]
-      }
+          'render',
+        ],
+      },
     ],
 
-    /* =========================
-     * Architecture protection
-     * ========================= */
-
-    // ❌ No axios in components or Vuex
     'no-restricted-imports': [
       'error',
       {
         paths: [
           {
             name: 'axios',
-            message: 'Use services/http.js instead of axios directly.'
-          }
-        ]
-      }
+            message: 'Use services/http.js instead of axios directly.',
+          },
+        ],
+      },
     ],
 
-    // ❌ No services inside components
     'import/no-restricted-paths': [
       'error',
       {
@@ -121,39 +106,36 @@ module.exports = {
           {
             target: './src/components',
             from: './src/services',
-            message: 'Components should not import services directly.'
+            message: 'Components should not import services directly.',
           },
           {
             target: './src/views',
             from: './src/services',
-            message: 'Views should access data via Vuex actions.'
-          }
-        ]
-      }
+            message: 'Views should access data via Vuex actions.',
+          },
+        ],
+      },
     ],
 
-    /* =========================
-     * Code quality
-     * ========================= */
     'promise/always-return': 'off',
     'promise/no-nesting': 'warn',
-    'promise/no-callback-in-promise': 'warn'
+    'promise/no-callback-in-promise': 'warn',
   },
 
   overrides: [
     {
       files: ['**/*.vue'],
       rules: {
-        'no-unused-vars': 'off'
-      }
+        'no-unused-vars': 'off',
+      },
     },
 
     {
       files: ['src/store/**/*.js'],
       rules: {
         // Vuex mutations must be sync
-        'promise/catch-or-return': 'off'
-      }
-    }
-  ]
-}
+        'promise/catch-or-return': 'off',
+      },
+    },
+  ],
+};

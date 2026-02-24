@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -92,9 +92,7 @@
         {{#if bookingCode}}
         <p><strong>Booking Code:</strong> {{bookingCode}}</p>
         {{/if}}
-        <div class="error-message">
-          <strong>Error:</strong> {{failureMessage}}
-        </div>
+        <div class="error-message"><strong>Error:</strong> {{failureMessage}}</div>
         <p>Please try the following:</p>
         <ul>
           <li>Check your payment method details</li>
@@ -105,9 +103,7 @@
         <div class="cta-button">
           <a href="{{retryUrl}}" class="button">Try Again</a>
         </div>
-        <p>
-          If you continue to experience issues, please contact our support team.
-        </p>
+        <p>If you continue to experience issues, please contact our support team.</p>
         <p>Best regards,<br />The TravelNest Team</p>
       </div>
 
@@ -117,4 +113,3 @@
     </div>
   </body>
 </html>
-

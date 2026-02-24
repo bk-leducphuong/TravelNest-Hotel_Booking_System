@@ -1,19 +1,6 @@
-const PAYMENT_METHODS = [
-  'card',
-  'bank_transfer',
-  'wallet',
-  'cash',
-  'gift_card',
-];
+const PAYMENT_METHODS = ['card', 'bank_transfer', 'wallet', 'cash', 'gift_card'];
 
-const PAYMENT_STATUSES = [
-  'pending',
-  'processing',
-  'succeeded',
-  'failed',
-  'cancelled',
-  'refunded',
-];
+const PAYMENT_STATUSES = ['pending', 'processing', 'succeeded', 'failed', 'cancelled', 'refunded'];
 
 function isValidPaymentMethod(method) {
   return PAYMENT_METHODS.includes(method);

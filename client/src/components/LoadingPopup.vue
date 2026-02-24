@@ -2,7 +2,7 @@
   <div class="loading-popup-container" v-if="openLoadingPopup">
     <div class="loading-popup">
       <!-- Using vue-loading-overlay -->
-      <loading
+      <Loading
         :active="isLoading"
         :can-cancel="false"
         :is-full-page="false"
@@ -10,7 +10,7 @@
         background-color="transparent"
         v-if="!fail"
       >
-      </loading>
+      </Loading>
       <i
         class="fa fa-check-circle"
         aria-hidden="true"

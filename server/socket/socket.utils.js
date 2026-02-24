@@ -356,7 +356,7 @@ const getConnectionStats = async (io) => {
  */
 const cleanupRoom = async (namespace, roomName) => {
   const sockets = await namespace.in(roomName).fetchSockets();
-  
+
   sockets.forEach((socket) => {
     if (!socket.connected) {
       socket.leave(roomName);

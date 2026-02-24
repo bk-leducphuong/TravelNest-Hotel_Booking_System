@@ -1,8 +1,5 @@
 const express = require('express');
-const {
-  submitJoinForm,
-  uploadPhotos,
-} = require('@controllers/v1/join.controller.js');
+const { submitJoinForm, uploadPhotos } = require('@controllers/v1/join.controller.js');
 const { authenticate } = require('@middlewares/auth.middleware');
 const upload = require('@config/multer.config');
 const validate = require('@middlewares/validate.middleware');
@@ -24,11 +21,6 @@ router.post('/', validate(joinSchema.submitJoinForm), submitJoinForm);
  * POST /api/join/photos
  * Upload and process hotel/room photos
  */
-router.post(
-  '/photos',
-  upload.array('images', 30),
-  validate(joinSchema.uploadPhotos),
-  uploadPhotos
-);
+router.post('/photos', upload.array('images', 30), validate(joinSchema.uploadPhotos), uploadPhotos);
 
 module.exports = router;

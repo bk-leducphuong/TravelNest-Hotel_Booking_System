@@ -1,6 +1,7 @@
 const hotelController = require('@controllers/v1/hotel.controller');
 const hotelService = require('@services/hotel.service');
 const ApiError = require('@utils/ApiError');
+
 const {
   createMockHotel,
   createMockRoom,

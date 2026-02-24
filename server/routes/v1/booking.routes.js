@@ -23,30 +23,18 @@ router.get('/', validate(bookingSchema.getUserBookings), getUserBookings);
  * GET /api/bookings/code/:bookingCode
  * Get booking by booking code
  */
-router.get(
-  '/code/:bookingCode',
-  validate(bookingSchema.getBookingByCode),
-  getBookingByCode
-);
+router.get('/code/:bookingCode', validate(bookingSchema.getBookingByCode), getBookingByCode);
 
 /**
  * GET /api/bookings/:bookingId
  * Get a specific booking by ID
  */
-router.get(
-  '/:bookingId',
-  validate(bookingSchema.getBookingById),
-  getBookingById
-);
+router.get('/:bookingId', validate(bookingSchema.getBookingById), getBookingById);
 
 /**
  * DELETE /api/bookings/:bookingId
  * Cancel a booking
  */
-router.delete(
-  '/:bookingId',
-  validate(bookingSchema.cancelBooking),
-  cancelBooking
-);
+router.delete('/:bookingId', validate(bookingSchema.cancelBooking), cancelBooking);
 
 module.exports = router;

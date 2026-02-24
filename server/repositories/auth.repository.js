@@ -136,10 +136,7 @@ class AuthRepository {
    * @returns {Promise<number>} Number of updated rows
    */
   async updatePasswordByEmail(email, passwordHash) {
-    const [updatedRows] = await Users.update(
-      { password_hash: passwordHash },
-      { where: { email } }
-    );
+    const [updatedRows] = await Users.update({ password_hash: passwordHash }, { where: { email } });
     return updatedRows;
   }
 
@@ -194,10 +191,7 @@ class AuthRepository {
    * @returns {Promise<void>}
    */
   async updateLastLogin(userId) {
-    await Users.update(
-      { last_login_at: new Date() },
-      { where: { id: userId } }
-    );
+    await Users.update({ last_login_at: new Date() }, { where: { id: userId } });
   }
 
   /**

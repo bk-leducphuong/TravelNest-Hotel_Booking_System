@@ -42,11 +42,7 @@ router.patch('/:hotelId', validate(hotelSchema.updateHotel), updateHotel);
  * GET /api/admin/hotels/:hotelId/photos
  * Get all photos for a hotel
  */
-router.get(
-  '/:hotelId/photos',
-  validate(roomSchema.getHotelPhotos),
-  getHotelPhotos
-);
+router.get('/:hotelId/photos', validate(roomSchema.getHotelPhotos), getHotelPhotos);
 
 /**
  * POST /api/admin/hotels/:hotelId/photos
@@ -63,10 +59,6 @@ router.post(
  * DELETE /api/admin/hotels/:hotelId/photos
  * Delete photos from a hotel
  */
-router.delete(
-  '/:hotelId/photos',
-  validate(roomSchema.deleteHotelPhotos),
-  deleteHotelPhotos
-);
+router.delete('/:hotelId/photos', validate(roomSchema.deleteHotelPhotos), deleteHotelPhotos);
 
 module.exports = router;

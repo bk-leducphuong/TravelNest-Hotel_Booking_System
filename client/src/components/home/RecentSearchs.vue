@@ -2,14 +2,14 @@
   <div class="recent-search-container container" v-if="recentSearches.length > 0">
     <h2 class="h2">{{ $t('userHome.recentSearches') }}</h2>
     <div class="slider-container">
-      <el-carousel
+      <ElCarousel
         :interval="0"
         :arrow="groupedSearches.length > 1 ? 'hover' : 'never'"
         indicator-position="none"
         height="96px"
         class="search-carousel"
       >
-        <el-carousel-item v-for="(group, groupIndex) in groupedSearches" :key="groupIndex">
+        <ElCarouselItem v-for="(group, groupIndex) in groupedSearches" :key="groupIndex">
           <div class="search-group">
             <div
               class="search-card"
@@ -33,8 +33,8 @@
               <button class="close-button" @click.stop="removeSearch(search, groupIndex * itemsPerSlide + index)">×</button>
             </div>
           </div>
-        </el-carousel-item>
-      </el-carousel>
+        </ElCarouselItem>
+      </ElCarousel>
     </div>
   </div>
 </template>

@@ -56,10 +56,7 @@ async function processNotificationJob(job) {
 
 const notificationWorker = new Worker(queueName, processNotificationJob, {
   ...config.workerOptions,
-  concurrency: parseInt(
-    process.env.BULLMQ_NOTIFICATION_CONCURRENCY || '10',
-    10
-  ),
+  concurrency: parseInt(process.env.BULLMQ_NOTIFICATION_CONCURRENCY || '10', 10),
 });
 
 notificationWorker.name = queueName;
@@ -94,10 +91,7 @@ notificationWorker.on('error', (err) => {
 });
 
 notificationWorker.on('active', (job) => {
-  logger.debug(
-    { jobId: job.id, type: job.data?.type },
-    `Notification job started: ${job.id}`
-  );
+  logger.debug({ jobId: job.id, type: job.data?.type }, `Notification job started: ${job.id}`);
 });
 
 module.exports = notificationWorker;

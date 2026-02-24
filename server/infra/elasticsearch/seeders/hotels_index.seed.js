@@ -21,18 +21,16 @@
  */
 
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'production'
-      ? '.env.production'
-      : '.env.development',
+  path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development',
 });
 
 // Add module alias support
 require('module-alias/register');
 
+const { Op } = require('sequelize');
+
 const elasticsearchClient = require('../../../config/elasticsearch.config');
 const db = require('../../../models');
-const { Op } = require('sequelize');
 
 const { hotel_search_snapshots: HotelSearchSnapshots } = db;
 
@@ -47,11 +45,10 @@ const DEFAULT_BATCH_SIZE = 100;
 function calculatePopularityScore(snapshot) {
   const bookingScore = (snapshot.total_bookings || 0) * 2;
   const viewScore = (snapshot.view_count || 0) * 0.1;
-  const ratingScore =
-    (parseFloat(snapshot.avg_rating) || 0) * (snapshot.review_count || 0) * 0.5;
+  const ratingScore = (parseFloat(snapshot.avg_rating) || 0) * (snapshot.review_count || 0) * 0.5;
 
   const score = bookingScore + viewScore + ratingScore;
-  
+
   // rank_feature type requires positive values, return null for 0 to omit the field
   return score > 0 ? score : null;
 }
@@ -180,9 +177,7 @@ async function verifyIndexExists() {
   });
 
   if (!exists) {
-    console.error(
-      `❌ Index '${INDEX_NAME}' does not exist. Run 'npm run es:setup-hotels' first.`
-    );
+    console.error(`❌ Index '${INDEX_NAME}' does not exist. Run 'npm run es:setup-hotels' first.`);
     return false;
   }
 

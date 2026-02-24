@@ -112,13 +112,8 @@ const getNewCustomers = asyncHandler(async (req, res) => {
  */
 const getWeeklyChange = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
-  const {
-    hotelId,
-    currentWeekStart,
-    currentWeekEnd,
-    previousWeekStart,
-    previousWeekEnd,
-  } = req.query;
+  const { hotelId, currentWeekStart, currentWeekEnd, previousWeekStart, previousWeekEnd } =
+    req.query;
 
   const result = await adminDashboardService.getWeeklyChange(
     hotelId,

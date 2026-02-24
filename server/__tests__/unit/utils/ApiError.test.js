@@ -92,11 +92,7 @@ describe('ApiError', () => {
     expect(error409.statusCode).toBe(409);
 
     // 500 Internal Server Error
-    const error500 = new ApiError(
-      500,
-      'INTERNAL_SERVER_ERROR',
-      'Internal server error'
-    );
+    const error500 = new ApiError(500, 'INTERNAL_SERVER_ERROR', 'Internal server error');
     expect(error500.statusCode).toBe(500);
   });
 

@@ -1,3 +1,5 @@
+const { Op, Sequelize } = require('sequelize');
+
 const {
   hotel_search_snapshots,
   hotels,
@@ -5,7 +7,6 @@ const {
   hotel_amenities,
   amenities,
 } = require('../models');
-const { Op, Sequelize } = require('sequelize');
 
 /**
  * Create or update hotel search snapshot
@@ -122,9 +123,7 @@ const recomputeAmenities = async (hotelId) => {
     raw: true,
   });
 
-  const amenityCodes = amenityData
-    .map((a) => a['amenity.code'])
-    .filter(Boolean);
+  const amenityCodes = amenityData.map((a) => a['amenity.code']).filter(Boolean);
 
   return { amenity_codes: amenityCodes };
 };
@@ -143,16 +142,7 @@ const checkFreeCancellation = async (hotelId) => {
  */
 const getHotelBasicInfo = async (hotelId) => {
   const hotel = await hotels.findByPk(hotelId, {
-    attributes: [
-      'id',
-      'name',
-      'city',
-      'country',
-      'latitude',
-      'longitude',
-      'hotel_class',
-      'status',
-    ],
+    attributes: ['id', 'name', 'city', 'country', 'latitude', 'longitude', 'hotel_class', 'status'],
     raw: true,
   });
 
@@ -203,21 +193,15 @@ const getPrimaryImageUrl = async (hotelId) => {
  * Full snapshot refresh - recompute everything
  */
 const fullRefresh = async (hotelId) => {
-  const [
-    basicInfo,
-    pricingData,
-    ratingData,
-    amenityData,
-    imageData,
-    freeCancelData,
-  ] = await Promise.all([
-    getHotelBasicInfo(hotelId),
-    recomputePricing(hotelId),
-    recomputeRating(hotelId),
-    recomputeAmenities(hotelId),
-    getPrimaryImageUrl(hotelId),
-    checkFreeCancellation(hotelId),
-  ]);
+  const [basicInfo, pricingData, ratingData, amenityData, imageData, freeCancelData] =
+    await Promise.all([
+      getHotelBasicInfo(hotelId),
+      recomputePricing(hotelId),
+      recomputeRating(hotelId),
+      recomputeAmenities(hotelId),
+      getPrimaryImageUrl(hotelId),
+      checkFreeCancellation(hotelId),
+    ]);
 
   const snapshotData = {
     ...basicInfo,
@@ -226,8 +210,7 @@ const fullRefresh = async (hotelId) => {
     ...amenityData,
     ...imageData,
     ...freeCancelData,
-    is_available:
-      pricingData.has_available_rooms && basicInfo.status === 'active',
+    is_available: pricingData.has_available_rooms && basicInfo.status === 'active',
   };
 
   return await upsertSnapshot(hotelId, snapshotData);

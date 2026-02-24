@@ -19,10 +19,7 @@ class HomeService {
 
     if (userId) {
       // Get from user's viewed hotels
-      const viewedHotels = await homeRepository.findViewedHotelsByUserId(
-        userId,
-        10
-      );
+      const viewedHotels = await homeRepository.findViewedHotelsByUserId(userId, 10);
 
       if (viewedHotels.length === 0) {
         return [];
@@ -130,18 +127,10 @@ class HomeService {
    */
   async getNearbyHotels(latitude, longitude, radiusKm = 6) {
     if (!latitude || !longitude) {
-      throw new ApiError(
-        400,
-        'MISSING_COORDINATES',
-        'Latitude and longitude are required'
-      );
+      throw new ApiError(400, 'MISSING_COORDINATES', 'Latitude and longitude are required');
     }
 
-    const hotels = await homeRepository.findNearbyHotels(
-      latitude,
-      longitude,
-      radiusKm
-    );
+    const hotels = await homeRepository.findNearbyHotels(latitude, longitude, radiusKm);
 
     return hotels.map((hotel) => {
       const hotelData = hotel.toJSON ? hotel.toJSON() : hotel;
@@ -160,11 +149,7 @@ class HomeService {
    * @returns {Promise<Array>} Array of top rated hotels
    */
   async getTopRatedHotels(limit = 10, minRating = 4, minReviews = 5) {
-    const hotels = await homeRepository.findTopRatedHotels(
-      limit,
-      minRating,
-      minReviews
-    );
+    const hotels = await homeRepository.findTopRatedHotels(limit, minRating, minReviews);
 
     return hotels.map((hotel) => {
       const hotelData = hotel.toJSON ? hotel.toJSON() : hotel;
@@ -182,8 +167,7 @@ class HomeService {
    * @returns {Promise<Array>} Array of hotel details
    */
   async getRecentlyViewedHotels(userId, limit = 10) {
-    const viewedHotels =
-      await homeRepository.findRecentlyViewedHotelsWithDetails(userId, limit);
+    const viewedHotels = await homeRepository.findRecentlyViewedHotelsWithDetails(userId, limit);
 
     return viewedHotels
       .map((view) => {
@@ -200,10 +184,7 @@ class HomeService {
    * @returns {Promise<Array>} Array of popular destinations
    */
   async getPopularDestinations(limit = 10, minHotels = 5) {
-    const destinations = await homeRepository.findPopularDestinations(
-      limit,
-      minHotels
-    );
+    const destinations = await homeRepository.findPopularDestinations(limit, minHotels);
 
     return destinations.map((dest) => {
       const destData = dest.toJSON ? dest.toJSON() : dest;

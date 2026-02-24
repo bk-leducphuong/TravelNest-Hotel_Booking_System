@@ -11,17 +11,10 @@ class AdminNotificationService {
    * Verify hotel ownership for all operations
    */
   async verifyAccess(hotelId, ownerId) {
-    const isOwner = await adminNotificationRepository.verifyHotelOwnership(
-      hotelId,
-      ownerId
-    );
+    const isOwner = await adminNotificationRepository.verifyHotelOwnership(hotelId, ownerId);
 
     if (!isOwner) {
-      throw new ApiError(
-        403,
-        'FORBIDDEN',
-        'You do not have permission to access this hotel'
-      );
+      throw new ApiError(403, 'FORBIDDEN', 'You do not have permission to access this hotel');
     }
   }
 
@@ -38,15 +31,10 @@ class AdminNotificationService {
   async getNotifications(hotelId, ownerId, options = {}) {
     await this.verifyAccess(hotelId, ownerId);
 
-    const result = await adminNotificationRepository.findByHotelId(
-      hotelId,
-      options
-    );
+    const result = await adminNotificationRepository.findByHotelId(hotelId, options);
 
     // Get unread count
-    const unreadCount = await adminNotificationRepository.getUnreadCount(
-      hotelId
-    );
+    const unreadCount = await adminNotificationRepository.getUnreadCount(hotelId);
 
     const notifications = result.notifications.map((notification) =>
       notification.toJSON ? notification.toJSON() : notification
@@ -71,16 +59,10 @@ class AdminNotificationService {
    * @returns {Promise<Object>} Notification details
    */
   async getNotificationById(notificationId, ownerId) {
-    const notification = await adminNotificationRepository.findById(
-      notificationId
-    );
+    const notification = await adminNotificationRepository.findById(notificationId);
 
     if (!notification) {
-      throw new ApiError(
-        404,
-        'NOTIFICATION_NOT_FOUND',
-        'Notification not found'
-      );
+      throw new ApiError(404, 'NOTIFICATION_NOT_FOUND', 'Notification not found');
     }
 
     // Verify hotel ownership
@@ -96,16 +78,10 @@ class AdminNotificationService {
    * @returns {Promise<Object>} Updated notification
    */
   async markNotificationAsRead(notificationId, ownerId) {
-    const notification = await adminNotificationRepository.findById(
-      notificationId
-    );
+    const notification = await adminNotificationRepository.findById(notificationId);
 
     if (!notification) {
-      throw new ApiError(
-        404,
-        'NOTIFICATION_NOT_FOUND',
-        'Notification not found'
-      );
+      throw new ApiError(404, 'NOTIFICATION_NOT_FOUND', 'Notification not found');
     }
 
     // Verify hotel ownership
@@ -117,16 +93,10 @@ class AdminNotificationService {
     }
 
     // Mark as read
-    const [updatedCount] = await adminNotificationRepository.markAsRead(
-      notificationId
-    );
+    const [updatedCount] = await adminNotificationRepository.markAsRead(notificationId);
 
     if (updatedCount === 0) {
-      throw new ApiError(
-        500,
-        'UPDATE_FAILED',
-        'Failed to mark notification as read'
-      );
+      throw new ApiError(500, 'UPDATE_FAILED', 'Failed to mark notification as read');
     }
 
     // Return updated notification
@@ -142,9 +112,7 @@ class AdminNotificationService {
   async markAllNotificationsAsRead(hotelId, ownerId) {
     await this.verifyAccess(hotelId, ownerId);
 
-    const [updatedCount] = await adminNotificationRepository.markAllAsRead(
-      hotelId
-    );
+    const [updatedCount] = await adminNotificationRepository.markAllAsRead(hotelId);
 
     return {
       updatedCount,
@@ -159,31 +127,19 @@ class AdminNotificationService {
    * @returns {Promise<Object>} Deletion result
    */
   async deleteNotification(notificationId, ownerId) {
-    const notification = await adminNotificationRepository.findById(
-      notificationId
-    );
+    const notification = await adminNotificationRepository.findById(notificationId);
 
     if (!notification) {
-      throw new ApiError(
-        404,
-        'NOTIFICATION_NOT_FOUND',
-        'Notification not found'
-      );
+      throw new ApiError(404, 'NOTIFICATION_NOT_FOUND', 'Notification not found');
     }
 
     // Verify hotel ownership
     await this.verifyAccess(notification.reciever_id, ownerId);
 
-    const deletedCount = await adminNotificationRepository.delete(
-      notificationId
-    );
+    const deletedCount = await adminNotificationRepository.delete(notificationId);
 
     if (deletedCount === 0) {
-      throw new ApiError(
-        500,
-        'DELETE_FAILED',
-        'Failed to delete notification'
-      );
+      throw new ApiError(500, 'DELETE_FAILED', 'Failed to delete notification');
     }
 
     return {

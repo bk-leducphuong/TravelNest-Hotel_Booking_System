@@ -75,13 +75,7 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: true,
       },
       gender: {
-        type: DataTypes.ENUM(
-          'male',
-          'female',
-          'non_binary',
-          'other',
-          'prefer_not_to_say'
-        ),
+        type: DataTypes.ENUM('male', 'female', 'non_binary', 'other', 'prefer_not_to_say'),
         allowNull: true,
       },
       nationality: {

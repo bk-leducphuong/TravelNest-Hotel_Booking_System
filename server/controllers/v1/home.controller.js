@@ -19,8 +19,7 @@ const getRecentViewedHotels = asyncHandler(async (req, res) => {
   let parsedHotelIds;
   if (hotelIds) {
     try {
-      parsedHotelIds =
-        typeof hotelIds === 'string' ? JSON.parse(hotelIds) : hotelIds;
+      parsedHotelIds = typeof hotelIds === 'string' ? JSON.parse(hotelIds) : hotelIds;
     } catch (error) {
       return res.status(400).json({
         error: {
@@ -31,10 +30,7 @@ const getRecentViewedHotels = asyncHandler(async (req, res) => {
     }
   }
 
-  const hotels = await homeService.getRecentViewedHotels(
-    userId,
-    parsedHotelIds
-  );
+  const hotels = await homeService.getRecentViewedHotels(userId, parsedHotelIds);
 
   res.status(200).json({
     data: hotels,
@@ -66,10 +62,7 @@ const getRecentSearches = asyncHandler(async (req, res) => {
   const userId = req.session.user.user_id;
   const { limit } = req.query;
 
-  const searches = await homeService.getRecentSearches(
-    userId,
-    limit ? parseInt(limit, 10) : 10
-  );
+  const searches = await homeService.getRecentSearches(userId, limit ? parseInt(limit, 10) : 10);
 
   res.status(200).json({
     data: searches,
@@ -95,9 +88,7 @@ const removeRecentSearch = asyncHandler(async (req, res) => {
 const getPopularPlaces = asyncHandler(async (req, res) => {
   const { limit } = req.query;
 
-  const popularPlaces = await homeService.getPopularPlaces(
-    limit ? parseInt(limit, 10) : 5
-  );
+  const popularPlaces = await homeService.getPopularPlaces(limit ? parseInt(limit, 10) : 5);
 
   res.status(200).json({
     data: popularPlaces,

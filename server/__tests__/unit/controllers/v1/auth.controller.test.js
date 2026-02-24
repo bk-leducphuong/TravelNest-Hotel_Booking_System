@@ -1,12 +1,6 @@
 const authController = require('@controllers/v1/auth.controller');
 const authService = require('@services/auth.service');
 const ApiError = require('@utils/ApiError');
-const {
-  createMockUserWithContext,
-  createMockLoginCredentials,
-  createMockRegistrationData,
-  createMockSession,
-} = require('../../../fixtures/auth.fixtures');
 
 // Mock dependencies
 jest.mock('@services/auth.service');
@@ -19,6 +13,13 @@ jest.mock('@helpers/session.helper', () => ({
 }));
 
 const { buildSession } = require('@helpers/session.helper');
+
+const {
+  createMockUserWithContext,
+  createMockLoginCredentials,
+  createMockRegistrationData,
+  createMockSession,
+} = require('../../../fixtures/auth.fixtures');
 
 describe('AuthController', () => {
   let req, res, next;
@@ -99,10 +100,7 @@ describe('AuthController', () => {
       await authController.checkEmail(req, res, next);
 
       // Assert
-      expect(authService.checkEmail).toHaveBeenCalledWith(
-        'test@example.com',
-        'guest'
-      );
+      expect(authService.checkEmail).toHaveBeenCalledWith('test@example.com', 'guest');
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         data: { exists: true },
@@ -197,11 +195,7 @@ describe('AuthController', () => {
         userRole: 'guest',
       };
 
-      const error = new ApiError(
-        401,
-        'INVALID_CREDENTIALS',
-        'Invalid email or password'
-      );
+      const error = new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
       authService.login.mockRejectedValue(error);
 
       // Act
@@ -216,11 +210,7 @@ describe('AuthController', () => {
       // Arrange
       req.body = createMockLoginCredentials();
 
-      const error = new ApiError(
-        403,
-        'ACCOUNT_INACTIVE',
-        'Account is suspended'
-      );
+      const error = new ApiError(403, 'ACCOUNT_INACTIVE', 'Account is suspended');
       authService.login.mockRejectedValue(error);
 
       // Act
@@ -326,11 +316,7 @@ describe('AuthController', () => {
         email: 'existing@example.com',
       });
 
-      const error = new ApiError(
-        409,
-        'USER_ALREADY_EXISTS',
-        'User already exists'
-      );
+      const error = new ApiError(409, 'USER_ALREADY_EXISTS', 'User already exists');
       authService.register.mockRejectedValue(error);
 
       // Act

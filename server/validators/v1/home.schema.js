@@ -1,4 +1,5 @@
 const Joi = require('joi');
+
 const { pagination } = require('./common.schema');
 
 /**
@@ -54,10 +55,7 @@ exports.getRecentViewedHotels = {
             return helpers.error('array.base');
           }
 
-          const { error } = Joi.array()
-            .items(hotelIdSchema)
-            .min(1)
-            .validate(parsed);
+          const { error } = Joi.array().items(hotelIdSchema).min(1).validate(parsed);
 
           if (error) {
             return helpers.error('any.invalid');

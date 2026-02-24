@@ -88,14 +88,10 @@ module.exports = {
       comment: 'Composite index for finding specific policy types',
     });
 
-    await queryInterface.addIndex(
-      'hotel_policies',
-      ['hotel_id', 'is_active', 'display_order'],
-      {
-        name: 'idx_hotel_active_order',
-        comment: 'Index for fetching active policies in display order',
-      }
-    );
+    await queryInterface.addIndex('hotel_policies', ['hotel_id', 'is_active', 'display_order'], {
+      name: 'idx_hotel_active_order',
+      comment: 'Index for fetching active policies in display order',
+    });
   },
 
   down: async (queryInterface, Sequelize) => {

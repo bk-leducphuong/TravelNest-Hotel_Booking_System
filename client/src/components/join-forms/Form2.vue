@@ -81,10 +81,10 @@ export default {
     </div>
   </form>
   <div id="map-container" class="leaflet-map-container" v-if="openMapPopup">
-    <l-map style="height: 500px; width: 80%" :zoom="zoom" :center="center" @click="onMapClick">
-      <l-tile-layer :url="tileUrl" :attribution="tileAttribution" />
-      <l-marker v-if="markerPosition" :lat-lng="markerPosition"></l-marker>
-    </l-map>
+    <LMap style="height: 500px; width: 80%" :zoom="zoom" :center="center" @click="onMapClick">
+      <LTileLayer :url="tileUrl" :attribution="tileAttribution" />
+      <LMarker v-if="markerPosition" :lat-lng="markerPosition"></LMarker>
+    </LMap>
     <i class="fa-solid fa-circle-xmark" style="font-size: 30px; margin-top: -25px; cursor: pointer;" @click="openMapPopup = false"></i>
   </div>
   <!--  form-2  -->

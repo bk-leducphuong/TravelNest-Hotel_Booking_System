@@ -2,12 +2,6 @@ const authService = require('@services/auth.service');
 const authRepository = require('@repositories/auth.repository');
 const bcrypt = require('bcryptjs');
 const ApiError = require('@utils/ApiError');
-const {
-  createMockAuthUser,
-  createMockRole,
-  createMockUserWithContext,
-  createHashedPassword,
-} = require('../../fixtures/auth.fixtures');
 
 // Mock dependencies
 jest.mock('@repositories/auth.repository');
@@ -27,6 +21,13 @@ const {
   validateEmail,
   validateEmailDomain,
 } = require('@utils/emailValidation.js');
+
+const {
+  createMockAuthUser,
+  createMockRole,
+  createMockUserWithContext,
+  createHashedPassword,
+} = require('../../fixtures/auth.fixtures');
 
 describe('AuthService', () => {
   beforeEach(() => {
@@ -50,10 +51,7 @@ describe('AuthService', () => {
 
       // Assert
       expect(result).toEqual({ exists: true });
-      expect(authRepository.findByEmailAndRole).toHaveBeenCalledWith(
-        email,
-        roleName
-      );
+      expect(authRepository.findByEmailAndRole).toHaveBeenCalledWith(email, roleName);
       expect(validateEmail).not.toHaveBeenCalled(); // Should not check if user exists
     });
 
@@ -81,9 +79,9 @@ describe('AuthService', () => {
       isValidRole.mockReturnValue(false);
 
       // Act & Assert
-      await expect(
-        authService.checkEmail('test@example.com', 'invalid_role')
-      ).rejects.toThrow(ApiError);
+      await expect(authService.checkEmail('test@example.com', 'invalid_role')).rejects.toThrow(
+        ApiError
+      );
 
       await expect(
         authService.checkEmail('test@example.com', 'invalid_role')
@@ -99,13 +97,9 @@ describe('AuthService', () => {
       isValidEmailFormat.mockReturnValue(false);
 
       // Act & Assert
-      await expect(
-        authService.checkEmail('invalid-email', 'guest')
-      ).rejects.toThrow(ApiError);
+      await expect(authService.checkEmail('invalid-email', 'guest')).rejects.toThrow(ApiError);
 
-      await expect(
-        authService.checkEmail('invalid-email', 'guest')
-      ).rejects.toMatchObject({
+      await expect(authService.checkEmail('invalid-email', 'guest')).rejects.toMatchObject({
         statusCode: 400,
         code: 'INVALID_EMAIL_FORMAT',
       });
@@ -118,16 +112,16 @@ describe('AuthService', () => {
       validateEmailDomain.mockResolvedValue(false);
 
       // Act & Assert
-      await expect(
-        authService.checkEmail('test@invaliddomain.com', 'guest')
-      ).rejects.toThrow(ApiError);
+      await expect(authService.checkEmail('test@invaliddomain.com', 'guest')).rejects.toThrow(
+        ApiError
+      );
 
-      await expect(
-        authService.checkEmail('test@invaliddomain.com', 'guest')
-      ).rejects.toMatchObject({
-        statusCode: 400,
-        code: 'INVALID_EMAIL_DOMAIN',
-      });
+      await expect(authService.checkEmail('test@invaliddomain.com', 'guest')).rejects.toMatchObject(
+        {
+          statusCode: 400,
+          code: 'INVALID_EMAIL_DOMAIN',
+        }
+      );
     });
 
     it('should throw error when email does not exist', async () => {
@@ -139,9 +133,9 @@ describe('AuthService', () => {
       validateEmail.mockResolvedValue(false);
 
       // Act & Assert
-      await expect(
-        authService.checkEmail('nonexistent@example.com', 'guest')
-      ).rejects.toThrow(ApiError);
+      await expect(authService.checkEmail('nonexistent@example.com', 'guest')).rejects.toThrow(
+        ApiError
+      );
 
       await expect(
         authService.checkEmail('nonexistent@example.com', 'guest')
@@ -237,9 +231,9 @@ describe('AuthService', () => {
       authRepository.findByEmailAndRoleWithPassword.mockResolvedValue(mockUser);
 
       // Act & Assert
-      await expect(
-        authService.login('test@example.com', 'password123', 'guest')
-      ).rejects.toThrow(ApiError);
+      await expect(authService.login('test@example.com', 'password123', 'guest')).rejects.toThrow(
+        ApiError
+      );
 
       await expect(
         authService.login('test@example.com', 'password123', 'guest')
@@ -265,9 +259,9 @@ describe('AuthService', () => {
       bcrypt.compare.mockResolvedValue(false);
 
       // Act & Assert
-      await expect(
-        authService.login('test@example.com', 'wrongpassword', 'guest')
-      ).rejects.toThrow(ApiError);
+      await expect(authService.login('test@example.com', 'wrongpassword', 'guest')).rejects.toThrow(
+        ApiError
+      );
 
       await expect(
         authService.login('test@example.com', 'wrongpassword', 'guest')
@@ -307,13 +301,7 @@ describe('AuthService', () => {
       authRepository.getUserWithContext.mockResolvedValue(mockUserContext);
 
       // Act
-      const result = await authService.register(
-        email,
-        password,
-        firstName,
-        lastName,
-        roleName
-      );
+      const result = await authService.register(email, password, firstName, lastName, roleName);
 
       // Assert
       expect(result).toHaveProperty('userId', 1);
@@ -336,23 +324,11 @@ describe('AuthService', () => {
 
       // Act & Assert
       await expect(
-        authService.register(
-          'test@example.com',
-          'password',
-          'John',
-          'Doe',
-          'invalid_role'
-        )
+        authService.register('test@example.com', 'password', 'John', 'Doe', 'invalid_role')
       ).rejects.toThrow(ApiError);
 
       await expect(
-        authService.register(
-          'test@example.com',
-          'password',
-          'John',
-          'Doe',
-          'invalid_role'
-        )
+        authService.register('test@example.com', 'password', 'John', 'Doe', 'invalid_role')
       ).rejects.toMatchObject({
         statusCode: 400,
         code: 'INVALID_ROLE',
@@ -372,23 +348,11 @@ describe('AuthService', () => {
 
       // Act & Assert
       await expect(
-        authService.register(
-          'existing@example.com',
-          'password',
-          'John',
-          'Doe',
-          roleName
-        )
+        authService.register('existing@example.com', 'password', 'John', 'Doe', roleName)
       ).rejects.toThrow(ApiError);
 
       await expect(
-        authService.register(
-          'existing@example.com',
-          'password',
-          'John',
-          'Doe',
-          roleName
-        )
+        authService.register('existing@example.com', 'password', 'John', 'Doe', roleName)
       ).rejects.toMatchObject({
         statusCode: 409,
         code: 'USER_ALREADY_EXISTS',
@@ -438,23 +402,11 @@ describe('AuthService', () => {
 
       // Act & Assert
       await expect(
-        authService.register(
-          'test@example.com',
-          'password',
-          'John',
-          'Doe',
-          'guest'
-        )
+        authService.register('test@example.com', 'password', 'John', 'Doe', 'guest')
       ).rejects.toThrow(ApiError);
 
       await expect(
-        authService.register(
-          'test@example.com',
-          'password',
-          'John',
-          'Doe',
-          'guest'
-        )
+        authService.register('test@example.com', 'password', 'John', 'Doe', 'guest')
       ).rejects.toMatchObject({
         statusCode: 500,
         code: 'ROLE_NOT_FOUND',

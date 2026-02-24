@@ -44,9 +44,7 @@ class NotificationService {
 
     return {
       notifications: result.rows.map((notification) =>
-        notification.toPublicJSON
-          ? notification.toPublicJSON()
-          : notification.toJSON()
+        notification.toPublicJSON ? notification.toPublicJSON() : notification.toJSON()
       ),
       page,
       limit: validatedLimit,
@@ -62,17 +60,10 @@ class NotificationService {
    */
   async markNotificationAsRead(notificationId, userId) {
     // Verify notification exists and belongs to user
-    const notification = await notificationRepository.findById(
-      notificationId,
-      false
-    );
+    const notification = await notificationRepository.findById(notificationId, false);
 
     if (!notification) {
-      throw new ApiError(
-        404,
-        'NOTIFICATION_NOT_FOUND',
-        'Notification not found'
-      );
+      throw new ApiError(404, 'NOTIFICATION_NOT_FOUND', 'Notification not found');
     }
 
     if (notification.receiver_id !== userId) {
@@ -93,8 +84,7 @@ class NotificationService {
    * @returns {Promise<number>} Number of notifications marked as read
    */
   async markAllNotificationsAsRead(userId) {
-    const [updatedCount] =
-      await notificationRepository.markAllAsReadByUserId(userId);
+    const [updatedCount] = await notificationRepository.markAllAsReadByUserId(userId);
     return updatedCount;
   }
 
@@ -182,23 +172,22 @@ class NotificationService {
       await notificationRepository.markAsSentById(notification.id);
 
       // Also create notification for customer (booking confirmed)
-      const customerNotification =
-        await notificationRepository.createFromTemplate(
-          buyerId,
-          NOTIFICATION_TYPES.BOOKING_CONFIRMED,
-          {
-            bookingCode,
-            bookingId,
-            hotelName: hotel.name,
-            checkInDate,
-            checkOutDate,
-            numberOfGuests,
-          },
-          {
-            relatedEntityType: RELATED_ENTITY_TYPES.BOOKING,
-            relatedEntityId: bookingId,
-          }
-        );
+      const customerNotification = await notificationRepository.createFromTemplate(
+        buyerId,
+        NOTIFICATION_TYPES.BOOKING_CONFIRMED,
+        {
+          bookingCode,
+          bookingId,
+          hotelName: hotel.name,
+          checkInDate,
+          checkOutDate,
+          numberOfGuests,
+        },
+        {
+          relatedEntityType: RELATED_ENTITY_TYPES.BOOKING,
+          relatedEntityId: bookingId,
+        }
+      );
 
       // Emit to customer
       await this.emitNotification(
@@ -223,12 +212,7 @@ class NotificationService {
    * @param {string} newStatus - New status
    * @param {string} updatedBy - 'admin' or 'customer'
    */
-  async sendBookingStatusUpdate(
-    bookingId,
-    oldStatus,
-    newStatus,
-    updatedBy = 'admin'
-  ) {
+  async sendBookingStatusUpdate(bookingId, oldStatus, newStatus, updatedBy = 'admin') {
     try {
       const booking = await this.getBookingDetails(bookingId);
       if (!booking) {
@@ -237,21 +221,20 @@ class NotificationService {
       }
 
       // Notify customer
-      const customerNotification =
-        await notificationRepository.createFromTemplate(
-          booking.buyer_id,
-          NOTIFICATION_TYPES.BOOKING_STATUS_UPDATE,
-          {
-            bookingCode: booking.booking_code,
-            bookingId: booking.id,
-            oldStatus,
-            newStatus,
-          },
-          {
-            relatedEntityType: RELATED_ENTITY_TYPES.BOOKING,
-            relatedEntityId: bookingId,
-          }
-        );
+      const customerNotification = await notificationRepository.createFromTemplate(
+        booking.buyer_id,
+        NOTIFICATION_TYPES.BOOKING_STATUS_UPDATE,
+        {
+          bookingCode: booking.booking_code,
+          bookingId: booking.id,
+          oldStatus,
+          newStatus,
+        },
+        {
+          relatedEntityType: RELATED_ENTITY_TYPES.BOOKING,
+          relatedEntityId: bookingId,
+        }
+      );
 
       await this.emitNotification(
         `user_${booking.buyer_id}`,
@@ -265,22 +248,21 @@ class NotificationService {
       if (updatedBy === 'customer') {
         const hotel = await this.getHotelWithOwner(booking.hotel_id);
         if (hotel?.hotel_owner_id) {
-          const ownerNotification =
-            await notificationRepository.createFromTemplate(
-              hotel.hotel_owner_id,
-              NOTIFICATION_TYPES.BOOKING_STATUS_UPDATE,
-              {
-                bookingCode: booking.booking_code,
-                bookingId: booking.id,
-                oldStatus,
-                newStatus,
-              },
-              {
-                senderId: booking.buyer_id,
-                relatedEntityType: RELATED_ENTITY_TYPES.BOOKING,
-                relatedEntityId: bookingId,
-              }
-            );
+          const ownerNotification = await notificationRepository.createFromTemplate(
+            hotel.hotel_owner_id,
+            NOTIFICATION_TYPES.BOOKING_STATUS_UPDATE,
+            {
+              bookingCode: booking.booking_code,
+              bookingId: booking.id,
+              oldStatus,
+              newStatus,
+            },
+            {
+              senderId: booking.buyer_id,
+              relatedEntityType: RELATED_ENTITY_TYPES.BOOKING,
+              relatedEntityId: bookingId,
+            }
+          );
 
           await this.emitNotification(
             `owner_${hotel.hotel_owner_id}`,

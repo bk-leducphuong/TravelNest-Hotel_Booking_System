@@ -56,10 +56,7 @@ const getPaymentByBookingId = asyncHandler(async (req, res) => {
   const userId = req.session.user.user_id;
   const { bookingId } = req.params;
 
-  const payment = await paymentService.getPaymentByBookingId(
-    bookingId,
-    userId
-  );
+  const payment = await paymentService.getPaymentByBookingId(bookingId, userId);
 
   res.status(200).json({
     data: payment,

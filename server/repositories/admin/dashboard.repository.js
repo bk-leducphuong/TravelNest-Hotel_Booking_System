@@ -1,11 +1,6 @@
-const {
-  Bookings,
-  Invoices,
-  Rooms,
-  Users,
-  Hotels,
-} = require('../../models/index.js');
 const { Op } = require('sequelize');
+
+const { Bookings, Invoices, Rooms, Users, Hotels } = require('../../models/index.js');
 const sequelize = require('../../config/database.config');
 
 /**
@@ -129,13 +124,7 @@ class AdminDashboardRepository {
   async getNewCustomers(hotelId, startDate, endDate) {
     // Find users who made their first booking at this hotel during the period
     const newCustomers = await Users.findAll({
-      attributes: [
-        'user_id',
-        'username',
-        'email',
-        'profile_picture_url',
-        'country',
-      ],
+      attributes: ['user_id', 'username', 'email', 'profile_picture_url', 'country'],
       distinct: true,
       include: [
         {
@@ -196,8 +185,7 @@ class AdminDashboardRepository {
 
     const change =
       previousRevenueValue > 0
-        ? ((currentRevenueValue - previousRevenueValue) / previousRevenueValue) *
-          100
+        ? ((currentRevenueValue - previousRevenueValue) / previousRevenueValue) * 100
         : 0;
 
     return {
@@ -225,10 +213,7 @@ class AdminDashboardRepository {
    */
   async getBookingStatusBreakdown(hotelId, startDate, endDate) {
     const statusCounts = await Bookings.findAll({
-      attributes: [
-        'status',
-        [sequelize.fn('COUNT', sequelize.col('booking_id')), 'count'],
-      ],
+      attributes: ['status', [sequelize.fn('COUNT', sequelize.col('booking_id')), 'count']],
       where: {
         hotel_id: hotelId,
         created_at: {

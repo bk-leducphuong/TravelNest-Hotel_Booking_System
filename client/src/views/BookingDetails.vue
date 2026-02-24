@@ -91,7 +91,7 @@ export default {
         You can always view or change your booking online – no registration required.
       </p>
       <ul class="action-list">
-        <li><router-link :to="{path: `/bookings/${bookingCode}/cancel`}" class="action-link"><i class="fa-solid fa-xmark" style="color: #ea1010;"></i> Cancel your booking</router-link></li>
+        <li><RouterLink :to="{path: `/bookings/${bookingCode}/cancel`}" class="action-link"><i class="fa-solid fa-xmark" style="color: #ea1010;"></i> Cancel your booking</RouterLink></li>
         <li><a href="#" class="action-link"><i class="fa-solid fa-pen-to-square" style="color: #0d5de7;"></i> Edit guest details</a></li>
         <li><a href="#" class="action-link"><i class="fa-solid fa-message" style="color: #005eff;"></i> Message property</a></li>
         <li><a href="#" class="action-link"><i class="fa-regular fa-calendar-days" style="color: #005eff;"></i> Change dates</a></li>

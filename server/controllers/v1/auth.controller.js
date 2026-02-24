@@ -82,13 +82,7 @@ const logout = (req, res) => {
 const register = asyncHandler(async (req, res) => {
   const { email, password, firstName, lastName, userRole } = req.body; // Already validated by Joi
 
-  const userData = await authService.register(
-    email,
-    password,
-    firstName,
-    lastName,
-    userRole
-  );
+  const userData = await authService.register(email, password, firstName, lastName, userRole);
 
   // Build and store session
   const session = buildSession(req.sessionID, userData.userData);

@@ -1,5 +1,6 @@
-const { Notifications, Hotels } = require('../../models/index.js');
 const { Op } = require('sequelize');
+
+const { Notifications, Hotels } = require('../../models/index.js');
 
 /**
  * Admin Notification Repository - Contains all database operations for admin notifications

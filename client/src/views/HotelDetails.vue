@@ -673,7 +673,7 @@ export default {
           </tr>
         </tbody>
       </table>
-      <loading v-model:active="isSearchRoomLoading" :color="`#003b95`" :is-full-page="false" />
+      <Loading v-model:active="isSearchRoomLoading" :color="`#003b95`" :is-full-page="false" />
       <div v-if="room_list.length == 0" class="no-room-found">
         <h5>Không tìm thấy phòng phù hợp với lựa chọn của bạn.</h5>
       </div>

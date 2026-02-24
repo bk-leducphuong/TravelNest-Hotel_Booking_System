@@ -20,11 +20,7 @@ exports.handleConnection = (namespace, socket) => {
   // Send welcome message
   socket.emit('connected', {
     message: 'Connected to public namespace',
-    features: [
-      'hotel_availability_updates',
-      'public_announcements',
-      'flash_deals',
-    ],
+    features: ['hotel_availability_updates', 'public_announcements', 'flash_deals'],
   });
 
   // ==================== Event: Join Hotel Page ====================
@@ -70,8 +66,7 @@ exports.handleConnection = (namespace, socket) => {
       if (callback) callback({ success: true });
     } catch (error) {
       logger.error('Error leaving hotel page:', error);
-      if (callback)
-        callback({ success: false, message: 'Failed to leave hotel page' });
+      if (callback) callback({ success: false, message: 'Failed to leave hotel page' });
     }
   });
 
@@ -123,11 +118,7 @@ exports.handleConnection = (namespace, socket) => {
  * @param {string} hotelId - Hotel ID
  * @param {Object} availabilityData - Availability update data
  */
-exports.broadcastAvailabilityUpdate = (
-  namespace,
-  hotelId,
-  availabilityData
-) => {
+exports.broadcastAvailabilityUpdate = (namespace, hotelId, availabilityData) => {
   const roomName = `hotel_page_${hotelId}`;
   namespace.to(roomName).emit('availability:updated', availabilityData);
   logger.info(`Broadcasted availability update to hotel page ${hotelId}`);

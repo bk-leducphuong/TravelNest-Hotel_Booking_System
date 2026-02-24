@@ -19,41 +19,21 @@ class InventoryService {
   async reserveRooms(data, options = {}) {
     const { bookedRooms, checkInDate, checkOutDate } = data;
 
-    if (
-      !bookedRooms ||
-      !Array.isArray(bookedRooms) ||
-      bookedRooms.length === 0
-    ) {
-      throw new ApiError(
-        400,
-        'INVALID_BOOKED_ROOMS',
-        'bookedRooms must be a non-empty array'
-      );
+    if (!bookedRooms || !Array.isArray(bookedRooms) || bookedRooms.length === 0) {
+      throw new ApiError(400, 'INVALID_BOOKED_ROOMS', 'bookedRooms must be a non-empty array');
     }
 
     if (!checkInDate || !checkOutDate) {
-      throw new ApiError(
-        400,
-        'MISSING_DATES',
-        'checkInDate and checkOutDate are required'
-      );
+      throw new ApiError(400, 'MISSING_DATES', 'checkInDate and checkOutDate are required');
     }
 
     try {
       // Validate date range
-      const startDate =
-        typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
-      const endDate =
-        typeof checkOutDate === 'string'
-          ? new Date(checkOutDate)
-          : checkOutDate;
+      const startDate = typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
+      const endDate = typeof checkOutDate === 'string' ? new Date(checkOutDate) : checkOutDate;
 
       if (startDate >= endDate) {
-        throw new ApiError(
-          400,
-          'INVALID_DATE_RANGE',
-          'checkOutDate must be after checkInDate'
-        );
+        throw new ApiError(400, 'INVALID_DATE_RANGE', 'checkOutDate must be after checkInDate');
       }
 
       // Prepare reservations array
@@ -92,12 +72,9 @@ class InventoryService {
       }
 
       // Wrap other errors
-      throw new ApiError(
-        500,
-        'RESERVE_ROOMS_FAILED',
-        'Failed to reserve rooms',
-        { originalError: error.message }
-      );
+      throw new ApiError(500, 'RESERVE_ROOMS_FAILED', 'Failed to reserve rooms', {
+        originalError: error.message,
+      });
     }
   }
 
@@ -115,41 +92,21 @@ class InventoryService {
   async releaseRooms(data, options = {}) {
     const { bookedRooms, checkInDate, checkOutDate } = data;
 
-    if (
-      !bookedRooms ||
-      !Array.isArray(bookedRooms) ||
-      bookedRooms.length === 0
-    ) {
-      throw new ApiError(
-        400,
-        'INVALID_BOOKED_ROOMS',
-        'bookedRooms must be a non-empty array'
-      );
+    if (!bookedRooms || !Array.isArray(bookedRooms) || bookedRooms.length === 0) {
+      throw new ApiError(400, 'INVALID_BOOKED_ROOMS', 'bookedRooms must be a non-empty array');
     }
 
     if (!checkInDate || !checkOutDate) {
-      throw new ApiError(
-        400,
-        'MISSING_DATES',
-        'checkInDate and checkOutDate are required'
-      );
+      throw new ApiError(400, 'MISSING_DATES', 'checkInDate and checkOutDate are required');
     }
 
     try {
       // Validate date range
-      const startDate =
-        typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
-      const endDate =
-        typeof checkOutDate === 'string'
-          ? new Date(checkOutDate)
-          : checkOutDate;
+      const startDate = typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
+      const endDate = typeof checkOutDate === 'string' ? new Date(checkOutDate) : checkOutDate;
 
       if (startDate >= endDate) {
-        throw new ApiError(
-          400,
-          'INVALID_DATE_RANGE',
-          'checkOutDate must be after checkInDate'
-        );
+        throw new ApiError(400, 'INVALID_DATE_RANGE', 'checkOutDate must be after checkInDate');
       }
 
       // Prepare reservations array
@@ -188,12 +145,9 @@ class InventoryService {
       }
 
       // Wrap other errors
-      throw new ApiError(
-        500,
-        'RELEASE_ROOMS_FAILED',
-        'Failed to release rooms',
-        { originalError: error.message }
-      );
+      throw new ApiError(500, 'RELEASE_ROOMS_FAILED', 'Failed to release rooms', {
+        originalError: error.message,
+      });
     }
   }
 
@@ -211,35 +165,19 @@ class InventoryService {
     const { roomIds, checkInDate, checkOutDate, quantity = 1 } = data;
 
     if (!roomIds || !Array.isArray(roomIds) || roomIds.length === 0) {
-      throw new ApiError(
-        400,
-        'INVALID_ROOM_IDS',
-        'roomIds must be a non-empty array'
-      );
+      throw new ApiError(400, 'INVALID_ROOM_IDS', 'roomIds must be a non-empty array');
     }
 
     if (!checkInDate || !checkOutDate) {
-      throw new ApiError(
-        400,
-        'MISSING_DATES',
-        'checkInDate and checkOutDate are required'
-      );
+      throw new ApiError(400, 'MISSING_DATES', 'checkInDate and checkOutDate are required');
     }
 
     try {
-      const startDate =
-        typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
-      const endDate =
-        typeof checkOutDate === 'string'
-          ? new Date(checkOutDate)
-          : checkOutDate;
+      const startDate = typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
+      const endDate = typeof checkOutDate === 'string' ? new Date(checkOutDate) : checkOutDate;
 
       if (startDate >= endDate) {
-        throw new ApiError(
-          400,
-          'INVALID_DATE_RANGE',
-          'checkOutDate must be after checkInDate'
-        );
+        throw new ApiError(400, 'INVALID_DATE_RANGE', 'checkOutDate must be after checkInDate');
       }
 
       const isAvailable = await roomInventoryRepository.checkAvailability(
@@ -267,12 +205,9 @@ class InventoryService {
       }
 
       // Wrap other errors
-      throw new ApiError(
-        500,
-        'CHECK_AVAILABILITY_FAILED',
-        'Failed to check availability',
-        { originalError: error.message }
-      );
+      throw new ApiError(500, 'CHECK_AVAILABILITY_FAILED', 'Failed to check availability', {
+        originalError: error.message,
+      });
     }
   }
 
@@ -289,24 +224,15 @@ class InventoryService {
     const { roomIds, startDate, endDate } = data;
 
     if (!roomIds || !Array.isArray(roomIds) || roomIds.length === 0) {
-      throw new ApiError(
-        400,
-        'INVALID_ROOM_IDS',
-        'roomIds must be a non-empty array'
-      );
+      throw new ApiError(400, 'INVALID_ROOM_IDS', 'roomIds must be a non-empty array');
     }
 
     if (!startDate || !endDate) {
-      throw new ApiError(
-        400,
-        'MISSING_DATES',
-        'startDate and endDate are required'
-      );
+      throw new ApiError(400, 'MISSING_DATES', 'startDate and endDate are required');
     }
 
     try {
-      const start =
-        typeof startDate === 'string' ? new Date(startDate) : startDate;
+      const start = typeof startDate === 'string' ? new Date(startDate) : startDate;
       const end = typeof endDate === 'string' ? new Date(endDate) : endDate;
 
       const inventories = await roomInventoryRepository.findByRoomsAndDateRange(
@@ -334,12 +260,9 @@ class InventoryService {
       }
 
       // Wrap other errors
-      throw new ApiError(
-        500,
-        'GET_INVENTORY_FAILED',
-        'Failed to get inventory details',
-        { originalError: error.message }
-      );
+      throw new ApiError(500, 'GET_INVENTORY_FAILED', 'Failed to get inventory details', {
+        originalError: error.message,
+      });
     }
   }
 
@@ -360,27 +283,15 @@ class InventoryService {
     }
 
     if (!checkInDate || !checkOutDate) {
-      throw new ApiError(
-        400,
-        'MISSING_DATES',
-        'checkInDate and checkOutDate are required'
-      );
+      throw new ApiError(400, 'MISSING_DATES', 'checkInDate and checkOutDate are required');
     }
 
     try {
-      const startDate =
-        typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
-      const endDate =
-        typeof checkOutDate === 'string'
-          ? new Date(checkOutDate)
-          : checkOutDate;
+      const startDate = typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
+      const endDate = typeof checkOutDate === 'string' ? new Date(checkOutDate) : checkOutDate;
 
       if (startDate >= endDate) {
-        throw new ApiError(
-          400,
-          'INVALID_DATE_RANGE',
-          'checkOutDate must be after checkInDate'
-        );
+        throw new ApiError(400, 'INVALID_DATE_RANGE', 'checkOutDate must be after checkInDate');
       }
 
       const reservations = rooms.map((r) => ({
@@ -422,27 +333,15 @@ class InventoryService {
     }
 
     if (!checkInDate || !checkOutDate) {
-      throw new ApiError(
-        400,
-        'MISSING_DATES',
-        'checkInDate and checkOutDate are required'
-      );
+      throw new ApiError(400, 'MISSING_DATES', 'checkInDate and checkOutDate are required');
     }
 
     try {
-      const startDate =
-        typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
-      const endDate =
-        typeof checkOutDate === 'string'
-          ? new Date(checkOutDate)
-          : checkOutDate;
+      const startDate = typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
+      const endDate = typeof checkOutDate === 'string' ? new Date(checkOutDate) : checkOutDate;
 
       if (startDate >= endDate) {
-        throw new ApiError(
-          400,
-          'INVALID_DATE_RANGE',
-          'checkOutDate must be after checkInDate'
-        );
+        throw new ApiError(400, 'INVALID_DATE_RANGE', 'checkOutDate must be after checkInDate');
       }
 
       const holdings = rooms.map((r) => ({
@@ -450,12 +349,7 @@ class InventoryService {
         quantity: r.quantity ?? 1,
       }));
 
-      await roomInventoryRepository.batchIncrementHeld(
-        holdings,
-        startDate,
-        endDate,
-        options
-      );
+      await roomInventoryRepository.batchIncrementHeld(holdings, startDate, endDate, options);
 
       logger.info('Rooms held successfully', {
         roomCount: holdings.length,
@@ -488,32 +382,19 @@ class InventoryService {
     }
 
     if (!checkInDate || !checkOutDate) {
-      throw new ApiError(
-        400,
-        'MISSING_DATES',
-        'checkInDate and checkOutDate are required'
-      );
+      throw new ApiError(400, 'MISSING_DATES', 'checkInDate and checkOutDate are required');
     }
 
     try {
-      const startDate =
-        typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
-      const endDate =
-        typeof checkOutDate === 'string'
-          ? new Date(checkOutDate)
-          : checkOutDate;
+      const startDate = typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
+      const endDate = typeof checkOutDate === 'string' ? new Date(checkOutDate) : checkOutDate;
 
       const holdings = rooms.map((r) => ({
         roomId: r.roomId,
         quantity: r.quantity ?? 1,
       }));
 
-      await roomInventoryRepository.batchDecrementHeld(
-        holdings,
-        startDate,
-        endDate,
-        options
-      );
+      await roomInventoryRepository.batchDecrementHeld(holdings, startDate, endDate, options);
 
       logger.info('Held rooms released successfully', {
         roomCount: holdings.length,
@@ -523,12 +404,9 @@ class InventoryService {
     } catch (error) {
       if (error instanceof ApiError) throw error;
       logger.error('Error releasing held rooms:', error);
-      throw new ApiError(
-        500,
-        'RELEASE_HOLD_ROOMS_FAILED',
-        'Failed to release held rooms',
-        { originalError: error.message }
-      );
+      throw new ApiError(500, 'RELEASE_HOLD_ROOMS_FAILED', 'Failed to release held rooms', {
+        originalError: error.message,
+      });
     }
   }
 }

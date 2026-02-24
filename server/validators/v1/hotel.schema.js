@@ -1,4 +1,5 @@
 const Joi = require('joi');
+
 const { pagination } = require('./common.schema');
 
 /**
@@ -43,8 +44,7 @@ exports.getHotelDetails = {
     if (hasDateFields) {
       if (!value.checkInDate || !value.checkOutDate) {
         return helpers.error('any.custom', {
-          message:
-            'If date search is used, both checkInDate and checkOutDate are required',
+          message: 'If date search is used, both checkInDate and checkOutDate are required',
         });
       }
       const checkIn = new Date(value.checkInDate);

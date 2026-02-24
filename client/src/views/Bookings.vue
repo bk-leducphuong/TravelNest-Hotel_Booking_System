@@ -28,7 +28,7 @@ export default {
         const response = await axios.get('http://localhost:3000/api/booking/get-all-bookings', {
           withCredentials: true
         })
-        let bookings = response.data.bookings
+        const bookings = response.data.bookings
         // group bookings which have the same booking code
         this.bookings = this.groupBookings(bookings)
       } catch (error) {
@@ -154,7 +154,7 @@ export default {
     </div>
   </div>
   <div class="account-settings">
-    <loading v-model:active="isLoading" :color="`#003b95`" :is-full-page="false" />
+    <Loading v-model:active="isLoading" :color="`#003b95`" :is-full-page="false" />
     <br />
     <div v-if="bookings.length == 0" class="no-bookings-found">
       <div>Bạn chưa có đặt phòng nào</div>

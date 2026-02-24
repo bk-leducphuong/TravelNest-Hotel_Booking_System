@@ -74,8 +74,7 @@ module.exports = function (sequelize, DataTypes) {
           unique: true,
           using: 'BTREE',
           fields: [{ name: 'user_id' }, { name: 'role_id' }],
-          comment:
-            'A user should not have duplicate assignments of the same global role',
+          comment: 'A user should not have duplicate assignments of the same global role',
         },
       ],
     }
@@ -95,4 +94,3 @@ module.exports = function (sequelize, DataTypes) {
 
   return UserRole;
 };
-

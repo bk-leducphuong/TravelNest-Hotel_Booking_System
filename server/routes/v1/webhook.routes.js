@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {
-  handleStripeWebhook,
-} = require('@controllers/v1/stripeWebhook.controller');
+const { handleStripeWebhook } = require('@controllers/v1/stripeWebhook.controller');
 
 /**
  * POST /api/webhooks/stripe

@@ -16,25 +16,13 @@ class ReviewService {
    */
   async validateReview(userId, bookingCode, hotelId) {
     if (!bookingCode || !hotelId) {
-      throw new ApiError(
-        400,
-        'MISSING_PARAMETERS',
-        'bookingCode and hotelId are required'
-      );
+      throw new ApiError(400, 'MISSING_PARAMETERS', 'bookingCode and hotelId are required');
     }
 
-    const booking = await reviewRepository.findBookingByCode(
-      bookingCode,
-      userId,
-      hotelId
-    );
+    const booking = await reviewRepository.findBookingByCode(bookingCode, userId, hotelId);
 
     if (!booking) {
-      throw new ApiError(
-        404,
-        'BOOKING_NOT_FOUND',
-        'Booking not found or not eligible for review'
-      );
+      throw new ApiError(404, 'BOOKING_NOT_FOUND', 'Booking not found or not eligible for review');
     }
 
     return {
@@ -52,17 +40,10 @@ class ReviewService {
    */
   async checkAlreadyReviewed(bookingCode, hotelId) {
     if (!bookingCode || !hotelId) {
-      throw new ApiError(
-        400,
-        'MISSING_PARAMETERS',
-        'bookingCode and hotelId are required'
-      );
+      throw new ApiError(400, 'MISSING_PARAMETERS', 'bookingCode and hotelId are required');
     }
 
-    const review = await reviewRepository.findReviewByBookingCode(
-      bookingCode,
-      hotelId
-    );
+    const review = await reviewRepository.findReviewByBookingCode(bookingCode, hotelId);
 
     if (!review) {
       return null;
@@ -97,8 +78,7 @@ class ReviewService {
    * @returns {Promise<Object>} Created review
    */
   async createReview(userId, reviewData) {
-    const { hotelId, rating, comment, reviewCriteria, bookingCode } =
-      reviewData;
+    const { hotelId, rating, comment, reviewCriteria, bookingCode } = reviewData;
 
     // Validate required fields
     if (!hotelId || !rating || !comment || !reviewCriteria || !bookingCode) {
@@ -111,40 +91,21 @@ class ReviewService {
 
     // Validate rating range
     if (rating < 1 || rating > 5) {
-      throw new ApiError(
-        400,
-        'INVALID_RATING',
-        'Rating must be between 1 and 5'
-      );
+      throw new ApiError(400, 'INVALID_RATING', 'Rating must be between 1 and 5');
     }
 
     // Validate booking exists and belongs to user
-    const booking = await reviewRepository.findBookingByCode(
-      bookingCode,
-      userId,
-      hotelId
-    );
+    const booking = await reviewRepository.findBookingByCode(bookingCode, userId, hotelId);
 
     if (!booking) {
-      throw new ApiError(
-        404,
-        'BOOKING_NOT_FOUND',
-        'Booking not found or not eligible for review'
-      );
+      throw new ApiError(404, 'BOOKING_NOT_FOUND', 'Booking not found or not eligible for review');
     }
 
     // Check if already reviewed
-    const existingReview = await reviewRepository.findReviewByBookingCode(
-      bookingCode,
-      hotelId
-    );
+    const existingReview = await reviewRepository.findReviewByBookingCode(bookingCode, hotelId);
 
     if (existingReview) {
-      throw new ApiError(
-        409,
-        'REVIEW_ALREADY_EXISTS',
-        'This booking has already been reviewed'
-      );
+      throw new ApiError(409, 'REVIEW_ALREADY_EXISTS', 'This booking has already been reviewed');
     }
 
     // Validate review criteria
@@ -200,9 +161,7 @@ class ReviewService {
         booking_code: bookingData.booking_code,
         hotel: bookingData.hotels || bookingData.Hotel,
         review:
-          bookingData.reviews && bookingData.reviews.length > 0
-            ? bookingData.reviews[0]
-            : null,
+          bookingData.reviews && bookingData.reviews.length > 0 ? bookingData.reviews[0] : null,
       };
     });
   }

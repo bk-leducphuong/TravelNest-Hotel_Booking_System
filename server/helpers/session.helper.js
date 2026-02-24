@@ -40,8 +40,7 @@ function buildSession(sessionId, userData) {
   if (userData.hotel_roles && userData.hotel_roles.length > 0) {
     // Use the first hotel role (or primary owner if exists)
     const primaryHotelRole =
-      userData.hotel_roles.find((hr) => hr.is_primary_owner) ||
-      userData.hotel_roles[0];
+      userData.hotel_roles.find((hr) => hr.is_primary_owner) || userData.hotel_roles[0];
 
     context = {
       hotelId: primaryHotelRole.hotel_id,

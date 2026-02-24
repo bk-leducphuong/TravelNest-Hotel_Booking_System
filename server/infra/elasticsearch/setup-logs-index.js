@@ -1,11 +1,9 @@
-const { Client } = require('@elastic/elasticsearch');
 const fs = require('fs');
 const path = require('path');
+
+const { Client } = require('@elastic/elasticsearch');
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'production'
-      ? '.env.production'
-      : '.env.development',
+  path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development',
 });
 
 const logger = require('../../config/logger.config');
@@ -16,9 +14,7 @@ const INDEX_TEMPLATE_NAME = 'travelnest-logs-template';
 
 async function setupLogsIndex() {
   try {
-    console.log(
-      `Setting up Elasticsearch index template for '${INDEX_PATTERN}'...\n`
-    );
+    console.log(`Setting up Elasticsearch index template for '${INDEX_PATTERN}'...\n`);
 
     // Read the mapping file
     const mappingFile = path.join(__dirname, 'mapping/logs-mapping.json');
@@ -29,10 +25,9 @@ async function setupLogsIndex() {
     const mapping = JSON.parse(fs.readFileSync(mappingFile, 'utf8'));
 
     // Check if template already exists
-    const templateExists =
-      await elasticsearchClient.indices.existsIndexTemplate({
-        name: INDEX_TEMPLATE_NAME,
-      });
+    const templateExists = await elasticsearchClient.indices.existsIndexTemplate({
+      name: INDEX_TEMPLATE_NAME,
+    });
 
     if (templateExists) {
       console.log(`Index template '${INDEX_TEMPLATE_NAME}' already exists.`);
@@ -73,9 +68,7 @@ async function setupLogsIndex() {
       },
     });
 
-    console.log(
-      `✓ Index template '${INDEX_TEMPLATE_NAME}' created successfully!\n`
-    );
+    console.log(`✓ Index template '${INDEX_TEMPLATE_NAME}' created successfully!\n`);
 
     // Get template info
     const templateInfo = await elasticsearchClient.indices.getIndexTemplate({
@@ -96,13 +89,9 @@ async function setupLogsIndex() {
     console.log('\n✓ Setup completed successfully!');
     console.log('\nNext steps:');
     console.log('  1. Start Filebeat to ship logs to Logstash');
-    console.log(
-      '  2. Logstash will automatically create indices matching the pattern'
-    );
+    console.log('  2. Logstash will automatically create indices matching the pattern');
     console.log(`  3. View logs in Kibana: http://localhost:5601`);
-    console.log(
-      `  4. Query logs via API: http://localhost:9200/${INDEX_PATTERN}-*/_search`
-    );
+    console.log(`  4. Query logs via API: http://localhost:9200/${INDEX_PATTERN}-*/_search`);
 
     // Optionally create the first index
     if (process.argv.includes('--create-index')) {
@@ -124,18 +113,13 @@ async function setupLogsIndex() {
         console.log(`Index '${indexName}' already exists.`);
       }
     } else {
-      console.log(
-        '\nUse --create-index flag to create the first index immediately.'
-      );
+      console.log('\nUse --create-index flag to create the first index immediately.');
     }
   } catch (error) {
     console.error('\n✗ Error setting up logs index template:');
 
     if (error.meta?.body) {
-      console.error(
-        'Elasticsearch error:',
-        JSON.stringify(error.meta.body, null, 2)
-      );
+      console.error('Elasticsearch error:', JSON.stringify(error.meta.body, null, 2));
     } else {
       console.error(error.message);
       if (error.stack) {
@@ -145,9 +129,7 @@ async function setupLogsIndex() {
     }
 
     console.error('\nTroubleshooting:');
-    console.error(
-      '  1. Ensure Elasticsearch is running: docker ps | grep elasticsearch'
-    );
+    console.error('  1. Ensure Elasticsearch is running: docker ps | grep elasticsearch');
     console.error('  2. Check connection: curl http://localhost:9200');
     console.error('  3. Verify credentials in .env file');
     console.error('  4. Check Elasticsearch logs: docker logs elasticsearch');

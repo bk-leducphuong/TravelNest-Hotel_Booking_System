@@ -12,14 +12,11 @@ const hotelIdSchema = Joi.string().uuid().required().messages({
   'any.required': 'hotelId is required',
 });
 
-const notificationIdSchema = Joi.string()
-  .uuid()
-  .required()
-  .messages({
-    'string.base': 'notificationId must be a string',
-    'string.guid': 'notificationId must be a valid UUID',
-    'any.required': 'notificationId is required',
-  });
+const notificationIdSchema = Joi.string().uuid().required().messages({
+  'string.base': 'notificationId must be a string',
+  'string.guid': 'notificationId must be a valid UUID',
+  'any.required': 'notificationId is required',
+});
 
 /**
  * GET /api/admin/notifications

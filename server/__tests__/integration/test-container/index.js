@@ -36,13 +36,10 @@ async function startTestContainers() {
   process.env.REDIS_PASSWORD = '';
   process.env.REDIS_DATABASE = '1';
 
-  console.log(
-    `Redis started at ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`
-  );
+  console.log(`Redis started at ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`);
 
   // Session secret for express-session
-  process.env.SESSION_SECRET_KEY =
-    process.env.SESSION_SECRET_KEY || 'test-session-secret';
+  process.env.SESSION_SECRET_KEY = process.env.SESSION_SECRET_KEY || 'test-session-secret';
 
   // Initialize database schema using Sequelize models
   const db = require('../../../models');

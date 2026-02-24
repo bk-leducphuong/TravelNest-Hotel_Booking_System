@@ -1,3 +1,6 @@
+const { Op } = require('sequelize');
+const { Sequelize } = require('sequelize');
+
 const {
   Hotels,
   Rooms,
@@ -5,8 +8,6 @@ const {
   SearchLogs,
   hotel_search_snapshots,
 } = require('../models/index.js');
-const { Op } = require('sequelize');
-const { Sequelize } = require('sequelize');
 const sequelize = require('../config/database.config.js');
 
 /**
@@ -20,14 +21,7 @@ class SearchRepository {
    * Uses raw query for complex search with availability checks
    */
   async searchHotelsByLocation(searchParams) {
-    const {
-      location,
-      totalGuests,
-      checkInDate,
-      checkOutDate,
-      rooms,
-      numberOfDays,
-    } = searchParams;
+    const { location, totalGuests, checkInDate, checkOutDate, rooms, numberOfDays } = searchParams;
 
     const query = `
       SELECT DISTINCT 
@@ -54,14 +48,7 @@ class SearchRepository {
     `;
 
     return await sequelize.query(query, {
-      replacements: [
-        location,
-        totalGuests,
-        checkInDate,
-        checkOutDate,
-        rooms,
-        numberOfDays,
-      ],
+      replacements: [location, totalGuests, checkInDate, checkOutDate, rooms, numberOfDays],
       type: sequelize.QueryTypes.SELECT,
     });
   }
@@ -71,9 +58,7 @@ class SearchRepository {
    */
   async getLowestPriceForHotel(hotelId, checkInDate, checkOutDate) {
     const result = await RoomInventories.findOne({
-      attributes: [
-        [Sequelize.fn('SUM', Sequelize.col('price_per_night')), 'total_price'],
-      ],
+      attributes: [[Sequelize.fn('SUM', Sequelize.col('price_per_night')), 'total_price']],
       include: [
         {
           model: Rooms,
@@ -101,15 +86,7 @@ class SearchRepository {
    * Create search log
    */
   async createSearchLog(searchData) {
-    const {
-      location,
-      userId,
-      checkInDate,
-      checkOutDate,
-      adults,
-      children,
-      rooms,
-    } = searchData;
+    const { location, userId, checkInDate, checkOutDate, adults, children, rooms } = searchData;
 
     return await SearchLogs.create({
       location,
@@ -146,7 +123,7 @@ class SearchRepository {
   /**
    * Check date-specific availability for hotels
    * Phase 2: Database availability check
-   * 
+   *
    * @param {Array<string>} hotelIds - Candidate hotel IDs from ES
    * @param {string} checkIn - Check-in date (ISO format)
    * @param {string} checkOut - Check-out date (ISO format)
@@ -164,9 +141,7 @@ class SearchRepository {
     // Calculate total nights
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
-    const totalNights = Math.ceil(
-      (checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)
-    );
+    const totalNights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
 
     // Query to find hotels with availability for ALL dates in range
     const query = `
@@ -206,7 +181,7 @@ class SearchRepository {
   /**
    * Get available room types for a hotel with pricing
    * Phase 3: Room type & capacity validation
-   * 
+   *
    * @param {string} hotelId - Hotel ID
    * @param {string} checkIn - Check-in date
    * @param {string} checkOut - Check-out date
@@ -220,9 +195,7 @@ class SearchRepository {
     // Calculate total nights
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
-    const totalNights = Math.ceil(
-      (checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)
-    );
+    const totalNights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
 
     const query = `
       SELECT 
@@ -261,7 +234,7 @@ class SearchRepository {
       type: sequelize.QueryTypes.SELECT,
     });
 
-    return rooms.map(room => ({
+    return rooms.map((room) => ({
       room_id: room.room_id,
       room_type: room.room_type,
       max_guests: room.max_guests,
@@ -276,7 +249,7 @@ class SearchRepository {
 
   /**
    * Get hotel details from snapshot
-   * 
+   *
    * @param {Array<string>} hotelIds - Hotel IDs
    * @returns {Promise<Array>} Hotel details
    */
@@ -298,20 +271,12 @@ class SearchRepository {
   /**
    * Fallback: Search hotels directly from database
    * Used when Elasticsearch is unavailable
-   * 
+   *
    * @param {Object} params - Search parameters
    * @returns {Promise<Array>} Hotels
    */
   async searchHotelsFromDatabase(params) {
-    const {
-      city,
-      country,
-      minPrice,
-      maxPrice,
-      minRating,
-      hotelClass,
-      limit = 200,
-    } = params;
+    const { city, country, minPrice, maxPrice, minRating, hotelClass, limit = 200 } = params;
 
     const where = {
       status: 'active',

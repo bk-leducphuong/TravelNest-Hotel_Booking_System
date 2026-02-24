@@ -1,4 +1,5 @@
 const Joi = require('joi');
+
 const { pagination } = require('./common.schema');
 
 /**
@@ -12,16 +13,10 @@ const phoneNumberSchema = Joi.string()
   .pattern(/^\+?[1-9]\d{1,14}$/)
   .max(20)
   .messages({
-    'string.pattern.base':
-      'Phone number must be in international format (e.g., +1234567890)',
+    'string.pattern.base': 'Phone number must be in international format (e.g., +1234567890)',
   });
 const dateOfBirthSchema = Joi.date().iso().max('now');
-const genderSchema = Joi.string().valid(
-  'male',
-  'female',
-  'other',
-  'prefer_not_to_say'
-);
+const genderSchema = Joi.string().valid('male', 'female', 'other', 'prefer_not_to_say');
 const passwordSchema = Joi.string().min(8).max(128);
 
 /**
@@ -61,12 +56,9 @@ exports.updatePassword = {
   body: Joi.object({
     oldPassword: passwordSchema.required(),
     newPassword: passwordSchema.required(),
-    confirmNewPassword: Joi.string()
-      .valid(Joi.ref('newPassword'))
-      .required()
-      .messages({
-        'any.only': 'Passwords do not match',
-      }),
+    confirmNewPassword: Joi.string().valid(Joi.ref('newPassword')).required().messages({
+      'any.only': 'Passwords do not match',
+    }),
   }).required(),
 };
 

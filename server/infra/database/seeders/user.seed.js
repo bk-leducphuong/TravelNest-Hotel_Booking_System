@@ -19,13 +19,11 @@
  */
 
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
+  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
 });
 const { faker } = require('@faker-js/faker');
 const bcrypt = require('bcryptjs');
+
 const db = require('../../../models');
 const sequelize = require('../../../config/database.config');
 const { users: Users, roles: Roles, user_roles: UserRoles } = db;
@@ -42,14 +40,7 @@ const { users: Users, roles: Roles, user_roles: UserRoles } = db;
  */
 async function ensureRolesExist() {
   // Only ensure roles we need for seeding
-  const roleNames = [
-    'guest',
-    'admin',
-    'support_agent',
-    'user',
-    'manager',
-    'staff',
-  ];
+  const roleNames = ['guest', 'admin', 'support_agent', 'user', 'manager', 'staff'];
 
   const roleMap = {};
 
@@ -102,18 +93,10 @@ async function generateUsers(options = {}) {
 
     // Generate unique connect_account_id for hotel managers
     const connectAccountId =
-      roleName === 'hotel_manager'
-        ? `acct_${faker.string.alphanumeric(16)}`
-        : null;
+      roleName === 'hotel_manager' ? `acct_${faker.string.alphanumeric(16)}` : null;
 
     // Generate phone number in E.164 format
-    const countryCode = faker.helpers.arrayElement([
-      '1',
-      '44',
-      '33',
-      '49',
-      '81',
-    ]);
+    const countryCode = faker.helpers.arrayElement(['1', '44', '33', '49', '81']);
     const phoneNumber = `+${countryCode}${faker.string.numeric(10, { allowLeadingZeros: false })}`;
 
     const userData = {
@@ -124,12 +107,7 @@ async function generateUsers(options = {}) {
       phone_number: phoneNumber,
       address: faker.location.streetAddress({ useFullAddress: true }),
       country: faker.location.country(),
-      status: faker.helpers.arrayElement([
-        'active',
-        'active',
-        'active',
-        'inactive',
-      ]), // Mostly active
+      status: faker.helpers.arrayElement(['active', 'active', 'active', 'inactive']), // Mostly active
       date_of_birth: faker.date
         .birthdate({ min: 18, max: 80, mode: 'age' })
         .toISOString()
@@ -195,12 +173,7 @@ async function assignRoleToUser(userId, roleId) {
  * @param {boolean} options.clearExisting - Whether to clear existing users (default: false)
  */
 async function seedUsers(options = {}) {
-  const {
-    userCount = 50,
-    managerCount = 10,
-    staffCount = 20,
-    clearExisting = false,
-  } = options;
+  const { userCount = 50, managerCount = 10, staffCount = 20, clearExisting = false } = options;
 
   try {
     console.log('🌱 Starting user seeding...');
@@ -220,9 +193,7 @@ async function seedUsers(options = {}) {
 
     // Generate and seed regular users (logged in accounts with 'user' role)
     // Note: 'guest' role is for users who are NOT logged in, so we don't seed those
-    console.log(
-      `👥 Generating ${userCount} regular users (logged in accounts)...`
-    );
+    console.log(`👥 Generating ${userCount} regular users (logged in accounts)...`);
     const userDataArray = await generateUsers({
       roleName: 'user',
       count: userCount,
@@ -301,8 +272,7 @@ async function seedUsers(options = {}) {
     }
     console.log(`✅ ${createdStaff.length} hotel staff seeded`);
 
-    const totalSeeded =
-      createdUsers.length + createdManagers.length + createdStaff.length;
+    const totalSeeded = createdUsers.length + createdManagers.length + createdStaff.length;
     console.log(`🎉 Successfully seeded ${totalSeeded} users!`);
 
     // Display summary

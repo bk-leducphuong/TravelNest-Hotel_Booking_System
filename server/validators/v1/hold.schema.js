@@ -52,14 +52,10 @@ exports.createHold = {
       'number.min': 'numberOfGuests must be at least 1',
     }),
     numberOfDays: Joi.number().integer().min(1).optional(),
-    rooms: Joi.array()
-      .items(roomEntrySchema)
-      .min(1)
-      .required()
-      .messages({
-        'array.min': 'At least one room is required',
-        'any.required': 'rooms is required',
-      }),
+    rooms: Joi.array().items(roomEntrySchema).min(1).required().messages({
+      'array.min': 'At least one room is required',
+      'any.required': 'rooms is required',
+    }),
     currency: Joi.string().length(3).uppercase().default('USD'),
   })
     .required()

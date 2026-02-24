@@ -14,18 +14,13 @@ const getAllReviews = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { hotelId, hasReply, minRating, maxRating, page, limit } = req.query;
 
-  const result = await adminReviewService.getAllReviews(
-    hotelId,
-    ownerId,
-    {
-      hasReply:
-        hasReply === 'true' ? true : hasReply === 'false' ? false : undefined,
-      minRating: minRating ? parseFloat(minRating) : undefined,
-      maxRating: maxRating ? parseFloat(maxRating) : undefined,
-      page: parseInt(page, 10),
-      limit: parseInt(limit, 10),
-    }
-  );
+  const result = await adminReviewService.getAllReviews(hotelId, ownerId, {
+    hasReply: hasReply === 'true' ? true : hasReply === 'false' ? false : undefined,
+    minRating: minRating ? parseFloat(minRating) : undefined,
+    maxRating: maxRating ? parseFloat(maxRating) : undefined,
+    page: parseInt(page, 10),
+    limit: parseInt(limit, 10),
+  });
 
   res.status(200).json({
     data: result.reviews,
@@ -42,10 +37,7 @@ const getReviewById = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { reviewId } = req.params;
 
-  const review = await adminReviewService.getReviewById(
-    parseInt(reviewId, 10),
-    ownerId
-  );
+  const review = await adminReviewService.getReviewById(parseInt(reviewId, 10), ownerId);
 
   res.status(200).json({
     data: review,
@@ -61,11 +53,7 @@ const replyToReview = asyncHandler(async (req, res) => {
   const { reviewId } = req.params;
   const { reply } = req.body;
 
-  const review = await adminReviewService.replyToReview(
-    parseInt(reviewId, 10),
-    ownerId,
-    reply
-  );
+  const review = await adminReviewService.replyToReview(parseInt(reviewId, 10), ownerId, reply);
 
   res.status(201).json({
     data: review,
@@ -82,11 +70,7 @@ const updateReply = asyncHandler(async (req, res) => {
   const { reviewId } = req.params;
   const { reply } = req.body;
 
-  const review = await adminReviewService.updateReply(
-    parseInt(reviewId, 10),
-    ownerId,
-    reply
-  );
+  const review = await adminReviewService.updateReply(parseInt(reviewId, 10), ownerId, reply);
 
   res.status(200).json({
     data: review,
@@ -102,10 +86,7 @@ const deleteReply = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { reviewId } = req.params;
 
-  const review = await adminReviewService.deleteReply(
-    parseInt(reviewId, 10),
-    ownerId
-  );
+  const review = await adminReviewService.deleteReply(parseInt(reviewId, 10), ownerId);
 
   res.status(200).json({
     data: review,

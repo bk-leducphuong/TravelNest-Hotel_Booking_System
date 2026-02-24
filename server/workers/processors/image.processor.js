@@ -1,9 +1,6 @@
 const path = require('path');
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
+  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
 });
 
 const sharp = require('sharp');
@@ -51,10 +48,7 @@ function initDatabase() {
   );
 
   const Image = require('../../models/image.model')(sequelize, Sequelize);
-  const ImageVariant = require('../../models/image_variant.model')(
-    sequelize,
-    Sequelize
-  );
+  const ImageVariant = require('../../models/image_variant.model')(sequelize, Sequelize);
 
   return { Image, ImageVariant };
 }
@@ -89,23 +83,15 @@ async function getObject(minioClient, bucket, objectKey) {
 
 async function uploadObject(minioClient, bucket, objectKey, buffer, metadata) {
   return new Promise((resolve, reject) => {
-    minioClient.putObject(
-      bucket,
-      objectKey,
-      buffer,
-      buffer.length,
-      metadata,
-      (err, etag) => {
-        if (err) return reject(err);
-        resolve(etag);
-      }
-    );
+    minioClient.putObject(bucket, objectKey, buffer, buffer.length, metadata, (err, etag) => {
+      if (err) return reject(err);
+      resolve(etag);
+    });
   });
 }
 
 module.exports = async (job) => {
-  const { imageId, bucket, objectKey, mimeType, entityType, entityId } =
-    job.data;
+  const { imageId, bucket, objectKey, mimeType, entityType, entityId } = job.data;
 
   console.log(`[Sandboxed] Processing image ${imageId}`);
 

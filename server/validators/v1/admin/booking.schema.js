@@ -32,16 +32,9 @@ exports.getAllBookings = {
   query: Joi.object({
     hotelId: hotelIdSchema,
     status: Joi.string()
-      .valid(
-        'pending',
-        'confirmed',
-        'checked in',
-        'completed',
-        'cancelled'
-      )
+      .valid('pending', 'confirmed', 'checked in', 'completed', 'cancelled')
       .messages({
-        'any.only':
-          'status must be one of: pending, confirmed, checked in, completed, cancelled',
+        'any.only': 'status must be one of: pending, confirmed, checked in, completed, cancelled',
       }),
     page: Joi.number().integer().min(1).default(1).messages({
       'number.base': 'page must be a number',
@@ -89,17 +82,10 @@ exports.updateBookingStatus = {
   }).required(),
   body: Joi.object({
     status: Joi.string()
-      .valid(
-        'pending',
-        'confirmed',
-        'checked in',
-        'completed',
-        'cancelled'
-      )
+      .valid('pending', 'confirmed', 'checked in', 'completed', 'cancelled')
       .required()
       .messages({
-        'any.only':
-          'status must be one of: pending, confirmed, checked in, completed, cancelled',
+        'any.only': 'status must be one of: pending, confirmed, checked in, completed, cancelled',
         'any.required': 'status is required',
       }),
   }).required(),

@@ -139,7 +139,7 @@ export default {
       const lastDay = new Date(year, month, 0)
       const daysInMonth = lastDay.getDate()
 
-      let weeks = []
+      const weeks = []
       let week = []
       let dayOfWeek = firstDay.getDay()
       if (dayOfWeek === 0) dayOfWeek = 7 // Adjust Sunday to be the 7th day
@@ -311,7 +311,7 @@ export default {
           }
         }
 
-        let newRoomInventory = []
+        const newRoomInventory = []
         for (let i = 0; i < this.selectedCells.length; i++) {
           const cell = this.selectedCells[i]
           newRoomInventory.push(this.roomInventoryMap[cell.weekIndex][cell.dayIndex])

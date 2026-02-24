@@ -49,13 +49,13 @@
       <div class="map-container">
         <div class="map-placeholder">
           <div style="height: 480px; width: 800px">
-            <l-map ref="map" v-model:zoom="zoom" :center="center" :use-global-leaflet="false">
-              <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base"
-                name="OpenStreetMap"></l-tile-layer>
-              <l-marker v-for="hotel in hotels" :key="hotel.hotel_id" :lat-lng="[hotel.latitude, hotel.longitude]" :icon="hotel.hotel_id === hoveredHotelId ? redIcon : blueIcon">
-                <l-popup>{{ hotel.name }}</l-popup>
-              </l-marker>
-            </l-map>
+            <LMap ref="map" v-model:zoom="zoom" :center="center" :use-global-leaflet="false">
+              <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base"
+                name="OpenStreetMap"></LTileLayer>
+              <LMarker v-for="hotel in hotels" :key="hotel.hotel_id" :lat-lng="[hotel.latitude, hotel.longitude]" :icon="hotel.hotel_id === hoveredHotelId ? redIcon : blueIcon">
+                <LPopup>{{ hotel.name }}</LPopup>
+              </LMarker>
+            </LMap>
           </div>
         </div>
       </div>

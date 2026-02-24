@@ -84,4 +84,4 @@ module.exports = {
   AMENITY_CATEGORIES,
   APPLICABLE_TO,
   AMENITY_CODES,
-}; 
+};

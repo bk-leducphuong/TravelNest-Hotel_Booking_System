@@ -66,31 +66,19 @@ router.delete(
  * GET /api/home/popular-places
  * Get popular places (public)
  */
-router.get(
-  '/popular-places',
-  validate(homeSchema.getPopularPlaces),
-  getPopularPlaces
-);
+router.get('/popular-places', validate(homeSchema.getPopularPlaces), getPopularPlaces);
 
 /**
  * GET /api/home/nearby-hotels
  * Get nearby hotels based on coordinates (public)
  */
-router.get(
-  '/nearby-hotels',
-  validate(homeSchema.getNearbyHotels),
-  getNearbyHotels
-);
+router.get('/nearby-hotels', validate(homeSchema.getNearbyHotels), getNearbyHotels);
 
 /**
  * GET /api/home/top-rated-hotels
  * Get top rated hotels (public)
  */
-router.get(
-  '/top-rated-hotels',
-  validate(homeSchema.getTopRatedHotels),
-  getTopRatedHotels
-);
+router.get('/top-rated-hotels', validate(homeSchema.getTopRatedHotels), getTopRatedHotels);
 
 /**
  * GET /api/home/recently-viewed-hotels
@@ -117,10 +105,6 @@ router.get(
  * GET /api/home/trending-hotels
  * Get trending hotels (public)
  */
-router.get(
-  '/trending-hotels',
-  validate(homeSchema.getTrendingHotels),
-  getTrendingHotels
-);
+router.get('/trending-hotels', validate(homeSchema.getTrendingHotels), getTrendingHotels);
 
 module.exports = router;

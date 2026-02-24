@@ -11,17 +11,10 @@ class AdminDashboardService {
    * Verify hotel ownership for all operations
    */
   async verifyAccess(hotelId, ownerId) {
-    const isOwner = await adminDashboardRepository.verifyHotelOwnership(
-      hotelId,
-      ownerId
-    );
+    const isOwner = await adminDashboardRepository.verifyHotelOwnership(hotelId, ownerId);
 
     if (!isOwner) {
-      throw new ApiError(
-        403,
-        'FORBIDDEN',
-        'You do not have permission to access this hotel'
-      );
+      throw new ApiError(403, 'FORBIDDEN', 'You do not have permission to access this hotel');
     }
   }
 
@@ -31,11 +24,7 @@ class AdminDashboardService {
   async getTotalBookings(hotelId, ownerId, startDate, endDate) {
     await this.verifyAccess(hotelId, ownerId);
 
-    const count = await adminDashboardRepository.getTotalBookingsCount(
-      hotelId,
-      startDate,
-      endDate
-    );
+    const count = await adminDashboardRepository.getTotalBookingsCount(hotelId, startDate, endDate);
 
     return { totalBookings: count, period: { startDate, endDate } };
   }
@@ -46,11 +35,7 @@ class AdminDashboardService {
   async getRevenueStats(hotelId, ownerId, startDate, endDate) {
     await this.verifyAccess(hotelId, ownerId);
 
-    const stats = await adminDashboardRepository.getRevenueStats(
-      hotelId,
-      startDate,
-      endDate
-    );
+    const stats = await adminDashboardRepository.getRevenueStats(hotelId, startDate, endDate);
 
     return {
       ...stats,
@@ -100,11 +85,7 @@ class AdminDashboardService {
   async getNewCustomers(hotelId, ownerId, startDate, endDate) {
     await this.verifyAccess(hotelId, ownerId);
 
-    const customers = await adminDashboardRepository.getNewCustomers(
-      hotelId,
-      startDate,
-      endDate
-    );
+    const customers = await adminDashboardRepository.getNewCustomers(hotelId, startDate, endDate);
 
     return {
       customers,
@@ -147,33 +128,15 @@ class AdminDashboardService {
     await this.verifyAccess(hotelId, ownerId);
 
     // Fetch all statistics in parallel
-    const [
-      totalBookings,
-      revenueStats,
-      dailyRevenue,
-      roomBookings,
-      newCustomers,
-      statusBreakdown,
-    ] = await Promise.all([
-      adminDashboardRepository.getTotalBookingsCount(
-        hotelId,
-        startDate,
-        endDate
-      ),
-      adminDashboardRepository.getRevenueStats(hotelId, startDate, endDate),
-      adminDashboardRepository.getDailyRevenueChart(
-        hotelId,
-        startDate,
-        endDate
-      ),
-      adminDashboardRepository.getRoomBookingStats(hotelId, startDate, endDate),
-      adminDashboardRepository.getNewCustomers(hotelId, startDate, endDate),
-      adminDashboardRepository.getBookingStatusBreakdown(
-        hotelId,
-        startDate,
-        endDate
-      ),
-    ]);
+    const [totalBookings, revenueStats, dailyRevenue, roomBookings, newCustomers, statusBreakdown] =
+      await Promise.all([
+        adminDashboardRepository.getTotalBookingsCount(hotelId, startDate, endDate),
+        adminDashboardRepository.getRevenueStats(hotelId, startDate, endDate),
+        adminDashboardRepository.getDailyRevenueChart(hotelId, startDate, endDate),
+        adminDashboardRepository.getRoomBookingStats(hotelId, startDate, endDate),
+        adminDashboardRepository.getNewCustomers(hotelId, startDate, endDate),
+        adminDashboardRepository.getBookingStatusBreakdown(hotelId, startDate, endDate),
+      ]);
 
     return {
       period: { startDate, endDate },

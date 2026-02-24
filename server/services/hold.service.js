@@ -35,10 +35,8 @@ async function computeTotalPrice(rooms, checkInDate, checkOutDate) {
     priceByRoomDate.set(key, price);
   }
 
-  const start =
-    typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
-  const end =
-    typeof checkOutDate === 'string' ? new Date(checkOutDate) : checkOutDate;
+  const start = typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
+  const end = typeof checkOutDate === 'string' ? new Date(checkOutDate) : checkOutDate;
   const current = new Date(start);
 
   while (current < end) {
@@ -91,16 +89,10 @@ class HoldService {
       );
     }
 
-    const startDate =
-      typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
-    const endDate =
-      typeof checkOutDate === 'string' ? new Date(checkOutDate) : checkOutDate;
+    const startDate = typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
+    const endDate = typeof checkOutDate === 'string' ? new Date(checkOutDate) : checkOutDate;
     if (startDate >= endDate) {
-      throw new ApiError(
-        400,
-        'INVALID_DATE_RANGE',
-        'checkOutDate must be after checkInDate'
-      );
+      throw new ApiError(400, 'INVALID_DATE_RANGE', 'checkOutDate must be after checkInDate');
     }
 
     // const existing = await redisClient.get(`user_holds:${userId}`);
@@ -125,11 +117,7 @@ class HoldService {
       );
     }
 
-    const totalPrice = await computeTotalPrice(
-      rooms,
-      checkInDate,
-      checkOutDate
-    );
+    const totalPrice = await computeTotalPrice(rooms, checkInDate, checkOutDate);
     const expiresAt = new Date(Date.now() + HOLD_DURATION_MINUTES * 60 * 1000);
 
     const transaction = await sequelize.transaction();
@@ -139,9 +127,7 @@ class HoldService {
           userId,
           hotelId,
           checkInDate:
-            typeof checkInDate === 'string'
-              ? checkInDate
-              : checkInDate.toISOString().split('T')[0],
+            typeof checkInDate === 'string' ? checkInDate : checkInDate.toISOString().split('T')[0],
           checkOutDate:
             typeof checkOutDate === 'string'
               ? checkOutDate
@@ -217,11 +203,7 @@ class HoldService {
       throw new ApiError(404, 'HOLD_NOT_FOUND', 'Hold not found');
     }
     if (userId && hold.user_id !== userId) {
-      throw new ApiError(
-        403,
-        'FORBIDDEN',
-        'You do not have permission to view this hold'
-      );
+      throw new ApiError(403, 'FORBIDDEN', 'You do not have permission to view this hold');
     }
     const h = hold.toJSON ? hold.toJSON() : hold;
     return {
@@ -260,18 +242,10 @@ class HoldService {
       throw new ApiError(404, 'HOLD_NOT_FOUND', 'Hold not found');
     }
     if (hold.user_id !== userId) {
-      throw new ApiError(
-        403,
-        'FORBIDDEN',
-        'You do not have permission to release this hold'
-      );
+      throw new ApiError(403, 'FORBIDDEN', 'You do not have permission to release this hold');
     }
     if (hold.status !== 'active') {
-      throw new ApiError(
-        400,
-        'HOLD_NOT_ACTIVE',
-        `Hold is already ${hold.status}`
-      );
+      throw new ApiError(400, 'HOLD_NOT_ACTIVE', `Hold is already ${hold.status}`);
     }
 
     const statusByReason = {

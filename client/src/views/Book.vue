@@ -217,7 +217,7 @@ export default {
 
         <div class="info-banner">
           <span class="info-icon">ℹ️</span>
-          You can change your details in<router-link style="color: #006aff;" :to="{path: '/account-settings/personal-information'}">settings</router-link>!
+          You can change your details in<RouterLink style="color: #006aff;" :to="{path: '/account-settings/personal-information'}">settings</RouterLink>!
         </div>
 
         <form>

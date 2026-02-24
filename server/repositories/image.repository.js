@@ -171,16 +171,8 @@ class ImageRepository {
    * @returns {Promise<object>} - Created variant record
    */
   async createVariant(variantData) {
-    const {
-      id,
-      imageId,
-      variantType,
-      bucketName,
-      objectKey,
-      fileSize,
-      width,
-      height,
-    } = variantData;
+    const { id, imageId, variantType, bucketName, objectKey, fileSize, width, height } =
+      variantData;
 
     return await ImageVariants.create({
       id,

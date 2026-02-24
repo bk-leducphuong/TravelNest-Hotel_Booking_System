@@ -8,10 +8,7 @@ const logger = require('@config/logger.config');
 
 // Initialize adapters
 const paymentAdapter = new StripePaymentAdapter();
-const webhookAdapter = new StripeWebhookAdapter(
-  paymentAdapter,
-  webhookEventLogRepository
-);
+const webhookAdapter = new StripeWebhookAdapter(paymentAdapter, webhookEventLogRepository);
 
 /**
  * Main webhook handler

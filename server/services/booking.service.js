@@ -27,9 +27,7 @@ class BookingService {
         const bookingData = booking.toJSON ? booking.toJSON() : booking;
 
         // Get hotel information
-        const hotel = await bookingRepository.findHotelById(
-          bookingData.hotel_id
-        );
+        const hotel = await bookingRepository.findHotelById(bookingData.hotel_id);
 
         // Get room information
         const room = await bookingRepository.findRoomById(bookingData.room_id);
@@ -57,10 +55,7 @@ class BookingService {
    * @returns {Promise<Object>} Booking details
    */
   async getBookingById(bookingId, userId) {
-    const booking = await bookingRepository.findByIdAndBuyerId(
-      bookingId,
-      userId
-    );
+    const booking = await bookingRepository.findByIdAndBuyerId(bookingId, userId);
 
     if (!booking) {
       throw new ApiError(
@@ -100,10 +95,7 @@ class BookingService {
     const { processRefund = false } = options;
 
     // Find booking and verify ownership
-    const booking = await bookingRepository.findByIdAndBuyerId(
-      bookingId,
-      userId
-    );
+    const booking = await bookingRepository.findByIdAndBuyerId(bookingId, userId);
 
     if (!booking) {
       throw new ApiError(
@@ -115,19 +107,11 @@ class BookingService {
 
     // Check if booking can be cancelled
     if (booking.status === 'cancelled') {
-      throw new ApiError(
-        400,
-        'ALREADY_CANCELLED',
-        'Booking is already cancelled'
-      );
+      throw new ApiError(400, 'ALREADY_CANCELLED', 'Booking is already cancelled');
     }
 
     if (booking.status === 'completed') {
-      throw new ApiError(
-        400,
-        'CANNOT_CANCEL_COMPLETED',
-        'Cannot cancel a completed booking'
-      );
+      throw new ApiError(400, 'CANNOT_CANCEL_COMPLETED', 'Cannot cancel a completed booking');
     }
 
     // Process refund if requested
@@ -143,10 +127,7 @@ class BookingService {
     }
 
     // Update booking status to cancelled
-    const [updatedCount] = await bookingRepository.updateStatus(
-      bookingId,
-      'cancelled'
-    );
+    const [updatedCount] = await bookingRepository.updateStatus(bookingId, 'cancelled');
 
     if (updatedCount === 0) {
       throw new ApiError(500, 'UPDATE_FAILED', 'Failed to cancel booking');
@@ -168,16 +149,10 @@ class BookingService {
    */
   async processRefund(booking) {
     // Find transaction
-    const transaction = await bookingRepository.findTransactionByBookingCode(
-      booking.booking_code
-    );
+    const transaction = await bookingRepository.findTransactionByBookingCode(booking.booking_code);
 
     if (!transaction) {
-      throw new ApiError(
-        404,
-        'TRANSACTION_NOT_FOUND',
-        'Transaction not found for this booking'
-      );
+      throw new ApiError(404, 'TRANSACTION_NOT_FOUND', 'Transaction not found for this booking');
     }
 
     // Check if Stripe is configured
@@ -228,11 +203,7 @@ class BookingService {
     }
 
     if (booking.buyer_id !== userId) {
-      throw new ApiError(
-        403,
-        'FORBIDDEN',
-        'You do not have permission to view this booking'
-      );
+      throw new ApiError(403, 'FORBIDDEN', 'You do not have permission to view this booking');
     }
 
     // Get hotel and room information

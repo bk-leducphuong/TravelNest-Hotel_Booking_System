@@ -86,14 +86,7 @@ class UserRepository {
   async findHotelById(hotelId) {
     return await Hotels.findOne({
       where: { id: hotelId },
-      attributes: [
-        'id',
-        'name',
-        'overall_rating',
-        'address',
-        'hotel_class',
-        'image_urls',
-      ],
+      attributes: ['id', 'name', 'overall_rating', 'address', 'hotel_class', 'image_urls'],
     });
   }
 

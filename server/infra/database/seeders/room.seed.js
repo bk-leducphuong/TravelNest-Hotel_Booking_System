@@ -17,12 +17,10 @@
  */
 
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
+  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
 });
 const { faker } = require('@faker-js/faker');
+
 const db = require('../../models');
 const sequelize = require('../../config/database.config');
 const { ROOM_TYPES, ROOM_STATUSES } = require('../../constants/rooms');
@@ -79,11 +77,7 @@ function generateRoomsForHotel(hotelId, count) {
  * @param {Array<string>} options.hotelIds - Specific hotel UUIDs to seed (optional, seeds all if not provided)
  */
 async function seedRooms(options = {}) {
-  const {
-    roomsPerHotel = { min: 3, max: 8 },
-    clearExisting = false,
-    hotelIds = null,
-  } = options;
+  const { roomsPerHotel = { min: 3, max: 8 }, clearExisting = false, hotelIds = null } = options;
 
   try {
     console.log('🌱 Starting room seeding...');
@@ -139,9 +133,7 @@ async function seedRooms(options = {}) {
       roomsToCreate.push(...hotelRooms);
       totalRoomsCreated += hotelRooms.length;
 
-      console.log(
-        `   📦 Generated ${hotelRooms.length} room(s) for hotel ID ${hotelId}`
-      );
+      console.log(`   📦 Generated ${hotelRooms.length} room(s) for hotel ID ${hotelId}`);
     }
 
     // Bulk create all rooms
@@ -156,10 +148,7 @@ async function seedRooms(options = {}) {
     // Display summary
     const totalRooms = await Rooms.count();
     const roomsByHotel = await Rooms.findAll({
-      attributes: [
-        'hotel_id',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'room_count'],
-      ],
+      attributes: ['hotel_id', [sequelize.fn('COUNT', sequelize.col('id')), 'room_count']],
       group: ['hotel_id'],
       raw: true,
     });

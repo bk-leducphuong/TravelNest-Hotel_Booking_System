@@ -1,4 +1,5 @@
 const Joi = require('joi');
+
 const { pagination } = require('./common.schema');
 
 /**
@@ -14,16 +15,12 @@ const bookingIdSchema = Joi.number().integer().positive().required().messages({
   'any.required': 'bookingId is required',
 });
 
-const transactionIdSchema = Joi.number()
-  .integer()
-  .positive()
-  .required()
-  .messages({
-    'number.base': 'transactionId must be a number',
-    'number.integer': 'transactionId must be an integer',
-    'number.positive': 'transactionId must be a positive number',
-    'any.required': 'transactionId is required',
-  });
+const transactionIdSchema = Joi.number().integer().positive().required().messages({
+  'number.base': 'transactionId must be a number',
+  'number.integer': 'transactionId must be an integer',
+  'number.positive': 'transactionId must be a positive number',
+  'any.required': 'transactionId is required',
+});
 
 const paymentMethodIdSchema = Joi.string().min(1).required().messages({
   'string.base': 'paymentMethodId must be a string',
@@ -37,15 +34,11 @@ const amountSchema = Joi.number().positive().required().messages({
   'any.required': 'amount is required',
 });
 
-const currencySchema = Joi.string()
-  .length(3)
-  .uppercase()
-  .required()
-  .messages({
-    'string.base': 'currency must be a string',
-    'string.length': 'currency must be a 3-letter code (e.g., USD)',
-    'any.required': 'currency is required',
-  });
+const currencySchema = Joi.string().length(3).uppercase().required().messages({
+  'string.base': 'currency must be a string',
+  'string.length': 'currency must be a 3-letter code (e.g., USD)',
+  'any.required': 'currency is required',
+});
 
 const bookingDetailsSchema = Joi.object({
   bookingCode: Joi.string().min(1).max(100).required().messages({

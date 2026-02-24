@@ -2,10 +2,7 @@ const redis = require('redis');
 const logger = require('@config/logger.config');
 
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'production'
-      ? '.env.production'
-      : '.env.development',
+  path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development',
 });
 
 const redisClient = redis.createClient({

@@ -1,12 +1,4 @@
 const ApiError = require('@utils/ApiError');
-const {
-  createMockHoldWithRooms,
-  createMockHoldRecord,
-  createMockCreateHoldPayload,
-  createMockCreateHoldResponse,
-  createMockReleaseHoldResponse,
-} = require('../../fixtures/hold.fixtures');
-
 jest.mock('@repositories/hold.repository', () => ({
   create: jest.fn(),
   findByIdWithRooms: jest.fn(),
@@ -42,6 +34,14 @@ const holdRepository = require('@repositories/hold.repository');
 const inventoryService = require('@services/inventory.service');
 const roomInventoryRepository = require('@repositories/room_inventory.repository');
 const sequelize = require('@config/database.config');
+
+const {
+  createMockHoldWithRooms,
+  createMockHoldRecord,
+  createMockCreateHoldPayload,
+  createMockCreateHoldResponse,
+  createMockReleaseHoldResponse,
+} = require('../../fixtures/hold.fixtures');
 
 describe('HoldService', () => {
   let mockTransaction;
@@ -202,9 +202,7 @@ describe('HoldService', () => {
     it('should throw ApiError 404 when hold not found', async () => {
       holdRepository.findByIdWithRooms.mockResolvedValue(null);
 
-      await expect(holdService.getHold('non-existent', 'user-123')).rejects.toThrow(
-        ApiError
-      );
+      await expect(holdService.getHold('non-existent', 'user-123')).rejects.toThrow(ApiError);
       await expect(holdService.getHold('non-existent', 'user-123')).rejects.toMatchObject({
         statusCode: 404,
         code: 'HOLD_NOT_FOUND',
@@ -218,12 +216,8 @@ describe('HoldService', () => {
       });
       holdRepository.findByIdWithRooms.mockResolvedValue(mockHold);
 
-      await expect(
-        holdService.getHold('hold-1', 'different-user-uuid')
-      ).rejects.toThrow(ApiError);
-      await expect(
-        holdService.getHold('hold-1', 'different-user-uuid')
-      ).rejects.toMatchObject({
+      await expect(holdService.getHold('hold-1', 'different-user-uuid')).rejects.toThrow(ApiError);
+      await expect(holdService.getHold('hold-1', 'different-user-uuid')).rejects.toMatchObject({
         statusCode: 403,
         code: 'FORBIDDEN',
       });
@@ -314,9 +308,9 @@ describe('HoldService', () => {
     it('should throw ApiError 404 when hold not found', async () => {
       holdRepository.findByIdWithRooms.mockResolvedValue(null);
 
-      await expect(
-        holdService.releaseHold('non-existent', 'user-123', 'released')
-      ).rejects.toThrow(ApiError);
+      await expect(holdService.releaseHold('non-existent', 'user-123', 'released')).rejects.toThrow(
+        ApiError
+      );
       await expect(
         holdService.releaseHold('non-existent', 'user-123', 'released')
       ).rejects.toMatchObject({
@@ -354,9 +348,9 @@ describe('HoldService', () => {
       });
       holdRepository.findByIdWithRooms.mockResolvedValue(mockHold);
 
-      await expect(
-        holdService.releaseHold('hold-1', 'user-uuid', 'released')
-      ).rejects.toThrow(ApiError);
+      await expect(holdService.releaseHold('hold-1', 'user-uuid', 'released')).rejects.toThrow(
+        ApiError
+      );
       await expect(
         holdService.releaseHold('hold-1', 'user-uuid', 'released')
       ).rejects.toMatchObject({

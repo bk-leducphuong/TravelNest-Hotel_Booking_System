@@ -11,12 +11,7 @@ const createMockBooking = (overrides = {}) => ({
   check_out_date: faker.date.future(),
   number_of_guests: faker.number.int({ min: 1, max: 6 }),
   total_price: faker.number.float({ min: 100, max: 5000, precision: 0.01 }),
-  status: faker.helpers.arrayElement([
-    'pending',
-    'confirmed',
-    'cancelled',
-    'completed',
-  ]),
+  status: faker.helpers.arrayElement(['pending', 'confirmed', 'cancelled', 'completed']),
   special_requests: faker.lorem.sentence(),
   created_at: faker.date.recent(),
   updated_at: faker.date.recent(),
@@ -51,18 +46,8 @@ const createMockPayment = (overrides = {}) => ({
   booking_code: faker.string.alphanumeric(10).toUpperCase(),
   amount: faker.number.float({ min: 100, max: 5000, precision: 0.01 }),
   currency: 'USD',
-  payment_method: faker.helpers.arrayElement([
-    'credit_card',
-    'debit_card',
-    'paypal',
-    'stripe',
-  ]),
-  status: faker.helpers.arrayElement([
-    'pending',
-    'completed',
-    'failed',
-    'refunded',
-  ]),
+  payment_method: faker.helpers.arrayElement(['credit_card', 'debit_card', 'paypal', 'stripe']),
+  status: faker.helpers.arrayElement(['pending', 'completed', 'failed', 'refunded']),
   transaction_id: faker.string.uuid(),
   payment_date: faker.date.recent(),
   ...overrides,
@@ -97,13 +82,7 @@ const createMockAmenity = (overrides = {}) => ({
     'Bar',
     'Room Service',
   ]),
-  icon: faker.helpers.arrayElement([
-    'wifi',
-    'pool',
-    'fitness',
-    'spa',
-    'restaurant',
-  ]),
+  icon: faker.helpers.arrayElement(['wifi', 'pool', 'fitness', 'spa', 'restaurant']),
   category: faker.helpers.arrayElement(['hotel', 'room']),
   ...overrides,
 });
@@ -179,12 +158,7 @@ const createMockSearchParams = (overrides = {}) => ({
  */
 const createMockErrorResponse = (overrides = {}) => ({
   statusCode: faker.helpers.arrayElement([400, 401, 403, 404, 500]),
-  code: faker.helpers.arrayElement([
-    'NOT_FOUND',
-    'VALIDATION_ERROR',
-    'UNAUTHORIZED',
-    'FORBIDDEN',
-  ]),
+  code: faker.helpers.arrayElement(['NOT_FOUND', 'VALIDATION_ERROR', 'UNAUTHORIZED', 'FORBIDDEN']),
   message: faker.lorem.sentence(),
   details: {},
   ...overrides,
@@ -201,8 +175,7 @@ const createMockDateRange = () => {
   return {
     checkInDate: checkIn.toISOString().split('T')[0],
     checkOutDate: checkOut.toISOString().split('T')[0],
-    numberOfDays:
-      Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24)) + 1,
+    numberOfDays: Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24)) + 1,
   };
 };
 

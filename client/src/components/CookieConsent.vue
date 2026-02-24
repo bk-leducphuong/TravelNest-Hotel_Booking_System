@@ -34,7 +34,7 @@ export default {
     },
     checkExistingConsent() {
       const cookies = document.cookie.split(';')
-      for (let cookie of cookies) {
+      for (const cookie of cookies) {
         const [name, value] = cookie.trim().split('=')
         if (name === 'cookie_consent') {
           this.consentGiven = true

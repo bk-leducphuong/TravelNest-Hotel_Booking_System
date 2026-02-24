@@ -14,10 +14,7 @@ const getAllRooms = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { hotelId } = req.query;
 
-  const rooms = await adminRoomService.getAllRooms(
-    hotelId,
-    ownerId
-  );
+  const rooms = await adminRoomService.getAllRooms(hotelId, ownerId);
 
   res.status(200).json({
     data: rooms,
@@ -32,10 +29,7 @@ const getRoomById = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { roomId } = req.params;
 
-  const room = await adminRoomService.getRoomById(
-    roomId,
-    ownerId
-  );
+  const room = await adminRoomService.getRoomById(roomId, ownerId);
 
   res.status(200).json({
     data: room,
@@ -50,11 +44,7 @@ const createRoom = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { hotelId, ...roomData } = req.body;
 
-  const room = await adminRoomService.createRoom(
-    hotelId,
-    ownerId,
-    roomData
-  );
+  const room = await adminRoomService.createRoom(hotelId, ownerId, roomData);
 
   res.status(201).json({
     data: room,
@@ -71,11 +61,7 @@ const updateRoom = asyncHandler(async (req, res) => {
   const { roomId } = req.params;
   const updateData = req.body;
 
-  const room = await adminRoomService.updateRoom(
-    roomId,
-    ownerId,
-    updateData
-  );
+  const room = await adminRoomService.updateRoom(roomId, ownerId, updateData);
 
   res.status(200).json({
     data: room,
@@ -91,10 +77,7 @@ const deleteRoom = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { roomId } = req.params;
 
-  const result = await adminRoomService.deleteRoom(
-    roomId,
-    ownerId
-  );
+  const result = await adminRoomService.deleteRoom(roomId, ownerId);
 
   res.status(200).json({
     data: result,
@@ -109,10 +92,7 @@ const getRoomPhotos = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { roomId } = req.params;
 
-  const result = await adminRoomService.getRoomPhotos(
-    roomId,
-    ownerId
-  );
+  const result = await adminRoomService.getRoomPhotos(roomId, ownerId);
 
   res.status(200).json({
     data: result,
@@ -128,12 +108,7 @@ const addRoomPhotos = asyncHandler(async (req, res) => {
   const { roomId } = req.params;
   const { hotelId } = req.body;
 
-  const result = await adminRoomService.addRoomPhotos(
-    roomId,
-    hotelId,
-    ownerId,
-    req.files
-  );
+  const result = await adminRoomService.addRoomPhotos(roomId, hotelId, ownerId, req.files);
 
   res.status(201).json({
     data: result,
@@ -149,11 +124,7 @@ const deleteRoomPhotos = asyncHandler(async (req, res) => {
   const { roomId } = req.params;
   const { photoUrls } = req.body;
 
-  const result = await adminRoomService.deleteRoomPhotos(
-    roomId,
-    ownerId,
-    photoUrls
-  );
+  const result = await adminRoomService.deleteRoomPhotos(roomId, ownerId, photoUrls);
 
   res.status(200).json({
     data: result,
@@ -168,10 +139,7 @@ const getHotelPhotos = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { hotelId } = req.params;
 
-  const result = await adminRoomService.getHotelPhotos(
-    hotelId,
-    ownerId
-  );
+  const result = await adminRoomService.getHotelPhotos(hotelId, ownerId);
 
   res.status(200).json({
     data: result,
@@ -186,11 +154,7 @@ const addHotelPhotos = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { hotelId } = req.params;
 
-  const result = await adminRoomService.addHotelPhotos(
-    hotelId,
-    ownerId,
-    req.files
-  );
+  const result = await adminRoomService.addHotelPhotos(hotelId, ownerId, req.files);
 
   res.status(201).json({
     data: result,
@@ -206,11 +170,7 @@ const deleteHotelPhotos = asyncHandler(async (req, res) => {
   const { hotelId } = req.params;
   const { photoUrls } = req.body;
 
-  const result = await adminRoomService.deleteHotelPhotos(
-    hotelId,
-    ownerId,
-    photoUrls
-  );
+  const result = await adminRoomService.deleteHotelPhotos(hotelId, ownerId, photoUrls);
 
   res.status(200).json({
     data: result,
@@ -247,11 +207,7 @@ const updateRoomInventory = asyncHandler(async (req, res) => {
   const { roomId } = req.params;
   const { inventories } = req.body;
 
-  const result = await adminRoomService.updateRoomInventory(
-    roomId,
-    ownerId,
-    inventories
-  );
+  const result = await adminRoomService.updateRoomInventory(roomId, ownerId, inventories);
 
   res.status(200).json({
     data: result,

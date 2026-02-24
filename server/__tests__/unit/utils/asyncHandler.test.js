@@ -70,9 +70,7 @@ describe('asyncHandler', () => {
   it('should handle rejected promises', async () => {
     // Arrange
     const error = new Error('Promise rejection');
-    const mockAsyncFn = jest.fn(
-      () => new Promise((resolve, reject) => reject(error))
-    );
+    const mockAsyncFn = jest.fn(() => new Promise((resolve, reject) => reject(error)));
     const wrappedFn = asyncHandler(mockAsyncFn);
 
     // Act

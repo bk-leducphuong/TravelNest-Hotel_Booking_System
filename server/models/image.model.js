@@ -106,11 +106,7 @@ module.exports = function (sequelize, DataTypes) {
         {
           name: 'idx_entity',
           using: 'BTREE',
-          fields: [
-            { name: 'entity_type' },
-            { name: 'entity_id' },
-            { name: 'status' },
-          ],
+          fields: [{ name: 'entity_type' }, { name: 'entity_id' }, { name: 'status' }],
         },
         {
           name: 'idx_bucket_key',

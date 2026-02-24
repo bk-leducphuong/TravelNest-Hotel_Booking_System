@@ -1,5 +1,8 @@
 node_modules
 dist
 coverage
+logs
+infra/elasticsearch/data
+infra/minio-data
+assets/mail-templates/*.html
 api/**/*.http
-

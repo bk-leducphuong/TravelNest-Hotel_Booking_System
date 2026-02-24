@@ -1,6 +1,6 @@
 /**
  * Payment Provider Interface
- * 
+ *
  * This interface defines the contract that all payment providers must implement.
  * This allows us to easily swap between Stripe, PayPal, etc. without changing business logic.
  */

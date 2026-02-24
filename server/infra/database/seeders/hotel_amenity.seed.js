@@ -17,16 +17,14 @@
  */
 
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
+  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
 });
 
 const { faker } = require('@faker-js/faker');
+const { Op } = require('sequelize');
+
 const db = require('../../models');
 const sequelize = require('../../config/database.config');
-const { Op } = require('sequelize');
 
 const { hotels: Hotels, amenities: Amenities, hotel_amenities: HotelAmenities } = db;
 
@@ -71,11 +69,7 @@ function maybeAdditionalInfo() {
  * @returns {Promise<{ linked: number, skipped: number }>}
  */
 async function seedHotelAmenities(options = {}) {
-  const {
-    minAmenitiesPerHotel = 5,
-    maxAmenitiesPerHotel = 25,
-    clearExisting = false,
-  } = options;
+  const { minAmenitiesPerHotel = 5, maxAmenitiesPerHotel = 25, clearExisting = false } = options;
 
   try {
     console.log('🌱 Starting hotel-amenity seeding...');

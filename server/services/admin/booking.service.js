@@ -20,17 +20,10 @@ class AdminBookingService {
    */
   async getAllBookings(hotelId, ownerId, options = {}) {
     // Verify hotel ownership
-    const isOwner = await adminBookingRepository.verifyHotelOwnership(
-      hotelId,
-      ownerId
-    );
+    const isOwner = await adminBookingRepository.verifyHotelOwnership(hotelId, ownerId);
 
     if (!isOwner) {
-      throw new ApiError(
-        403,
-        'FORBIDDEN',
-        'You do not have permission to access this hotel'
-      );
+      throw new ApiError(403, 'FORBIDDEN', 'You do not have permission to access this hotel');
     }
 
     // Update booking statuses based on current date
@@ -43,9 +36,7 @@ class AdminBookingService {
     const enrichedBookings = await Promise.all(
       result.bookings.map(async (booking) => {
         const bookingData = booking.toJSON ? booking.toJSON() : booking;
-        const room = await adminBookingRepository.findRoomById(
-          bookingData.room_id
-        );
+        const room = await adminBookingRepository.findRoomById(bookingData.room_id);
 
         return {
           ...bookingData,
@@ -79,17 +70,10 @@ class AdminBookingService {
     }
 
     // Verify hotel ownership
-    const isOwner = await adminBookingRepository.verifyHotelOwnership(
-      booking.hotel_id,
-      ownerId
-    );
+    const isOwner = await adminBookingRepository.verifyHotelOwnership(booking.hotel_id, ownerId);
 
     if (!isOwner) {
-      throw new ApiError(
-        403,
-        'FORBIDDEN',
-        'You do not have permission to access this booking'
-      );
+      throw new ApiError(403, 'FORBIDDEN', 'You do not have permission to access this booking');
     }
 
     // Get room information
@@ -117,17 +101,10 @@ class AdminBookingService {
     }
 
     // Verify hotel ownership
-    const isOwner = await adminBookingRepository.verifyHotelOwnership(
-      booking.hotel_id,
-      ownerId
-    );
+    const isOwner = await adminBookingRepository.verifyHotelOwnership(booking.hotel_id, ownerId);
 
     if (!isOwner) {
-      throw new ApiError(
-        403,
-        'FORBIDDEN',
-        'You do not have permission to access this booking'
-      );
+      throw new ApiError(403, 'FORBIDDEN', 'You do not have permission to access this booking');
     }
 
     // Get booker information
@@ -155,40 +132,22 @@ class AdminBookingService {
     }
 
     // Verify hotel ownership
-    const isOwner = await adminBookingRepository.verifyHotelOwnership(
-      booking.hotel_id,
-      ownerId
-    );
+    const isOwner = await adminBookingRepository.verifyHotelOwnership(booking.hotel_id, ownerId);
 
     if (!isOwner) {
-      throw new ApiError(
-        403,
-        'FORBIDDEN',
-        'You do not have permission to update this booking'
-      );
+      throw new ApiError(403, 'FORBIDDEN', 'You do not have permission to update this booking');
     }
 
     // Validate status transition
     if (booking.status === status) {
-      throw new ApiError(
-        400,
-        'INVALID_STATUS',
-        `Booking is already ${status}`
-      );
+      throw new ApiError(400, 'INVALID_STATUS', `Booking is already ${status}`);
     }
 
     // Update status
-    const [updatedCount] = await adminBookingRepository.updateStatus(
-      bookingId,
-      status
-    );
+    const [updatedCount] = await adminBookingRepository.updateStatus(bookingId, status);
 
     if (updatedCount === 0) {
-      throw new ApiError(
-        500,
-        'UPDATE_FAILED',
-        'Failed to update booking status'
-      );
+      throw new ApiError(500, 'UPDATE_FAILED', 'Failed to update booking status');
     }
 
     // Return updated booking
@@ -205,24 +164,13 @@ class AdminBookingService {
    */
   async getBookingStatistics(hotelId, ownerId, startDate, endDate) {
     // Verify hotel ownership
-    const isOwner = await adminBookingRepository.verifyHotelOwnership(
-      hotelId,
-      ownerId
-    );
+    const isOwner = await adminBookingRepository.verifyHotelOwnership(hotelId, ownerId);
 
     if (!isOwner) {
-      throw new ApiError(
-        403,
-        'FORBIDDEN',
-        'You do not have permission to access this hotel'
-      );
+      throw new ApiError(403, 'FORBIDDEN', 'You do not have permission to access this hotel');
     }
 
-    return await adminBookingRepository.getBookingStatistics(
-      hotelId,
-      startDate,
-      endDate
-    );
+    return await adminBookingRepository.getBookingStatistics(hotelId, startDate, endDate);
   }
 }
 

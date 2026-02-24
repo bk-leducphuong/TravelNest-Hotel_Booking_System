@@ -1,24 +1,25 @@
-/*********************** External Libraries ************************/
+/** ********************* External Libraries ************************ */
 require('module-alias/register');
+const http = require('http');
+
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const http = require('http');
 
-/*********************** Config ************************/
+/** ********************* Config ************************ */
 const logger = require('@config/logger.config');
 const db = require('@models');
 const { initSocket } = require('@socket/index');
 const { initBucket } = require('@config/minio.config');
 const { setupSwagger } = require('@config/swagger.config');
 
-/*********************** Middlewares ************************/
+/** ********************* Middlewares ************************ */
 const errorMiddleware = require('@middlewares/error.middleware.js');
 const limiter = require('@middlewares/rate-limitter.middleware');
 const sessionMiddleware = require('@middlewares/session.middleware');
 const requestLogger = require('@middlewares/request-logger.middleware');
 
-/*********************** Routes ************************/
+/** ********************* Routes ************************ */
 const v1Routes = require('@routes/v1/index.js');
 const healthRoutes = require('@routes/health.routes.js');
 
@@ -56,11 +57,7 @@ const createApp = async () => {
   // Webhook routes - MUST come before bodyParser.json() for raw body access
   // Webhooks need raw body for signature verification
   const webhookRoutes = require('@routes/v1/webhook.routes.js');
-  app.use(
-    '/api/v1/webhooks',
-    bodyParser.raw({ type: 'application/json' }),
-    webhookRoutes
-  );
+  app.use('/api/v1/webhooks', bodyParser.raw({ type: 'application/json' }), webhookRoutes);
 
   // Regular JSON parsing for all other routes
   app.use(bodyParser.json({ limit: '50mb' })); // create application/json parser

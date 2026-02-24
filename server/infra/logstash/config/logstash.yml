@@ -12,14 +12,14 @@ path.data: /usr/share/logstash/data
 path.logs: /usr/share/logstash/logs
 
 # HTTP API
-http.host: "0.0.0.0"
+http.host: '0.0.0.0'
 http.port: 9600
 
 # Monitoring
 xpack.monitoring.enabled: true
-xpack.monitoring.elasticsearch.hosts: ["${ELASTICSEARCH_HOSTS:http://elasticsearch:9200}"]
-xpack.monitoring.elasticsearch.username: "${ELASTICSEARCH_USERNAME:elastic}"
-xpack.monitoring.elasticsearch.password: "${ELASTICSEARCH_PASSWORD}"
+xpack.monitoring.elasticsearch.hosts: ['${ELASTICSEARCH_HOSTS:http://elasticsearch:9200}']
+xpack.monitoring.elasticsearch.username: '${ELASTICSEARCH_USERNAME:elastic}'
+xpack.monitoring.elasticsearch.password: '${ELASTICSEARCH_PASSWORD}'
 
 # Log settings
 log.level: info

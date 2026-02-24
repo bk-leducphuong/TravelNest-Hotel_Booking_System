@@ -84,9 +84,7 @@ class StripeWebhookAdapter {
       bookingCode: metadata.booking_code,
       hotelId: metadata.hotel_id,
       buyerId: metadata.buyer_id,
-      bookedRooms: metadata.booked_rooms
-        ? JSON.parse(metadata.booked_rooms)
-        : [],
+      bookedRooms: metadata.booked_rooms ? JSON.parse(metadata.booked_rooms) : [],
       checkInDate: metadata.check_in_date,
       checkOutDate: metadata.check_out_date,
       numberOfGuests: parseInt(metadata.number_of_guests, 10),
@@ -144,9 +142,7 @@ class StripeWebhookAdapter {
       bookingCode: metadata.booking_code,
       hotelId: metadata.hotel_id,
       buyerId: metadata.buyer_id,
-      bookedRooms: metadata.booked_rooms
-        ? JSON.parse(metadata.booked_rooms)
-        : [],
+      bookedRooms: metadata.booked_rooms ? JSON.parse(metadata.booked_rooms) : [],
       checkInDate: metadata.check_in_date,
       checkOutDate: metadata.check_out_date,
       numberOfGuests: parseInt(metadata.number_of_guests, 10),
@@ -183,9 +179,7 @@ class StripeWebhookAdapter {
     }
 
     try {
-      const paymentMethod = await this.paymentAdapter.getPaymentMethod(
-        context.paymentMethodId
-      );
+      const paymentMethod = await this.paymentAdapter.getPaymentMethod(context.paymentMethodId);
 
       return {
         ...context,

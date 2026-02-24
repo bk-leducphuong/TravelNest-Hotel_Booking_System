@@ -1,4 +1,5 @@
 const Joi = require('joi');
+
 const { pagination } = require('./common.schema');
 
 /**
@@ -103,15 +104,11 @@ exports.createReview = {
     hotelId: hotelIdSchema,
     rating: ratingSchema,
     comment: commentSchema,
-    reviewCriteria: Joi.array()
-      .items(reviewCriteriaSchema)
-      .min(1)
-      .required()
-      .messages({
-        'array.base': 'reviewCriteria must be an array',
-        'array.min': 'At least one review criteria is required',
-        'any.required': 'reviewCriteria is required',
-      }),
+    reviewCriteria: Joi.array().items(reviewCriteriaSchema).min(1).required().messages({
+      'array.base': 'reviewCriteria must be an array',
+      'array.min': 'At least one review criteria is required',
+      'any.required': 'reviewCriteria is required',
+    }),
     bookingCode: bookingCodeSchema,
   }).required(),
 };

@@ -1,10 +1,6 @@
-const {
-  Transactions,
-  Payments,
-  Bookings,
-  Hotels,
-} = require('../models/index.js');
 const { Op } = require('sequelize');
+
+const { Transactions, Payments, Bookings, Hotels } = require('../models/index.js');
 
 /**
  * Payment Repository - Contains all database operations for payments

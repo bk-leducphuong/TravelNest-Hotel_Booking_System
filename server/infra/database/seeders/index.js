@@ -1,3 +1,4 @@
+const db = require('../../../models');
 const { seedUsers } = require('./user.seed');
 const { seedReviews } = require('./review.seed');
 const { seedRooms } = require('./room.seed');

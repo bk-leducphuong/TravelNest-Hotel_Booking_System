@@ -125,7 +125,7 @@ export default {
 </script>
 
 <template>
-  <loading v-model:active="isLoading" :color="`#003b95`" :is-full-page="true" />
+  <Loading v-model:active="isLoading" :color="`#003b95`" :is-full-page="true" />
   <div class="validation-container">
     <div class="password-card" v-if="step === 1">
       <i

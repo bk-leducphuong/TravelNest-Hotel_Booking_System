@@ -13,10 +13,7 @@
  */
 
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
+  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
 });
 
 const db = require('../../models');
@@ -28,11 +25,7 @@ const {
 } = require('../../constants/permissions');
 const { ROLES } = require('../../constants/roles');
 
-const {
-  permissions: Permissions,
-  roles: Roles,
-  role_permissions: RolePermissions,
-} = db;
+const { permissions: Permissions, roles: Roles, role_permissions: RolePermissions } = db;
 
 /**
  * Role descriptions for seeding

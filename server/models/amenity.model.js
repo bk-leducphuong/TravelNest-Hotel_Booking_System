@@ -1,10 +1,7 @@
 const Sequelize = require('sequelize');
 const { uuidv7 } = require('uuidv7');
-const {
-  AMENITY_CATEGORIES,
-  APPLICABLE_TO,
-  AMENITY_CODES,
-} = require('../constants/amenities');
+
+const { AMENITY_CATEGORIES, APPLICABLE_TO, AMENITY_CODES } = require('../constants/amenities');
 
 module.exports = function (sequelize, DataTypes) {
   const Amenity = sequelize.define(

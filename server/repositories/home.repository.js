@@ -1,11 +1,7 @@
-const {
-  Hotels,
-  ViewedHotels,
-  Reviews,
-  Bookings,
-} = require('../models/index.js');
 const { Op } = require('sequelize');
 const { Sequelize } = require('sequelize');
+
+const { Hotels, ViewedHotels, Reviews, Bookings } = require('../models/index.js');
 const searchLogClickHouseRepository = require('./clickhouse/search_log.repository');
 
 /**
@@ -40,14 +36,7 @@ class HomeRepository {
           [Op.in]: hotelIds,
         },
       },
-      attributes: [
-        'hotel_id',
-        'name',
-        'overall_rating',
-        'address',
-        'image_urls',
-        'city',
-      ],
+      attributes: ['hotel_id', 'name', 'overall_rating', 'address', 'image_urls', 'city'],
     });
   }
 
@@ -100,10 +89,7 @@ class HomeRepository {
    * Find search logs by user ID (from ClickHouse)
    */
   async findSearchLogsByUserId(userId, limit = 10) {
-    return await searchLogClickHouseRepository.findSearchLogsByUserId(
-      userId,
-      limit
-    );
+    return await searchLogClickHouseRepository.findSearchLogsByUserId(userId, limit);
   }
 
   /**
@@ -154,10 +140,7 @@ class HomeRepository {
         'overall_rating',
         'image_urls',
         'hotel_class',
-        [
-          Sequelize.fn('COUNT', Sequelize.col('reviews.review_id')),
-          'review_count',
-        ],
+        [Sequelize.fn('COUNT', Sequelize.col('reviews.review_id')), 'review_count'],
       ],
       include: [
         {
@@ -171,15 +154,7 @@ class HomeRepository {
           [Op.gte]: minRating,
         },
       },
-      group: [
-        'hotel_id',
-        'name',
-        'address',
-        'city',
-        'overall_rating',
-        'image_urls',
-        'hotel_class',
-      ],
+      group: ['hotel_id', 'name', 'address', 'city', 'overall_rating', 'image_urls', 'hotel_class'],
       having: Sequelize.literal(`COUNT(reviews.review_id) >= ${minReviews}`),
       order: [
         ['overall_rating', 'DESC'],
@@ -247,10 +222,7 @@ class HomeRepository {
         'overall_rating',
         'image_urls',
         'hotel_class',
-        [
-          Sequelize.fn('COUNT', Sequelize.col('viewed_hotels.view_id')),
-          'view_count',
-        ],
+        [Sequelize.fn('COUNT', Sequelize.col('viewed_hotels.view_id')), 'view_count'],
         [Sequelize.fn('COUNT', Sequelize.col('bookings.id')), 'booking_count'],
       ],
       include: [
@@ -275,15 +247,7 @@ class HomeRepository {
           },
         },
       ],
-      group: [
-        'hotel_id',
-        'name',
-        'address',
-        'city',
-        'overall_rating',
-        'image_urls',
-        'hotel_class',
-      ],
+      group: ['hotel_id', 'name', 'address', 'city', 'overall_rating', 'image_urls', 'hotel_class'],
       order: [[Sequelize.literal('(view_count + booking_count * 2)'), 'DESC']],
       limit,
     });

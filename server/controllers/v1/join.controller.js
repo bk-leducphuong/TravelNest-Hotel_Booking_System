@@ -58,11 +58,7 @@ const uploadPhotos = asyncHandler(async (req, res) => {
   // Extract image buffers from uploaded files
   const imageBuffers = req.files.map((file) => file.buffer);
 
-  const imageUrls = await joinService.uploadPhotos(
-    hotel_id,
-    room_id,
-    imageBuffers
-  );
+  const imageUrls = await joinService.uploadPhotos(hotel_id, room_id, imageBuffers);
 
   res.status(201).json({
     data: {

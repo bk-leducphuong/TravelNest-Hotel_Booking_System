@@ -28,14 +28,8 @@ class HealthService {
       this.checkClickHouseConnection(),
     ]);
 
-    const [
-      nodeCheck,
-      mysqlCheck,
-      redisCheck,
-      minioCheck,
-      elasticsearchCheck,
-      clickhouseCheck,
-    ] = checks;
+    const [nodeCheck, mysqlCheck, redisCheck, minioCheck, elasticsearchCheck, clickhouseCheck] =
+      checks;
 
     const services = {
       node: this._formatCheckResult(nodeCheck),
@@ -47,12 +41,8 @@ class HealthService {
     };
 
     // Determine overall status
-    const allHealthy = Object.values(services).every(
-      (service) => service.status === 'healthy'
-    );
-    const anyUnhealthy = Object.values(services).some(
-      (service) => service.status === 'unhealthy'
-    );
+    const allHealthy = Object.values(services).every((service) => service.status === 'healthy');
+    const anyUnhealthy = Object.values(services).some((service) => service.status === 'unhealthy');
 
     let overallStatus = 'healthy';
     if (anyUnhealthy) {
@@ -424,11 +414,9 @@ class HealthService {
       ]);
 
       const mysqlHealthy =
-        mysqlCheck.status === 'fulfilled' &&
-        mysqlCheck.value.status === 'healthy';
+        mysqlCheck.status === 'fulfilled' && mysqlCheck.value.status === 'healthy';
       const redisHealthy =
-        redisCheck.status === 'fulfilled' &&
-        redisCheck.value.status === 'healthy';
+        redisCheck.status === 'fulfilled' && redisCheck.value.status === 'healthy';
 
       const ready = mysqlHealthy && redisHealthy;
 

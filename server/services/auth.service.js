@@ -64,17 +64,10 @@ class AuthService {
       throw new ApiError(400, 'INVALID_ROLE', 'Invalid role name');
     }
 
-    const user = await authRepository.findByEmailAndRoleWithPassword(
-      email,
-      roleName
-    );
+    const user = await authRepository.findByEmailAndRoleWithPassword(email, roleName);
 
     if (!user) {
-      throw new ApiError(
-        401,
-        'INVALID_CREDENTIALS',
-        'Invalid email or password'
-      );
+      throw new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
     }
 
     // Check user status
@@ -88,11 +81,7 @@ class AuthService {
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      throw new ApiError(
-        401,
-        'INVALID_CREDENTIALS',
-        'Invalid email or password'
-      );
+      throw new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
     }
 
     // Update last login timestamp
@@ -127,9 +116,7 @@ class AuthService {
     const existingUser = await authRepository.findByEmail(email);
     if (existingUser) {
       // Check if user already has this specific role
-      const hasRole = existingUser.roles?.some(
-        (ur) => ur.role.name === roleName
-      );
+      const hasRole = existingUser.roles?.some((ur) => ur.role.name === roleName);
       if (hasRole) {
         throw new ApiError(409, 'USER_ALREADY_EXISTS', 'User already exists');
       }
@@ -141,9 +128,7 @@ class AuthService {
       await authRepository.assignRoleToUser(existingUser.id, role.id);
 
       // Get full user data with context
-      const userWithContext = await authRepository.getUserWithContext(
-        existingUser.id
-      );
+      const userWithContext = await authRepository.getUserWithContext(existingUser.id);
 
       return {
         userId: existingUser.id,

@@ -2,9 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const request = require('supertest');
-
 require('module-alias/register');
-
 const holdService = require('@services/hold.service');
 
 jest.mock('@services/hold.service');
@@ -26,8 +24,9 @@ jest.mock('@middlewares/auth.middleware', () => ({
   requirePermission: () => (req, res, next) => next(),
 }));
 
-const holdRoutes = require('../../../routes/v1/hold.routes');
 const errorMiddleware = require('@middlewares/error.middleware');
+
+const holdRoutes = require('../../../routes/v1/hold.routes');
 
 describe('Hold API Integration Tests', () => {
   let app;
@@ -88,9 +87,7 @@ describe('Hold API Integration Tests', () => {
 
       holdService.createHold.mockResolvedValue(mockResponse);
 
-      const res = await authenticatedRequest()
-        .post(baseUrl)
-        .send(validPayload);
+      const res = await authenticatedRequest().post(baseUrl).send(validPayload);
 
       expect(res.status).toBe(201);
       expect(res.body).toHaveProperty('data');
@@ -216,9 +213,7 @@ describe('Hold API Integration Tests', () => {
 
     it('should return 404 when hold not found', async () => {
       const ApiError = require('@utils/ApiError');
-      holdService.getHold.mockRejectedValue(
-        new ApiError(404, 'HOLD_NOT_FOUND', 'Hold not found')
-      );
+      holdService.getHold.mockRejectedValue(new ApiError(404, 'HOLD_NOT_FOUND', 'Hold not found'));
 
       const res = await authenticatedRequest().get(baseUrl);
 
@@ -246,11 +241,7 @@ describe('Hold API Integration Tests', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data).toEqual(mockResponse);
-      expect(holdService.releaseHold).toHaveBeenCalledWith(
-        holdId,
-        'test-user-uuid',
-        'released'
-      );
+      expect(holdService.releaseHold).toHaveBeenCalledWith(holdId, 'test-user-uuid', 'released');
     });
 
     it('should return 404 when hold not found', async () => {

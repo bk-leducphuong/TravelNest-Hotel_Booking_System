@@ -167,14 +167,10 @@ module.exports = {
       comment: 'Composite index for filtering by category',
     });
 
-    await queryInterface.addIndex(
-      'nearby_places',
-      ['hotel_id', 'is_active', 'distance_km'],
-      {
-        name: 'idx_hotel_active_distance',
-        comment: 'Index for fetching active places ordered by distance',
-      }
-    );
+    await queryInterface.addIndex('nearby_places', ['hotel_id', 'is_active', 'distance_km'], {
+      name: 'idx_hotel_active_distance',
+      comment: 'Index for fetching active places ordered by distance',
+    });
 
     await queryInterface.addIndex('nearby_places', ['latitude', 'longitude'], {
       name: 'idx_coordinates',

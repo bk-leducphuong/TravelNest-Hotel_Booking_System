@@ -1,5 +1,6 @@
-const logger = require('../config/logger.config');
 const { v4: uuidv4 } = require('uuid');
+
+const logger = require('../config/logger.config');
 
 /**
  * Request logging middleware for tracking all HTTP requests
@@ -56,8 +57,7 @@ const requestLogger = (req, res, next) => {
   // Log response when request finishes
   res.on('finish', () => {
     const duration = Date.now() - startTime;
-    const logLevel =
-      res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
+    const logLevel = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
 
     reqLogger[logLevel](
       {

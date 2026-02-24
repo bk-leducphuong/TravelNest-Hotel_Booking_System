@@ -156,15 +156,11 @@ exports.deleteRoomPhotos = {
     roomId: roomIdSchema,
   }).required(),
   body: Joi.object({
-    photoUrls: Joi.array()
-      .items(Joi.string().uri())
-      .min(1)
-      .required()
-      .messages({
-        'array.base': 'photoUrls must be an array',
-        'array.min': 'At least one photo URL must be provided',
-        'any.required': 'photoUrls is required',
-      }),
+    photoUrls: Joi.array().items(Joi.string().uri()).min(1).required().messages({
+      'array.base': 'photoUrls must be an array',
+      'array.min': 'At least one photo URL must be provided',
+      'any.required': 'photoUrls is required',
+    }),
   }).required(),
 };
 
@@ -260,14 +256,10 @@ exports.deleteHotelPhotos = {
     hotelId: hotelIdSchema,
   }).required(),
   body: Joi.object({
-    photoUrls: Joi.array()
-      .items(Joi.string().uri())
-      .min(1)
-      .required()
-      .messages({
-        'array.base': 'photoUrls must be an array',
-        'array.min': 'At least one photo URL must be provided',
-        'any.required': 'photoUrls is required',
-      }),
+    photoUrls: Joi.array().items(Joi.string().uri()).min(1).required().messages({
+      'array.base': 'photoUrls must be an array',
+      'array.min': 'At least one photo URL must be provided',
+      'any.required': 'photoUrls is required',
+    }),
   }).required(),
 };

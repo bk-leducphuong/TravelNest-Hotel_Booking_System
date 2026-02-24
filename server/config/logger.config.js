@@ -1,12 +1,10 @@
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'production'
-      ? '.env.production'
-      : '.env.development',
+  path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development',
 });
-const pino = require('pino');
 const path = require('path');
 const fs = require('fs');
+
+const pino = require('pino');
 
 // Determine if we're in development mode
 const isDevelopment = process.env.NODE_ENV === 'development';

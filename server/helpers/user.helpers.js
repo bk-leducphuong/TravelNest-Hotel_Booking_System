@@ -1,3 +1,5 @@
+const { ROLES } = require('@constants/roles');
+
 /**
  * Helper: Extract user roles from user object
  */

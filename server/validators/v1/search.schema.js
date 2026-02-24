@@ -1,4 +1,5 @@
 const Joi = require('joi');
+
 const { pagination } = require('./common.schema');
 
 /**
@@ -18,7 +19,7 @@ exports.searchHotels = {
     latitude: Joi.number().min(-90).max(90),
     longitude: Joi.number().min(-180).max(180),
     radius: Joi.number().min(1).max(100).default(10), // km
-    
+
     // Dates (REQUIRED)
     checkIn: Joi.date().iso().greater('now').required().messages({
       'date.base': 'checkIn must be a valid date',
@@ -30,11 +31,11 @@ exports.searchHotels = {
       'date.greater': 'checkOut must be after checkIn',
       'any.required': 'checkOut is required',
     }),
-    
+
     // Legacy date field support
     checkInDate: Joi.date().iso().greater('now'),
     checkOutDate: Joi.date().iso().greater(Joi.ref('checkInDate')),
-    
+
     // Guests (REQUIRED)
     adults: Joi.number().integer().min(1).max(20).required().messages({
       'number.base': 'adults must be a number',
@@ -52,7 +53,7 @@ exports.searchHotels = {
       'number.min': 'rooms must be at least 1',
       'number.max': 'rooms cannot exceed 10',
     }),
-    
+
     // Filters (optional)
     minPrice: Joi.number().min(0).messages({
       'number.base': 'minPrice must be a number',
@@ -67,35 +68,31 @@ exports.searchHotels = {
       'number.min': 'minRating must be at least 0',
       'number.max': 'minRating cannot exceed 5',
     }),
-    hotelClass: Joi.alternatives().try(
-      Joi.number().integer().min(1).max(5),
-      Joi.array().items(Joi.number().integer().min(1).max(5)),
-      Joi.string().pattern(/^[1-5](,[1-5])*$/) // Allow comma-separated string
-    ).messages({
-      'alternatives.match': 'hotelClass must be 1-5 or array of 1-5',
-    }),
-    amenities: Joi.alternatives().try(
-      Joi.string(),
-      Joi.array().items(Joi.string())
-    ),
+    hotelClass: Joi.alternatives()
+      .try(
+        Joi.number().integer().min(1).max(5),
+        Joi.array().items(Joi.number().integer().min(1).max(5)),
+        Joi.string().pattern(/^[1-5](,[1-5])*$/) // Allow comma-separated string
+      )
+      .messages({
+        'alternatives.match': 'hotelClass must be 1-5 or array of 1-5',
+      }),
+    amenities: Joi.alternatives().try(Joi.string(), Joi.array().items(Joi.string())),
     freeCancellation: Joi.boolean(),
-    
+
     // Sorting
-    sortBy: Joi.string().valid(
-      'relevance',
-      'price_asc',
-      'price_desc',
-      'rating',
-      'distance',
-      'popularity'
-    ).default('relevance').messages({
-      'any.only': 'sortBy must be one of: relevance, price_asc, price_desc, rating, distance, popularity',
-    }),
-    
+    sortBy: Joi.string()
+      .valid('relevance', 'price_asc', 'price_desc', 'rating', 'distance', 'popularity')
+      .default('relevance')
+      .messages({
+        'any.only':
+          'sortBy must be one of: relevance, price_asc, price_desc, rating, distance, popularity',
+      }),
+
     // Pagination
     page: pagination.page,
     limit: pagination.limit,
-    
+
     // Legacy fields for backward compatibility
     location: Joi.string().trim().min(2).max(100),
     numberOfDays: Joi.number().integer().positive(),
@@ -110,7 +107,7 @@ exports.searchHotels = {
       if (value.checkOutDate && !value.checkOut) {
         value.checkOut = value.checkOutDate;
       }
-      
+
       // Support legacy location field (map to city)
       if (value.location && !value.city) {
         value.city = value.location;
@@ -120,7 +117,7 @@ exports.searchHotels = {
       const checkIn = new Date(value.checkIn);
       const checkOut = new Date(value.checkOut);
       const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
-      
+
       if (nights > 30) {
         return helpers.error('any.custom', {
           message: 'Maximum stay duration is 30 nights',
@@ -129,18 +126,19 @@ exports.searchHotels = {
 
       // Parse comma-separated hotelClass string to array
       if (typeof value.hotelClass === 'string') {
-        value.hotelClass = value.hotelClass.split(',').map(c => parseInt(c.trim(), 10));
+        value.hotelClass = value.hotelClass.split(',').map((c) => parseInt(c.trim(), 10));
       }
 
       // Parse comma-separated amenities string to array
       if (typeof value.amenities === 'string') {
-        value.amenities = value.amenities.split(',').map(a => a.trim().toUpperCase());
+        value.amenities = value.amenities.split(',').map((a) => a.trim().toUpperCase());
       }
 
       return value;
     })
     .messages({
-      'object.missing': 'At least one location parameter (city, country, or latitude/longitude) is required',
+      'object.missing':
+        'At least one location parameter (city, country, or latitude/longitude) is required',
       'object.and': 'Both latitude and longitude are required when using coordinates',
     }),
 };
@@ -207,13 +205,13 @@ exports.saveSearchInformation = {
     children: Joi.number().integer().min(0).default(0),
     rooms: Joi.number().integer().min(1).default(1),
     nights: Joi.number().integer().min(1),
-    
+
     // Legacy fields
     location: Joi.string().trim().min(2).max(100),
     checkInDate: Joi.date().iso(),
     checkOutDate: Joi.date().iso(),
     numberOfDays: Joi.number().integer().positive(),
-    
+
     // Allow nested searchData for backward compatibility
     searchData: Joi.object().unknown(true),
   })
@@ -223,7 +221,7 @@ exports.saveSearchInformation = {
       if (value.searchData) {
         return { ...value.searchData, ...value };
       }
-      
+
       // Support legacy field names
       if (value.checkInDate && !value.checkIn) {
         value.checkIn = value.checkInDate;
@@ -237,7 +235,7 @@ exports.saveSearchInformation = {
       if (value.numberOfDays && !value.nights) {
         value.nights = value.numberOfDays;
       }
-      
+
       return value;
     }),
 };

@@ -1,10 +1,7 @@
-const joinRepository = require('../repositories/join.repository');
-const {
-  minioClient,
-  bucketName,
-  getObjectUrl,
-} = require('../config/minio.config');
 const sharp = require('sharp');
+
+const joinRepository = require('../repositories/join.repository');
+const { minioClient, bucketName, getObjectUrl } = require('../config/minio.config');
 const ApiError = require('../utils/ApiError');
 
 /**
@@ -59,18 +56,10 @@ class JoinService {
     const lat = parseFloat(coordinates.latitude);
     const lng = parseFloat(coordinates.longitude);
     if (isNaN(lat) || lat < -90 || lat > 90) {
-      throw new ApiError(
-        400,
-        'INVALID_LATITUDE',
-        'Latitude must be between -90 and 90'
-      );
+      throw new ApiError(400, 'INVALID_LATITUDE', 'Latitude must be between -90 and 90');
     }
     if (isNaN(lng) || lng < -180 || lng > 180) {
-      throw new ApiError(
-        400,
-        'INVALID_LONGITUDE',
-        'Longitude must be between -180 and 180'
-      );
+      throw new ApiError(400, 'INVALID_LONGITUDE', 'Longitude must be between -180 and 180');
     }
 
     // Validate number of rooms
@@ -108,8 +97,7 @@ class JoinService {
     });
 
     // Extract hotel ID from Sequelize instance
-    const hotelId =
-      hotel.id || hotel.get?.('id') || hotel.dataValues?.id || hotel.hotel_id;
+    const hotelId = hotel.id || hotel.get?.('id') || hotel.dataValues?.id || hotel.hotel_id;
 
     // Create room
     const room = await joinRepository.createRoom({
@@ -119,8 +107,7 @@ class JoinService {
     });
 
     // Extract room ID from Sequelize instance
-    const roomId =
-      room.id || room.get?.('id') || room.dataValues?.id || room.room_id;
+    const roomId = room.id || room.get?.('id') || room.dataValues?.id || room.room_id;
 
     // Create room inventory entries for next 60 days
     const inventoryEntries = Array.from({ length: 60 }, (_, i) => {

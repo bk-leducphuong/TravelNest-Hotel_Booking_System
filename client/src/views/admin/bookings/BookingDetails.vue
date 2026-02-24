@@ -96,7 +96,7 @@ export default {
       <AdminHeader />
       <!-- main content -->
       <div class="main-content">
-        <loading
+        <Loading
           v-model:active="isLoading"
           :can-cancel="true"
           :on-cancel="onCancel"

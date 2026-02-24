@@ -74,8 +74,7 @@ module.exports = function (sequelize, DataTypes) {
           unique: true,
           using: 'BTREE',
           fields: [{ name: 'role_id' }, { name: 'permission_id' }],
-          comment:
-            'Each role should only have a permission assigned at most once.',
+          comment: 'Each role should only have a permission assigned at most once.',
         },
       ],
     }
@@ -94,4 +93,3 @@ module.exports = function (sequelize, DataTypes) {
 
   return RolePermission;
 };
-

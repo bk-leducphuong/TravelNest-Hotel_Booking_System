@@ -24,11 +24,7 @@ router.get('/', validate(bookingSchema.getAllBookings), getAllBookings);
  * GET /api/admin/bookings/:bookingId
  * Get a specific booking by ID
  */
-router.get(
-  '/:bookingId',
-  validate(bookingSchema.getBookingById),
-  getBookingById
-);
+router.get('/:bookingId', validate(bookingSchema.getBookingById), getBookingById);
 
 /**
  * GET /api/admin/bookings/:bookingId/booker

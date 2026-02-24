@@ -1,4 +1,5 @@
 const http = require('http');
+
 const { Server } = require('socket.io');
 const Client = require('socket.io-client');
 const notificationService = require('@services/notification.service');
@@ -215,9 +216,7 @@ describe('User Socket Controller Integration Tests', () => {
 
             // Verify socket left the room
             setTimeout(() => {
-              expect(serverSocket.rooms.has(`booking_${bookingId}`)).toBe(
-                false
-              );
+              expect(serverSocket.rooms.has(`booking_${bookingId}`)).toBe(false);
               done();
             }, 50);
           });
@@ -384,11 +383,7 @@ describe('User Socket Controller Integration Tests', () => {
           done();
         });
 
-        userController.sendNotification(
-          userNamespace,
-          'user-123',
-          notification
-        );
+        userController.sendNotification(userNamespace, 'user-123', notification);
       });
     });
 
@@ -414,12 +409,7 @@ describe('User Socket Controller Integration Tests', () => {
             done();
           });
 
-          userController.sendBookingUpdate(
-            userNamespace,
-            'user-123',
-            bookingId,
-            updateData
-          );
+          userController.sendBookingUpdate(userNamespace, 'user-123', bookingId, updateData);
         });
       });
     });
@@ -441,14 +431,10 @@ describe('User Socket Controller Integration Tests', () => {
         expect(response.success).toBe(false);
 
         // Now send valid request
-        clientSocket.emit(
-          'bookings:subscribe',
-          'booking-valid',
-          (response2) => {
-            expect(response2.success).toBe(true);
-            done();
-          }
-        );
+        clientSocket.emit('bookings:subscribe', 'booking-valid', (response2) => {
+          expect(response2.success).toBe(true);
+          done();
+        });
       });
     });
   });
@@ -492,12 +478,8 @@ describe('User Socket Controller Integration Tests', () => {
 
             clientSocket.emit('bookings:unsubscribe', booking1, () => {
               setTimeout(() => {
-                expect(serverSocket.rooms.has(`booking_${booking1}`)).toBe(
-                  false
-                );
-                expect(serverSocket.rooms.has(`booking_${booking2}`)).toBe(
-                  true
-                );
+                expect(serverSocket.rooms.has(`booking_${booking1}`)).toBe(false);
+                expect(serverSocket.rooms.has(`booking_${booking2}`)).toBe(true);
                 done();
               }, 50);
             });

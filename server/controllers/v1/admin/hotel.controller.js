@@ -33,10 +33,7 @@ const getHotelById = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { hotelId } = req.params;
 
-  const hotel = await adminHotelService.getHotelById(
-    hotelId,
-    ownerId
-  );
+  const hotel = await adminHotelService.getHotelById(hotelId, ownerId);
 
   res.status(200).json({
     data: hotel,
@@ -52,11 +49,7 @@ const updateHotel = asyncHandler(async (req, res) => {
   const { hotelId } = req.params;
   const updateData = req.body;
 
-  const hotel = await adminHotelService.updateHotel(
-    hotelId,
-    ownerId,
-    updateData
-  );
+  const hotel = await adminHotelService.updateHotel(hotelId, ownerId, updateData);
 
   res.status(200).json({
     data: hotel,

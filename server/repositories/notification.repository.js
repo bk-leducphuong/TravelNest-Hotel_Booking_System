@@ -1,4 +1,5 @@
 const { Op } = require('sequelize');
+
 const { Notifications, users } = require('../models/index.js');
 const {
   NOTIFICATION_TYPES,
@@ -30,16 +31,8 @@ class NotificationRepository {
    * @param {Object} templateData - Data for template substitution
    * @param {Object} options - Additional options (senderId, relatedEntity, etc.)
    */
-  async createFromTemplate(
-    receiverId,
-    notificationType,
-    templateData,
-    options = {}
-  ) {
-    const notification = buildNotificationFromTemplate(
-      notificationType,
-      templateData
-    );
+  async createFromTemplate(receiverId, notificationType, templateData, options = {}) {
+    const notification = buildNotificationFromTemplate(notificationType, templateData);
 
     return await this.create({
       receiver_id: receiverId,
@@ -88,10 +81,7 @@ class NotificationRepository {
     }
 
     if (!includeExpired) {
-      where[Op.or] = [
-        { expires_at: null },
-        { expires_at: { [Op.gt]: new Date() } },
-      ];
+      where[Op.or] = [{ expires_at: null }, { expires_at: { [Op.gt]: new Date() } }];
     }
 
     return await Notifications.findAndCountAll({
@@ -233,13 +223,7 @@ class NotificationRepository {
       where: { receiver_id: userId, is_read: false },
       attributes: [
         'category',
-        [
-          Notifications.sequelize.fn(
-            'COUNT',
-            Notifications.sequelize.col('id')
-          ),
-          'count',
-        ],
+        [Notifications.sequelize.fn('COUNT', Notifications.sequelize.col('id')), 'count'],
       ],
       group: ['category'],
     });

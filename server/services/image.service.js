@@ -1,3 +1,5 @@
+const path = require('path');
+
 const imageRepository = require('@repositories/image.repository');
 const { imageProcessingQueue } = require('@queues/index');
 const { addJob } = require('@utils/bullmq.utils');
@@ -11,7 +13,6 @@ const {
 const ApiError = require('@utils/ApiError');
 const logger = require('@config/logger.config');
 const { uuidv7 } = require('uuidv7');
-const path = require('path');
 
 /**
  * Image Service - Business logic for image operations
@@ -127,11 +128,7 @@ class ImageService {
   async getImages(entityType, entityId) {
     try {
       // Get images from database
-      const images = await imageRepository.findByEntity(
-        entityType,
-        entityId,
-        'active'
-      );
+      const images = await imageRepository.findByEntity(entityType, entityId, 'active');
 
       if (images.length === 0) {
         return [];
@@ -218,12 +215,10 @@ class ImageService {
       }
 
       if (image.status === 'deleted') {
-        throw new ApiError(
-          400,
-          'IMAGE_ALREADY_DELETED',
-          'Image already deleted',
-          { imageId, status: image.status }
-        );
+        throw new ApiError(400, 'IMAGE_ALREADY_DELETED', 'Image already deleted', {
+          imageId,
+          status: image.status,
+        });
       }
 
       // Soft delete in database
@@ -296,12 +291,10 @@ class ImageService {
       if (error instanceof ApiError) {
         throw error;
       }
-      throw new ApiError(
-        500,
-        'HARD_DELETE_FAILED',
-        'Failed to permanently delete image',
-        { imageId, originalError: error.message }
-      );
+      throw new ApiError(500, 'HARD_DELETE_FAILED', 'Failed to permanently delete image', {
+        imageId,
+        originalError: error.message,
+      });
     }
   }
 
@@ -339,12 +332,10 @@ class ImageService {
       }
 
       if (image.status !== 'active') {
-        throw new ApiError(
-          400,
-          'INVALID_IMAGE_STATUS',
-          'Cannot set non-active image as primary',
-          { imageId, status: image.status }
-        );
+        throw new ApiError(400, 'INVALID_IMAGE_STATUS', 'Cannot set non-active image as primary', {
+          imageId,
+          status: image.status,
+        });
       }
 
       // Set as primary
@@ -362,12 +353,12 @@ class ImageService {
       if (error instanceof ApiError) {
         throw error;
       }
-      throw new ApiError(
-        500,
-        'SET_PRIMARY_FAILED',
-        'Failed to set primary image',
-        { imageId, entityType, entityId, originalError: error.message }
-      );
+      throw new ApiError(500, 'SET_PRIMARY_FAILED', 'Failed to set primary image', {
+        imageId,
+        entityType,
+        entityId,
+        originalError: error.message,
+      });
     }
   }
 }

@@ -1,5 +1,6 @@
 const Sequelize = require('sequelize');
 const { uuidv7 } = require('uuidv7');
+
 const { PLACE_CATEGORIES } = require('../constants/hotels');
 
 module.exports = function (sequelize, DataTypes) {
@@ -164,11 +165,7 @@ module.exports = function (sequelize, DataTypes) {
         {
           name: 'idx_hotel_active_distance',
           using: 'BTREE',
-          fields: [
-            { name: 'hotel_id' },
-            { name: 'is_active' },
-            { name: 'distance_km' },
-          ],
+          fields: [{ name: 'hotel_id' }, { name: 'is_active' }, { name: 'distance_km' }],
           comment: 'Index for fetching active places ordered by distance',
         },
         {

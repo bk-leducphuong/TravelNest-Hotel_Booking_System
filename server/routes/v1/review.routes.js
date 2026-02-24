@@ -25,11 +25,7 @@ router.get('/', validate(reviewSchema.getUserReviews), getUserReviews);
  * GET /api/reviews/hotels/:hotelId
  * Get reviews for a specific hotel (with pagination)
  */
-router.get(
-  '/hotels/:hotelId',
-  validate(reviewSchema.getHotelReviews),
-  getHotelReviews
-);
+router.get('/hotels/:hotelId', validate(reviewSchema.getHotelReviews), getHotelReviews);
 
 /**
  * GET /api/reviews/validate
@@ -41,11 +37,7 @@ router.get('/validate', validate(reviewSchema.validateReview), validateReview);
  * GET /api/reviews/check
  * Check if booking has already been reviewed
  */
-router.get(
-  '/check',
-  validate(reviewSchema.checkAlreadyReviewed),
-  checkAlreadyReviewed
-);
+router.get('/check', validate(reviewSchema.checkAlreadyReviewed), checkAlreadyReviewed);
 
 /**
  * POST /api/reviews

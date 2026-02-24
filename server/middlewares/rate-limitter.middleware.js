@@ -9,8 +9,7 @@ const limiter = rateLimit({
   handler: function (req, res, next) {
     res.status(429).json({
       success: false,
-      message:
-        'Too many requests from this IP, please try again after 15 minutes',
+      message: 'Too many requests from this IP, please try again after 15 minutes',
     });
   },
 });

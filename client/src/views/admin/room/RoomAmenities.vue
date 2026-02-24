@@ -162,7 +162,7 @@ export default {
       <!-- main content -->
       <div class="main-content">
         <div class="container">
-          <loading
+          <Loading
             v-model:active="isLoading"
             :can-cancel="true"
             :on-cancel="onCancel"
@@ -207,7 +207,7 @@ export default {
 
         <!-- Top Amenities -->
         <div class="container">
-          <loading v-model:active="isLoading" :color="`#003b95`" :is-full-page="false" />
+          <Loading v-model:active="isLoading" :color="`#003b95`" :is-full-page="false" />
           <h1>Top Amenities</h1>
           <p>
             We know these amenites encourage guests to book. Let them know what you have by
@@ -265,7 +265,7 @@ export default {
 
         <!-- Top Amenities -->
         <div class="container">
-          <loading
+          <Loading
             v-model:active="isLoading"
             :can-cancel="true"
             :on-cancel="onCancel"

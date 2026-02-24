@@ -1,4 +1,5 @@
 const { uuidv7 } = require('uuidv7');
+
 const { REVIEW_STATUSES } = require('../constants/reviews');
 
 module.exports = function (sequelize, DataTypes) {

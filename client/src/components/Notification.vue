@@ -1,5 +1,5 @@
 <template>
-  <el-popover
+  <ElPopover
     :visible="isNotificationPopupVisible"
     placement="bottom"
     :width="350"
@@ -8,11 +8,11 @@
   >
     <template #reference>
       <li style="position: relative; cursor: pointer">
-        <el-badge :value="numberOfNewNotifications" :hidden="numberOfNewNotifications === 0">
-          <el-icon :size="20">
+        <ElBadge :value="numberOfNewNotifications" :hidden="numberOfNewNotifications === 0">
+          <ElIcon :size="20">
             <Bell />
-          </el-icon>
-        </el-badge>
+          </ElIcon>
+        </ElBadge>
       </li>
     </template>
 
@@ -31,7 +31,7 @@
         <!-- Notification Content -->
         <div class="notification-content">
           <!-- Empty state -->
-          <el-empty
+          <ElEmpty
             v-if="notifications.length === 0"
             description="You have no notifications"
             :image-size="80"
@@ -45,15 +45,15 @@
             @click="viewDetails(notification)"
           >
             <div class="notification-icon">
-              <el-icon :size="20" color="#409eff">
+              <ElIcon :size="20" color="#409eff">
                 <Bell />
-              </el-icon>
+              </ElIcon>
             </div>
             <div class="notification-text">
               <div class="notification-message">
-                <el-badge is-dot :hidden="notification.is_read === 1" class="notification-dot">
+                <ElBadge is-dot :hidden="notification.is_read === 1" class="notification-dot">
                   <span>{{ notification.message }}</span>
-                </el-badge>
+                </ElBadge>
               </div>
               <p class="notification-time">2 hrs ago</p>
             </div>
@@ -62,11 +62,11 @@
 
         <!-- Notification Footer -->
         <div class="notification-footer" v-if="notifications.length > 0">
-          <el-button text type="primary" @click="handleSeeAll">See all</el-button>
+          <ElButton text type="primary" @click="handleSeeAll">See all</ElButton>
         </div>
       </div>
     </template>
-  </el-popover>
+  </ElPopover>
 </template>
 
 <script>

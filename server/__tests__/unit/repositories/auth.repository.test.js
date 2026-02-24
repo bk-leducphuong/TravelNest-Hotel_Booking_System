@@ -1,5 +1,6 @@
 const authRepository = require('@repositories/auth.repository');
 const { Users, Roles, UserRoles, HotelUsers } = require('@models/index.js');
+
 const {
   createMockAuthUser,
   createMockRole,
@@ -58,10 +59,7 @@ describe('AuthRepository', () => {
       Roles.findOne.mockResolvedValue(null);
 
       // Act
-      const result = await authRepository.findByEmailAndRole(
-        'test@example.com',
-        'invalid_role'
-      );
+      const result = await authRepository.findByEmailAndRole('test@example.com', 'invalid_role');
 
       // Assert
       expect(result).toBeNull();
@@ -75,10 +73,7 @@ describe('AuthRepository', () => {
       Users.findOne.mockResolvedValue(null);
 
       // Act
-      const result = await authRepository.findByEmailAndRole(
-        'nonexistent@example.com',
-        'guest'
-      );
+      const result = await authRepository.findByEmailAndRole('nonexistent@example.com', 'guest');
 
       // Assert
       expect(result).toBeNull();
@@ -133,11 +128,7 @@ describe('AuthRepository', () => {
       Users.findOne.mockResolvedValue(mockUser);
 
       // Act
-      const result = await authRepository.findByEmailOrPhoneAndRole(
-        email,
-        phoneNumber,
-        roleName
-      );
+      const result = await authRepository.findByEmailOrPhoneAndRole(email, phoneNumber, roleName);
 
       // Assert
       expect(Roles.findOne).toHaveBeenCalledWith({
@@ -242,10 +233,7 @@ describe('AuthRepository', () => {
       Users.update.mockResolvedValue([1]); // [number of updated rows]
 
       // Act
-      const result = await authRepository.updatePasswordByEmail(
-        email,
-        passwordHash
-      );
+      const result = await authRepository.updatePasswordByEmail(email, passwordHash);
 
       // Assert
       expect(Users.update).toHaveBeenCalledWith(
@@ -292,10 +280,7 @@ describe('AuthRepository', () => {
       Users.findOne.mockResolvedValue(mockUser);
 
       // Act
-      const result = await authRepository.findByEmailAndRoleWithPassword(
-        email,
-        roleName
-      );
+      const result = await authRepository.findByEmailAndRoleWithPassword(email, roleName);
 
       // Assert
       expect(Roles.findOne).toHaveBeenCalledWith({

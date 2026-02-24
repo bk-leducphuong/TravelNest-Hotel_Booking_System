@@ -6,8 +6,7 @@ module.exports = (err, req, res, next) => {
 
   // Treat as API error if it has statusCode and code (handles cross-module ApiError)
   const isApiError =
-    err instanceof ApiError ||
-    (err && typeof err.statusCode === 'number' && err.code);
+    err instanceof ApiError || (err && typeof err.statusCode === 'number' && err.code);
 
   if (!isApiError) {
     apiError = new ApiError(500, 'INTERNAL_ERROR', 'Internal server error');

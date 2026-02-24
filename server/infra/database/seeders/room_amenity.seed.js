@@ -18,16 +18,14 @@
  */
 
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
+  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
 });
 
 const { faker } = require('@faker-js/faker');
+const { Op } = require('sequelize');
+
 const db = require('../../models');
 const sequelize = require('../../config/database.config');
-const { Op } = require('sequelize');
 
 const { rooms: Rooms, amenities: Amenities, room_amenities: RoomAmenities } = db;
 
@@ -51,15 +49,7 @@ async function getRoomApplicableAmenityIds() {
  * @returns {string|null}
  */
 function maybeAdditionalInfo() {
-  const examples = [
-    'King size bed',
-    'Queen size bed',
-    'In-room',
-    'Upon request',
-    null,
-    null,
-    null,
-  ];
+  const examples = ['King size bed', 'Queen size bed', 'In-room', 'Upon request', null, null, null];
   return faker.helpers.arrayElement(examples);
 }
 

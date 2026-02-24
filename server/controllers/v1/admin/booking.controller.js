@@ -14,15 +14,11 @@ const getAllBookings = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { hotelId, status, page, limit } = req.query;
 
-  const result = await adminBookingService.getAllBookings(
-    hotelId,
-    ownerId,
-    {
-      status,
-      page: parseInt(page, 10),
-      limit: parseInt(limit, 10),
-    }
-  );
+  const result = await adminBookingService.getAllBookings(hotelId, ownerId, {
+    status,
+    page: parseInt(page, 10),
+    limit: parseInt(limit, 10),
+  });
 
   res.status(200).json({
     data: result.bookings,
@@ -38,10 +34,7 @@ const getBookingById = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { bookingId } = req.params;
 
-  const booking = await adminBookingService.getBookingById(
-    bookingId,
-    ownerId
-  );
+  const booking = await adminBookingService.getBookingById(bookingId, ownerId);
 
   res.status(200).json({
     data: booking,
@@ -56,10 +49,7 @@ const getBookerInformation = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { bookingId } = req.params;
 
-  const booker = await adminBookingService.getBookerInformation(
-    bookingId,
-    ownerId
-  );
+  const booker = await adminBookingService.getBookerInformation(bookingId, ownerId);
 
   res.status(200).json({
     data: booker,
@@ -75,11 +65,7 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
   const { status } = req.body;
 
-  const booking = await adminBookingService.updateBookingStatus(
-    bookingId,
-    ownerId,
-    status
-  );
+  const booking = await adminBookingService.updateBookingStatus(bookingId, ownerId, status);
 
   res.status(200).json({
     data: booking,

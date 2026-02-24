@@ -108,7 +108,16 @@ module.exports = {
             comment: 'Additional data: booking_id, amount, dates, etc.',
           },
           related_entity_type: {
-            type: Sequelize.ENUM('booking', 'payment', 'transaction', 'review', 'hotel', 'room', 'user', 'refund'),
+            type: Sequelize.ENUM(
+              'booking',
+              'payment',
+              'transaction',
+              'review',
+              'hotel',
+              'room',
+              'user',
+              'refund'
+            ),
             allowNull: true,
             comment: 'Type of related entity',
           },

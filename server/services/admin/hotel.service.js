@@ -22,9 +22,7 @@ class AdminHotelService {
     const enrichedHotels = await Promise.all(
       result.hotels.map(async (hotel) => {
         const hotelData = hotel.toJSON ? hotel.toJSON() : hotel;
-        const stats = await adminHotelRepository.getHotelStatistics(
-          hotelData.hotel_id
-        );
+        const stats = await adminHotelRepository.getHotelStatistics(hotelData.hotel_id);
 
         return {
           ...hotelData,
@@ -51,10 +49,7 @@ class AdminHotelService {
    * @returns {Promise<Object>} Hotel details with rooms and statistics
    */
   async getHotelById(hotelId, ownerId) {
-    const hotel = await adminHotelRepository.findByIdAndOwnerId(
-      hotelId,
-      ownerId
-    );
+    const hotel = await adminHotelRepository.findByIdAndOwnerId(hotelId, ownerId);
 
     if (!hotel) {
       throw new ApiError(
@@ -88,10 +83,7 @@ class AdminHotelService {
    */
   async updateHotel(hotelId, ownerId, updateData) {
     // Verify hotel ownership
-    const hotel = await adminHotelRepository.findByIdAndOwnerId(
-      hotelId,
-      ownerId
-    );
+    const hotel = await adminHotelRepository.findByIdAndOwnerId(hotelId, ownerId);
 
     if (!hotel) {
       throw new ApiError(
@@ -102,10 +94,7 @@ class AdminHotelService {
     }
 
     // Update hotel
-    const [updatedCount] = await adminHotelRepository.update(
-      hotelId,
-      updateData
-    );
+    const [updatedCount] = await adminHotelRepository.update(hotelId, updateData);
 
     if (updatedCount === 0) {
       throw new ApiError(500, 'UPDATE_FAILED', 'Failed to update hotel');

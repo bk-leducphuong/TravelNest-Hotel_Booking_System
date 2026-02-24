@@ -16,12 +16,10 @@
  */
 
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
+  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
 });
 const { faker } = require('@faker-js/faker');
+
 const db = require('../../../models');
 const sequelize = require('../../../config/database.config');
 const { POLICY_TYPES } = require('../../../constants/hotels');
@@ -84,8 +82,7 @@ const POLICY_TEMPLATES = {
     },
     {
       title: 'No Pets',
-      description:
-        'Pets are not allowed in this property, with the exception of service animals.',
+      description: 'Pets are not allowed in this property, with the exception of service animals.',
       icon: 'no-pets',
     },
   ],
@@ -104,8 +101,7 @@ const POLICY_TEMPLATES = {
     },
     {
       title: 'Deposit Required',
-      description:
-        'A deposit of 50% is required at booking. Remaining balance due upon check-in.',
+      description: 'A deposit of 50% is required at booking. Remaining balance due upon check-in.',
       icon: 'deposit',
     },
   ],
@@ -233,13 +229,7 @@ function generatePoliciesForHotel(hotelId) {
   let displayOrder = 0;
 
   // Always include essential policies
-  const essentialPolicyTypes = [
-    'cancellation',
-    'children',
-    'pets',
-    'payment',
-    'smoking',
-  ];
+  const essentialPolicyTypes = ['cancellation', 'children', 'pets', 'payment', 'smoking'];
 
   essentialPolicyTypes.forEach((policyType) => {
     const templates = POLICY_TEMPLATES[policyType];
@@ -271,10 +261,7 @@ function generatePoliciesForHotel(hotelId) {
   ];
 
   const numOptionalPolicies = faker.number.int({ min: 2, max: 5 });
-  const selectedOptional = faker.helpers.arrayElements(
-    optionalPolicyTypes,
-    numOptionalPolicies
-  );
+  const selectedOptional = faker.helpers.arrayElements(optionalPolicyTypes, numOptionalPolicies);
 
   selectedOptional.forEach((policyType) => {
     const templates = POLICY_TEMPLATES[policyType];
@@ -346,36 +333,24 @@ async function seedHotelPolicies(options = {}) {
       const hotelPolicies = generatePoliciesForHotel(hotelId);
       policiesToCreate.push(...hotelPolicies);
 
-      console.log(
-        `   📋 Generated ${hotelPolicies.length} policies for hotel ${hotelId}`
-      );
+      console.log(`   📋 Generated ${hotelPolicies.length} policies for hotel ${hotelId}`);
     }
 
     // Bulk create all policies
     if (policiesToCreate.length > 0) {
-      console.log(
-        `\n💾 Creating ${policiesToCreate.length} policy/policies in database...`
-      );
-      const createdPolicies = await hotel_policies.bulkCreate(
-        policiesToCreate,
-        {
-          validate: true,
-          returning: true,
-        }
-      );
+      console.log(`\n💾 Creating ${policiesToCreate.length} policy/policies in database...`);
+      const createdPolicies = await hotel_policies.bulkCreate(policiesToCreate, {
+        validate: true,
+        returning: true,
+      });
 
-      console.log(
-        `✅ ${createdPolicies.length} policy/policies created successfully`
-      );
+      console.log(`✅ ${createdPolicies.length} policy/policies created successfully`);
     }
 
     // Display summary
     const totalPolicies = await hotel_policies.count();
     const policiesByType = await hotel_policies.findAll({
-      attributes: [
-        'policy_type',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'policy_count'],
-      ],
+      attributes: ['policy_type', [sequelize.fn('COUNT', sequelize.col('id')), 'policy_count']],
       group: ['policy_type'],
       raw: true,
     });
@@ -416,9 +391,7 @@ async function seedPoliciesForHotel(hotelId) {
       returning: true,
     });
 
-    console.log(
-      `✅ Created ${createdPolicies.length} policies for hotel ${hotelId}`
-    );
+    console.log(`✅ Created ${createdPolicies.length} policies for hotel ${hotelId}`);
     return createdPolicies;
   } catch (error) {
     console.error(`❌ Error seeding policies for hotel ${hotelId}:`, error);

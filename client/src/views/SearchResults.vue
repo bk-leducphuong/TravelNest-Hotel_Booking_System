@@ -137,7 +137,7 @@ export default {
     async redirectToHotelDetails(hotel_id) {
       try {
         // save viewed hotel
-        let viewedHotels = localStorage.getItem('viewedHotels')
+        const viewedHotels = localStorage.getItem('viewedHotels')
           ? JSON.parse(localStorage.getItem('viewedHotels'))
           : []
 

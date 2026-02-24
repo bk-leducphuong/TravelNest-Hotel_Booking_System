@@ -76,11 +76,7 @@ const validateReview = asyncHandler(async (req, res) => {
   const userId = req.session.user.user_id;
   const { bookingCode, hotelId } = req.query;
 
-  const result = await reviewService.validateReview(
-    userId,
-    bookingCode,
-    hotelId
-  );
+  const result = await reviewService.validateReview(userId, bookingCode, hotelId);
 
   res.status(200).json({
     data: result,
@@ -94,10 +90,7 @@ const validateReview = asyncHandler(async (req, res) => {
 const checkAlreadyReviewed = asyncHandler(async (req, res) => {
   const { bookingCode, hotelId } = req.query;
 
-  const review = await reviewService.checkAlreadyReviewed(
-    bookingCode,
-    hotelId
-  );
+  const review = await reviewService.checkAlreadyReviewed(bookingCode, hotelId);
 
   if (review) {
     res.status(200).json({

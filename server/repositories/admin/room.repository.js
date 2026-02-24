@@ -1,5 +1,6 @@
-const { Rooms, RoomInventories, Hotels } = require('../../models/index.js');
 const { Op } = require('sequelize');
+
+const { Rooms, RoomInventories, Hotels } = require('../../models/index.js');
 
 /**
  * Admin Room Repository - Contains all database operations for admin room management
@@ -202,10 +203,8 @@ class AdminRoomRepository {
 
     const totalDays = inventories.length;
     const averagePrice =
-      inventories.reduce(
-        (sum, inv) => sum + parseFloat(inv.price_per_night || 0),
-        0
-      ) / totalDays || 0;
+      inventories.reduce((sum, inv) => sum + parseFloat(inv.price_per_night || 0), 0) / totalDays ||
+      0;
 
     const totalReserved = inventories.reduce(
       (sum, inv) => sum + parseInt(inv.booked_rooms || 0),
@@ -217,8 +216,7 @@ class AdminRoomRepository {
       0
     );
 
-    const occupancyRate =
-      totalInventory > 0 ? (totalReserved / totalInventory) * 100 : 0;
+    const occupancyRate = totalInventory > 0 ? (totalReserved / totalInventory) * 100 : 0;
 
     return {
       totalDays,

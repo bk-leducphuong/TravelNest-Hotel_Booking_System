@@ -39,10 +39,7 @@ const markNotificationAsRead = asyncHandler(async (req, res) => {
   const userId = req.session.user.user_id;
   const { notificationId } = req.params;
 
-  await notificationService.markNotificationAsRead(
-    notificationId,
-    userId
-  );
+  await notificationService.markNotificationAsRead(notificationId, userId);
 
   res.status(200).json({
     data: {
@@ -58,8 +55,7 @@ const markNotificationAsRead = asyncHandler(async (req, res) => {
 const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
   const userId = req.session.user.user_id;
 
-  const updatedCount =
-    await notificationService.markAllNotificationsAsRead(userId);
+  const updatedCount = await notificationService.markAllNotificationsAsRead(userId);
 
   res.status(200).json({
     data: {

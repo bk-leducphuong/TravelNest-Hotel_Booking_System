@@ -58,17 +58,9 @@ async function getObject(bucket, objectKey) {
  * @param {number} expirySeconds - URL expiry time in seconds (default: 24 hours)
  * @returns {Promise<string>} - Pre-signed URL
  */
-async function getPresignedUrl(
-  bucket,
-  objectKey,
-  expirySeconds = 24 * 60 * 60
-) {
+async function getPresignedUrl(bucket, objectKey, expirySeconds = 24 * 60 * 60) {
   try {
-    const url = await minioClient.presignedGetObject(
-      bucket,
-      objectKey,
-      expirySeconds
-    );
+    const url = await minioClient.presignedGetObject(bucket, objectKey, expirySeconds);
     return url;
   } catch (error) {
     logger.error('Error generating pre-signed URL:', error);

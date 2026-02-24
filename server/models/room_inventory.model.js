@@ -1,4 +1,5 @@
 const Sequelize = require('sequelize');
+
 const { CURRENCIES } = require('../constants/common');
 module.exports = function (sequelize, DataTypes) {
   const RoomInventory = sequelize.define(
@@ -63,8 +64,7 @@ module.exports = function (sequelize, DataTypes) {
         validate: {
           min: 0,
         },
-        comment:
-          'Price per night for this specific date (allows dynamic pricing)',
+        comment: 'Price per night for this specific date (allows dynamic pricing)',
       },
       currency: {
         type: DataTypes.STRING(3),

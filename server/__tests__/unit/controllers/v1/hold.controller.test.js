@@ -1,6 +1,7 @@
 const holdController = require('@controllers/v1/hold.controller');
 const holdService = require('@services/hold.service');
 const ApiError = require('@utils/ApiError');
+
 const {
   createMockCreateHoldPayload,
   createMockCreateHoldResponse,
@@ -52,9 +53,7 @@ describe('HoldController', () => {
     it('should return 200 and list of holds for authenticated user', async () => {
       const userId = 'user-uuid-123';
       req.session = { user: { user_id: userId } };
-      const mockHolds = [
-        { ...createMockHoldRecord(), totalPrice: 199.99, expiresAt: new Date() },
-      ];
+      const mockHolds = [{ ...createMockHoldRecord(), totalPrice: 199.99, expiresAt: new Date() }];
 
       holdService.getActiveHoldsByUser.mockResolvedValue(mockHolds);
 

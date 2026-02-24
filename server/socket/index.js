@@ -2,11 +2,8 @@ const { Server } = require('socket.io');
 const logger = require('@config/logger.config');
 const sessionMiddleware = require('@middlewares/session.middleware');
 const { ROLES } = require('@constants/roles');
-const {
-  socketAuthentication,
-  socketAuthorization,
-  wrapMiddleware,
-} = require('./socket.auth');
+
+const { socketAuthentication, socketAuthorization, wrapMiddleware } = require('./socket.auth');
 
 // Import namespace controllers
 const publicController = require('./controllers/public.controller');
@@ -89,9 +86,7 @@ const initSocket = (server) => {
     propertyController.handleConnection(propertyNamespace, socket);
   });
 
-  logger.info(
-    'Socket namespace /property configured for OWNER, MANAGER, STAFF'
-  );
+  logger.info('Socket namespace /property configured for OWNER, MANAGER, STAFF');
 
   // ==================== /support Namespace ====================
   // For support agents
@@ -191,9 +186,7 @@ const emitToUser = (userId, namespaceName, event, data) => {
     const namespace = getNamespace(namespaceName);
     const room = `user_${userId}`;
     namespace.to(room).emit(event, data);
-    logger.info(
-      `Emitted ${event} to user ${userId} in namespace ${namespaceName}`
-    );
+    logger.info(`Emitted ${event} to user ${userId} in namespace ${namespaceName}`);
   } catch (error) {
     logger.error(`Failed to emit to user ${userId}:`, error);
   }

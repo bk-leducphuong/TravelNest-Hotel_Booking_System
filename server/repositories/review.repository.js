@@ -1,10 +1,6 @@
-const {
-  Reviews,
-  ReviewCriterias,
-  Hotels,
-  Bookings,
-} = require('../models/index.js');
 const { Op } = require('sequelize');
+
+const { Reviews, ReviewCriterias, Hotels, Bookings } = require('../models/index.js');
 
 /**
  * Review Repository - Contains all database operations for reviews

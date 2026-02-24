@@ -15,13 +15,11 @@
  */
 
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
+  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
 });
 
 const { faker } = require('@faker-js/faker');
+
 const db = require('../../models');
 const sequelize = require('../../config/database.config');
 const {
@@ -85,9 +83,7 @@ function generateHotelName() {
   if (prefix === 'The' || (prefix === 'Boutique' && middle)) {
     return middle ? `${prefix} ${middle} ${suffix}` : `${prefix} ${suffix}`;
   }
-  return middle
-    ? `${prefix} ${middle} ${suffix}`.trim()
-    : `${prefix} ${suffix}`;
+  return middle ? `${prefix} ${middle} ${suffix}`.trim() : `${prefix} ${suffix}`;
 }
 
 /**
@@ -119,17 +115,10 @@ function generateHotelRecord() {
     hotel_class: hotelClass,
     check_in_time: '14:00:00',
     check_out_time: '12:00:00',
-    check_in_policy:
-      faker.helpers.arrayElement(HOTEL_CHECK_IN_POLICIES) ?? null,
-    check_out_policy:
-      faker.helpers.arrayElement(HOTEL_CHECK_OUT_POLICIES) ?? null,
+    check_in_policy: faker.helpers.arrayElement(HOTEL_CHECK_IN_POLICIES) ?? null,
+    check_out_policy: faker.helpers.arrayElement(HOTEL_CHECK_OUT_POLICIES) ?? null,
     min_price: String(minPrice),
-    status: faker.helpers.arrayElement([
-      'active',
-      'active',
-      'active',
-      'inactive',
-    ]),
+    status: faker.helpers.arrayElement(['active', 'active', 'active', 'inactive']),
     timezone: faker.helpers.arrayElement(IANA_TIMEZONES),
   };
 }

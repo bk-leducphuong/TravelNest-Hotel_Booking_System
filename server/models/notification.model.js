@@ -11,7 +11,7 @@ module.exports = function (sequelize, DataTypes) {
         primaryKey: true,
         defaultValue: () => uuidv7(),
       },
-      
+
       // Receiver information - now supports users (customers and hotel owners)
       receiver_id: {
         type: DataTypes.UUID,
@@ -22,7 +22,7 @@ module.exports = function (sequelize, DataTypes) {
         },
         comment: 'User receiving the notification (customer or hotel owner)',
       },
-      
+
       // Sender information - optional, can be system-generated
       sender_id: {
         type: DataTypes.UUID,
@@ -33,7 +33,7 @@ module.exports = function (sequelize, DataTypes) {
         },
         comment: 'User who triggered the notification (null for system notifications)',
       },
-      
+
       // Notification classification
       notification_type: {
         type: DataTypes.ENUM(
@@ -57,22 +57,15 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
         comment: 'Type of notification for categorization and filtering',
       },
-      
+
       // Notification category for grouping
       category: {
-        type: DataTypes.ENUM(
-          'booking',
-          'payment',
-          'review',
-          'message',
-          'system',
-          'marketing'
-        ),
+        type: DataTypes.ENUM('booking', 'payment', 'review', 'message', 'system', 'marketing'),
         allowNull: false,
         defaultValue: 'system',
         comment: 'High-level category for UI grouping',
       },
-      
+
       // Priority level
       priority: {
         type: DataTypes.ENUM('low', 'normal', 'high', 'urgent'),
@@ -80,27 +73,27 @@ module.exports = function (sequelize, DataTypes) {
         defaultValue: 'normal',
         comment: 'Priority level affects display order and UI treatment',
       },
-      
+
       // Content
       title: {
         type: DataTypes.STRING(255),
         allowNull: false,
         comment: 'Short notification title/subject',
       },
-      
+
       message: {
         type: DataTypes.TEXT,
         allowNull: false,
         comment: 'Full notification message body',
       },
-      
+
       // Metadata for rich notifications
       metadata: {
         type: DataTypes.JSON,
         allowNull: true,
         comment: 'Additional data: booking_id, amount, dates, etc.',
       },
-      
+
       // Related entity (polymorphic association)
       related_entity_type: {
         type: DataTypes.ENUM(
@@ -116,26 +109,26 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: true,
         comment: 'Type of related entity',
       },
-      
+
       related_entity_id: {
         type: DataTypes.UUID,
         allowNull: true,
         comment: 'ID of related entity (booking_id, transaction_id, etc.)',
       },
-      
+
       // Action link
       action_url: {
         type: DataTypes.STRING(500),
         allowNull: true,
         comment: 'Deep link or URL for user to take action',
       },
-      
+
       action_label: {
         type: DataTypes.STRING(100),
         allowNull: true,
         comment: 'Label for action button (e.g., "View Booking", "Reply")',
       },
-      
+
       // Read status tracking
       is_read: {
         type: DataTypes.BOOLEAN,
@@ -143,13 +136,13 @@ module.exports = function (sequelize, DataTypes) {
         defaultValue: false,
         comment: 'Whether notification has been read',
       },
-      
+
       read_at: {
         type: DataTypes.DATE,
         allowNull: true,
         comment: 'Timestamp when notification was read',
       },
-      
+
       // Delivery tracking
       is_sent: {
         type: DataTypes.BOOLEAN,
@@ -157,13 +150,13 @@ module.exports = function (sequelize, DataTypes) {
         defaultValue: false,
         comment: 'Whether notification was successfully sent via socket',
       },
-      
+
       sent_at: {
         type: DataTypes.DATE,
         allowNull: true,
         comment: 'Timestamp when notification was sent',
       },
-      
+
       // Email/push notification tracking
       email_sent: {
         type: DataTypes.BOOLEAN,
@@ -171,34 +164,34 @@ module.exports = function (sequelize, DataTypes) {
         defaultValue: false,
         comment: 'Whether email notification was sent',
       },
-      
+
       push_sent: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
         comment: 'Whether push notification was sent',
       },
-      
+
       // Expiry
       expires_at: {
         type: DataTypes.DATE,
         allowNull: true,
         comment: 'Optional expiry date for time-sensitive notifications',
       },
-      
+
       // Timestamps
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
       },
-      
+
       updated_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
       },
-      
+
       deleted_at: {
         type: DataTypes.DATE,
         allowNull: true,

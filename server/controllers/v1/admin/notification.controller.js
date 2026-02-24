@@ -14,15 +14,11 @@ const getNotifications = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { hotelId, isRead, page, limit } = req.query;
 
-  const result = await adminNotificationService.getNotifications(
-    hotelId,
-    ownerId,
-    {
-      isRead: isRead === 'true' ? true : isRead === 'false' ? false : undefined,
-      page: parseInt(page, 10),
-      limit: parseInt(limit, 10),
-    }
-  );
+  const result = await adminNotificationService.getNotifications(hotelId, ownerId, {
+    isRead: isRead === 'true' ? true : isRead === 'false' ? false : undefined,
+    page: parseInt(page, 10),
+    limit: parseInt(limit, 10),
+  });
 
   res.status(200).json({
     data: result.notifications,
@@ -39,10 +35,7 @@ const getNotificationById = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { notificationId } = req.params;
 
-  const notification = await adminNotificationService.getNotificationById(
-    notificationId,
-    ownerId
-  );
+  const notification = await adminNotificationService.getNotificationById(notificationId, ownerId);
 
   res.status(200).json({
     data: notification,
@@ -76,10 +69,7 @@ const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { hotelId } = req.body;
 
-  const result = await adminNotificationService.markAllNotificationsAsRead(
-    hotelId,
-    ownerId
-  );
+  const result = await adminNotificationService.markAllNotificationsAsRead(hotelId, ownerId);
 
   res.status(200).json({
     data: result,
@@ -94,10 +84,7 @@ const deleteNotification = asyncHandler(async (req, res) => {
   const ownerId = req.session.user.user_id;
   const { notificationId } = req.params;
 
-  const result = await adminNotificationService.deleteNotification(
-    notificationId,
-    ownerId
-  );
+  const result = await adminNotificationService.deleteNotification(notificationId, ownerId);
 
   res.status(200).json({
     data: result,

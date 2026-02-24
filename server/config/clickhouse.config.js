@@ -1,4 +1,5 @@
 const { createClient } = require('@clickhouse/client');
+
 const config = require('./clickhouse.config');
 const logger = require('./logger.config');
 

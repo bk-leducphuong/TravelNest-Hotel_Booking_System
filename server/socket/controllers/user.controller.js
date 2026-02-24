@@ -32,12 +32,7 @@ exports.handleConnection = (namespace, socket) => {
       firstName: socket.user.firstName,
       lastName: socket.user.lastName,
     },
-    features: [
-      'booking_updates',
-      'notifications',
-      'chat_support',
-      'favorites_sync',
-    ],
+    features: ['booking_updates', 'notifications', 'chat_support', 'favorites_sync'],
   });
 
   // ==================== Event: Get Unread Notifications Count ====================

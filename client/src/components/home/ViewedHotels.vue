@@ -2,14 +2,14 @@
   <div class="hotel-container container" v-if="viewedHotels.length > 0">
     <h2 class="h2">{{ $t('userHome.viewedHotels') }}</h2>
     <div class="slider-container">
-      <el-carousel
+      <ElCarousel
         :interval="0"
         :arrow="groupedHotels.length > 1 ? 'hover' : 'never'"
         indicator-position="none"
         height="360px"
         class="hotel-carousel"
       >
-        <el-carousel-item v-for="(group, groupIndex) in groupedHotels" :key="groupIndex">
+        <ElCarouselItem v-for="(group, groupIndex) in groupedHotels" :key="groupIndex">
           <div class="hotel-group">
             <div
               class="hotel-card"
@@ -37,8 +37,8 @@
               </div>
             </div>
           </div>
-        </el-carousel-item>
-      </el-carousel>
+        </ElCarouselItem>
+      </ElCarousel>
     </div>
   </div>
 </template>
@@ -103,7 +103,7 @@ export default {
         const hotel_id = hotel.hotel_id
         
         // Save viewed hotel to localStorage
-        let viewedHotels = localStorage.getItem('viewedHotels')
+        const viewedHotels = localStorage.getItem('viewedHotels')
           ? JSON.parse(localStorage.getItem('viewedHotels'))
           : []
 

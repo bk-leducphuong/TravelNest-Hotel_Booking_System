@@ -42,8 +42,7 @@ module.exports = function (sequelize, DataTypes) {
         },
         onDelete: 'RESTRICT',
         onUpdate: 'CASCADE',
-        comment:
-          'Hotel-specific role (owner, manager, or staff) for this user at this hotel',
+        comment: 'Hotel-specific role (owner, manager, or staff) for this user at this hotel',
       },
       is_primary_owner: {
         type: DataTypes.BOOLEAN,
@@ -83,8 +82,7 @@ module.exports = function (sequelize, DataTypes) {
           unique: true,
           using: 'BTREE',
           fields: [{ name: 'hotel_id' }, { name: 'user_id' }],
-          comment:
-            'Each user can only have one record per hotel (role scoped by row).',
+          comment: 'Each user can only have one record per hotel (role scoped by row).',
         },
         {
           name: 'idx_hotel_id',
@@ -108,8 +106,7 @@ module.exports = function (sequelize, DataTypes) {
           name: 'idx_primary_owner_per_hotel',
           using: 'BTREE',
           fields: [{ name: 'hotel_id' }, { name: 'is_primary_owner' }],
-          comment:
-            'Helps enforce and query primary owner constraints at application level',
+          comment: 'Helps enforce and query primary owner constraints at application level',
         },
       ],
     }

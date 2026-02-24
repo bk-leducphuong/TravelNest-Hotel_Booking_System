@@ -1,5 +1,6 @@
-const { Bookings, Users, Hotels, Rooms } = require('../../models/index.js');
 const { Op } = require('sequelize');
+
+const { Bookings, Users, Hotels, Rooms } = require('../../models/index.js');
 const sequelize = require('../../config/database.config');
 
 /**
@@ -154,10 +155,7 @@ class AdminBookingRepository {
 
     const statusCounts = await Bookings.findAll({
       where,
-      attributes: [
-        'status',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
-      ],
+      attributes: ['status', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
       group: ['status'],
       raw: true,
     });

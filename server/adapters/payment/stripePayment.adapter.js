@@ -55,8 +55,7 @@ class StripePaymentAdapter extends PaymentProviderInterface {
    */
   async getPayment(paymentId) {
     try {
-      const paymentIntent =
-        await this.stripe.paymentIntents.retrieve(paymentId);
+      const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentId);
 
       return {
         id: paymentIntent.id,
@@ -99,8 +98,7 @@ class StripePaymentAdapter extends PaymentProviderInterface {
 
     try {
       // Get the charge ID from payment intent
-      const paymentIntent =
-        await this.stripe.paymentIntents.retrieve(paymentId);
+      const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentId);
       const chargeId = paymentIntent.latest_charge;
 
       if (!chargeId) {
@@ -137,17 +135,11 @@ class StripePaymentAdapter extends PaymentProviderInterface {
   verifyWebhook(payload, signature) {
     try {
       if (!this.webhookSecret) {
-        logger.warn(
-          'Stripe webhook secret not configured, skipping verification'
-        );
+        logger.warn('Stripe webhook secret not configured, skipping verification');
         return JSON.parse(payload.toString());
       }
 
-      const event = this.stripe.webhooks.constructEvent(
-        payload,
-        signature,
-        this.webhookSecret
-      );
+      const event = this.stripe.webhooks.constructEvent(payload, signature, this.webhookSecret);
 
       return {
         id: event.id,
@@ -220,8 +212,7 @@ class StripePaymentAdapter extends PaymentProviderInterface {
    */
   async getPaymentMethod(paymentMethodId) {
     try {
-      const paymentMethod =
-        await this.stripe.paymentMethods.retrieve(paymentMethodId);
+      const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
 
       return {
         id: paymentMethod.id,

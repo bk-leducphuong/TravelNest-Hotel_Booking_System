@@ -97,10 +97,7 @@ exports.getWeeklyChange = {
     currentWeekStart: Joi.date().iso().required(),
     currentWeekEnd: Joi.date().iso().min(Joi.ref('currentWeekStart')).required(),
     previousWeekStart: Joi.date().iso().required(),
-    previousWeekEnd: Joi.date()
-      .iso()
-      .min(Joi.ref('previousWeekStart'))
-      .required(),
+    previousWeekEnd: Joi.date().iso().min(Joi.ref('previousWeekStart')).required(),
   }),
 };
 

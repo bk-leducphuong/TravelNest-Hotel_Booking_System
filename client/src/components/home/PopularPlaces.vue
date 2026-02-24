@@ -4,7 +4,7 @@
       <h2 class="h2">{{ $t('userHome.popularPlaces') }}</h2>
       <h4 class="h4">{{ $t('userHome.popularPlaces_1') }}</h4>
     </div>
-    <loading
+    <Loading
       v-model:active="_isLoading"
       :can-cancel="true"
       :color="`#003b95`"

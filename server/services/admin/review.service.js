@@ -11,17 +11,10 @@ class AdminReviewService {
    * Verify hotel ownership for all operations
    */
   async verifyAccess(hotelId, ownerId) {
-    const isOwner = await adminReviewRepository.verifyHotelOwnership(
-      hotelId,
-      ownerId
-    );
+    const isOwner = await adminReviewRepository.verifyHotelOwnership(hotelId, ownerId);
 
     if (!isOwner) {
-      throw new ApiError(
-        403,
-        'FORBIDDEN',
-        'You do not have permission to access this hotel'
-      );
+      throw new ApiError(403, 'FORBIDDEN', 'You do not have permission to access this hotel');
     }
   }
 
@@ -43,14 +36,10 @@ class AdminReviewService {
         const reviewData = review.toJSON ? review.toJSON() : review;
 
         // Get user information
-        const user = await adminReviewRepository.findUserById(
-          reviewData.user_id
-        );
+        const user = await adminReviewRepository.findUserById(reviewData.user_id);
 
         // Get review criteria
-        const criteria = await adminReviewRepository.findReviewCriteria(
-          reviewData.review_id
-        );
+        const criteria = await adminReviewRepository.findReviewCriteria(reviewData.review_id);
 
         return {
           ...reviewData,
@@ -97,9 +86,7 @@ class AdminReviewService {
     const user = await adminReviewRepository.findUserById(reviewData.user_id);
 
     // Get review criteria
-    const criteria = await adminReviewRepository.findReviewCriteria(
-      reviewData.review_id
-    );
+    const criteria = await adminReviewRepository.findReviewCriteria(reviewData.review_id);
 
     return {
       ...reviewData,
@@ -135,10 +122,7 @@ class AdminReviewService {
     }
 
     // Add reply
-    const [updatedCount] = await adminReviewRepository.updateReply(
-      reviewId,
-      reply
-    );
+    const [updatedCount] = await adminReviewRepository.updateReply(reviewId, reply);
 
     if (updatedCount === 0) {
       throw new ApiError(500, 'UPDATE_FAILED', 'Failed to add reply');
@@ -175,10 +159,7 @@ class AdminReviewService {
     }
 
     // Update reply
-    const [updatedCount] = await adminReviewRepository.updateReply(
-      reviewId,
-      reply
-    );
+    const [updatedCount] = await adminReviewRepository.updateReply(reviewId, reply);
 
     if (updatedCount === 0) {
       throw new ApiError(500, 'UPDATE_FAILED', 'Failed to update reply');
@@ -206,11 +187,7 @@ class AdminReviewService {
 
     // Check if has a reply to delete
     if (!review.reply) {
-      throw new ApiError(
-        400,
-        'NO_REPLY',
-        'This review does not have a reply to delete'
-      );
+      throw new ApiError(400, 'NO_REPLY', 'This review does not have a reply to delete');
     }
 
     // Delete reply

@@ -27,7 +27,7 @@ export default {
       <AdminHeader />
       <!-- main content -->
       <div class="main-content">
-        <loading
+        <Loading
           v-model:active="isLoading"
           :color="`#003b95`"
           :is-full-page="false"

@@ -17,12 +17,10 @@
  */
 
 require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
+  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
 });
 const { faker } = require('@faker-js/faker');
+
 const db = require('../../../models');
 const sequelize = require('../../../config/database.config');
 const { PLACE_CATEGORIES } = require('../../../constants/hotels');
@@ -40,7 +38,7 @@ const PLACE_NAMES = {
     'Mama Mia Trattoria',
     'Le Petit Bistro',
     'Taste of Paradise',
-    'The Chef\'s Table',
+    "The Chef's Table",
   ],
   cafe: [
     'Morning Brew Cafe',
@@ -82,93 +80,21 @@ const PLACE_NAMES = {
     'Science Center',
     'Contemporary Art Museum',
   ],
-  park: [
-    'Central Park',
-    'Riverside Park',
-    'Botanical Gardens',
-    'City Green',
-    'Memorial Park',
-  ],
-  beach: [
-    'Sandy Beach',
-    'Paradise Cove',
-    'Sunset Beach',
-    'Crystal Bay',
-    'North Shore Beach',
-  ],
-  airport: [
-    'International Airport',
-    'City Airport',
-    'Regional Airport',
-  ],
-  train_station: [
-    'Central Station',
-    'Main Terminal',
-    'Railway Station',
-  ],
-  bus_station: [
-    'Central Bus Terminal',
-    'City Bus Station',
-    'Transit Center',
-  ],
-  hospital: [
-    'City Hospital',
-    'Medical Center',
-    'General Hospital',
-    'Emergency Care Center',
-  ],
-  pharmacy: [
-    'City Pharmacy',
-    '24/7 Drugstore',
-    'Health Plus Pharmacy',
-  ],
-  bank: [
-    'National Bank',
-    'City Bank',
-    'Trust Bank',
-    'Financial Center',
-  ],
-  atm: [
-    'ATM - Main Street',
-    'ATM - Plaza',
-    'ATM - Station',
-  ],
-  parking: [
-    'Downtown Parking',
-    'City Parking Garage',
-    'Public Parking Lot',
-  ],
-  gym: [
-    'Fitness Center',
-    '24/7 Gym',
-    'Power Fitness',
-    'Body & Soul Gym',
-  ],
-  spa: [
-    'Serenity Spa',
-    'Wellness Center',
-    'The Spa Retreat',
-    'Harmony Spa',
-  ],
-  entertainment: [
-    'Cinema Complex',
-    'Theater',
-    'Concert Hall',
-    'Entertainment Center',
-  ],
-  landmark: [
-    'Historic Monument',
-    'City Tower',
-    'Famous Square',
-    'Memorial',
-  ],
-  religious: [
-    'Cathedral',
-    'Temple',
-    'Church',
-    'Mosque',
-    'Synagogue',
-  ],
+  park: ['Central Park', 'Riverside Park', 'Botanical Gardens', 'City Green', 'Memorial Park'],
+  beach: ['Sandy Beach', 'Paradise Cove', 'Sunset Beach', 'Crystal Bay', 'North Shore Beach'],
+  airport: ['International Airport', 'City Airport', 'Regional Airport'],
+  train_station: ['Central Station', 'Main Terminal', 'Railway Station'],
+  bus_station: ['Central Bus Terminal', 'City Bus Station', 'Transit Center'],
+  hospital: ['City Hospital', 'Medical Center', 'General Hospital', 'Emergency Care Center'],
+  pharmacy: ['City Pharmacy', '24/7 Drugstore', 'Health Plus Pharmacy'],
+  bank: ['National Bank', 'City Bank', 'Trust Bank', 'Financial Center'],
+  atm: ['ATM - Main Street', 'ATM - Plaza', 'ATM - Station'],
+  parking: ['Downtown Parking', 'City Parking Garage', 'Public Parking Lot'],
+  gym: ['Fitness Center', '24/7 Gym', 'Power Fitness', 'Body & Soul Gym'],
+  spa: ['Serenity Spa', 'Wellness Center', 'The Spa Retreat', 'Harmony Spa'],
+  entertainment: ['Cinema Complex', 'Theater', 'Concert Hall', 'Entertainment Center'],
+  landmark: ['Historic Monument', 'City Tower', 'Famous Square', 'Memorial'],
+  religious: ['Cathedral', 'Temple', 'Church', 'Mosque', 'Synagogue'],
 };
 
 /**
@@ -225,30 +151,15 @@ function generateNearbyPlacesForHotel(hotel, count = 20) {
   let displayOrder = 0;
 
   // Ensure we have a good mix of categories
-  const essentialCategories = [
-    'restaurant',
-    'cafe',
-    'shopping',
-    'attraction',
-    'pharmacy',
-    'bank',
-  ];
+  const essentialCategories = ['restaurant', 'cafe', 'shopping', 'attraction', 'pharmacy', 'bank'];
 
-  const optionalCategories = PLACE_CATEGORIES.filter(
-    (cat) => !essentialCategories.includes(cat)
-  );
+  const optionalCategories = PLACE_CATEGORIES.filter((cat) => !essentialCategories.includes(cat));
 
   // Add essential places (2-3 of each)
   essentialCategories.forEach((category) => {
     const numPlaces = faker.number.int({ min: 2, max: 3 });
     for (let i = 0; i < numPlaces; i++) {
-      const place = generatePlace(
-        hotel.id,
-        category,
-        hotelLat,
-        hotelLon,
-        displayOrder++
-      );
+      const place = generatePlace(hotel.id, category, hotelLat, hotelLon, displayOrder++);
       places.push(place);
     }
   });
@@ -256,17 +167,8 @@ function generateNearbyPlacesForHotel(hotel, count = 20) {
   // Fill remaining with random categories
   const remainingCount = count - places.length;
   for (let i = 0; i < remainingCount; i++) {
-    const category = faker.helpers.arrayElement([
-      ...essentialCategories,
-      ...optionalCategories,
-    ]);
-    const place = generatePlace(
-      hotel.id,
-      category,
-      hotelLat,
-      hotelLon,
-      displayOrder++
-    );
+    const category = faker.helpers.arrayElement([...essentialCategories, ...optionalCategories]);
+    const place = generatePlace(hotel.id, category, hotelLat, hotelLon, displayOrder++);
     places.push(place);
   }
 
@@ -286,15 +188,15 @@ function generateNearbyPlacesForHotel(hotel, count = 20) {
  */
 function generatePlace(hotelId, category, hotelLat, hotelLon, displayOrder) {
   // Generate coordinates within a reasonable distance
-  const maxDistance = category === 'airport' ? 30 : category === 'train_station' || category === 'bus_station' ? 10 : 5;
+  const maxDistance =
+    category === 'airport'
+      ? 30
+      : category === 'train_station' || category === 'bus_station'
+        ? 10
+        : 5;
   const coords = generateNearbyCoordinate(hotelLat, hotelLon, maxDistance);
 
-  const distance = calculateDistance(
-    hotelLat,
-    hotelLon,
-    coords.latitude,
-    coords.longitude
-  );
+  const distance = calculateDistance(hotelLat, hotelLon, coords.latitude, coords.longitude);
 
   // Calculate travel time based on distance and mode
   let travelMode = 'walking';
@@ -305,17 +207,10 @@ function generatePlace(hotelId, category, hotelLat, hotelLon, displayOrder) {
     travelTime = Math.ceil(distance * 12); // ~12 min per km
   } else if (distance <= 5) {
     travelMode = Math.random() > 0.5 ? 'walking' : 'public_transport';
-    travelTime =
-      travelMode === 'walking'
-        ? Math.ceil(distance * 12)
-        : Math.ceil(distance * 5);
+    travelTime = travelMode === 'walking' ? Math.ceil(distance * 12) : Math.ceil(distance * 5);
   } else {
-    travelMode =
-      Math.random() > 0.3 ? 'public_transport' : 'driving';
-    travelTime =
-      travelMode === 'driving'
-        ? Math.ceil(distance * 3)
-        : Math.ceil(distance * 5);
+    travelMode = Math.random() > 0.3 ? 'public_transport' : 'driving';
+    travelTime = travelMode === 'driving' ? Math.ceil(distance * 3) : Math.ceil(distance * 5);
   }
 
   const nameTemplates = PLACE_NAMES[category] || ['Local Place'];
@@ -352,8 +247,7 @@ function generatePlace(hotelId, category, hotelLat, hotelLon, displayOrder) {
     travel_time_minutes: travelTime,
     travel_mode: travelMode,
     rating: parseFloat(rating.toFixed(1)),
-    phone_number:
-      Math.random() > 0.3 ? faker.phone.number('+1##########') : null,
+    phone_number: Math.random() > 0.3 ? faker.phone.number('+1##########') : null,
     website_url: Math.random() > 0.5 ? faker.internet.url() : null,
     price_level: priceLevel,
     is_verified: Math.random() > 0.3,
@@ -375,11 +269,7 @@ function generatePlace(hotelId, category, hotelLat, hotelLon, displayOrder) {
  * @param {number|Object} options.placesPerHotel - Places per hotel (default: {min:15, max:25})
  */
 async function seedNearbyPlaces(options = {}) {
-  const {
-    clearExisting = false,
-    hotelIds = null,
-    placesPerHotel = { min: 15, max: 25 },
-  } = options;
+  const { clearExisting = false, hotelIds = null, placesPerHotel = { min: 15, max: 25 } } = options;
 
   try {
     console.log('🌱 Starting nearby places seeding...');
@@ -432,24 +322,18 @@ async function seedNearbyPlaces(options = {}) {
       const hotelPlaces = generateNearbyPlacesForHotel(hotel, numPlaces);
       placesToCreate.push(...hotelPlaces);
 
-      console.log(
-        `   📍 Generated ${hotelPlaces.length} nearby places for hotel ${hotelId}`
-      );
+      console.log(`   📍 Generated ${hotelPlaces.length} nearby places for hotel ${hotelId}`);
     }
 
     // Bulk create all places
     if (placesToCreate.length > 0) {
-      console.log(
-        `\n💾 Creating ${placesToCreate.length} nearby place(s) in database...`
-      );
+      console.log(`\n💾 Creating ${placesToCreate.length} nearby place(s) in database...`);
       const createdPlaces = await nearby_places.bulkCreate(placesToCreate, {
         validate: true,
         returning: true,
       });
 
-      console.log(
-        `✅ ${createdPlaces.length} nearby place(s) created successfully`
-      );
+      console.log(`✅ ${createdPlaces.length} nearby place(s) created successfully`);
     }
 
     // Display summary
@@ -472,9 +356,7 @@ async function seedNearbyPlaces(options = {}) {
       console.log('\n   Places by category:');
       placesByCategory.forEach((item) => {
         const avgDist = parseFloat(item.avg_distance || 0).toFixed(2);
-        console.log(
-          `     ${item.category}: ${item.place_count} (avg distance: ${avgDist}km)`
-        );
+        console.log(`     ${item.category}: ${item.place_count} (avg distance: ${avgDist}km)`);
       });
     }
   } catch (error) {
@@ -507,9 +389,7 @@ async function seedPlacesForHotel(hotelId, count = 20) {
       returning: true,
     });
 
-    console.log(
-      `✅ Created ${createdPlaces.length} nearby places for hotel ${hotelId}`
-    );
+    console.log(`✅ Created ${createdPlaces.length} nearby places for hotel ${hotelId}`);
     return createdPlaces;
   } catch (error) {
     console.error(`❌ Error seeding places for hotel ${hotelId}:`, error);

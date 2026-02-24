@@ -45,7 +45,7 @@ module.exports = function (sequelize, DataTypes) {
       tax_amount: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: true,
-        defaultValue: 0.00,
+        defaultValue: 0.0,
       },
       subtotal: {
         type: DataTypes.DECIMAL(10, 2),

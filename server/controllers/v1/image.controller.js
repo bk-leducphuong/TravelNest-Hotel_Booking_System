@@ -11,12 +11,7 @@ const uploadImage = asyncHandler(async (req, res) => {
   const file = req.file;
   const isPrimary = req.body.is_primary === 'true' || req.body.is_primary === true;
 
-  const result = await imageService.uploadImage(
-    entityType,
-    entityId,
-    file,
-    isPrimary
-  );
+  const result = await imageService.uploadImage(entityType, entityId, file, isPrimary);
 
   res.status(201).json({
     success: true,
@@ -67,11 +62,7 @@ const deleteImage = asyncHandler(async (req, res) => {
 const setPrimaryImage = asyncHandler(async (req, res) => {
   const { entityType, entityId, imageId } = req.params;
 
-  const result = await imageService.setPrimaryImage(
-    entityType,
-    entityId,
-    imageId
-  );
+  const result = await imageService.setPrimaryImage(entityType, entityId, imageId);
 
   res.status(200).json({
     success: true,

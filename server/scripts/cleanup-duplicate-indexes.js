@@ -1,7 +1,7 @@
 /**
  * Script to clean up duplicate indexes from ALL tables in the database
  * Run this script once to remove duplicate indexes caused by repeated sync() calls
- * 
+ *
  * Usage: node scripts/cleanup-duplicate-indexes.js
  */
 
@@ -54,7 +54,7 @@ async function cleanupDuplicateIndexes() {
       logger.info(`  Total index entries: ${indexes.length}`);
 
       // Count unique indexes
-      const uniqueIndexNames = new Set(indexes.map(idx => idx.INDEX_NAME));
+      const uniqueIndexNames = new Set(indexes.map((idx) => idx.INDEX_NAME));
       logger.info(`  Unique indexes: ${uniqueIndexNames.size}`);
 
       // Get duplicate indexes (same column, different names, excluding PRIMARY and foreign keys)
@@ -74,11 +74,11 @@ async function cleanupDuplicateIndexes() {
       if (duplicates.length > 0) {
         tablesWithDuplicates++;
         logger.info(`  Found ${duplicates.length} columns with duplicate indexes:`);
-        
+
         for (const dup of duplicates) {
           const indexNames = dup.index_names.split(',');
           logger.info(`    Column: ${dup.COLUMN_NAME} - Indexes: ${indexNames.join(', ')}`);
-          
+
           // Keep the first index (usually the original one), drop the rest
           for (let i = 1; i < indexNames.length; i++) {
             const indexName = indexNames[i].trim();

@@ -1,5 +1,6 @@
 const Sequelize = require('sequelize');
 const { uuidv7 } = require('uuidv7');
+
 const {
   HOTEL_STATUSES,
   HOTEL_CHECK_IN_POLICIES,
@@ -171,8 +172,7 @@ module.exports = function (sequelize, DataTypes) {
           name: 'idx_search_composite',
           using: 'BTREE',
           fields: [{ name: 'status' }, { name: 'city' }],
-          comment:
-            'Composite index for common search queries (rating in rating_summary table)',
+          comment: 'Composite index for common search queries (rating in rating_summary table)',
         },
       ],
     }

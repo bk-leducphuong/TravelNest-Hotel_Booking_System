@@ -19,11 +19,7 @@ router.use(authenticate);
  * GET /api/admin/notifications
  * Get all notifications for a specific hotel
  */
-router.get(
-  '/',
-  validate(notificationSchema.getNotifications),
-  getNotifications
-);
+router.get('/', validate(notificationSchema.getNotifications), getNotifications);
 
 /**
  * PATCH /api/admin/notifications/read-all

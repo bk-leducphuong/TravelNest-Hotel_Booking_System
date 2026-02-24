@@ -1,10 +1,6 @@
-const {
-  Reviews,
-  ReviewCriterias,
-  Users,
-  Hotels,
-} = require('../../models/index.js');
 const { Op } = require('sequelize');
+
+const { Reviews, ReviewCriterias, Users, Hotels } = require('../../models/index.js');
 
 /**
  * Admin Review Repository - Contains all database operations for admin review management
@@ -143,8 +139,7 @@ class AdminReviewRepository {
     const totalReviews = reviews.length;
     const reviewsWithReply = reviews.filter((r) => r.reply !== null).length;
     const averageRating =
-      reviews.reduce((sum, r) => sum + parseFloat(r.rating), 0) /
-        totalReviews || 0;
+      reviews.reduce((sum, r) => sum + parseFloat(r.rating), 0) / totalReviews || 0;
 
     // Rating distribution
     const ratingDistribution = {

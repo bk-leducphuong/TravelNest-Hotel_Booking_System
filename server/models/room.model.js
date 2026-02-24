@@ -1,5 +1,6 @@
 const Sequelize = require('sequelize');
 const { uuidv7 } = require('uuidv7');
+
 const { ROOM_TYPES, ROOM_STATUSES } = require('../constants/rooms');
 module.exports = function (sequelize, DataTypes) {
   const Room = sequelize.define(

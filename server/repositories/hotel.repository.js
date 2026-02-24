@@ -75,14 +75,7 @@ class HotelRepository {
             {
               model: ImageVariants,
               as: 'image_variants',
-              attributes: [
-                'id',
-                'variant_type',
-                'bucket_name',
-                'object_key',
-                'width',
-                'height',
-              ],
+              attributes: ['id', 'variant_type', 'bucket_name', 'object_key', 'width', 'height'],
               required: false,
             },
           ],
@@ -143,14 +136,7 @@ class HotelRepository {
         {
           model: ImageVariants,
           as: 'image_variants',
-          attributes: [
-            'id',
-            'variant_type',
-            'bucket_name',
-            'object_key',
-            'width',
-            'height',
-          ],
+          attributes: ['id', 'variant_type', 'bucket_name', 'object_key', 'width', 'height'],
           required: false,
         },
       ],
@@ -167,15 +153,7 @@ class HotelRepository {
         {
           model: Amenities,
           as: 'amenities',
-          attributes: [
-            'id',
-            'code',
-            'name',
-            'icon',
-            'category',
-            'description',
-            'display_order',
-          ],
+          attributes: ['id', 'code', 'name', 'icon', 'category', 'description', 'display_order'],
           through: { attributes: [] },
           where: { is_active: true },
           required: false,
@@ -365,14 +343,7 @@ class HotelRepository {
         hotel_id: hotelId,
         is_active: true,
       },
-      attributes: [
-        'id',
-        'policy_type',
-        'title',
-        'description',
-        'display_order',
-        'icon',
-      ],
+      attributes: ['id', 'policy_type', 'title', 'description', 'display_order', 'icon'],
       order: [['display_order', 'ASC']],
     });
   }

@@ -1,10 +1,7 @@
 const bcrypt = require('bcryptjs');
 const sharp = require('sharp');
-const {
-  minioClient,
-  bucketName,
-  getObjectUrl,
-} = require('../config/minio.config');
+
+const { minioClient, bucketName, getObjectUrl } = require('../config/minio.config');
 const userRepository = require('../repositories/user.repository');
 const ApiError = require('../utils/ApiError');
 
@@ -77,11 +74,7 @@ class UserService {
 
       return profilePictureUrl;
     } catch (error) {
-      throw new ApiError(
-        500,
-        'UPLOAD_FAILED',
-        'Failed to upload image to storage'
-      );
+      throw new ApiError(500, 'UPLOAD_FAILED', 'Failed to upload image to storage');
     }
   }
 
@@ -97,18 +90,12 @@ class UserService {
 
     // Get favorite hotels with pagination
     const { count, rows: favoriteHotels } =
-      await userRepository.findFavoriteHotelsByUserIdPaginated(
-        userId,
-        limit,
-        offset
-      );
+      await userRepository.findFavoriteHotelsByUserIdPaginated(userId, limit, offset);
 
     // Get hotel information for each favorite
     const hotelsWithInfo = await Promise.all(
       favoriteHotels.map(async (hotel) => {
-        const hotelInformation = await userRepository.findHotelById(
-          hotel.hotel_id
-        );
+        const hotelInformation = await userRepository.findHotelById(hotel.hotel_id);
         return {
           ...hotel.toJSON(),
           hotelInformation,
@@ -134,11 +121,7 @@ class UserService {
     // Check if hotel is already saved
     const hotelIsSaved = await userRepository.findSavedHotel(userId, hotelId);
     if (hotelIsSaved) {
-      throw new ApiError(
-        409,
-        'HOTEL_ALREADY_FAVORITE',
-        'Hotel already in favorites'
-      );
+      throw new ApiError(409, 'HOTEL_ALREADY_FAVORITE', 'Hotel already in favorites');
     }
 
     await userRepository.createSavedHotel(userId, hotelId);

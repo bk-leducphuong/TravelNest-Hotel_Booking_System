@@ -88,11 +88,7 @@ const socketAuthentication = async (socket, next) => {
         status: user.status,
       });
       return next(
-        new ApiError(
-          403,
-          'FORBIDDEN',
-          `Account is ${user.status}. Please contact support.`
-        )
+        new ApiError(403, 'FORBIDDEN', `Account is ${user.status}. Please contact support.`)
       );
     }
 
@@ -135,15 +131,11 @@ const socketAuthorization = (allowedRoles) => {
       // Ensure user is authenticated
       if (!socket.user) {
         logger.warn('Authorization check on unauthenticated socket');
-        return next(
-          new ApiError(401, 'UNAUTHORIZED', 'Authentication required')
-        );
+        return next(new ApiError(401, 'UNAUTHORIZED', 'Authentication required'));
       }
 
       // Check if user has any of the allowed roles
-      const hasRole = socket.user.roles.some((userRole) =>
-        roles.includes(userRole)
-      );
+      const hasRole = socket.user.roles.some((userRole) => roles.includes(userRole));
 
       if (!hasRole) {
         logger.warn(`User ${socket.user.id} attempted unauthorized access`, {
@@ -153,11 +145,7 @@ const socketAuthorization = (allowedRoles) => {
           socketId: socket.id,
         });
         return next(
-          new ApiError(
-            403,
-            'FORBIDDEN',
-            `Access denied. Required roles: ${roles.join(', ')}`
-          )
+          new ApiError(403, 'FORBIDDEN', `Access denied. Required roles: ${roles.join(', ')}`)
         );
       }
 
@@ -190,9 +178,7 @@ const socketPermissionCheck = (requiredPermissions) => {
   return async (socket, next) => {
     try {
       if (!socket.user) {
-        return next(
-          new ApiError(401, 'UNAUTHORIZED', 'Authentication required')
-        );
+        return next(new ApiError(401, 'UNAUTHORIZED', 'Authentication required'));
       }
 
       // Admins have all permissions
@@ -201,19 +187,14 @@ const socketPermissionCheck = (requiredPermissions) => {
       }
 
       // Check if user has any of the required permissions
-      const hasPermission = permissions.some((perm) =>
-        socket.user.permissions.includes(perm)
-      );
+      const hasPermission = permissions.some((perm) => socket.user.permissions.includes(perm));
 
       if (!hasPermission) {
-        logger.warn(
-          `User ${socket.user.id} lacks required permissions for socket event`,
-          {
-            userId: socket.user.id,
-            userPermissions: socket.user.permissions,
-            requiredPermissions: permissions,
-          }
-        );
+        logger.warn(`User ${socket.user.id} lacks required permissions for socket event`, {
+          userId: socket.user.id,
+          userPermissions: socket.user.permissions,
+          requiredPermissions: permissions,
+        });
         return next(
           new ApiError(
             403,
@@ -240,9 +221,7 @@ const socketHotelContext = (required = true) => {
   return async (socket, next) => {
     try {
       if (!socket.user) {
-        return next(
-          new ApiError(401, 'UNAUTHORIZED', 'Authentication required')
-        );
+        return next(new ApiError(401, 'UNAUTHORIZED', 'Authentication required'));
       }
 
       // Listen for hotel context updates
@@ -255,9 +234,7 @@ const socketHotelContext = (required = true) => {
           }
 
           // Check if user has access to this hotel
-          const hotelRole = socket.user.hotelRoles.find(
-            (hr) => hr.hotelId === hotelId
-          );
+          const hotelRole = socket.user.hotelRoles.find((hr) => hr.hotelId === hotelId);
 
           if (!hotelRole && !socket.user.roles.includes(ROLES.ADMIN)) {
             const error = {
@@ -313,9 +290,7 @@ const socketHotelContext = (required = true) => {
               userId: socket.user.id,
               socketId: socket.id,
             });
-            next(
-              new ApiError(400, 'CONTEXT_REQUIRED', 'Hotel context is required')
-            );
+            next(new ApiError(400, 'CONTEXT_REQUIRED', 'Hotel context is required'));
           }
         }, 5000);
       } else {

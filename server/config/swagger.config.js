@@ -63,15 +63,7 @@ const options = {
         },
         UserRole: {
           type: 'string',
-          enum: [
-            'guest',
-            'user',
-            'admin',
-            'support_agent',
-            'owner',
-            'manager',
-            'staff',
-          ],
+          enum: ['guest', 'user', 'admin', 'support_agent', 'owner', 'manager', 'staff'],
         },
       },
     },
@@ -87,11 +79,7 @@ const options = {
       { name: 'Images', description: 'Image upload and management' },
     ],
   },
-  apis: [
-    './routes/v1/*.js',
-    './routes/v1/**/*.js',
-    './routes/health.routes.js',
-  ],
+  apis: ['./routes/v1/*.js', './routes/v1/**/*.js', './routes/health.routes.js'],
 };
 
 const swaggerSpec = swaggerJsdoc(options);

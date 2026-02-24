@@ -84,12 +84,9 @@ exports.submitJoinForm = {
       checkInTo: timeSchema,
       checkOutFrom: timeSchema,
       checkOutTo: timeSchema,
-      services: Joi.array()
-        .items(Joi.string())
-        .optional()
-        .messages({
-          'array.base': 'services must be an array',
-        }),
+      services: Joi.array().items(Joi.string()).optional().messages({
+        'array.base': 'services must be an array',
+      }),
       roomDetails: Joi.object({
         roomType: Joi.string().min(1).max(255).trim().required().messages({
           'string.base': 'roomType must be a string',
@@ -97,26 +94,18 @@ exports.submitJoinForm = {
           'string.max': 'roomType must not exceed 255 characters',
           'any.required': 'roomType is required',
         }),
-        numberOfGuests: Joi.number()
-          .integer()
-          .positive()
-          .required()
-          .messages({
-            'number.base': 'numberOfGuests must be a number',
-            'number.integer': 'numberOfGuests must be an integer',
-            'number.positive': 'numberOfGuests must be positive',
-            'any.required': 'numberOfGuests is required',
-          }),
-        numberOfRooms: Joi.number()
-          .integer()
-          .positive()
-          .required()
-          .messages({
-            'number.base': 'numberOfRooms must be a number',
-            'number.integer': 'numberOfRooms must be an integer',
-            'number.positive': 'numberOfRooms must be positive',
-            'any.required': 'numberOfRooms is required',
-          }),
+        numberOfGuests: Joi.number().integer().positive().required().messages({
+          'number.base': 'numberOfGuests must be a number',
+          'number.integer': 'numberOfGuests must be an integer',
+          'number.positive': 'numberOfGuests must be positive',
+          'any.required': 'numberOfGuests is required',
+        }),
+        numberOfRooms: Joi.number().integer().positive().required().messages({
+          'number.base': 'numberOfRooms must be a number',
+          'number.integer': 'numberOfRooms must be an integer',
+          'number.positive': 'numberOfRooms must be positive',
+          'any.required': 'numberOfRooms is required',
+        }),
       })
         .required()
         .messages({

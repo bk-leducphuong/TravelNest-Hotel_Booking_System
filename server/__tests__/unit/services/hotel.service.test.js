@@ -1,6 +1,7 @@
 const hotelService = require('@services/hotel.service');
 const hotelRepository = require('@repositories/hotel.repository');
 const ApiError = require('@utils/ApiError');
+
 const {
   createMockHotel,
   createMockRoom,

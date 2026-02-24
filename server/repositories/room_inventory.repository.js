@@ -17,8 +17,7 @@ class RoomInventoryRepository {
    */
   async findByRoomAndDate(roomId, date, options = {}) {
     try {
-      const dateStr =
-        typeof date === 'string' ? date : date.toISOString().split('T')[0];
+      const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
 
       return await RoomInventory.findOne({
         where: {
@@ -44,13 +43,9 @@ class RoomInventoryRepository {
   async findByRoomsAndDateRange(roomIds, startDate, endDate, options = {}) {
     try {
       const startDateStr =
-        typeof startDate === 'string'
-          ? startDate
-          : startDate.toISOString().split('T')[0];
+        typeof startDate === 'string' ? startDate : startDate.toISOString().split('T')[0];
       const endDateStr =
-        typeof endDate === 'string'
-          ? endDate
-          : endDate.toISOString().split('T')[0];
+        typeof endDate === 'string' ? endDate : endDate.toISOString().split('T')[0];
 
       return await RoomInventory.findAll({
         where: {
@@ -85,9 +80,7 @@ class RoomInventoryRepository {
   async create(data, options = {}) {
     try {
       const dateStr =
-        typeof data.date === 'string'
-          ? data.date
-          : data.date.toISOString().split('T')[0];
+        typeof data.date === 'string' ? data.date : data.date.toISOString().split('T')[0];
 
       return await RoomInventory.create(
         {
@@ -116,8 +109,7 @@ class RoomInventoryRepository {
    */
   async update(roomId, date, updateData, options = {}) {
     try {
-      const dateStr =
-        typeof date === 'string' ? date : date.toISOString().split('T')[0];
+      const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
 
       const mappedData = {};
       if (updateData.totalInventory !== undefined)
@@ -126,8 +118,7 @@ class RoomInventoryRepository {
         mappedData.booked_rooms = updateData.totalReserved;
       if (updateData.pricePerNight !== undefined)
         mappedData.price_per_night = updateData.pricePerNight;
-      if (updateData.status !== undefined)
-        mappedData.status = updateData.status;
+      if (updateData.status !== undefined) mappedData.status = updateData.status;
 
       return await RoomInventory.update(mappedData, {
         where: {
@@ -152,8 +143,7 @@ class RoomInventoryRepository {
    */
   async incrementReserved(roomId, date, quantity, options = {}) {
     try {
-      const dateStr =
-        typeof date === 'string' ? date : date.toISOString().split('T')[0];
+      const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
 
       // Use Sequelize increment to ensure atomicity
       return await RoomInventory.increment(
@@ -182,8 +172,7 @@ class RoomInventoryRepository {
    */
   async decrementReserved(roomId, date, quantity, options = {}) {
     try {
-      const dateStr =
-        typeof date === 'string' ? date : date.toISOString().split('T')[0];
+      const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
 
       // Use Sequelize decrement to ensure atomicity
       return await RoomInventory.decrement(
@@ -215,10 +204,8 @@ class RoomInventoryRepository {
     const shouldCommit = !options.transaction;
 
     try {
-      const startDateObj =
-        typeof startDate === 'string' ? new Date(startDate) : startDate;
-      const endDateObj =
-        typeof endDate === 'string' ? new Date(endDate) : endDate;
+      const startDateObj = typeof startDate === 'string' ? new Date(startDate) : startDate;
+      const endDateObj = typeof endDate === 'string' ? new Date(endDate) : endDate;
 
       // Generate all dates in the range
       const dates = [];
@@ -264,10 +251,8 @@ class RoomInventoryRepository {
     const shouldCommit = !options.transaction;
 
     try {
-      const startDateObj =
-        typeof startDate === 'string' ? new Date(startDate) : startDate;
-      const endDateObj =
-        typeof endDate === 'string' ? new Date(endDate) : endDate;
+      const startDateObj = typeof startDate === 'string' ? new Date(startDate) : startDate;
+      const endDateObj = typeof endDate === 'string' ? new Date(endDate) : endDate;
 
       // Generate all dates in the range
       const dates = [];
@@ -309,8 +294,7 @@ class RoomInventoryRepository {
    */
   async incrementHeld(roomId, date, quantity, options = {}) {
     try {
-      const dateStr =
-        typeof date === 'string' ? date : date.toISOString().split('T')[0];
+      const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
 
       return await RoomInventory.increment(
         { held_rooms: quantity },
@@ -337,8 +321,7 @@ class RoomInventoryRepository {
    */
   async decrementHeld(roomId, date, quantity, options = {}) {
     try {
-      const dateStr =
-        typeof date === 'string' ? date : date.toISOString().split('T')[0];
+      const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
 
       return await RoomInventory.decrement(
         { held_rooms: quantity },
@@ -368,10 +351,8 @@ class RoomInventoryRepository {
     const shouldCommit = !options.transaction;
 
     try {
-      const startDateObj =
-        typeof startDate === 'string' ? new Date(startDate) : startDate;
-      const endDateObj =
-        typeof endDate === 'string' ? new Date(endDate) : endDate;
+      const startDateObj = typeof startDate === 'string' ? new Date(startDate) : startDate;
+      const endDateObj = typeof endDate === 'string' ? new Date(endDate) : endDate;
 
       const dates = [];
       const currentDate = new Date(startDateObj);
@@ -411,10 +392,8 @@ class RoomInventoryRepository {
     const shouldCommit = !options.transaction;
 
     try {
-      const startDateObj =
-        typeof startDate === 'string' ? new Date(startDate) : startDate;
-      const endDateObj =
-        typeof endDate === 'string' ? new Date(endDate) : endDate;
+      const startDateObj = typeof startDate === 'string' ? new Date(startDate) : startDate;
+      const endDateObj = typeof endDate === 'string' ? new Date(endDate) : endDate;
 
       const dates = [];
       const currentDate = new Date(startDateObj);
@@ -452,31 +431,21 @@ class RoomInventoryRepository {
   async checkAvailabilityForHold(reservations, startDate, endDate) {
     try {
       const roomIds = reservations.map((r) => r.roomId);
-      const quantityByRoom = new Map(
-        reservations.map((r) => [r.roomId, r.quantity || 1])
-      );
+      const quantityByRoom = new Map(reservations.map((r) => [r.roomId, r.quantity || 1]));
 
-      const inventories = await this.findByRoomsAndDateRange(
-        roomIds,
-        startDate,
-        endDate
-      );
+      const inventories = await this.findByRoomsAndDateRange(roomIds, startDate, endDate);
 
       for (const inventory of inventories) {
         const available =
-          inventory.total_rooms -
-          inventory.booked_rooms -
-          (inventory.held_rooms || 0);
+          inventory.total_rooms - inventory.booked_rooms - (inventory.held_rooms || 0);
         const required = quantityByRoom.get(inventory.room_id) || 1;
         if (available < required || inventory.status !== 'open') {
           return false;
         }
       }
 
-      const startDateObj =
-        typeof startDate === 'string' ? new Date(startDate) : startDate;
-      const endDateObj =
-        typeof endDate === 'string' ? new Date(endDate) : endDate;
+      const startDateObj = typeof startDate === 'string' ? new Date(startDate) : startDate;
+      const endDateObj = typeof endDate === 'string' ? new Date(endDate) : endDate;
       const expectedDates = [];
       const currentDate = new Date(startDateObj);
       while (currentDate < endDateObj) {
@@ -486,9 +455,7 @@ class RoomInventoryRepository {
 
       const foundDates = new Set(
         inventories.map((inv) =>
-          typeof inv.date === 'string'
-            ? inv.date
-            : inv.date.toISOString().split('T')[0]
+          typeof inv.date === 'string' ? inv.date : inv.date.toISOString().split('T')[0]
         )
       );
       for (const date of expectedDates) {
@@ -514,11 +481,7 @@ class RoomInventoryRepository {
    */
   async checkAvailability(roomIds, startDate, endDate, quantity = 1) {
     try {
-      const inventories = await this.findByRoomsAndDateRange(
-        roomIds,
-        startDate,
-        endDate
-      );
+      const inventories = await this.findByRoomsAndDateRange(roomIds, startDate, endDate);
 
       // Check if all dates have sufficient inventory
       for (const inventory of inventories) {
@@ -529,10 +492,8 @@ class RoomInventoryRepository {
       }
 
       // Check if we have inventory for all dates in the range
-      const startDateObj =
-        typeof startDate === 'string' ? new Date(startDate) : startDate;
-      const endDateObj =
-        typeof endDate === 'string' ? new Date(endDate) : endDate;
+      const startDateObj = typeof startDate === 'string' ? new Date(startDate) : startDate;
+      const endDateObj = typeof endDate === 'string' ? new Date(endDate) : endDate;
       const expectedDates = [];
       const currentDate = new Date(startDateObj);
       while (currentDate < endDateObj) {
@@ -540,9 +501,7 @@ class RoomInventoryRepository {
         currentDate.setDate(currentDate.getDate() + 1);
       }
 
-      const foundDates = new Set(
-        inventories.map((inv) => inv.date.toISOString().split('T')[0])
-      );
+      const foundDates = new Set(inventories.map((inv) => inv.date.toISOString().split('T')[0]));
 
       // Check if all expected dates are present
       for (const date of expectedDates) {

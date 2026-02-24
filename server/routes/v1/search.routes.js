@@ -518,10 +518,6 @@ router.get(
  *       400:
  *         description: Validation error
  */
-router.post(
-  '/log',
-  validate(searchSchema.saveSearchInformation),
-  saveSearchInformation
-);
+router.post('/log', validate(searchSchema.saveSearchInformation), saveSearchInformation);
 
 module.exports = router;

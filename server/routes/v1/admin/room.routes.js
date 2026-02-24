@@ -58,11 +58,7 @@ router.delete('/:roomId', validate(roomSchema.deleteRoom), deleteRoom);
  * GET /api/admin/rooms/:roomId/photos
  * Get all photos for a room
  */
-router.get(
-  '/:roomId/photos',
-  validate(roomSchema.getRoomPhotos),
-  getRoomPhotos
-);
+router.get('/:roomId/photos', validate(roomSchema.getRoomPhotos), getRoomPhotos);
 
 /**
  * POST /api/admin/rooms/:roomId/photos
@@ -79,30 +75,18 @@ router.post(
  * DELETE /api/admin/rooms/:roomId/photos
  * Delete photos from a room
  */
-router.delete(
-  '/:roomId/photos',
-  validate(roomSchema.deleteRoomPhotos),
-  deleteRoomPhotos
-);
+router.delete('/:roomId/photos', validate(roomSchema.deleteRoomPhotos), deleteRoomPhotos);
 
 /**
  * GET /api/admin/rooms/:roomId/inventory
  * Get room inventory (availability and pricing)
  */
-router.get(
-  '/:roomId/inventory',
-  validate(roomSchema.getRoomInventory),
-  getRoomInventory
-);
+router.get('/:roomId/inventory', validate(roomSchema.getRoomInventory), getRoomInventory);
 
 /**
  * PATCH /api/admin/rooms/:roomId/inventory
  * Update room inventory
  */
-router.patch(
-  '/:roomId/inventory',
-  validate(roomSchema.updateRoomInventory),
-  updateRoomInventory
-);
+router.patch('/:roomId/inventory', validate(roomSchema.updateRoomInventory), updateRoomInventory);
 
 module.exports = router;

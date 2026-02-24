@@ -18,11 +18,7 @@ services:
     networks:
       - travelnest-net
     healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          'mysqladmin ping -h localhost -u ${DB_USER} -p${DB_PASSWORD}',
-        ]
+      test: ['CMD-SHELL', 'mysqladmin ping -h localhost -u ${DB_USER} -p${DB_PASSWORD}']
       interval: 30s
       timeout: 10s
       retries: 5

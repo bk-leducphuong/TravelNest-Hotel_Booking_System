@@ -156,9 +156,7 @@ exports.handleConnection = (namespace, socket) => {
         timestamp: new Date(),
       });
 
-      logger.info(
-        `Booking ${bookingId} status updated to ${status} by user ${userId}`
-      );
+      logger.info(`Booking ${bookingId} status updated to ${status} by user ${userId}`);
 
       if (callback) {
         callback({ success: true, message: 'Booking status updated' });
@@ -255,9 +253,7 @@ exports.handleConnection = (namespace, socket) => {
       const analyticsRoom = `analytics_${hotelId}`;
       socket.join(analyticsRoom);
 
-      logger.info(
-        `User ${userId} subscribed to analytics for hotel ${hotelId}`
-      );
+      logger.info(`User ${userId} subscribed to analytics for hotel ${hotelId}`);
 
       if (callback) {
         callback({
