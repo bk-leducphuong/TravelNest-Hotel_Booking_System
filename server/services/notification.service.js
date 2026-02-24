@@ -7,11 +7,6 @@ const {
   RELATED_ENTITY_TYPES,
 } = require('../constants/notifications');
 
-/**
- * Notification Service - Contains main business logic
- * Follows RESTful API standards
- */
-
 class NotificationService {
   /**
    * Get notifications for a user
