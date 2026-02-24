@@ -26,6 +26,7 @@ const requestLogger = require('@middlewares/request-logger.middleware');
 
 /*********************** Routes ************************/
 const v1Routes = require('@routes/v1/index.js');
+const healthRoutes = require('@routes/health.routes.js');
 
 /*********************** Init Server ************************/
 const initServer = async () => {
@@ -116,6 +117,9 @@ const initServer = async () => {
   app.use('/admin/queues', serverAdapter.getRouter());
 
   logger.info('Bull Board dashboard available at /admin/queues');
+
+  // Health check routes (root-level)
+  app.use('/health', healthRoutes);
 
   // API v1 routes
   app.use('/api/v1', v1Routes);

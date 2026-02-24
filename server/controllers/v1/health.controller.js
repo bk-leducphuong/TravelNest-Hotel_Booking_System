@@ -8,7 +8,7 @@ const logger = require('@config/logger.config');
 class HealthController {
   /**
    * Get comprehensive health status
-   * @route GET /api/v1/health
+   * @route GET /health
    */
   async getHealth(req, res, next) {
     try {
@@ -29,7 +29,7 @@ class HealthController {
 
   /**
    * Get liveness probe
-   * @route GET /api/v1/health/live
+   * @route GET /health/live
    * @description Simple check to verify the server process is running
    */
   async getLiveness(req, res, next) {
@@ -47,7 +47,7 @@ class HealthController {
 
   /**
    * Get readiness probe
-   * @route GET /api/v1/health/ready
+   * @route GET /health/ready
    * @description Check if server is ready to accept traffic (critical dependencies are healthy)
    */
   async getReadiness(req, res, next) {
