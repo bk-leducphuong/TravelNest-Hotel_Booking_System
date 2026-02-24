@@ -1,15 +1,13 @@
 // Jest setup file - runs before each test file
 require('module-alias/register');
 
-// Mock environment variables for testing
-process.env.NODE_ENV = 'test';
-process.env.JWT_SECRET = 'test-secret-key';
-process.env.JWT_EXPIRES_IN = '1h';
+// Mock environment variables for testing (can be overridden by Testcontainers)
+process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 
-// Global test timeout
+// Global test timeout (can be overridden in specific suites)
 jest.setTimeout(10000);
 
-// Mock logger to prevent console output during tests
+// Mock logger to prevent noisy output during tests
 jest.mock('@config/logger.config', () => ({
   info: jest.fn(),
   error: jest.fn(),

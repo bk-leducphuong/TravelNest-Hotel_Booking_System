@@ -1,11 +1,5 @@
 /*********************** External Libraries ************************/
 require('module-alias/register');
-require('dotenv').config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? '.env.development'
-      : '.env.production',
-});
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -29,7 +23,7 @@ const v1Routes = require('@routes/v1/index.js');
 const healthRoutes = require('@routes/health.routes.js');
 
 /*********************** Init Server ************************/
-const initServer = async () => {
+const createApp = async () => {
   // Connect and sync database
   await db.sequelize.authenticate();
   // await db.sequelize.sync({ alter: false, force: false });
@@ -135,11 +129,7 @@ const initServer = async () => {
     res.send('Welcome to the Hotel Booking API');
   });
 
-  // Start the server
-  const PORT = process.env.PORT || 3000;
-  server.listen(PORT, async () => {
-    logger.info(`Server running on port ${PORT}`);
-  });
+  return app;
 };
 
-initServer();
+module.exports = createApp;
