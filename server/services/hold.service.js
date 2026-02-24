@@ -247,10 +247,14 @@ class HoldService {
   }
 
   /**
-   * Release a hold (user cancels checkout or hold expired)
-   * Decrements held_rooms and updates hold status to 'released' or 'expired'
+   * Release a hold (user cancels checkout, hold expired, or converted to booking).
+   * Decrements held_rooms and updates hold status.
+   * @param {string} holdId - Hold ID
+   * @param {string} userId - User ID (must own the hold)
+   * @param {string} reason - 'released' | 'expired' | 'completed'
+   * @param {Object} [options] - Optional. If options.transaction is provided, runs inside that transaction (caller commits); otherwise starts its own transaction.
    */
-  async releaseHold(holdId, userId, reason = 'released') {
+  async releaseHold(holdId, userId, reason = 'released', options = {}) {
     const hold = await holdRepository.findByIdWithRooms(holdId);
     if (!hold) {
       throw new ApiError(404, 'HOLD_NOT_FOUND', 'Hold not found');
@@ -270,7 +274,16 @@ class HoldService {
       );
     }
 
-    const transaction = await sequelize.transaction();
+    const statusByReason = {
+      expired: 'expired',
+      released: 'released',
+      completed: 'completed',
+    };
+    const newStatus = statusByReason[reason] || 'released';
+
+    const useExternalTransaction = !!options.transaction;
+    const transaction = options.transaction || (await sequelize.transaction());
+
     try {
       await inventoryService.releaseHoldRooms(
         {
@@ -287,21 +300,22 @@ class HoldService {
       await holdRepository.updateStatus(
         holdId,
         {
-          status: reason === 'expired' ? 'expired' : 'released',
+          status: newStatus,
           released_at: new Date(),
         },
         { transaction }
       );
 
-      await transaction.commit();
-
-      // await removeHoldFromCache(hold);
-      // await cancelExpireHold(hold);
+      if (!useExternalTransaction) {
+        await transaction.commit();
+      }
 
       logger.info('Hold released', { holdId, userId, reason });
-      return { holdId, status: reason === 'expired' ? 'expired' : 'released' };
+      return { holdId, status: newStatus };
     } catch (error) {
-      await transaction.rollback();
+      if (!useExternalTransaction) {
+        await transaction.rollback();
+      }
       if (error instanceof ApiError) throw error;
       logger.error('Release hold failed:', error);
       throw new ApiError(500, 'RELEASE_HOLD_FAILED', 'Failed to release hold', {

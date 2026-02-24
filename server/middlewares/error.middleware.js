@@ -4,8 +4,12 @@ const logger = require('../config/logger.config');
 module.exports = (err, req, res, next) => {
   let apiError = err;
 
-  // Convert unknown errors
-  if (!(err instanceof ApiError)) {
+  // Treat as API error if it has statusCode and code (handles cross-module ApiError)
+  const isApiError =
+    err instanceof ApiError ||
+    (err && typeof err.statusCode === 'number' && err.code);
+
+  if (!isApiError) {
     apiError = new ApiError(500, 'INTERNAL_ERROR', 'Internal server error');
   }
 

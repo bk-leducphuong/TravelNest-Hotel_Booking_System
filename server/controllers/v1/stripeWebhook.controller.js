@@ -2,18 +2,9 @@ const paymentService = require('@services/payment.service');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 const StripeWebhookAdapter = require('@adapters/webhooks/stripeWebhook.adapter');
 const webhookEventLogRepository = require('@repositories/webhook_event_log.repository');
-const { paymentNotificationQueue } = require('@queues/index');
-const { addJob } = require('@utils/bullmq.utils');
+const { addEmailJob } = require('@queues/email.queue');
+const { addNotificationJob } = require('@queues/notification.queue');
 const logger = require('@config/logger.config');
-
-/**
- * Stripe Webhook Controller
- * Responsibilities:
- * - Receive HTTP webhook requests
- * - Delegate to webhook adapter for verification/parsing
- * - Route events to appropriate business handlers
- * - Send HTTP responses
- */
 
 // Initialize adapters
 const paymentAdapter = new StripePaymentAdapter();
@@ -104,21 +95,44 @@ async function handlePaymentSucceeded(event) {
     const result = await paymentService.handlePaymentSucceeded(context);
 
     if (!result.alreadyProcessed) {
-      await addJob(
-        paymentNotificationQueue,
-        'payment-success',
-        {
-          type: 'payment_success',
-          context: {
-            ...context,
-            eventId: event.id,
+      // Enqueue email and notification in parallel (independent queues)
+      const bookingCode = context.bookingCode || context.paymentIntentId;
+      const eventId = event.id;
+      await Promise.all([
+        context.receiptEmail
+          ? addEmailJob(
+              'booking_confirmation',
+              {
+                email: context.receiptEmail,
+                bookingCode: context.bookingCode,
+                checkInDate: context.checkInDate,
+                checkOutDate: context.checkOutDate,
+                numberOfGuests: context.numberOfGuests,
+                totalPrice: context.amount,
+              },
+              {
+                priority: 8,
+                jobId: `email-booking-${bookingCode}-${eventId}`,
+              }
+            )
+          : Promise.resolve(),
+        addNotificationJob(
+          'new_booking',
+          {
+            buyerId: context.buyerId,
+            hotelId: context.hotelId,
+            bookingCode: context.bookingCode,
+            checkInDate: context.checkInDate,
+            checkOutDate: context.checkOutDate,
+            numberOfGuests: context.numberOfGuests,
+            bookedRooms: context.bookedRooms,
           },
-        },
-        {
-          priority: 8,
-          jobId: `payment-success-${context.bookingCode || context.paymentIntentId}-${event.id}`,
-        }
-      );
+          {
+            priority: 8,
+            jobId: `notif-new-booking-${bookingCode}-${eventId}`,
+          }
+        ),
+      ]);
     }
 
     logger.info('Payment succeeded handled successfully', {
@@ -143,21 +157,19 @@ async function handlePaymentFailed(event) {
 
     await paymentService.handlePaymentFailed(context);
 
-    await addJob(
-      paymentNotificationQueue,
-      'payment-failure',
-      {
-        type: 'payment_failure',
-        context: {
-          ...context,
-          eventId: event.id,
+    if (context.receiptEmail) {
+      await addEmailJob(
+        'payment_failure',
+        {
+          email: context.receiptEmail,
+          failureMessage: context.failureMessage,
         },
-      },
-      {
-        priority: 5,
-        jobId: `payment-failure-${context.paymentIntentId}-${event.id}`,
-      }
-    );
+        {
+          priority: 5,
+          jobId: `email-payment-failure-${context.paymentIntentId}-${event.id}`,
+        }
+      );
+    }
 
     logger.info('Payment failed handled successfully', { eventId: event.id });
   } catch (error) {
@@ -177,19 +189,17 @@ async function handleChargeRefunded(event) {
 
     await paymentService.handleRefundSucceeded(context);
 
-    await addJob(
-      paymentNotificationQueue,
+    await addNotificationJob(
       'refund',
       {
-        type: 'refund',
-        context: {
-          ...context,
-          eventId: event.id,
-        },
+        buyerId: context.buyerId,
+        hotelId: context.hotelId,
+        bookingCode: context.bookingCode,
+        refundAmount: context.refundAmount,
       },
       {
         priority: 7,
-        jobId: `refund-${context.bookingCode || context.refundId || context.chargeId}-${event.id}`,
+        jobId: `notif-refund-${context.bookingCode || context.chargeId}-${event.id}`,
       }
     );
 
@@ -212,20 +222,17 @@ async function handlePayoutPaid(event) {
   try {
     const context = webhookAdapter.extractPayoutContext(event);
 
-    await addJob(
-      paymentNotificationQueue,
-      'payout-completed',
+    await addNotificationJob(
+      'payout',
       {
-        type: 'payout',
+        hotelId: context.hotelId,
+        transactionId: context.transactionId,
         status: 'completed',
-        context: {
-          ...context,
-          eventId: event.id,
-        },
+        amount: context.amount,
       },
       {
         priority: 5,
-        jobId: `payout-completed-${context.transactionId || context.payoutId}-${event.id}`,
+        jobId: `notif-payout-completed-${context.transactionId || context.payoutId}-${event.id}`,
       }
     );
 
@@ -245,20 +252,17 @@ async function handlePayoutFailed(event) {
   try {
     const context = webhookAdapter.extractPayoutContext(event);
 
-    await addJob(
-      paymentNotificationQueue,
-      'payout-failed',
+    await addNotificationJob(
+      'payout',
       {
-        type: 'payout',
+        hotelId: context.hotelId,
+        transactionId: context.transactionId,
         status: 'failed',
-        context: {
-          ...context,
-          eventId: event.id,
-        },
+        amount: context.amount,
       },
       {
         priority: 5,
-        jobId: `payout-failed-${context.transactionId || context.payoutId}-${event.id}`,
+        jobId: `notif-payout-failed-${context.transactionId || context.payoutId}-${event.id}`,
       }
     );
 
