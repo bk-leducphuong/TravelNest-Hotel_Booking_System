@@ -3,7 +3,7 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 const pool = require('./db.js'); // Kết nối với MySQL pool
 require('dotenv').config({
-  path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development',
+  path: `.env.${process.env.NODE_ENV}`,
 });
 
 passport.use(

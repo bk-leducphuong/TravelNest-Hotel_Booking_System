@@ -2,9 +2,6 @@ const fs = require('fs');
 const path = require('path');
 
 const { Client } = require('@elastic/elasticsearch');
-require('dotenv').config({
-  path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development',
-});
 
 const logger = require('../../config/logger.config');
 const elasticsearchClient = require('../../config/elasticsearch.config');

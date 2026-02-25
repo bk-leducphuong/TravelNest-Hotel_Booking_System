@@ -17,7 +17,7 @@
  */
 
 require('dotenv').config({
-  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
+  path: `.env.${process.env.NODE_ENV}`,
 });
 
 const db = require('../../../models');

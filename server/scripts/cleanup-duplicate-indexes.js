@@ -6,9 +6,6 @@
  */
 
 require('module-alias/register');
-require('dotenv').config({
-  path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development',
-});
 
 const sequelize = require('@config/database.config');
 const logger = require('@config/logger.config');
