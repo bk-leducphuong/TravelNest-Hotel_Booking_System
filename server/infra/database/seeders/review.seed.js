@@ -1,25 +1,14 @@
-/**
- * Review Seed File
- *
- * Generates fake review data using Faker.js and seeds the database.
- * Requires existing hotels and users (customers) in the database.
- *
- * Usage:
- *   - Run directly: node seed/review.seed.js
- *   - Import and use: const { seedReviews } = require('./seed/review.seed');
- *
- * Options:
- *   - reviewsPerHotel: Number of reviews to generate per hotel (default: 10-30 random)
- *   - clearExisting: Whether to clear existing reviews before seeding (default: false)
- *   - useBookings: Whether to use existing bookings for reviews (default: false)
- *
- * Note: This seed file requires hotels and users (customers) to exist in the database first.
- */
-
 require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });
-const { faker } = require('@faker-js/faker');
+
+let faker;
+async function loadFaker() {
+  if (!faker) {
+    const mod = await import('@faker-js/faker');
+    faker = mod.faker ?? mod.default ?? mod;
+  }
+}
 
 const db = require('../../../models');
 const sequelize = require('../../../config/database.config');
@@ -290,6 +279,7 @@ async function seedReviews(options = {}) {
   } = options;
 
   try {
+    await loadFaker();
     console.log('🌱 Starting review seeding...');
 
     // Get all hotels or specific hotels
@@ -468,6 +458,7 @@ async function seedReviews(options = {}) {
  */
 async function seedReviewsForHotel(hotelId, count = 20, useBookings = false) {
   try {
+    await loadFaker();
     // Verify hotel exists
     const hotel = await hotels.findByPk(hotelId);
     if (!hotel) {

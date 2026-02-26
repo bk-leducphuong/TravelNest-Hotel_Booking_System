@@ -1,28 +1,14 @@
-/**
- * Room Inventory Seed File
- *
- * Creates room_inventory rows (per-room, per-date availability and price).
- * Requires existing rooms in the database.
- *
- * Usage:
- *   - Run directly: node database/seeders/room_inventory.seed.js
- *   - Import and use: const { seedRoomInventory } = require('./database/seeders/room_inventory.seed');
- *
- * Options:
- *   - daysAhead: Number of days from today to seed (default: 90)
- *   - roomIds: Optional array of room UUIDs to seed (default: all rooms)
- *   - clearExisting: Whether to clear existing room_inventory before seeding (default: false)
- *   - priceMin / priceMax: Price per night range (default: 80–350)
- *   - currency: Currency code (default: 'USD')
- *
- * Note: Requires rooms to be seeded first. total_rooms is set from each room's quantity.
- */
-
 require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });
 
-const { faker } = require('@faker-js/faker');
+let faker;
+async function loadFaker() {
+  if (!faker) {
+    const mod = await import('@faker-js/faker');
+    faker = mod.faker ?? mod.default ?? mod;
+  }
+}
 
 const db = require('../../../models');
 const sequelize = require('../../../config/database.config');
@@ -119,6 +105,7 @@ async function seedRoomInventory(options = {}) {
   }
 
   try {
+    await loadFaker();
     console.log('🌱 Starting room inventory seeding...');
 
     const where = roomIds && roomIds.length > 0 ? { id: roomIds } : {};

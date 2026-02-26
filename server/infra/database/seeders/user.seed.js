@@ -1,28 +1,15 @@
-/**
- * User Seed File
- *
- * Generates fake user data using Faker.js and seeds the database.
- *
- * Usage:
- *   - Run directly: node database/seeders/user.seed.js
- *   - Import and use: const { seedUsers } = require('./database/seeders/user.seed');
- *
- * Options:
- *   - userCount: Number of regular users (logged in accounts) to generate (default: 50)
- *   - managerCount: Number of hotel managers to generate (default: 10)
- *   - staffCount: Number of hotel staff to generate (default: 20)
- *   - clearExisting: Whether to clear existing users before seeding (default: false)
- *
- * Note:
- *   - Guest users (not logged in) are not stored in database, so they are not seeded
- *   - Duplicate emails will be skipped automatically
- */
-
 require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });
-const { faker } = require('@faker-js/faker');
 const bcrypt = require('bcryptjs');
+
+let faker;
+async function loadFaker() {
+  if (!faker) {
+    const mod = await import('@faker-js/faker');
+    faker = mod.faker ?? mod.default ?? mod;
+  }
+}
 
 const db = require('../../../models');
 const sequelize = require('../../../config/database.config');
@@ -173,6 +160,7 @@ async function assignRoleToUser(userId, roleId) {
  * @param {boolean} options.clearExisting - Whether to clear existing users (default: false)
  */
 async function seedUsers(options = {}) {
+  await loadFaker();
   const { userCount = 50, managerCount = 10, staffCount = 20, clearExisting = false } = options;
 
   try {
@@ -309,6 +297,7 @@ async function seedUsers(options = {}) {
  * @returns {Promise<Object>} Created user
  */
 async function seedSingleUser(userData = {}, roleName = 'user') {
+  await loadFaker();
   // Ensure roles exist
   const roleMap = await ensureRolesExist();
 

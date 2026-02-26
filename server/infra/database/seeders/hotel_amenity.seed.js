@@ -19,12 +19,17 @@
 require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });
-
-const { faker } = require('@faker-js/faker');
+let faker;
+async function loadFaker() {
+  if (!faker) {
+    const mod = await import('@faker-js/faker');
+    faker = mod.faker ?? mod.default ?? mod;
+  }
+}
 const { Op } = require('sequelize');
 
-const db = require('../../models');
-const sequelize = require('../../config/database.config');
+const db = require('../../../models');
+const sequelize = require('../../../config/database.config');
 
 const { hotels: Hotels, amenities: Amenities, hotel_amenities: HotelAmenities } = db;
 
@@ -47,7 +52,7 @@ async function getHotelApplicableAmenityIds() {
  * Generate optional additional_info for a hotel-amenity link
  * @returns {string|null}
  */
-function maybeAdditionalInfo() {
+async function maybeAdditionalInfo() {
   const examples = [
     'Available 24/7',
     'Open 6am–10pm',
@@ -69,6 +74,7 @@ function maybeAdditionalInfo() {
  * @returns {Promise<{ linked: number, skipped: number }>}
  */
 async function seedHotelAmenities(options = {}) {
+  await loadFaker();
   const { minAmenitiesPerHotel = 5, maxAmenitiesPerHotel = 25, clearExisting = false } = options;
 
   try {
@@ -115,7 +121,7 @@ async function seedHotelAmenities(options = {}) {
             amenity_id: amenityId,
             is_available: faker.datatype.boolean({ probability: 0.9 }),
             is_free: faker.datatype.boolean({ probability: 0.85 }),
-            additional_info: maybeAdditionalInfo(),
+            additional_info: await maybeAdditionalInfo(),
           },
         });
         if (wasCreated) linked++;

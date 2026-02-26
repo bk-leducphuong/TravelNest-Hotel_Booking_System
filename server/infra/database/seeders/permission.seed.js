@@ -1,29 +1,15 @@
-/**
- * Permission & Role-Permission Seed File
- *
- * Seeds permissions and role_permissions tables.
- * Also ensures all roles exist before assigning permissions.
- *
- * Usage:
- *   - Run directly: node database/seeders/permission.seed.js
- *   - Import and use: const { seedPermissions } = require('./database/seeders/permission.seed');
- *
- * Options:
- *   - clearExisting: Whether to clear existing permissions before seeding (default: false)
- */
-
 require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });
 
-const db = require('../../models');
-const sequelize = require('../../config/database.config');
+const db = require('../../../models');
+const sequelize = require('../../../config/database.config');
 const {
   PERMISSIONS,
   PERMISSION_DESCRIPTIONS,
   ROLE_PERMISSIONS,
-} = require('../../constants/permissions');
-const { ROLES } = require('../../constants/roles');
+} = require('../../../constants/permissions');
+const { ROLES } = require('../../../constants/roles');
 
 const { permissions: Permissions, roles: Roles, role_permissions: RolePermissions } = db;
 

@@ -1,32 +1,20 @@
-/**
- * Hotel Seed File
- *
- * Generates fake hotel data using Faker.js and seeds the database.
- *
- * Usage:
- *   - Run directly: node database/seeders/hotel.seed.js
- *   - Import and use: const { seedHotels } = require('./database/seeders/hotel.seed');
- *
- * Options:
- *   - count: Number of hotels to generate (default: 20)
- *   - clearExisting: Whether to clear existing hotels before seeding (default: false)
- *
- * Note: Clearing hotels may fail or require clearing dependent data (rooms, bookings, etc.) first.
- */
-
 require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });
-
-const { faker } = require('@faker-js/faker');
-
-const db = require('../../models');
-const sequelize = require('../../config/database.config');
+let faker;
+async function loadFaker() {
+  if (!faker) {
+    const mod = await import('@faker-js/faker');
+    faker = mod.faker ?? mod.default ?? mod;
+  }
+}
+const db = require('../../../models');
+const sequelize = require('../../../config/database.config');
 const {
   IANA_TIMEZONES,
   HOTEL_CHECK_IN_POLICIES,
   HOTEL_CHECK_OUT_POLICIES,
-} = require('../../constants/hotels');
+} = require('../../../constants/hotels');
 const { hotels: Hotels } = db;
 
 const HOTEL_NAME_PREFIXES = [
@@ -71,7 +59,7 @@ const HOTEL_NAME_SUFFIXES = [
  * Generate a hotel-style name
  * @returns {string}
  */
-function generateHotelName() {
+async function generateHotelName() {
   const prefix = faker.helpers.arrayElement(HOTEL_NAME_PREFIXES);
   const suffix = faker.helpers.arrayElement(HOTEL_NAME_SUFFIXES);
   const middle = faker.helpers.arrayElement([
@@ -90,7 +78,7 @@ function generateHotelName() {
  * Generate a single hotel record (no id; Sequelize will set it)
  * @returns {Object}
  */
-function generateHotelRecord() {
+async function generateHotelRecord() {
   const city = faker.location.city();
   const country = faker.location.country();
   const latitude = faker.location.latitude();
@@ -104,7 +92,7 @@ function generateHotelRecord() {
   });
 
   return {
-    name: generateHotelName(),
+    name: await generateHotelName(),
     description: faker.lorem.paragraphs(2, '\n'),
     address: faker.location.streetAddress({ useFullAddress: true }),
     city,
@@ -131,6 +119,7 @@ function generateHotelRecord() {
  * @returns {Promise<{ created: number }>}
  */
 async function seedHotels(options = {}) {
+  await loadFaker();
   const { count = 20, clearExisting = false } = options;
 
   try {
@@ -144,7 +133,7 @@ async function seedHotels(options = {}) {
 
     let created = 0;
     for (let i = 0; i < count; i++) {
-      const record = generateHotelRecord();
+      const record = await generateHotelRecord();
       await Hotels.create(record);
       created++;
     }
