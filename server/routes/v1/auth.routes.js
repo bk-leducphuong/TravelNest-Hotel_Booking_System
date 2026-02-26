@@ -1,14 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const {
-  checkAuth,
-  checkEmail,
-  login,
-  logout,
-  register,
-} = require('@controllers/v1/auth.controller');
+const { checkAuth, checkEmail, login, logout, register } = require('@controllers/v1/auth.controller');
 const validate = require('@middlewares/validate.middleware');
 const authSchema = require('@validators/v1/auth.schema');
+const { doubleCsrfProtection, generateCsrfToken } = require('@middlewares/csrf.middleware');
 
 /**
  * @swagger
@@ -118,6 +113,11 @@ const authSchema = require('@validators/v1/auth.schema');
 router.get('/session', validate(authSchema.checkAuth), checkAuth);
 
 /**
+ * Issue CSRF token tied to the current session.
+ */
+router.get('/csrf-token', generateCsrfToken);
+
+/**
  * @swagger
  * /auth/sessions:
  *   post:
@@ -150,7 +150,7 @@ router.get('/session', validate(authSchema.checkAuth), checkAuth);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/sessions', validate(authSchema.login), login);
+router.post('/sessions', doubleCsrfProtection, validate(authSchema.login), login);
 
 /**
  * @swagger
@@ -171,7 +171,7 @@ router.post('/sessions', validate(authSchema.login), login);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete('/sessions', validate(authSchema.logout), logout);
+router.delete('/sessions', doubleCsrfProtection, validate(authSchema.logout), logout);
 
 /**
  * @swagger
@@ -229,6 +229,6 @@ router.post('/email/check', validate(authSchema.checkEmail), checkEmail);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/users', validate(authSchema.register), register);
+router.post('/users', doubleCsrfProtection, validate(authSchema.register), register);
 
 module.exports = router;

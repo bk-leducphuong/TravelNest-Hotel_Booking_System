@@ -49,7 +49,7 @@ const createApp = async () => {
     cors({
       origin: process.env.CLIENT_HOST || '*',
       methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE', 'PATCH'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
       credentials: true,
     })
   );
@@ -119,6 +119,9 @@ const createApp = async () => {
   // API v1 routes
   app.use('/api/v1', v1Routes);
 
+  const { csrfErrorHandler } = require('@middlewares/csrf.middleware');
+
+  app.use(csrfErrorHandler);
   app.use(errorMiddleware);
 
   // Default route
