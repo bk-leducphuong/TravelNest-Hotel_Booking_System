@@ -1,6 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { checkAuth, checkEmail, login, logout, register } = require('@controllers/v1/auth.controller');
+const {
+  checkAuth,
+  checkEmail,
+  login,
+  logout,
+  register,
+} = require('@controllers/v1/auth.controller');
 const validate = require('@middlewares/validate.middleware');
 const authSchema = require('@validators/v1/auth.schema');
 const { doubleCsrfProtection, generateCsrfToken } = require('@middlewares/csrf.middleware');
@@ -93,6 +99,19 @@ const { doubleCsrfProtection, generateCsrfToken } = require('@middlewares/csrf.m
  *               type: boolean
  *             email:
  *               type: string
+ *     CsrfTokenResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: true
+ *         data:
+ *           type: object
+ *           properties:
+ *             csrfToken:
+ *               type: string
+ *               description: CSRF token bound to the current session
+ *               example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
  */
 
 /**
@@ -113,7 +132,26 @@ const { doubleCsrfProtection, generateCsrfToken } = require('@middlewares/csrf.m
 router.get('/session', validate(authSchema.checkAuth), checkAuth);
 
 /**
- * Issue CSRF token tied to the current session.
+ * @swagger
+ * /auth/csrf-token:
+ *   get:
+ *     summary: Get CSRF token
+ *     description: Issue a CSRF token bound to the current session and set it as a cookie.
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: CSRF token issued successfully
+ *         headers:
+ *           Set-Cookie:
+ *             description: CSRF token is also sent as `x-csrf-token` cookie
+ *             schema:
+ *               type: string
+ *       500:
+ *         description: Server error while generating CSRF token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/csrf-token', generateCsrfToken);
 

@@ -102,7 +102,9 @@
     "body-parser": "^1.20.3",
     "bullmq": "^5.69.3",
     "connect-redis": "^7.1.1",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "csrf-csrf": "^3.0.0",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "express-rate-limit": "^7.5.0",
@@ -127,8 +129,7 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^10.0.0",
-    "uuidv7": "^1.1.0",
-    "csrf-csrf": "^3.0.0"
+    "uuidv7": "^1.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",

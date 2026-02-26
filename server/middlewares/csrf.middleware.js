@@ -15,11 +15,7 @@ function getSessionSecret(req) {
   return req.session.csrfSecret;
 }
 
-const {
-  doubleCsrfProtection,
-  generateToken,
-  invalidCsrfTokenError,
-} = doubleCsrf({
+const { doubleCsrfProtection, generateToken, invalidCsrfTokenError } = doubleCsrf({
   getSecret: getSessionSecret,
   cookieName: 'x-csrf-token',
   cookieOptions: {
@@ -27,6 +23,7 @@ const {
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
   },
+  ignoreMethods: ['GET', 'HEAD', 'OPTIONS', 'TRACE'],
   getTokenFromRequest: (req) =>
     req.headers['x-csrf-token'] ||
     req.headers['x-xsrf-token'] ||
@@ -61,4 +58,3 @@ module.exports = {
   generateCsrfToken,
   csrfErrorHandler,
 };
-

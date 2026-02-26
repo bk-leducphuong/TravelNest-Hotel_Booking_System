@@ -5,6 +5,7 @@ const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 
 /** ********************* Config ************************ */
 const logger = require('@config/logger.config');
@@ -65,6 +66,8 @@ const createApp = async () => {
 
   // Request logging middleware (before other middlewares to capture all requests)
   app.use(requestLogger);
+
+  app.use(cookieParser());
 
   // Configure Session
   app.use(sessionMiddleware);
