@@ -17,13 +17,6 @@ module.exports = function (sequelize, DataTypes) {
           isEmail: true,
         },
       },
-      password_hash: {
-        type: DataTypes.STRING(255),
-        allowNull: false,
-        validate: {
-          len: [60, 255], // e.g. bcrypt hashes are typically 60 chars
-        },
-      },
       first_name: {
         type: DataTypes.STRING(255),
         allowNull: false,
@@ -168,6 +161,11 @@ module.exports = function (sequelize, DataTypes) {
     User.hasMany(models.user_roles, {
       foreignKey: 'user_id',
       as: 'roles',
+    });
+
+    User.hasMany(models.auth_accounts, {
+      foreignKey: 'user_id',
+      as: 'auth_accounts',
     });
   };
 

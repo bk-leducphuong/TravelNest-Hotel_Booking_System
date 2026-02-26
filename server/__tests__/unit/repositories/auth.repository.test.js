@@ -1,5 +1,5 @@
 const authRepository = require('@repositories/auth.repository');
-const { Users, Roles, UserRoles, HotelUsers } = require('@models/index.js');
+const { Users, Roles, UserRoles, HotelUsers, AuthAccounts } = require('@models/index.js');
 
 const {
   createMockAuthUser,
@@ -22,6 +22,10 @@ jest.mock('@models/index.js', () => ({
     create: jest.fn(),
   },
   HotelUsers: {},
+  AuthAccounts: {
+    create: jest.fn(),
+    update: jest.fn(),
+  },
 }));
 
 describe('AuthRepository', () => {
@@ -159,7 +163,6 @@ describe('AuthRepository', () => {
       // Arrange
       const userData = {
         email: 'newuser@example.com',
-        password_hash: 'hashedpassword',
         first_name: 'John',
         last_name: 'Doe',
         status: 'active',
@@ -230,22 +233,27 @@ describe('AuthRepository', () => {
       // Arrange
       const email = 'test@example.com';
       const passwordHash = 'newhashedpassword';
-      Users.update.mockResolvedValue([1]); // [number of updated rows]
+      AuthAccounts.update.mockResolvedValue([1]); // [number of updated rows]
 
       // Act
       const result = await authRepository.updatePasswordByEmail(email, passwordHash);
 
       // Assert
-      expect(Users.update).toHaveBeenCalledWith(
+      expect(AuthAccounts.update).toHaveBeenCalledWith(
         { password_hash: passwordHash },
-        { where: { email } }
+        {
+          where: {
+            provider: 'local',
+            provider_user_id: email,
+          },
+        }
       );
       expect(result).toBe(1);
     });
 
     it('should return 0 when user not found', async () => {
       // Arrange
-      Users.update.mockResolvedValue([0]);
+      AuthAccounts.update.mockResolvedValue([0]);
 
       // Act
       const result = await authRepository.updatePasswordByEmail(
@@ -267,8 +275,12 @@ describe('AuthRepository', () => {
       const mockUser = {
         id: 1,
         email,
-        password_hash: 'hashedpassword',
         status: 'active',
+        auth_accounts: [
+          {
+            password_hash: 'hashedpassword',
+          },
+        ],
         roles: [
           {
             role: { id: 1, name: roleName },
@@ -289,7 +301,7 @@ describe('AuthRepository', () => {
       expect(Users.findOne).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { email },
-          attributes: ['id', 'email', 'password_hash', 'status'],
+          attributes: ['id', 'email', 'status'],
         })
       );
       expect(result).toEqual({
@@ -337,8 +349,12 @@ describe('AuthRepository', () => {
       const mockUser = {
         id: 1,
         email: 'test@example.com',
-        password_hash: 'hashedpassword',
         status: 'active',
+        auth_accounts: [
+          {
+            password_hash: 'hashedpassword',
+          },
+        ],
         roles: [],
       };
 

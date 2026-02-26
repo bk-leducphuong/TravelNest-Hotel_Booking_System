@@ -1,4 +1,4 @@
-const { Users, SavedHotels, Hotels } = require('../models/index.js');
+const { Users, SavedHotels, Hotels, AuthAccounts } = require('../models/index.js');
 
 /**
  * User Repository - Contains all database operations for users
@@ -35,7 +35,18 @@ class UserRepository {
   async findByIdWithPassword(userId) {
     return await Users.findOne({
       where: { id: userId },
-      attributes: ['id', 'password_hash'],
+      attributes: ['id', 'email'],
+      include: [
+        {
+          model: AuthAccounts,
+          as: 'auth_accounts',
+          required: true,
+          where: {
+            provider: 'local',
+          },
+          attributes: ['password_hash'],
+        },
+      ],
     });
   }
 
