@@ -3,6 +3,7 @@ const sharp = require('sharp');
 
 const { minioClient, bucketName, getObjectUrl } = require('../config/minio.config');
 const userRepository = require('../repositories/user.repository');
+const { AuthAccounts } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 /**
@@ -163,7 +164,7 @@ class UserService {
     }
 
     // Verify old password
-    const isMatch = await bcrypt.compare(oldPassword, user.password_hash);
+    const isMatch = await bcrypt.compare(oldPassword, user.auth_accounts[0]?.password_hash || '');
     if (!isMatch) {
       throw new ApiError(401, 'INVALID_PASSWORD', 'Old password is incorrect');
     }
@@ -172,9 +173,15 @@ class UserService {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update password
-    await userRepository.updateById(userId, {
-      password_hash: hashedPassword,
-    });
+    await AuthAccounts.update(
+      { password_hash: hashedPassword },
+      {
+        where: {
+          user_id: user.id,
+          provider: 'local',
+        },
+      }
+    );
   }
 }
 

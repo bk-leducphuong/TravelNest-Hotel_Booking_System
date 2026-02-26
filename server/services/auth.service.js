@@ -146,16 +146,15 @@ class AuthService {
       throw new ApiError(500, 'ROLE_NOT_FOUND', 'Role not found in system');
     }
 
-    // Create user
+    // Create user and auth account transactionally
     const newUser = await authRepository.createUser({
       email: email,
-      password_hash: hashedPassword,
       first_name: firstName,
       last_name: lastName,
       status: 'active',
     });
 
-    // Assign role to user
+    await authRepository.createLocalAuthAccount(newUser.id, email, hashedPassword);
     await authRepository.assignRoleToUser(newUser.id, role.id);
 
     // Get full user data with context

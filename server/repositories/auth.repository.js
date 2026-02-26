@@ -1,4 +1,4 @@
-const { Users, Roles, UserRoles, HotelUsers } = require('@models/index.js');
+const { Users, Roles, UserRoles, HotelUsers, AuthAccounts } = require('@models/index.js');
 const { Op } = require('sequelize');
 
 /**
@@ -108,6 +108,22 @@ class AuthRepository {
   }
 
   /**
+   * Create local auth account for a user
+   * @param {string} userId
+   * @param {string} email
+   * @param {string} passwordHash
+   * @returns {Promise<Object>}
+   */
+  async createLocalAuthAccount(userId, email, passwordHash) {
+    return await AuthAccounts.create({
+      user_id: userId,
+      provider: 'local',
+      provider_user_id: email,
+      password_hash: passwordHash,
+    });
+  }
+
+  /**
    * Assign role to user
    * @param {string} userId - User ID
    * @param {string} roleId - Role ID
@@ -136,7 +152,15 @@ class AuthRepository {
    * @returns {Promise<number>} Number of updated rows
    */
   async updatePasswordByEmail(email, passwordHash) {
-    const [updatedRows] = await Users.update({ password_hash: passwordHash }, { where: { email } });
+    const [updatedRows] = await AuthAccounts.update(
+      { password_hash: passwordHash },
+      {
+        where: {
+          provider: 'local',
+          provider_user_id: email,
+        },
+      }
+    );
     return updatedRows;
   }
 
@@ -154,8 +178,18 @@ class AuthRepository {
 
     const user = await Users.findOne({
       where: { email },
-      attributes: ['id', 'email', 'password_hash', 'status'],
+      attributes: ['id', 'email', 'status'],
       include: [
+        {
+          model: AuthAccounts,
+          as: 'auth_accounts',
+          required: true,
+          where: {
+            provider: 'local',
+            provider_user_id: email,
+          },
+          attributes: ['password_hash'],
+        },
         {
           model: UserRoles,
           as: 'roles',
@@ -176,7 +210,7 @@ class AuthRepository {
       return {
         id: user.id,
         email: user.email,
-        password_hash: user.password_hash,
+        password_hash: user.auth_accounts[0]?.password_hash || null,
         status: user.status,
         role: user.roles[0].role.name,
       };

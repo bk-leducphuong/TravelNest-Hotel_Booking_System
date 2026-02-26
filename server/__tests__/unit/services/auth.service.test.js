@@ -297,6 +297,7 @@ describe('AuthService', () => {
       bcrypt.hash.mockResolvedValue(hashedPassword);
       authRepository.findRoleByName.mockResolvedValue(mockRole);
       authRepository.createUser.mockResolvedValue(mockNewUser);
+      authRepository.createLocalAuthAccount.mockResolvedValue({});
       authRepository.assignRoleToUser.mockResolvedValue(undefined);
       authRepository.getUserWithContext.mockResolvedValue(mockUserContext);
 
@@ -310,11 +311,15 @@ describe('AuthService', () => {
       expect(bcrypt.hash).toHaveBeenCalledWith(password, 10);
       expect(authRepository.createUser).toHaveBeenCalledWith({
         email,
-        password_hash: hashedPassword,
         first_name: firstName,
         last_name: lastName,
         status: 'active',
       });
+      expect(authRepository.createLocalAuthAccount).toHaveBeenCalledWith(
+        1,
+        email,
+        hashedPassword
+      );
       expect(authRepository.assignRoleToUser).toHaveBeenCalledWith(1, 1);
     });
 

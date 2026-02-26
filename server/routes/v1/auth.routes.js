@@ -188,7 +188,7 @@ router.get('/csrf-token', generateCsrfToken);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/sessions', doubleCsrfProtection, validate(authSchema.login), login);
+router.post('/sessions', validate(authSchema.login), login);
 
 /**
  * @swagger
