@@ -118,6 +118,7 @@
     "nodemailer": "^7.0.12",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
+    "passport-twitter": "^1.0.4",
     "path": "^0.12.7",
     "pino": "^10.1.1",
     "pino-pretty": "^13.1.3",

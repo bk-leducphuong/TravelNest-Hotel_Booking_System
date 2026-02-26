@@ -166,6 +166,17 @@ class AuthService {
       userData: userWithContext,
     };
   }
+
+  /**
+   * Get full user context for session by user ID
+   */
+  async getUserContextForSession(userId) {
+    const userWithContext = await authRepository.getUserWithContext(userId);
+    if (!userWithContext) {
+      throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
+    }
+    return userWithContext;
+  }
 }
 
 module.exports = new AuthService();

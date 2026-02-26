@@ -2,7 +2,6 @@ const passport = require('passport');
 const authService = require('@services/auth.service');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
-const validate = require('@middlewares/validate.middleware');
 const { buildSession } = require('@helpers/session.helper');
 
 /**
@@ -96,10 +95,37 @@ const register = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * OAuth callback success handler
+ * Used for both Google and Twitter strategies.
+ */
+const oauthCallback = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({
+      error: {
+        code: 'OAUTH_FAILED',
+        message: 'Authentication failed',
+      },
+    });
+  }
+
+  const userWithContext = await authService.getUserContextForSession(req.user.id);
+  const session = buildSession(req.sessionID, userWithContext);
+  req.session.userData = userWithContext;
+
+  res.status(200).json({
+    data: {
+      session,
+      message: 'Logged in successfully with OAuth',
+    },
+  });
+});
+
 module.exports = {
   checkAuth,
   checkEmail,
   login,
   logout,
   register,
+  oauthCallback,
 };

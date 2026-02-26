@@ -1,4 +1,5 @@
 const express = require('express');
+const passport = require('passport');
 const router = express.Router();
 const {
   checkAuth,
@@ -6,6 +7,7 @@ const {
   login,
   logout,
   register,
+  oauthCallback,
 } = require('@controllers/v1/auth.controller');
 const validate = require('@middlewares/validate.middleware');
 const authSchema = require('@validators/v1/auth.schema');
@@ -112,6 +114,17 @@ const { doubleCsrfProtection, generateCsrfToken } = require('@middlewares/csrf.m
  *               type: string
  *               description: CSRF token bound to the current session
  *               example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *     OAuthSessionResponse:
+ *       type: object
+ *       properties:
+ *         data:
+ *           type: object
+ *           properties:
+ *             session:
+ *               $ref: '#/components/schemas/Session'
+ *             message:
+ *               type: string
+ *               example: Logged in successfully with OAuth
  */
 
 /**
@@ -268,5 +281,101 @@ router.post('/email/check', validate(authSchema.checkEmail), checkEmail);
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/users', doubleCsrfProtection, validate(authSchema.register), register);
+
+/**
+ * @swagger
+ * /auth/google:
+ *   get:
+ *     summary: Initiate Google OAuth login
+ *     description: Redirects the user to Google for authentication.
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirect to Google OAuth consent screen
+ */
+router.get(
+  '/google',
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+  })
+);
+
+/**
+ * @swagger
+ * /auth/google/callback:
+ *   get:
+ *     summary: Google OAuth callback
+ *     description: Handles Google OAuth callback and creates a session.
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Logged in successfully with Google OAuth
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/OAuthSessionResponse'
+ *       401:
+ *         description: OAuth authentication failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get(
+  '/google/callback',
+  passport.authenticate('google', {
+    failureRedirect: '/auth/login?error=google_oauth_failed',
+    session: true,
+  }),
+  oauthCallback
+);
+
+/**
+ * @swagger
+ * /auth/twitter:
+ *   get:
+ *     summary: Initiate Twitter OAuth login
+ *     description: Redirects the user to Twitter for authentication.
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirect to Twitter OAuth consent screen
+ */
+router.get(
+  '/twitter',
+  passport.authenticate('twitter', {
+    scope: ['tweet.read', 'users.read', 'offline.access'],
+  })
+);
+
+/**
+ * @swagger
+ * /auth/twitter/callback:
+ *   get:
+ *     summary: Twitter OAuth callback
+ *     description: Handles Twitter OAuth callback and creates a session.
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Logged in successfully with Twitter OAuth
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/OAuthSessionResponse'
+ *       401:
+ *         description: OAuth authentication failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get(
+  '/twitter/callback',
+  passport.authenticate('twitter', {
+    failureRedirect: '/auth/login?error=twitter_oauth_failed',
+    session: true,
+  }),
+  oauthCallback
+);
 
 module.exports = router;

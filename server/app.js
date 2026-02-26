@@ -13,6 +13,7 @@ const db = require('@models');
 const { initSocket } = require('@socket/index');
 const { initBucket } = require('@config/minio.config');
 const { setupSwagger } = require('@config/swagger.config');
+const passport = require('@config/passport.config');
 
 /** ********************* Middlewares ************************ */
 const errorMiddleware = require('@middlewares/error.middleware.js');
@@ -72,11 +73,9 @@ const createApp = async () => {
   // Configure Session
   app.use(sessionMiddleware);
 
-  // Khởi tạo passport
-  // const passport = require("passport");
-  // require("./config/passport.config");
-  // app.use(passport.initialize());
-  // app.use(passport.session());
+  // Initialize passport (OAuth strategies)
+  app.use(passport.initialize());
+  app.use(passport.session());
 
   // Rate limiter
   app.use(limiter);
