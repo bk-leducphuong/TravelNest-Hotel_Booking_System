@@ -1,25 +1,14 @@
-/**
- * Nearby Places Seed File
- *
- * Generates realistic nearby places data for hotels and seeds the database.
- * Requires existing hotels in the database.
- *
- * Usage:
- *   - Run directly: node seed/nearby_place.seed.js
- *   - Import and use: const { seedNearbyPlaces } = require('./seed/nearby_place.seed');
- *
- * Options:
- *   - clearExisting: Whether to clear existing places before seeding (default: false)
- *   - hotelIds: Specific hotel IDs (UUIDs) to seed (optional, seeds all if not provided)
- *   - placesPerHotel: Number of places to generate per hotel (default: 15-25 random)
- *
- * Note: This seed file requires hotels to exist in the database first.
- */
-
 require('dotenv').config({
-  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
+  path: `.env.${process.env.NODE_ENV}`,
 });
-const { faker } = require('@faker-js/faker');
+
+let faker;
+async function loadFaker() {
+  if (!faker) {
+    const mod = await import('@faker-js/faker');
+    faker = mod.faker ?? mod.default ?? mod;
+  }
+}
 
 const db = require('../../../models');
 const sequelize = require('../../../config/database.config');
@@ -272,6 +261,7 @@ async function seedNearbyPlaces(options = {}) {
   const { clearExisting = false, hotelIds = null, placesPerHotel = { min: 15, max: 25 } } = options;
 
   try {
+    await loadFaker();
     console.log('🌱 Starting nearby places seeding...');
 
     // Get hotels

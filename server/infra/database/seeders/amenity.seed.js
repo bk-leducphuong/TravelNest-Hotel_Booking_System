@@ -1,24 +1,10 @@
-/**
- * Amenity Seed File
- *
- * Seeds the database with amenities from constants/amenities.js.
- * Uses findOrCreate so existing amenities are not duplicated.
- *
- * Usage:
- *   - Run directly: node database/seeders/amenity.seed.js
- *   - Import and use: const { seedAmenities } = require('./database/seeders/amenity.seed');
- *
- * Options:
- *   - clearExisting: Whether to clear existing amenities before seeding (default: false)
- */
-
 require('dotenv').config({
-  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
+  path: `.env.${process.env.NODE_ENV}`,
 });
 
-const db = require('../../models');
-const sequelize = require('../../config/database.config');
-const { AMENITY_CODES } = require('../../constants/amenities');
+const db = require('../../../models');
+const sequelize = require('../../../config/database.config');
+const { AMENITY_CODES } = require('../../../constants/amenities');
 
 const { amenities: Amenities } = db;
 

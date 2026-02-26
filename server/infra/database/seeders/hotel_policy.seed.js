@@ -5,8 +5,8 @@
  * Requires existing hotels in the database.
  *
  * Usage:
- *   - Run directly: node seed/hotel_policy.seed.js
- *   - Import and use: const { seedHotelPolicies } = require('./seed/hotel_policy.seed');
+ *   - Run directly: node infra/database/seeders/hotel_policy.seed.js
+ *   - Import and use: const { seedHotelPolicies } = require('./infra/database/seeders/hotel_policy.seed');
  *
  * Options:
  *   - clearExisting: Whether to clear existing policies before seeding (default: false)
@@ -16,9 +16,16 @@
  */
 
 require('dotenv').config({
-  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
+  path: `.env.${process.env.NODE_ENV}`,
 });
-const { faker } = require('@faker-js/faker');
+
+let faker;
+async function loadFaker() {
+  if (!faker) {
+    const mod = await import('@faker-js/faker');
+    faker = mod.faker ?? mod.default ?? mod;
+  }
+}
 
 const db = require('../../../models');
 const sequelize = require('../../../config/database.config');
@@ -294,6 +301,7 @@ async function seedHotelPolicies(options = {}) {
   const { clearExisting = false, hotelIds = null } = options;
 
   try {
+    await loadFaker();
     console.log('🌱 Starting hotel policies seeding...');
 
     // Get hotels
@@ -378,6 +386,7 @@ async function seedHotelPolicies(options = {}) {
  */
 async function seedPoliciesForHotel(hotelId) {
   try {
+    await loadFaker();
     // Verify hotel exists
     const hotel = await hotels.findByPk(hotelId);
     if (!hotel) {

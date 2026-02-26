@@ -1,28 +1,17 @@
-/**
- * Notification Seed File
- *
- * Generates fake notification data using Faker.js and seeds the database.
- * Requires existing hotels and users in the database.
- *
- * Usage:
- *   - Run directly: node seed/notification.seed.js
- *   - Import and use: const { seedNotifications } = require('./seed/notification.seed');
- *
- * Options:
- *   - notificationsPerHotel: Number of notifications to generate per hotel (default: 10-30 random)
- *   - clearExisting: Whether to clear existing notifications before seeding (default: false)
- *
- * Note: This seed file requires hotels and users to exist in the database first.
- * Notifications are sent from users (sender_id) to hotels (reciever_id).
- */
-
 require('dotenv').config({
-  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
+  path: `.env.${process.env.NODE_ENV}`,
 });
-const { faker } = require('@faker-js/faker');
 
-const db = require('../models');
-const sequelize = require('../config/database.config');
+let faker;
+async function loadFaker() {
+  if (!faker) {
+    const mod = await import('@faker-js/faker');
+    faker = mod.faker ?? mod.default ?? mod;
+  }
+}
+
+const db = require('../../../models');
+const sequelize = require('../../../config/database.config');
 const { notifications, hotels, users, bookings } = db;
 
 // Notification types
@@ -168,6 +157,7 @@ async function seedNotifications(options = {}) {
   } = options;
 
   try {
+    await loadFaker();
     console.log('🌱 Starting notification seeding...');
 
     // Get all hotels or specific hotels
@@ -384,6 +374,7 @@ async function seedNotifications(options = {}) {
  */
 async function seedNotificationsForHotel(hotelId, count = 20, useBookings = false) {
   try {
+    await loadFaker();
     // Verify hotel exists
     const hotel = await hotels.findByPk(hotelId);
     if (!hotel) {

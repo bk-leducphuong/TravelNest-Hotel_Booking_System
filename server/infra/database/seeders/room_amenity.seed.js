@@ -1,31 +1,18 @@
-/**
- * Room-Amenity Seed File
- *
- * Links existing rooms to amenities (many-to-many via room_amenities).
- * Only assigns amenities where applicable_to is 'room' or 'both'.
- *
- * Usage:
- *   - Run directly: node database/seeders/room_amenity.seed.js
- *   - Import and use: const { seedRoomAmenities } = require('./database/seeders/room_amenity.seed');
- *
- * Options:
- *   - minAmenitiesPerRoom: Minimum number of amenities per room (default: 3)
- *   - maxAmenitiesPerRoom: Maximum number of amenities per room (default: 12)
- *   - clearExisting: Whether to clear existing room_amenities before seeding (default: false)
- *   - roomIds: Optional array of room UUIDs to seed (default: all rooms)
- *
- * Note: Requires rooms and amenities to be seeded first.
- */
-
 require('dotenv').config({
-  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
+  path: `.env.${process.env.NODE_ENV}`,
 });
 
-const { faker } = require('@faker-js/faker');
+let faker;
+async function loadFaker() {
+  if (!faker) {
+    const mod = await import('@faker-js/faker');
+    faker = mod.faker ?? mod.default ?? mod;
+  }
+}
 const { Op } = require('sequelize');
 
-const db = require('../../models');
-const sequelize = require('../../config/database.config');
+const db = require('../../../models');
+const sequelize = require('../../../config/database.config');
 
 const { rooms: Rooms, amenities: Amenities, room_amenities: RoomAmenities } = db;
 
@@ -71,6 +58,7 @@ async function seedRoomAmenities(options = {}) {
   } = options;
 
   try {
+    await loadFaker();
     console.log('🌱 Starting room-amenity seeding...');
 
     const where = roomIds && roomIds.length > 0 ? { id: roomIds } : {};

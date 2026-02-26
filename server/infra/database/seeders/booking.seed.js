@@ -1,28 +1,17 @@
-/**
- * Booking Seed File
- *
- * Generates fake booking data using Faker.js and seeds the database.
- * Requires existing hotels, rooms, and users (customers) in the database.
- *
- * Usage:
- *   - Run directly: node seed/booking.seed.js
- *   - Import and use: const { seedBookings } = require('./seed/booking.seed');
- *
- * Options:
- *   - bookingsPerHotel: Number of bookings to generate per hotel (default: 20-50 random)
- *   - clearExisting: Whether to clear existing bookings before seeding (default: false)
- *   - dateRange: Date range for bookings (default: past 6 months to future 3 months)
- *
- * Note: This seed file requires hotels, rooms, and users (customers) to exist in the database first.
- */
-
 require('dotenv').config({
-  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
+  path: `.env.${process.env.NODE_ENV}`,
 });
-const { faker } = require('@faker-js/faker');
 
-const db = require('../models');
-const sequelize = require('../config/database.config');
+let faker;
+async function loadFaker() {
+  if (!faker) {
+    const mod = await import('@faker-js/faker');
+    faker = mod.faker ?? mod.default ?? mod;
+  }
+}
+
+const db = require('../../../models');
+const sequelize = require('../../../config/database.config');
 const { bookings, hotels, rooms, users, room_inventory } = db;
 
 // Booking status distribution (weighted)
@@ -168,6 +157,7 @@ async function getRoomPrice(roomId, checkInDate) {
  * @returns {Promise<Object>} Booking data object
  */
 async function generateBooking(buyerId, hotelId, roomId, options = {}) {
+  await loadFaker();
   const { checkInDate, checkOutDate, nights } = generateBookingDates(options.dateRange || {});
 
   // Get room details
@@ -236,6 +226,7 @@ async function seedBookings(options = {}) {
   } = options;
 
   try {
+    await loadFaker();
     console.log('🌱 Starting booking seeding...');
 
     // Get all hotels or specific hotels
@@ -386,6 +377,7 @@ async function seedBookings(options = {}) {
  */
 async function seedBookingsForHotel(hotelId, count = 30, dateRange = {}) {
   try {
+    await loadFaker();
     // Verify hotel exists
     const hotel = await hotels.findByPk(hotelId);
     if (!hotel) {
@@ -447,6 +439,7 @@ async function seedBookingsForHotel(hotelId, count = 30, dateRange = {}) {
  * @returns {Promise<Object>} Booking data object
  */
 async function generateBookingData(buyerId, hotelId, roomId, options = {}) {
+  await loadFaker();
   return await generateBooking(buyerId, hotelId, roomId, options);
 }
 

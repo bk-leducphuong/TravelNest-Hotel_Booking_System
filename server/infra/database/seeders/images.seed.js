@@ -8,7 +8,7 @@ const axios = require('axios');
 const db = require('../../../models');
 const logger = require('../../../config/logger.config');
 require('dotenv').config({
-  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
+  path: `.env.${process.env.NODE_ENV}`,
 });
 
 const Hotels = db.hotels;

@@ -1,23 +1,5 @@
-/**
- * Hotel Search Snapshot Seed File
- *
- * Generates search snapshots for existing hotels in the database.
- * This denormalized data structure is optimized for fast search queries.
- *
- * Usage:
- *   - Run directly: node infra/database/seeders/hotel_search_snapshot.seed.js
- *   - Import and use: const { seedHotelSearchSnapshots } = require('./infra/database/seeders/hotel_search_snapshot.seed');
- *
- * Options:
- *   - hotelIds: Array of specific hotel IDs to refresh (default: all active hotels)
- *   - clearExisting: Whether to clear existing snapshots before seeding (default: false)
- *   - useFullRefresh: Use fullRefresh (recomputes all data) vs createInitialSnapshot (default: true)
- *
- * Note: This seeder depends on existing hotel data.
- */
-
 require('dotenv').config({
-  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
+  path: `.env.${process.env.NODE_ENV}`,
 });
 
 const db = require('../../../models');

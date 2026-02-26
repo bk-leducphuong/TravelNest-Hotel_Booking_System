@@ -1,29 +1,18 @@
-/**
- * Room Seed File
- *
- * Generates fake room data using Faker.js and seeds the database.
- * Requires existing hotels in the database.
- *
- * Usage:
- *   - Run directly: node database/seeders/room.seed.js
- *   - Import and use: const { seedRooms } = require('./database/seeders/room.seed');
- *
- * Options:
- *   - roomsPerHotel: Number of rooms to generate per hotel (default: 3-8 random)
- *   - clearExisting: Whether to clear existing rooms before seeding (default: false)
- *
- * Note: This seed file requires hotels to exist in the database first.
- * Room images and room amenities are stored in images and room_amenities tables; seed those separately if needed.
- */
-
 require('dotenv').config({
-  path: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
+  path: `.env.${process.env.NODE_ENV}`,
 });
-const { faker } = require('@faker-js/faker');
 
-const db = require('../../models');
-const sequelize = require('../../config/database.config');
-const { ROOM_TYPES, ROOM_STATUSES } = require('../../constants/rooms');
+let faker;
+async function loadFaker() {
+  if (!faker) {
+    const mod = await import('@faker-js/faker');
+    faker = mod.faker ?? mod.default ?? mod;
+  }
+}
+
+const db = require('../../../models');
+const sequelize = require('../../../config/database.config');
+const { ROOM_TYPES, ROOM_STATUSES } = require('../../../constants/rooms');
 const { rooms: Rooms, hotels: Hotels } = db;
 
 /**
@@ -80,6 +69,7 @@ async function seedRooms(options = {}) {
   const { roomsPerHotel = { min: 3, max: 8 }, clearExisting = false, hotelIds = null } = options;
 
   try {
+    await loadFaker();
     console.log('🌱 Starting room seeding...');
 
     // Get all hotels or specific hotels
@@ -178,6 +168,7 @@ async function seedRooms(options = {}) {
  */
 async function seedRoomsForHotel(hotelId, count = 5) {
   try {
+    await loadFaker();
     // Verify hotel exists
     const hotel = await Hotels.findByPk(hotelId);
     if (!hotel) {
