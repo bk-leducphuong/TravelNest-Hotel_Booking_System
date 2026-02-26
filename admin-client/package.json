@@ -1,0 +1,32 @@
+{
+  "name": "admin-client",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint . --ext .vue,.js,.ts,.jsx,.tsx",
+    "lint:fix": "eslint . --fix --ext .vue,.js,.ts,.jsx,.tsx"
+  },
+  "dependencies": {
+    "@nuxt/eslint": "^1.15.2",
+    "@nuxtjs/tailwindcss": "^6.14.0",
+    "@pinia/nuxt": "^0.11.3",
+    "nuxt": "^4.3.1",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.28",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@element-plus/nuxt": "^1.1.5",
+    "@nuxt/test-utils": "^4.0.0",
+    "@vue/test-utils": "^2.4.6",
+    "element-plus": "^2.13.2",
+    "happy-dom": "^20.7.0",
+    "playwright-core": "^1.58.2",
+    "vitest": "^4.0.18"
+  }
+}
