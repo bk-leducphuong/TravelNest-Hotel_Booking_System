@@ -11,13 +11,6 @@ export default defineConfig({
           environment: "node",
         },
       },
-      {
-        test: {
-          name: "e2e",
-          include: ["tests/e2e/*.{test,spec}.ts"],
-          environment: "node",
-        },
-      },
       await defineVitestProject({
         test: {
           name: "nuxt",

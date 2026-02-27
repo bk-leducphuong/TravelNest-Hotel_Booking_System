@@ -1,8 +1,5 @@
 node_modules
 /client/.env.production
-/server/.env.production
-/server/.env.development
-
 # gitignore for Vue client
 # Logs
 logs
@@ -37,12 +34,6 @@ client/.vscode/*
 
 /scrape_data/data/*.json
 /scrape_data/data/hotels/
-
-server/infra/minio-data/*
-!server/infra/minio-data/.gitkeep
-
-server/infra/elasticsearch/data/*
-!server/infra/elasticsearch/data/.gitkeep
 
 server/infra/.env
 
