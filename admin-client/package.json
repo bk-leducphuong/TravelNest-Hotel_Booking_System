@@ -10,6 +10,8 @@
     "postinstall": "nuxt prepare",
     "lint": "eslint . --ext .vue,.js,.ts,.jsx,.tsx",
     "lint:fix": "eslint . --fix --ext .vue,.js,.ts,.jsx,.tsx",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest",
     "test:unit": "vitest --project unit",
     "test:nuxt": "vitest --project nuxt",
@@ -27,6 +29,8 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "eslint-config-prettier": "^10.1.5",
+    "prettier": "^3.5.3",
     "@element-plus/nuxt": "^1.1.5",
     "@nuxt/test-utils": "^4.0.0",
     "@playwright/test": "^1.58.2",

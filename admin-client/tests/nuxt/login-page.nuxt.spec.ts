@@ -60,9 +60,8 @@ describe("login page (Nuxt runtime)", () => {
 
     expect(authInstance.login).toHaveBeenCalledWith(
       "admin@example.com",
-      "password123",
+      "password123"
     );
     expect(routerInstance.push).toHaveBeenCalledWith("/");
   });
 });
-

@@ -52,4 +52,3 @@ describe("auth store (unit)", () => {
     expect(auth.user).toBeNull();
   });
 });
-

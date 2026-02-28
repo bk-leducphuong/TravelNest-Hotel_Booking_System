@@ -20,7 +20,11 @@ const rules = {
   ],
   password: [
     { required: true, message: "Please input password", trigger: "blur" },
-    { min: 6, message: "Password must be at least 6 characters", trigger: "blur" },
+    {
+      min: 6,
+      message: "Password must be at least 6 characters",
+      trigger: "blur",
+    },
   ],
 };
 
@@ -52,7 +56,9 @@ const onOauthClick = (provider: string) => {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-50 to-sky-50">
+  <div
+    class="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-50 to-sky-50"
+  >
     <div
       class="w-full max-w-md rounded-2xl bg-white/90 p-8 shadow-xl shadow-emerald-100 ring-1 ring-emerald-50"
     >
@@ -129,4 +135,3 @@ const onOauthClick = (provider: string) => {
     </div>
   </div>
 </template>
-

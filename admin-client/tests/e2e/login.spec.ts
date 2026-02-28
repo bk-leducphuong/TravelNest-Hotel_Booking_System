@@ -4,7 +4,9 @@ test.describe("Login page", () => {
   test("renders email/password inputs and buttons", async ({ page }) => {
     await page.goto("/login");
 
-    await expect(page.getByRole("heading", { name: "TravelNest Admin" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "TravelNest Admin" })
+    ).toBeVisible();
 
     await expect(page.getByPlaceholder("admin@travelnest.com")).toBeVisible();
     await expect(page.getByPlaceholder("••••••••")).toBeVisible();
@@ -29,10 +31,9 @@ test.describe("Login page", () => {
       await page.waitForURL("**/");
 
       await expect(
-        page.getByText("TravelNest Admin", { exact: true }),
+        page.getByText("TravelNest Admin", { exact: true })
       ).toBeVisible();
       await expect(page.getByText(adminEmail!)).toBeVisible();
-    },
+    }
   );
 });
-

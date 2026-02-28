@@ -48,4 +48,3 @@ const auth = useAuthStore();
     </main>
   </div>
 </template>
-
