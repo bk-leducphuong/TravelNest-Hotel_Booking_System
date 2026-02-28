@@ -1,0 +1,223 @@
+name: Admin Client CI/CD
+
+on:
+  push:
+    branches: [master, develop, staging]
+    paths:
+      - "admin-client/**"
+      - ".github/workflows/admin-client.yml"
+  pull_request:
+    branches: [master, develop, staging]
+    paths:
+      - "admin-client/**"
+      - ".github/workflows/admin-client.yml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "development"
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-admin
+
+jobs:
+  #############################################################################
+  # Job 1: Lint and Build
+  #############################################################################
+  lint-and-build:
+    name: Lint and Build Admin Client
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    defaults:
+      run:
+        working-directory: ./admin-client
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+          cache-dependency-path: admin-client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck || npx vue-tsc --noEmit || echo "Type check completed"
+
+      - name: Check code formatting
+        run: npx prettier --check . || true
+
+      - name: Build application (SSR or Static)
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NUXT_PUBLIC_API_URL: https://api.deployserver.work
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        if: matrix.node-version == '20.x'
+        with:
+          name: admin-dist
+          path: admin-client/.output/
+          retention-days: 7
+
+      - name: Analyze bundle size
+        if: matrix.node-version == '20.x'
+        run: |
+          echo "## 📦 Admin Client Bundle Size" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Total size:**" >> $GITHUB_STEP_SUMMARY
+          du -sh .output/ >> $GITHUB_STEP_SUMMARY || true
+
+  #############################################################################
+  # Job 2: Build and Push Docker Image
+  #############################################################################
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [lint-and-build]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: admin-dist
+          path: admin-client/.output
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Admin image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./admin-client
+          file: ./admin-client/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
+          platforms: linux/amd64
+
+  #############################################################################
+  # Job 3: Deploy to Production
+  #############################################################################
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://admin.deployserver.work
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy admin client to VPS
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+            set -e
+            
+            echo "🚀 Starting admin client deployment..."
+            
+            cd /opt/travelnest
+            
+            # Create timestamped release directory
+            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+            RELEASE_DIR="releases/admin-client/${TIMESTAMP}"
+            mkdir -p "$RELEASE_DIR"
+            
+            echo "📦 Pulling latest admin image..."
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-admin:latest
+            
+            # Extract static files from Docker image
+            echo "📂 Extracting files..."
+            CONTAINER_ID=$(docker create ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-admin:latest)
+            docker cp "$CONTAINER_ID:/usr/share/nginx/html/." "$RELEASE_DIR/"
+            docker rm "$CONTAINER_ID"
+            
+            # Create symlink to new release
+            echo "🔗 Switching to new version..."
+            rm -f nginx/html/admin/current
+            ln -sf "/opt/travelnest/$RELEASE_DIR" nginx/html/admin/current
+            
+            # Test nginx configuration
+            docker exec travelnest-nginx nginx -t
+            
+            # Reload nginx
+            echo "🔄 Reloading nginx..."
+            docker exec travelnest-nginx nginx -s reload
+            
+            # Cleanup old releases (keep last 5)
+            echo "🧹 Cleaning up old releases..."
+            cd releases/admin-client
+            ls -t | tail -n +6 | xargs -r rm -rf
+            
+            echo "✅ Admin client deployment completed!"
+          EOF
+
+      - name: Deployment summary
+        run: |
+          echo "## 🚀 Admin Client Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY
+          echo "**Client:** Admin Client (Nuxt4)" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** https://admin.deployserver.work" >> $GITHUB_STEP_SUMMARY

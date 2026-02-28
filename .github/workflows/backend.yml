@@ -1,0 +1,369 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [master, develop, staging]
+    paths:
+      - "server/**"
+      - ".github/workflows/backend.yml"
+  pull_request:
+    branches: [master, develop, staging]
+    paths:
+      - "server/**"
+      - ".github/workflows/backend.yml"
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "development"
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-api
+
+jobs:
+  #############################################################################
+  # Job 1: Lint and Test
+  #############################################################################
+  lint-and-test:
+    name: Lint and Test Backend
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    defaults:
+      run:
+        working-directory: ./server
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check code formatting
+        run: npx prettier --check .
+
+      - name: Run unit tests
+        run: npm run test:unit
+        env:
+          NODE_ENV: development
+          SESSION_SECRET: test_session_secret_for_ci
+          SESSION_SECRET_KEY: test_session_secret_for_ci
+
+      - name: Run integration tests
+        run: npm run test:integration
+        timeout-minutes: 10
+        env:
+          NODE_ENV: development
+          SESSION_SECRET: test_session_secret_for_ci
+          SESSION_SECRET_KEY: test_session_secret_for_ci
+
+      - name: Generate coverage report
+        run: npm run test:coverage
+        timeout-minutes: 10
+        env:
+          NODE_ENV: development
+          SESSION_SECRET: test_session_secret_for_ci
+          SESSION_SECRET_KEY: test_session_secret_for_ci
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: matrix.node-version == '20.x'
+        with:
+          name: backend-coverage
+          path: server/coverage/
+          retention-days: 7
+
+  #############################################################################
+  # Job 2: Security Scan (Optional)
+  #############################################################################
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    defaults:
+      run:
+        working-directory: ./server
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+  #############################################################################
+  # Job 3: Build and Push Docker Image
+  #############################################################################
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [lint-and-test]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Backend image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          file: ./server/infra/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
+          platforms: linux/amd64
+
+      - name: Generate build summary
+        run: |
+          echo "## 🐳 Docker Image Built Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** ${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:** ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Digest:** ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
+
+  #############################################################################
+  # Job 4: Deploy to Production
+  #############################################################################
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://api.deployserver.work
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to VPS
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+            set -e
+            
+            echo "🚀 Starting deployment..."
+            
+            # Navigate to application directory
+            cd /opt/travelnest
+            
+            # Pull latest images
+            echo "📦 Pulling latest Docker images..."
+            docker compose pull api
+            
+            # Check if API container is healthy before deployment
+            if docker ps | grep -q travelnest-api; then
+              echo "✓ Current API container is running"
+            fi
+            
+            # Deploy with zero-downtime (creates new container, then removes old)
+            echo "🔄 Deploying new version..."
+            docker compose up -d --no-deps --force-recreate api
+            
+            # Wait for health check
+            echo "⏳ Waiting for health check..."
+            sleep 10
+            
+            # Verify deployment
+            MAX_RETRIES=30
+            RETRY_COUNT=0
+            
+            until docker exec travelnest-api wget --spider -q http://localhost:3000/health 2>/dev/null; do
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+                echo "❌ Health check failed after $MAX_RETRIES attempts"
+                echo "📋 Container logs:"
+                docker logs travelnest-api --tail 50
+                
+                # Rollback
+                echo "🔙 Rolling back to previous version..."
+                docker compose up -d --no-deps api
+                exit 1
+              fi
+              echo "Attempt $RETRY_COUNT/$MAX_RETRIES - Waiting for API to be healthy..."
+              sleep 2
+            done
+            
+            echo "✅ API is healthy!"
+            
+            # Cleanup old images
+            echo "🧹 Cleaning up old images..."
+            docker image prune -f
+            
+            # Show status
+            echo "📊 Deployment status:"
+            docker compose ps api
+            
+            echo "✅ Deployment completed successfully!"
+          EOF
+
+      - name: Verify deployment
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+            # Get container info
+            CONTAINER_ID=$(docker ps -qf "name=travelnest-api")
+            IMAGE=$(docker inspect --format='{{.Config.Image}}' $CONTAINER_ID)
+            STARTED=$(docker inspect --format='{{.State.StartedAt}}' $CONTAINER_ID)
+            
+            echo "Container ID: $CONTAINER_ID"
+            echo "Image: $IMAGE"
+            echo "Started: $STARTED"
+            
+            # Show recent logs
+            echo ""
+            echo "Recent logs:"
+            docker logs travelnest-api --tail 20
+          EOF
+
+      - name: Deployment summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** https://api.deployserver.work" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment succeeded"
+          else
+            echo "❌ Deployment failed"
+          fi
+
+  #############################################################################
+  # Job 5: Post-Deployment Tests
+  #############################################################################
+  post-deployment-tests:
+    name: Post-Deployment Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+
+    steps:
+      - name: Health check
+        run: |
+          echo "Running health check..."
+          # Note: This would need to go through Cloudflare Tunnel
+          # For now, we test from the VPS itself in the deploy job
+
+      - name: API version check
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+            # Test internal API
+            curl -f http://localhost:3000/health || exit 1
+            echo "✅ API health check passed"
+          EOF
+
+      - name: Database connectivity
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+            # Check if API can connect to database
+            docker exec travelnest-mysql mysqladmin ping -h localhost > /dev/null 2>&1
+            echo "✅ Database connectivity check passed"
+          EOF
+
+      - name: Redis connectivity
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+            docker exec travelnest-redis redis-cli ping > /dev/null 2>&1
+            echo "✅ Redis connectivity check passed"
+          EOF

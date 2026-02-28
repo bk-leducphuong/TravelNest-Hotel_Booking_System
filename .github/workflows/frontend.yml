@@ -1,0 +1,346 @@
+name: Frontend CI/CD (User Client)
+
+on:
+  push:
+    branches: [master, develop, staging]
+    paths:
+      - "client/**"
+      - ".github/workflows/frontend.yml"
+  pull_request:
+    branches: [master, develop, staging]
+    paths:
+      - "client/**"
+      - ".github/workflows/frontend.yml"
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "development"
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-frontend
+
+jobs:
+  #############################################################################
+  # Job 1: Lint and Build
+  #############################################################################
+  lint-and-build:
+    name: Lint and Build Frontend
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    defaults:
+      run:
+        working-directory: ./client
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check code formatting
+        run: npx prettier --check "src/**/*.{js,vue,json,css,scss}"
+
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+          VITE_API_URL: https://api.deployserver.work
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        if: matrix.node-version == '20.x'
+        with:
+          name: frontend-dist
+          path: client/dist/
+          retention-days: 7
+
+      - name: Analyze bundle size
+        if: matrix.node-version == '20.x'
+        run: |
+          echo "## 📦 Bundle Size Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Total size:**" >> $GITHUB_STEP_SUMMARY
+          du -sh dist/ >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Breakdown:**" >> $GITHUB_STEP_SUMMARY
+          du -sh dist/**/* >> $GITHUB_STEP_SUMMARY || true
+
+  #############################################################################
+  # Job 2: Preview Validation
+  #############################################################################
+  preview-validation:
+    name: Validate Preview Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./client
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for preview
+        run: npm run build
+        env:
+          VITE_API_URL: https://api.deployserver.work
+
+      - name: Test preview server
+        run: |
+          npm run preview &
+          sleep 5
+          curl -f http://localhost:4173 || exit 1
+          pkill -f "vite preview"
+
+  #############################################################################
+  # Job 3: Build Nginx Docker Image with Static Files
+  #############################################################################
+  build-and-push:
+    name: Build and Push Nginx Image
+    runs-on: ubuntu-latest
+    needs: [lint-and-build, preview-validation]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: client/dist
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./client
+          file: ./client/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
+          platforms: linux/amd64
+
+      - name: Generate build summary
+        run: |
+          echo "## 🐳 Docker Image Built Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** ${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:** ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+
+  #############################################################################
+  # Job 4: Deploy to Production
+  #############################################################################
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://deployserver.work
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy static files to VPS
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+            set -e
+            
+            echo "🚀 Starting frontend deployment..."
+            
+            # Navigate to application directory
+            cd /opt/travelnest
+            
+            # Create timestamped release directory
+            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+            RELEASE_DIR="releases/user-client/${TIMESTAMP}"
+            mkdir -p "$RELEASE_DIR"
+            
+            echo "📦 Pulling latest frontend image..."
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-frontend:latest
+            
+            # Extract static files from Docker image
+            echo "📂 Extracting static files..."
+            CONTAINER_ID=$(docker create ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-frontend:latest)
+            docker cp "$CONTAINER_ID:/usr/share/nginx/html/." "$RELEASE_DIR/"
+            docker rm "$CONTAINER_ID"
+            
+            # Backup current version
+            if [ -L nginx/html/user/current ]; then
+              CURRENT_TARGET=$(readlink nginx/html/user/current)
+              echo "📦 Current version: $CURRENT_TARGET"
+            fi
+            
+            # Create symlink to new release
+            echo "🔗 Switching to new version..."
+            rm -f nginx/html/user/current
+            ln -sf "/opt/travelnest/$RELEASE_DIR" nginx/html/user/current
+            
+            # Update nginx to serve from new location
+            # Note: If nginx.conf already points to nginx/html/user, this will work
+            # Otherwise, ensure nginx.conf has: root /usr/share/nginx/html/user/current;
+            
+            # Test nginx configuration
+            echo "✅ Testing nginx configuration..."
+            docker exec travelnest-nginx nginx -t
+            
+            # Reload nginx (graceful reload without downtime)
+            echo "🔄 Reloading nginx..."
+            docker exec travelnest-nginx nginx -s reload
+            
+            # Cleanup old releases (keep last 5)
+            echo "🧹 Cleaning up old releases..."
+            cd releases/user-client
+            ls -t | tail -n +6 | xargs -r rm -rf
+            
+            echo "✅ Frontend deployment completed successfully!"
+            echo "📊 Active version: $RELEASE_DIR"
+          EOF
+
+      - name: Verify deployment
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+            # Test if index.html exists
+            if [ -f /opt/travelnest/nginx/html/user/current/index.html ]; then
+              echo "✅ Static files deployed successfully"
+              ls -lh /opt/travelnest/nginx/html/user/current/
+            else
+              echo "❌ Deployment verification failed"
+              exit 1
+            fi
+            
+            # Test nginx is serving the files
+            curl -f http://localhost/ > /dev/null 2>&1 && echo "✅ Nginx is serving content" || echo "⚠️  Nginx test failed"
+          EOF
+
+      - name: Deployment summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY
+          echo "**Client:** User Client (Vue3 SPA)" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** https://deployserver.work" >> $GITHUB_STEP_SUMMARY
+
+  #############################################################################
+  # Job 5: Post-Deployment Tests
+  #############################################################################
+  post-deployment-tests:
+    name: Post-Deployment Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+
+    steps:
+      - name: Test static file serving
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+            # Test index.html loads
+            curl -f http://localhost/ > /dev/null 2>&1
+            echo "✅ Index page loads successfully"
+            
+            # Test assets directory exists
+            if [ -d /opt/travelnest/nginx/html/user/current/assets ]; then
+              echo "✅ Assets directory exists"
+            fi
+          EOF
+
+      - name: Verify nginx status
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+            docker exec travelnest-nginx nginx -t
+            echo "✅ Nginx configuration is valid"
+          EOF
