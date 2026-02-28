@@ -13,7 +13,6 @@ const sequelize = new Sequelize(
     dialect: 'mysql',
     port: process.env.DB_PORT || 3306,
     logging: false,
-    operatorsAliases: false,
     pool: {
       max: 5,
       min: 0,

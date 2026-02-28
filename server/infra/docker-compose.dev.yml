@@ -40,18 +40,18 @@ services:
       timeout: 10s
       retries: 5
 
-  redisinsight:
-    image: redis/redisinsight:latest
-    container_name: redis-insight
-    restart: unless-stopped
-    ports:
-      - '5540:5540'
-    volumes:
-      - redis-insight-data:/data
-    networks:
-      - travelnest-net
-    depends_on:
-      - redis
+  # redisinsight:
+  #   image: redis/redisinsight:latest
+  #   container_name: redis-insight
+  #   restart: unless-stopped
+  #   ports:
+  #     - '5540:5540'
+  #   volumes:
+  #     - redis-insight-data:/data
+  #   networks:
+  #     - travelnest-net
+  #   depends_on:
+  #     - redis
 
   minio:
     image: minio/minio:latest

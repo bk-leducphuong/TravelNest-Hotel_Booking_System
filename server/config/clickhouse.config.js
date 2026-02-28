@@ -1,7 +1,33 @@
-const { createClient } = require('@clickhouse/client');
+require('dotenv').config({
+  path: `.env.${process.env.NODE_ENV}`,
+});
 
-const config = require('./clickhouse.config');
+const { createClient } = require('@clickhouse/client');
 const logger = require('./logger.config');
+
+const DEFAULT_PORT = 8123;
+
+/**
+ * Normalize ClickHouse URL. Accepts either a full URL (http://host:8123) or a hostname (e.g. "clickhouse" in Docker).
+ */
+function normalizeClickHouseUrl(host, port) {
+  const p = port || DEFAULT_PORT;
+  if (!host) return `http://localhost:${DEFAULT_PORT}`;
+  const trimmed = String(host).trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  const scheme = process.env.CLICKHOUSE_USE_SSL === 'true' ? 'https' : 'http';
+  return `${scheme}://${trimmed}:${p}`;
+}
+
+const clickhouseConnection = {
+  host: normalizeClickHouseUrl(
+    process.env.CLICKHOUSE_HOST,
+    process.env.CLICKHOUSE_PORT ? parseInt(process.env.CLICKHOUSE_PORT, 10) : undefined
+  ),
+  database: process.env.CLICKHOUSE_DATABASE || 'travelnest',
+  username: process.env.CLICKHOUSE_USERNAME || 'default',
+  password: process.env.CLICKHOUSE_PASSWORD || '',
+};
 
 /**
  * ClickHouse client singleton
@@ -11,10 +37,10 @@ let client = null;
 const getClient = () => {
   if (!client) {
     client = createClient({
-      url: config.host,
-      database: config.database,
-      username: config.username,
-      password: config.password,
+      url: clickhouseConnection.host,
+      database: clickhouseConnection.database,
+      username: clickhouseConnection.username,
+      password: clickhouseConnection.password,
       request_timeout: 30000,
       max_open_connections: 10,
       compression: {
@@ -24,8 +50,8 @@ const getClient = () => {
     });
 
     logger.info('ClickHouse client initialized', {
-      host: config.host,
-      database: config.database,
+      host: clickhouseConnection.host,
+      database: clickhouseConnection.database,
     });
   }
 
