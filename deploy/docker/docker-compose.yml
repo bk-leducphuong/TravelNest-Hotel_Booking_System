@@ -16,6 +16,7 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/html:/usr/share/nginx/html:ro
       - ./logs/nginx:/var/log/nginx
+      - ./releases:/opt/travelnest/releases
     networks:
       - frontend
       - proxy
