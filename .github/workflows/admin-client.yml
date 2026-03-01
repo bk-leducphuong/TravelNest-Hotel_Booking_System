@@ -56,6 +56,7 @@ jobs:
           cache-dependency-path: admin-client/package-lock.json
 
       - name: Install dependencies
+        working-directory: admin-client
         run: npm ci
 
       - name: Run ESLint
@@ -70,7 +71,7 @@ jobs:
         run: npx prettier --check . || true
         continue-on-error: true
 
-      - name: Build application (SSG)
+      - name: Build application (SSG -> .output/public)
         run: npm run generate
         env:
           NODE_ENV: production
@@ -81,7 +82,7 @@ jobs:
         if: matrix.node-version == '24.x'
         with:
           name: admin-dist
-          path: admin-client/.output/
+          path: admin-client/.output/public/
           retention-days: 7
 
       - name: Analyze bundle size
