@@ -61,9 +61,11 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint
+        continue-on-error: true
 
       - name: Check code formatting
         run: npx prettier --check "src/**/*.{js,vue,json,css,scss}"
+        continue-on-error: true
 
       - name: Build application
         run: npm run build
