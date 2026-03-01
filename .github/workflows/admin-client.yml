@@ -69,8 +69,8 @@ jobs:
         run: npx prettier --check . || true
         continue-on-error: true
 
-      - name: Build application (SSR or Static)
-        run: npm run build
+      - name: Build application (SSG)
+        run: npm run generate
         env:
           NODE_ENV: production
           NUXT_PUBLIC_API_URL: https://api.deployserver.work
