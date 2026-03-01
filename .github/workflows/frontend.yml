@@ -38,8 +38,8 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
-        fail-fast: false
         node-version: [22.x, 24.x]
 
     defaults:
