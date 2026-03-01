@@ -62,7 +62,7 @@ jobs:
         continue-on-error: true
 
       - name: Type check
-        run: npm run typecheck || npx vue-tsc --noEmit || echo "Type check completed"
+        run: npm run typecheck
         continue-on-error: true
 
       - name: Check code formatting
