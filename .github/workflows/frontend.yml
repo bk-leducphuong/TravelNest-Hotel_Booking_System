@@ -199,151 +199,151 @@ jobs:
   #############################################################################
   # Job 4: Deploy to Production
   #############################################################################
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [build-and-push]
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-    environment:
-      name: production
-      url: https://deployserver.work
+  # deploy-production:
+  #   name: Deploy to Production
+  #   runs-on: ubuntu-latest
+  #   needs: [build-and-push]
+  #   if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+  #   environment:
+  #     name: production
+  #     url: https://deployserver.work
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+  #     - name: Setup SSH
+  #       run: |
+  #         mkdir -p ~/.ssh
+  #         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+  #         chmod 600 ~/.ssh/id_rsa
+  #         ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy static files to VPS
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-        run: |
-          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
-            set -e
+  #     - name: Deploy static files to VPS
+  #       env:
+  #         SSH_HOST: ${{ secrets.SSH_HOST }}
+  #         SSH_USER: ${{ secrets.SSH_USER }}
+  #         SSH_PORT: ${{ secrets.SSH_PORT }}
+  #       run: |
+  #         ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+  #           set -e
             
-            echo "🚀 Starting frontend deployment..."
+  #           echo "🚀 Starting frontend deployment..."
             
-            # Navigate to application directory
-            cd /opt/travelnest
+  #           # Navigate to application directory
+  #           cd /opt/travelnest
             
-            # Create timestamped release directory
-            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-            RELEASE_DIR="releases/user-client/${TIMESTAMP}"
-            mkdir -p "$RELEASE_DIR"
+  #           # Create timestamped release directory
+  #           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+  #           RELEASE_DIR="releases/user-client/${TIMESTAMP}"
+  #           mkdir -p "$RELEASE_DIR"
             
-            echo "📦 Pulling latest frontend image..."
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-frontend:latest
+  #           echo "📦 Pulling latest frontend image..."
+  #           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-frontend:latest
             
-            # Extract static files from Docker image
-            echo "📂 Extracting static files..."
-            CONTAINER_ID=$(docker create ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-frontend:latest)
-            docker cp "$CONTAINER_ID:/usr/share/nginx/html/." "$RELEASE_DIR/"
-            docker rm "$CONTAINER_ID"
+  #           # Extract static files from Docker image
+  #           echo "📂 Extracting static files..."
+  #           CONTAINER_ID=$(docker create ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-frontend:latest)
+  #           docker cp "$CONTAINER_ID:/usr/share/nginx/html/." "$RELEASE_DIR/"
+  #           docker rm "$CONTAINER_ID"
             
-            # Backup current version
-            if [ -L nginx/html/user/current ]; then
-              CURRENT_TARGET=$(readlink nginx/html/user/current)
-              echo "📦 Current version: $CURRENT_TARGET"
-            fi
+  #           # Backup current version
+  #           if [ -L nginx/html/user/current ]; then
+  #             CURRENT_TARGET=$(readlink nginx/html/user/current)
+  #             echo "📦 Current version: $CURRENT_TARGET"
+  #           fi
             
-            # Create symlink to new release
-            echo "🔗 Switching to new version..."
-            rm -f nginx/html/user/current
-            ln -sf "/opt/travelnest/$RELEASE_DIR" nginx/html/user/current
+  #           # Create symlink to new release
+  #           echo "🔗 Switching to new version..."
+  #           rm -f nginx/html/user/current
+  #           ln -sf "/opt/travelnest/$RELEASE_DIR" nginx/html/user/current
             
-            # Update nginx to serve from new location
-            # Note: If nginx.conf already points to nginx/html/user, this will work
-            # Otherwise, ensure nginx.conf has: root /usr/share/nginx/html/user/current;
+  #           # Update nginx to serve from new location
+  #           # Note: If nginx.conf already points to nginx/html/user, this will work
+  #           # Otherwise, ensure nginx.conf has: root /usr/share/nginx/html/user/current;
             
-            # Test nginx configuration
-            echo "✅ Testing nginx configuration..."
-            docker exec travelnest-nginx nginx -t
+  #           # Test nginx configuration
+  #           echo "✅ Testing nginx configuration..."
+  #           docker exec travelnest-nginx nginx -t
             
-            # Reload nginx (graceful reload without downtime)
-            echo "🔄 Reloading nginx..."
-            docker exec travelnest-nginx nginx -s reload
+  #           # Reload nginx (graceful reload without downtime)
+  #           echo "🔄 Reloading nginx..."
+  #           docker exec travelnest-nginx nginx -s reload
             
-            # Cleanup old releases (keep last 5)
-            echo "🧹 Cleaning up old releases..."
-            cd releases/user-client
-            ls -t | tail -n +6 | xargs -r rm -rf
+  #           # Cleanup old releases (keep last 5)
+  #           echo "🧹 Cleaning up old releases..."
+  #           cd releases/user-client
+  #           ls -t | tail -n +6 | xargs -r rm -rf
             
-            echo "✅ Frontend deployment completed successfully!"
-            echo "📊 Active version: $RELEASE_DIR"
-          EOF
+  #           echo "✅ Frontend deployment completed successfully!"
+  #           echo "📊 Active version: $RELEASE_DIR"
+  #         EOF
 
-      - name: Verify deployment
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-        run: |
-          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
-            # Test if index.html exists
-            if [ -f /opt/travelnest/nginx/html/user/current/index.html ]; then
-              echo "✅ Static files deployed successfully"
-              ls -lh /opt/travelnest/nginx/html/user/current/
-            else
-              echo "❌ Deployment verification failed"
-              exit 1
-            fi
+  #     - name: Verify deployment
+  #       env:
+  #         SSH_HOST: ${{ secrets.SSH_HOST }}
+  #         SSH_USER: ${{ secrets.SSH_USER }}
+  #         SSH_PORT: ${{ secrets.SSH_PORT }}
+  #       run: |
+  #         ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+  #           # Test if index.html exists
+  #           if [ -f /opt/travelnest/nginx/html/user/current/index.html ]; then
+  #             echo "✅ Static files deployed successfully"
+  #             ls -lh /opt/travelnest/nginx/html/user/current/
+  #           else
+  #             echo "❌ Deployment verification failed"
+  #             exit 1
+  #           fi
             
-            # Test nginx is serving the files
-            curl -f http://localhost/ > /dev/null 2>&1 && echo "✅ Nginx is serving content" || echo "⚠️  Nginx test failed"
-          EOF
+  #           # Test nginx is serving the files
+  #           curl -f http://localhost/ > /dev/null 2>&1 && echo "✅ Nginx is serving content" || echo "⚠️  Nginx test failed"
+  #         EOF
 
-      - name: Deployment summary
-        run: |
-          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY
-          echo "**Client:** User Client (Vue3 SPA)" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Deployed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "**URL:** https://deployserver.work" >> $GITHUB_STEP_SUMMARY
+  #     - name: Deployment summary
+  #       run: |
+  #         echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+  #         echo "" >> $GITHUB_STEP_SUMMARY
+  #         echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY
+  #         echo "**Client:** User Client (Vue3 SPA)" >> $GITHUB_STEP_SUMMARY
+  #         echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+  #         echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+  #         echo "**Deployed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+  #         echo "**URL:** https://deployserver.work" >> $GITHUB_STEP_SUMMARY
 
-  #############################################################################
-  # Job 5: Post-Deployment Tests
-  #############################################################################
-  post-deployment-tests:
-    name: Post-Deployment Smoke Tests
-    runs-on: ubuntu-latest
-    needs: [deploy-production]
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+  # #############################################################################
+  # # Job 5: Post-Deployment Tests
+  # #############################################################################
+  # post-deployment-tests:
+  #   name: Post-Deployment Smoke Tests
+  #   runs-on: ubuntu-latest
+  #   needs: [deploy-production]
+  #   if: github.ref == 'refs/heads/master' && github.event_name == 'push'
 
-    steps:
-      - name: Test static file serving
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-        run: |
-          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
-            # Test index.html loads
-            curl -f http://localhost/ > /dev/null 2>&1
-            echo "✅ Index page loads successfully"
+  #   steps:
+  #     - name: Test static file serving
+  #       env:
+  #         SSH_HOST: ${{ secrets.SSH_HOST }}
+  #         SSH_USER: ${{ secrets.SSH_USER }}
+  #         SSH_PORT: ${{ secrets.SSH_PORT }}
+  #       run: |
+  #         ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+  #           # Test index.html loads
+  #           curl -f http://localhost/ > /dev/null 2>&1
+  #           echo "✅ Index page loads successfully"
             
-            # Test assets directory exists
-            if [ -d /opt/travelnest/nginx/html/user/current/assets ]; then
-              echo "✅ Assets directory exists"
-            fi
-          EOF
+  #           # Test assets directory exists
+  #           if [ -d /opt/travelnest/nginx/html/user/current/assets ]; then
+  #             echo "✅ Assets directory exists"
+  #           fi
+  #         EOF
 
-      - name: Verify nginx status
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-        run: |
-          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
-            docker exec travelnest-nginx nginx -t
-            echo "✅ Nginx configuration is valid"
-          EOF
+  #     - name: Verify nginx status
+  #       env:
+  #         SSH_HOST: ${{ secrets.SSH_HOST }}
+  #         SSH_USER: ${{ secrets.SSH_USER }}
+  #         SSH_PORT: ${{ secrets.SSH_PORT }}
+  #       run: |
+  #         ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+  #           docker exec travelnest-nginx nginx -t
+  #           echo "✅ Nginx configuration is valid"
+  #         EOF

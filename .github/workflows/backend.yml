@@ -192,178 +192,178 @@ jobs:
   #############################################################################
   # Job 4: Deploy to Production
   #############################################################################
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [build-and-push]
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-    environment:
-      name: production
-      url: https://api.deployserver.work
+  # deploy-production:
+  #   name: Deploy to Production
+  #   runs-on: ubuntu-latest
+  #   needs: [build-and-push]
+  #   if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+  #   environment:
+  #     name: production
+  #     url: https://api.deployserver.work
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+  #     - name: Setup SSH
+  #       run: |
+  #         mkdir -p ~/.ssh
+  #         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+  #         chmod 600 ~/.ssh/id_rsa
+  #         ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy to VPS
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-        run: |
-          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
-            set -e
+  #     - name: Deploy to VPS
+  #       env:
+  #         SSH_HOST: ${{ secrets.SSH_HOST }}
+  #         SSH_USER: ${{ secrets.SSH_USER }}
+  #         SSH_PORT: ${{ secrets.SSH_PORT }}
+  #       run: |
+  #         ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+  #           set -e
             
-            echo "🚀 Starting deployment..."
+  #           echo "🚀 Starting deployment..."
             
-            # Navigate to application directory
-            cd /opt/travelnest
+  #           # Navigate to application directory
+  #           cd /opt/travelnest
             
-            # Pull latest images
-            echo "📦 Pulling latest Docker images..."
-            docker compose pull api
+  #           # Pull latest images
+  #           echo "📦 Pulling latest Docker images..."
+  #           docker compose pull api
             
-            # Check if API container is healthy before deployment
-            if docker ps | grep -q travelnest-api; then
-              echo "✓ Current API container is running"
-            fi
+  #           # Check if API container is healthy before deployment
+  #           if docker ps | grep -q travelnest-api; then
+  #             echo "✓ Current API container is running"
+  #           fi
             
-            # Deploy with zero-downtime (creates new container, then removes old)
-            echo "🔄 Deploying new version..."
-            docker compose up -d --no-deps --force-recreate api
+  #           # Deploy with zero-downtime (creates new container, then removes old)
+  #           echo "🔄 Deploying new version..."
+  #           docker compose up -d --no-deps --force-recreate api
             
-            # Wait for health check
-            echo "⏳ Waiting for health check..."
-            sleep 10
+  #           # Wait for health check
+  #           echo "⏳ Waiting for health check..."
+  #           sleep 10
             
-            # Verify deployment
-            MAX_RETRIES=30
-            RETRY_COUNT=0
+  #           # Verify deployment
+  #           MAX_RETRIES=30
+  #           RETRY_COUNT=0
             
-            until docker exec travelnest-api wget --spider -q http://localhost:3000/health 2>/dev/null; do
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-              if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
-                echo "❌ Health check failed after $MAX_RETRIES attempts"
-                echo "📋 Container logs:"
-                docker logs travelnest-api --tail 50
+  #           until docker exec travelnest-api wget --spider -q http://localhost:3000/health 2>/dev/null; do
+  #             RETRY_COUNT=$((RETRY_COUNT + 1))
+  #             if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+  #               echo "❌ Health check failed after $MAX_RETRIES attempts"
+  #               echo "📋 Container logs:"
+  #               docker logs travelnest-api --tail 50
                 
-                # Rollback
-                echo "🔙 Rolling back to previous version..."
-                docker compose up -d --no-deps api
-                exit 1
-              fi
-              echo "Attempt $RETRY_COUNT/$MAX_RETRIES - Waiting for API to be healthy..."
-              sleep 2
-            done
+  #               # Rollback
+  #               echo "🔙 Rolling back to previous version..."
+  #               docker compose up -d --no-deps api
+  #               exit 1
+  #             fi
+  #             echo "Attempt $RETRY_COUNT/$MAX_RETRIES - Waiting for API to be healthy..."
+  #             sleep 2
+  #           done
             
-            echo "✅ API is healthy!"
+  #           echo "✅ API is healthy!"
             
-            # Cleanup old images
-            echo "🧹 Cleaning up old images..."
-            docker image prune -f
+  #           # Cleanup old images
+  #           echo "🧹 Cleaning up old images..."
+  #           docker image prune -f
             
-            # Show status
-            echo "📊 Deployment status:"
-            docker compose ps api
+  #           # Show status
+  #           echo "📊 Deployment status:"
+  #           docker compose ps api
             
-            echo "✅ Deployment completed successfully!"
-          EOF
+  #           echo "✅ Deployment completed successfully!"
+  #         EOF
 
-      - name: Verify deployment
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-        run: |
-          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
-            # Get container info
-            CONTAINER_ID=$(docker ps -qf "name=travelnest-api")
-            IMAGE=$(docker inspect --format='{{.Config.Image}}' $CONTAINER_ID)
-            STARTED=$(docker inspect --format='{{.State.StartedAt}}' $CONTAINER_ID)
+  #     - name: Verify deployment
+  #       env:
+  #         SSH_HOST: ${{ secrets.SSH_HOST }}
+  #         SSH_USER: ${{ secrets.SSH_USER }}
+  #         SSH_PORT: ${{ secrets.SSH_PORT }}
+  #       run: |
+  #         ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+  #           # Get container info
+  #           CONTAINER_ID=$(docker ps -qf "name=travelnest-api")
+  #           IMAGE=$(docker inspect --format='{{.Config.Image}}' $CONTAINER_ID)
+  #           STARTED=$(docker inspect --format='{{.State.StartedAt}}' $CONTAINER_ID)
             
-            echo "Container ID: $CONTAINER_ID"
-            echo "Image: $IMAGE"
-            echo "Started: $STARTED"
+  #           echo "Container ID: $CONTAINER_ID"
+  #           echo "Image: $IMAGE"
+  #           echo "Started: $STARTED"
             
-            # Show recent logs
-            echo ""
-            echo "Recent logs:"
-            docker logs travelnest-api --tail 20
-          EOF
+  #           # Show recent logs
+  #           echo ""
+  #           echo "Recent logs:"
+  #           docker logs travelnest-api --tail 20
+  #         EOF
 
-      - name: Deployment summary
-        run: |
-          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Deployed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "**URL:** https://api.deployserver.work" >> $GITHUB_STEP_SUMMARY
+  #     - name: Deployment summary
+  #       run: |
+  #         echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+  #         echo "" >> $GITHUB_STEP_SUMMARY
+  #         echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY
+  #         echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+  #         echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+  #         echo "**Deployed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+  #         echo "**URL:** https://api.deployserver.work" >> $GITHUB_STEP_SUMMARY
 
-      - name: Notify deployment status
-        if: always()
-        run: |
-          if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ Deployment succeeded"
-          else
-            echo "❌ Deployment failed"
-          fi
+  #     - name: Notify deployment status
+  #       if: always()
+  #       run: |
+  #         if [ "${{ job.status }}" == "success" ]; then
+  #           echo "✅ Deployment succeeded"
+  #         else
+  #           echo "❌ Deployment failed"
+  #         fi
 
-  #############################################################################
-  # Job 5: Post-Deployment Tests
-  #############################################################################
-  post-deployment-tests:
-    name: Post-Deployment Smoke Tests
-    runs-on: ubuntu-latest
-    needs: [deploy-production]
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+  # #############################################################################
+  # # Job 5: Post-Deployment Tests
+  # #############################################################################
+  # post-deployment-tests:
+  #   name: Post-Deployment Smoke Tests
+  #   runs-on: ubuntu-latest
+  #   needs: [deploy-production]
+  #   if: github.ref == 'refs/heads/master' && github.event_name == 'push'
 
-    steps:
-      - name: Health check
-        run: |
-          echo "Running health check..."
-          # Note: This would need to go through Cloudflare Tunnel
-          # For now, we test from the VPS itself in the deploy job
+  #   steps:
+  #     - name: Health check
+  #       run: |
+  #         echo "Running health check..."
+  #         # Note: This would need to go through Cloudflare Tunnel
+  #         # For now, we test from the VPS itself in the deploy job
 
-      - name: API version check
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-        run: |
-          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
-            # Test internal API
-            curl -f http://localhost:3000/health || exit 1
-            echo "✅ API health check passed"
-          EOF
+  #     - name: API version check
+  #       env:
+  #         SSH_HOST: ${{ secrets.SSH_HOST }}
+  #         SSH_USER: ${{ secrets.SSH_USER }}
+  #         SSH_PORT: ${{ secrets.SSH_PORT }}
+  #       run: |
+  #         ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+  #           # Test internal API
+  #           curl -f http://localhost:3000/health || exit 1
+  #           echo "✅ API health check passed"
+  #         EOF
 
-      - name: Database connectivity
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-        run: |
-          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
-            # Check if API can connect to database
-            docker exec travelnest-mysql mysqladmin ping -h localhost > /dev/null 2>&1
-            echo "✅ Database connectivity check passed"
-          EOF
+  #     - name: Database connectivity
+  #       env:
+  #         SSH_HOST: ${{ secrets.SSH_HOST }}
+  #         SSH_USER: ${{ secrets.SSH_USER }}
+  #         SSH_PORT: ${{ secrets.SSH_PORT }}
+  #       run: |
+  #         ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+  #           # Check if API can connect to database
+  #           docker exec travelnest-mysql mysqladmin ping -h localhost > /dev/null 2>&1
+  #           echo "✅ Database connectivity check passed"
+  #         EOF
 
-      - name: Redis connectivity
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-        run: |
-          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
-            docker exec travelnest-redis redis-cli ping > /dev/null 2>&1
-            echo "✅ Redis connectivity check passed"
-          EOF
+  #     - name: Redis connectivity
+  #       env:
+  #         SSH_HOST: ${{ secrets.SSH_HOST }}
+  #         SSH_USER: ${{ secrets.SSH_USER }}
+  #         SSH_PORT: ${{ secrets.SSH_PORT }}
+  #       run: |
+  #         ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
+  #           docker exec travelnest-redis redis-cli ping > /dev/null 2>&1
+  #           echo "✅ Redis connectivity check passed"
+  #         EOF
