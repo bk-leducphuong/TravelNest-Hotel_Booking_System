@@ -15,6 +15,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/html:/usr/share/nginx/html:ro
+      - ./nginx/static/maintenance.html:/etc/nginx/maintenance.html:ro
       - ./logs/nginx:/var/log/nginx
       - ./releases:/opt/travelnest/releases
     networks:
