@@ -17,7 +17,7 @@ Guests can search and book stays, while property owners manage listings, availab
 
 - **Backend API**: [https://api.deployserver.work/api-docs](https://api.deployserver.work/api-docs)
 - **User Client**: [https://deployserver.work](https://deployserver.work)
-- **Admin Client**: [https://admin.deloyserver.work](https://admin.deloyserver.work)
+- **Admin Client**: [https://admin.deployserver.work/](https://admin.deloyserver.work)
 
 ---
 
