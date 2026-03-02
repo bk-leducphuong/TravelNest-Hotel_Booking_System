@@ -13,6 +13,12 @@ Guests can search and book stays, while property owners manage listings, availab
 
 > **Video demo**: [`YouTube playlist`](https://www.youtube.com/watch?v=-jxhmIJp988&list=PLCt2C1YyUqcCfEhqOXE-Mul8UINudlCse)
 
+### Live URLs
+
+- **Backend API**: [https://api.deployserver.work/api-docs](https://api.deployserver.work/api-docs)
+- **User Client**: [https://deployserver.work](https://deployserver.work)
+- **Admin Client**: [https://admin.deloyserver.work](https://admin.deloyserver.work)
+
 ---
 
 ## Features
