@@ -61,7 +61,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./logs/api:/app/logs
+      - ./logs/api:/usr/src/app/logs
     networks:
       - backend
       - proxy
