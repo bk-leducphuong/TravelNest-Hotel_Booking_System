@@ -194,7 +194,7 @@ jobs:
   #############################################################################
   deploy-production:
     name: Deploy to Production
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [build-and-push]
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     environment:
