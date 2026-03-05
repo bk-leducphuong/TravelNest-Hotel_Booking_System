@@ -39,4 +39,12 @@ export default defineConfig({
       },
     },
   },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    include: ['tests/unit/**/*.spec.js', 'tests/components/**/*.spec.js'],
+    coverage: {
+      reporter: ['text', 'html'],
+    },
+  },
 });
