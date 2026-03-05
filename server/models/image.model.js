@@ -12,7 +12,7 @@ module.exports = function (sequelize, DataTypes) {
         defaultValue: () => uuidv7(),
       },
       entity_type: {
-        type: DataTypes.ENUM('hotel', 'user_avatar', 'room', 'review'),
+        type: DataTypes.ENUM('hotel', 'user_avatar', 'room', 'review', 'city', 'country'),
         allowNull: false,
       },
       entity_id: {

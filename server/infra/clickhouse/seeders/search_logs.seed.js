@@ -26,6 +26,7 @@ require('dotenv').config({
 require('module-alias/register');
 
 const { getClient, close } = require('@config/clickhouse.config');
+const { VIETNAM_CITIES } = require('../../database/seeders/city.seed');
 
 let faker;
 async function loadFaker() {
@@ -39,28 +40,30 @@ const DEFAULT_ROW_COUNT = 10000;
 const DEFAULT_BATCH_SIZE = 1000;
 const DEFAULT_DAYS_BACK = 60;
 
-const DESTINATIONS = [
-  'Paris',
-  'London',
-  'New York',
-  'Tokyo',
-  'Singapore',
-  'Sydney',
-  'Barcelona',
-  'Rome',
-  'Berlin',
-  'Bangkok',
-  'Dubai',
-  'Hong Kong',
-  'San Francisco',
-  'Los Angeles',
-  'Toronto',
-  'Vancouver',
-  'Amsterdam',
-  'Prague',
-  'Vienna',
-  'Lisbon',
-];
+// Use only Vietnamese cities (provinces/municipalities) as destinations
+const DESTINATIONS = VIETNAM_CITIES.map((city) => city.name);
+
+function formatDateTime(date) {
+  if (!date) return null;
+  const pad = (n) => String(n).padStart(2, '0');
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+  // ClickHouse DateTime (no fractional seconds)
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+function formatDate(date) {
+  if (!date) return null;
+  const pad = (n) => String(n).padStart(2, '0');
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  return `${year}-${month}-${day}`;
+}
 
 /**
  * Generate a single fake search log row matching `travelnest.search_logs` schema.
@@ -92,7 +95,7 @@ function generateSearchLogRow(options = {}) {
     const nights = faker.number.int({ min: 1, max: 14 });
     const checkOut = new Date(checkIn.getTime() + nights * 24 * 60 * 60 * 1000);
 
-    // ClickHouse Date type can accept JS Date; we only care about date part
+    // Normalize to date-only for ClickHouse Date column
     checkInDate = new Date(checkIn.getFullYear(), checkIn.getMonth(), checkIn.getDate());
     checkOutDate = new Date(checkOut.getFullYear(), checkOut.getMonth(), checkOut.getDate());
   }
@@ -104,16 +107,23 @@ function generateSearchLogRow(options = {}) {
       : 0;
   const rooms = faker.number.int({ min: 1, max: 3 });
 
+  let nights = 0;
+  if (checkInDate && checkOutDate) {
+    const diffMs = checkOutDate.getTime() - checkInDate.getTime();
+    nights = Math.max(0, Math.round(diffMs / (24 * 60 * 60 * 1000)));
+  }
+
   return {
     search_id: faker.string.uuid(),
     user_id: faker.datatype.boolean({ probability: 0.8 }) ? faker.string.uuid() : null,
     location: faker.helpers.arrayElement(DESTINATIONS),
-    search_time: searchTime,
+    search_time: formatDateTime(searchTime),
     adults,
     children,
     rooms,
-    check_in_date: checkInDate,
-    check_out_date: checkOutDate,
+    check_in_date: formatDate(checkInDate),
+    check_out_date: formatDate(checkOutDate),
+    nights,
     // nights is computed by ClickHouse default expression; we can omit it
     is_deleted: 0,
   };

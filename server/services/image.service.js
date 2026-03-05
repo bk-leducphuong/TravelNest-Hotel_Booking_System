@@ -32,7 +32,7 @@ class ImageService {
     }
 
     // Validate entity type
-    const validEntityTypes = ['hotel', 'room', 'review', 'user_avatar'];
+    const validEntityTypes = ['hotel', 'room', 'review', 'user_avatar', 'city', 'country'];
     if (!validEntityTypes.includes(entityType)) {
       throw new ApiError(
         400,
