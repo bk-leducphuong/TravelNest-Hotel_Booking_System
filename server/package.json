@@ -41,6 +41,7 @@
     "seed:policy": "cross-env NODE_ENV=development node infra/database/seeders/hotel_policy.seed.js",
     "seed:nearby_place": "cross-env NODE_ENV=development node infra/database/seeders/nearby_place.seed.js",
     "seed:notification": "cross-env NODE_ENV=development node infra/database/seeders/notification.seed.js",
+    "clickhouse:seed:search_logs": "cross-env NODE_ENV=development node infra/clickhouse/seeders/search_logs.seed.js --rows=50000 --days=90 --batch=2000",
     "migrate": "sequelize-cli db:migrate",
     "migrate:undo": "sequelize-cli db:migrate:undo --name",
     "migrate:undo:all": "sequelize-cli db:migrate:undo:all",
