@@ -7,9 +7,7 @@ const {
   getPopularPlaces,
   getNearbyHotels,
   getTopRatedHotels,
-  getRecentlyViewedHotels,
   getPopularDestinations,
-  getTrendingHotels,
 } = require('@controllers/v1/home.controller.js');
 const { authenticate } = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
@@ -81,17 +79,6 @@ router.get('/nearby-hotels', validate(homeSchema.getNearbyHotels), getNearbyHote
 router.get('/top-rated-hotels', validate(homeSchema.getTopRatedHotels), getTopRatedHotels);
 
 /**
- * GET /api/home/recently-viewed-hotels
- * Get recently viewed hotels with full details (authenticated)
- */
-router.get(
-  '/recently-viewed-hotels',
-  authenticate,
-  validate(homeSchema.getRecentlyViewedHotels),
-  getRecentlyViewedHotels
-);
-
-/**
  * GET /api/home/popular-destinations
  * Get popular destinations (public)
  */
@@ -100,11 +87,5 @@ router.get(
   validate(homeSchema.getPopularDestinations),
   getPopularDestinations
 );
-
-/**
- * GET /api/home/trending-hotels
- * Get trending hotels (public)
- */
-router.get('/trending-hotels', validate(homeSchema.getTrendingHotels), getTrendingHotels);
 
 module.exports = router;

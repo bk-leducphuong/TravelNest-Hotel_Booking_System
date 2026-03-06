@@ -173,3 +173,44 @@ GROUP BY hour_of_day, day_of_week;
 -- SELECT locations_visited, total_searches, last_search_time
 -- FROM travelnest.mv_user_search_summary
 -- WHERE user_id = 'xxx';
+
+-- ============================================================================
+-- Hotel view events (recently viewed / trending)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS travelnest.hotel_view_events
+(
+    event_id    UUID,
+    hotel_id    UUID,
+    user_id     Nullable(UUID),
+    session_id  String,
+    viewed_at   DateTime,
+    ip_address  String,
+    user_agent  String
+)
+ENGINE = MergeTree()
+PARTITION BY toYYYYMM(viewed_at)
+ORDER BY (hotel_id, viewed_at, event_id)
+TTL viewed_at + INTERVAL 90 DAY;
+
+-- ============================================================================
+-- Hotel daily views (trending / popular hotels)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS travelnest.hotel_daily_views
+(
+    date        Date,
+    hotel_id    UUID,
+    views       UInt64
+)
+ENGINE = SummingMergeTree()
+PARTITION BY toYYYYMM(date)
+ORDER BY (hotel_id, date);
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS travelnest.hotel_views_daily_mv
+TO travelnest.hotel_daily_views
+AS
+SELECT
+    toDate(viewed_at) AS date,
+    hotel_id,
+    count() AS views
+FROM travelnest.hotel_view_events
+GROUP BY hotel_id, date;

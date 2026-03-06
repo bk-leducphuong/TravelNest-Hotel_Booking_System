@@ -51,7 +51,7 @@ const searchHotels = asyncHandler(async (req, res) => {
   const result = await searchService.searchHotels(searchParams);
 
   // Save search log asynchronously via BullMQ (don't wait)
-  const userId = req.session?.user?.user_id || null;
+  const userId = req.session?.user?.id || null;
   searchService
     .saveSearchLog(searchParams, userId, {
       resultCount: result.data?.pagination?.total || 0,
@@ -108,7 +108,7 @@ const getAutocompleteSuggestions = asyncHandler(async (req, res) => {
  * Save search information to search logs (optional, for analytics)
  */
 const saveSearchInformation = asyncHandler(async (req, res) => {
-  const userId = req.session?.user?.user_id || null;
+  const userId = req.session?.user?.id || null;
   const searchData = req.body;
 
   const result = await searchService.saveSearchLog(searchData, userId, req.body.metadata || {});

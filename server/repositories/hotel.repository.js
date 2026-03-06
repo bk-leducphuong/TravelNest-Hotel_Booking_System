@@ -12,6 +12,8 @@ const {
   HotelRatingSummaries,
   ReviewReplies,
   ReviewMedia,
+  Cities,
+  Countries,
 } = require('../models/index.js');
 
 /**
@@ -31,8 +33,8 @@ class HotelRepository {
         'name',
         'description',
         'address',
-        'city',
-        'country',
+        'city_id',
+        'country_id',
         'phone_number',
         'latitude',
         'longitude',
@@ -51,6 +53,18 @@ class HotelRepository {
           as: 'amenities',
           attributes: ['id', 'code', 'name', 'icon', 'category'],
           through: { attributes: [] }, // Exclude junction table fields
+        },
+        {
+          model: Cities,
+          as: 'city',
+          attributes: ['id', 'name', 'slug', 'latitude', 'longitude'],
+          required: false,
+        },
+        {
+          model: Countries,
+          as: 'country',
+          attributes: ['id', 'name', 'iso_code'],
+          required: false,
         },
         {
           model: Images,
@@ -376,6 +390,61 @@ class HotelRepository {
     return await sequelize.query(query, {
       replacements: [hotelId],
       type: sequelize.QueryTypes.SELECT,
+    });
+  }
+
+  /**
+   * Find basic hotel cards by ids (for lists like trending/recently viewed).
+   * Keeps ordering stable (caller can reorder results).
+   */
+  async findBasicByIds(hotelIds = []) {
+    if (!Array.isArray(hotelIds) || hotelIds.length === 0) return [];
+
+    const { Op } = require('sequelize');
+
+    return await Hotels.findAll({
+      where: {
+        id: {
+          [Op.in]: hotelIds,
+        },
+        status: 'active',
+      },
+      attributes: [
+        'id',
+        'name',
+        'address',
+        'latitude',
+        'longitude',
+        'hotel_class',
+        'min_price',
+        'status',
+        'timezone',
+      ],
+      include: [
+        {
+          model: Cities,
+          as: 'city',
+          attributes: ['id', 'name', 'slug'],
+          required: false,
+        },
+        {
+          model: Countries,
+          as: 'country',
+          attributes: ['id', 'name', 'iso_code'],
+          required: false,
+        },
+        {
+          model: Images,
+          as: 'images',
+          where: { status: 'active' },
+          attributes: ['id', 'bucket_name', 'object_key', 'is_primary', 'display_order'],
+          required: false,
+          order: [
+            ['is_primary', 'DESC'],
+            ['display_order', 'ASC'],
+          ],
+        },
+      ],
     });
   }
 }

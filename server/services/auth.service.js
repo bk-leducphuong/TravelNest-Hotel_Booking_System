@@ -91,9 +91,7 @@ class AuthService {
     const userWithContext = await authRepository.getUserWithContext(user.id);
 
     return {
-      userId: user.id,
-      userRole: user.role,
-      userData: userWithContext,
+      user: userWithContext,
     };
   }
 
@@ -131,9 +129,7 @@ class AuthService {
       const userWithContext = await authRepository.getUserWithContext(existingUser.id);
 
       return {
-        userId: existingUser.id,
-        userRole: roleName,
-        userData: userWithContext,
+        user: userWithContext,
       };
     }
 
@@ -161,9 +157,7 @@ class AuthService {
     const userWithContext = await authRepository.getUserWithContext(newUser.id);
 
     return {
-      userId: newUser.id,
-      userRole: roleName,
-      userData: userWithContext,
+      user: userWithContext,
     };
   }
 

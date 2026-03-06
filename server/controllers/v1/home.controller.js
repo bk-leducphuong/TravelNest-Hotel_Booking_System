@@ -12,7 +12,7 @@ const asyncHandler = require('@utils/asyncHandler');
  * Get recent viewed hotels (authenticated) or by hotel IDs (non-authenticated)
  */
 const getRecentViewedHotels = asyncHandler(async (req, res) => {
-  const userId = req.session.user?.user_id;
+  const userId = req.session.user?.id;
   const { hotelIds } = req.query;
 
   // Parse hotelIds if provided as query parameter
@@ -42,7 +42,7 @@ const getRecentViewedHotels = asyncHandler(async (req, res) => {
  * Record a hotel view for authenticated user
  */
 const recordHotelView = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { hotelId } = req.body;
 
   await homeService.recordHotelView(userId, hotelId);
@@ -59,7 +59,7 @@ const recordHotelView = asyncHandler(async (req, res) => {
  * Get recent searches for authenticated user
  */
 const getRecentSearches = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { limit } = req.query;
 
   const searches = await homeService.getRecentSearches(userId, limit ? parseInt(limit, 10) : 10);
@@ -141,24 +141,6 @@ const getTopRatedHotels = asyncHandler(async (req, res) => {
 });
 
 /**
- * GET /api/home/recently-viewed-hotels
- * Get recently viewed hotels with full details (authenticated)
- */
-const getRecentlyViewedHotels = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
-  const { limit } = req.query;
-
-  const hotels = await homeService.getRecentlyViewedHotels(
-    userId,
-    limit ? parseInt(limit, 10) : 10
-  );
-
-  res.status(200).json({
-    data: hotels,
-  });
-});
-
-/**
  * GET /api/home/popular-destinations
  * Get popular destinations (cities)
  */
@@ -175,23 +157,6 @@ const getPopularDestinations = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * GET /api/home/trending-hotels
- * Get trending hotels
- */
-const getTrendingHotels = asyncHandler(async (req, res) => {
-  const { limit, days } = req.query;
-
-  const hotels = await homeService.getTrendingHotels(
-    limit ? parseInt(limit, 10) : 10,
-    days ? parseInt(days, 10) : 30
-  );
-
-  res.status(200).json({
-    data: hotels,
-  });
-});
-
 module.exports = {
   getRecentViewedHotels,
   recordHotelView,
@@ -200,7 +165,5 @@ module.exports = {
   getPopularPlaces,
   getNearbyHotels,
   getTopRatedHotels,
-  getRecentlyViewedHotels,
   getPopularDestinations,
-  getTrendingHotels,
 };

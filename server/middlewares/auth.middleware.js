@@ -16,7 +16,7 @@ const logger = require('@config/logger.config');
 async function authenticate(req, res, next) {
   try {
     // Check if session exists and has user data
-    if (!req.session?.userData?.id) {
+    if (!req.session?.user?.id) {
       return res.status(401).json({
         success: false,
         message: 'Unauthorized access. Please log in.',
@@ -24,7 +24,7 @@ async function authenticate(req, res, next) {
     }
 
     // Load user with roles and hotel context
-    const user = await Users.findByPk(req.session.userData.id, {
+    const user = await Users.findByPk(req.session.user.id, {
       include: [
         {
           model: UserRoles,
@@ -79,7 +79,7 @@ async function authenticate(req, res, next) {
     }
 
     // Attach user to request
-    req.user = user;
+    req.session.user = user;
     return next();
   } catch (error) {
     logger.error({ error }, 'Authentication error');

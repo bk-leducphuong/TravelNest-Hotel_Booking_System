@@ -13,7 +13,7 @@ const asyncHandler = require('@utils/asyncHandler');
  * Submit join form (become a partner)
  */
 const submitJoinForm = asyncHandler(async (req, res) => {
-  const ownerId = req.session.user.user_id;
+  const ownerId = req.session.user.id;
   const { joinFormData } = req.body;
 
   // Support both nested joinFormData and flat structure

@@ -12,7 +12,7 @@ const asyncHandler = require('@utils/asyncHandler');
  * Create a payment intent for booking
  */
 const createPaymentIntent = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { paymentMethodId, currency } = req.body;
 
   const result = await paymentService.createPaymentIntent(userId, {
@@ -30,7 +30,7 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
  * Get all payments for authenticated user
  */
 const getUserPayments = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { page, limit } = req.query;
 
   const result = await paymentService.getUserPayments(userId, {
@@ -53,7 +53,7 @@ const getUserPayments = asyncHandler(async (req, res) => {
  * Get payment information by booking ID
  */
 const getPaymentByBookingId = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { bookingId } = req.params;
 
   const payment = await paymentService.getPaymentByBookingId(bookingId, userId);
@@ -68,7 +68,7 @@ const getPaymentByBookingId = asyncHandler(async (req, res) => {
  * Get payment information by transaction ID
  */
 const getPaymentByTransactionId = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { transactionId } = req.params;
 
   const payment = await paymentService.getPaymentByTransactionId(

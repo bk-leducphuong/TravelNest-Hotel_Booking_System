@@ -6,7 +6,7 @@ const asyncHandler = require('@utils/asyncHandler');
  * Create a temporary room hold (locks rooms while user completes payment)
  */
 const createHold = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { hotelId, checkInDate, checkOutDate, numberOfGuests, rooms, currency } = req.body;
 
   const result = await holdService.createHold({
@@ -29,7 +29,7 @@ const createHold = asyncHandler(async (req, res) => {
  * Get active holds for the authenticated user
  */
 const getMyHolds = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const holds = await holdService.getActiveHoldsByUser(userId);
   res.status(200).json({
     data: holds,
@@ -41,7 +41,7 @@ const getMyHolds = asyncHandler(async (req, res) => {
  * Get a single hold by ID (must own the hold)
  */
 const getHoldById = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { holdId } = req.params;
   const hold = await holdService.getHold(holdId, userId);
   res.status(200).json({
@@ -54,7 +54,7 @@ const getHoldById = asyncHandler(async (req, res) => {
  * Release a hold (cancel checkout)
  */
 const releaseHold = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { holdId } = req.params;
   const result = await holdService.releaseHold(holdId, userId, 'released');
   res.status(200).json({
