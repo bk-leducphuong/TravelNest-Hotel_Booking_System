@@ -523,14 +523,81 @@ router.get(
 router.post('/log', validate(searchSchema.saveSearchInformation), saveSearchInformation);
 
 /**
- * GET /api/v1/search/recent
- * Get recent hotel searches for authenticated user (from Redis)
+ * @swagger
+ * /search/recent:
+ *   get:
+ *     summary: Get recent hotel searches
+ *     description: Returns recent hotel search queries made by the authenticated user (stored in Redis)
+ *     tags:
+ *       - Search
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 50
+ *           default: 10
+ *         description: Maximum number of recent searches to return
+ *     responses:
+ *       200:
+ *         description: List of recent hotel searches
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       city:
+ *                         type: string
+ *                         nullable: true
+ *                       country:
+ *                         type: string
+ *                         nullable: true
+ *                       latitude:
+ *                         type: number
+ *                         nullable: true
+ *                       longitude:
+ *                         type: number
+ *                         nullable: true
+ *                       checkIn:
+ *                         type: string
+ *                         format: date
+ *                         nullable: true
+ *                       checkOut:
+ *                         type: string
+ *                         format: date
+ *                         nullable: true
+ *                       adults:
+ *                         type: integer
+ *                       children:
+ *                         type: integer
+ *                       rooms:
+ *                         type: integer
+ *                       nights:
+ *                         type: integer
+ *                       searchedAt:
+ *                         type: string
+ *                         format: date-time
+ *       401:
+ *         description: Unauthorized - authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
-router.get(
-  '/recent',
-  authenticate,
-  validate(searchSchema.getRecentSearches),
-  getRecentSearches
-);
+router.get('/recent', authenticate, validate(searchSchema.getRecentSearches), getRecentSearches);
 
 module.exports = router;
