@@ -239,3 +239,13 @@ exports.saveSearchInformation = {
       return value;
     }),
 };
+
+/**
+ * GET /api/v1/search/recent
+ * Get recent hotel searches for authenticated user
+ */
+exports.getRecentSearches = {
+  query: Joi.object({
+    limit: Joi.number().integer().min(1).max(50).default(10),
+  }),
+};

@@ -4,7 +4,9 @@ const {
   getHotelAvailability,
   getAutocompleteSuggestions,
   saveSearchInformation,
+  getRecentSearches,
 } = require('@controllers/v1/search.controller.js');
+const { authenticate } = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
 const searchSchema = require('@validators/v1/search.schema');
 const router = express.Router();
@@ -519,5 +521,16 @@ router.get(
  *         description: Validation error
  */
 router.post('/log', validate(searchSchema.saveSearchInformation), saveSearchInformation);
+
+/**
+ * GET /api/v1/search/recent
+ * Get recent hotel searches for authenticated user (from Redis)
+ */
+router.get(
+  '/recent',
+  authenticate,
+  validate(searchSchema.getRecentSearches),
+  getRecentSearches
+);
 
 module.exports = router;

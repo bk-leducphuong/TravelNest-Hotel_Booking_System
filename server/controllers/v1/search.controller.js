@@ -52,14 +52,32 @@ const searchHotels = asyncHandler(async (req, res) => {
 
   // Save search log asynchronously via BullMQ (don't wait)
   const userId = req.session?.user?.id || null;
-  searchService
-    .saveSearchLog(searchParams, userId, {
-      resultCount: result.data?.pagination?.total || 0,
-      searchTimeMs: result.data?.search_metadata?.search_time_ms || 0,
-    })
-    .catch((err) => {
-      logger.error('Failed to queue search log:', err);
-    });
+  if (userId) {
+    // 1) Store recent search in Redis
+    searchService
+      .recordRecentSearch(userId, searchParams)
+      .catch((err) => logger.error({ err: err.message }, 'Failed to store recent search in Redis'));
+
+    // 2) Queue analytics log via BullMQ
+    searchService
+      .saveSearchLog(searchParams, userId, {
+        resultCount: result.data?.pagination?.total || 0,
+        searchTimeMs: result.data?.search_metadata?.search_time_ms || 0,
+      })
+      .catch((err) => {
+        logger.error('Failed to queue search log:', err);
+      });
+  } else {
+    // Anonymous users: analytics only, no per-user history
+    searchService
+      .saveSearchLog(searchParams, null, {
+        resultCount: result.data?.pagination?.total || 0,
+        searchTimeMs: result.data?.search_metadata?.search_time_ms || 0,
+      })
+      .catch((err) => {
+        logger.error('Failed to queue search log:', err);
+      });
+  }
 
   res.status(200).json(result);
 });
@@ -122,9 +140,31 @@ const saveSearchInformation = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * GET /api/v1/search/recent
+ * Get recent hotel search queries for authenticated user (from Redis)
+ */
+const getRecentSearches = asyncHandler(async (req, res) => {
+  const userId = req.session.user.id;
+  const { limit } = req.query;
+
+  const searches = await searchService.getRecentSearches(
+    userId,
+    limit ? parseInt(limit, 10) : 10
+  );
+
+  res.status(200).json({
+    success: true,
+    data: {
+      searches,
+    },
+  });
+});
+
 module.exports = {
   searchHotels,
   getHotelAvailability,
   getAutocompleteSuggestions,
   saveSearchInformation,
+  getRecentSearches,
 };

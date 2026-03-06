@@ -14,52 +14,6 @@ const validate = require('@middlewares/validate.middleware');
 const homeSchema = require('@validators/v1/home.schema');
 const router = express.Router();
 
-// root route: /api/home
-
-/**
- * GET /api/home/recent-viewed-hotels
- * Get recent viewed hotels (optional authentication)
- * Query params: hotelIds (for non-authenticated users)
- */
-router.get(
-  '/recent-viewed-hotels',
-  validate(homeSchema.getRecentViewedHotels),
-  getRecentViewedHotels
-);
-
-/**
- * POST /api/home/recent-viewed-hotels
- * Record a hotel view (authenticated)
- */
-router.post(
-  '/recent-viewed-hotels',
-  authenticate,
-  validate(homeSchema.recordHotelView),
-  recordHotelView
-);
-
-/**
- * GET /api/home/recent-searches
- * Get recent searches (authenticated)
- */
-router.get(
-  '/recent-searches',
-  authenticate,
-  validate(homeSchema.getRecentSearches),
-  getRecentSearches
-);
-
-/**
- * DELETE /api/home/recent-searches/:searchId
- * Remove a recent search (authenticated)
- */
-router.delete(
-  '/recent-searches/:searchId',
-  authenticate,
-  validate(homeSchema.removeRecentSearch),
-  removeRecentSearch
-);
-
 /**
  * GET /api/home/popular-places
  * Get popular places (public)

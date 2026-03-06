@@ -8,80 +8,6 @@ const asyncHandler = require('@utils/asyncHandler');
  */
 
 /**
- * GET /api/home/recent-viewed-hotels
- * Get recent viewed hotels (authenticated) or by hotel IDs (non-authenticated)
- */
-const getRecentViewedHotels = asyncHandler(async (req, res) => {
-  const userId = req.session.user?.id;
-  const { hotelIds } = req.query;
-
-  // Parse hotelIds if provided as query parameter
-  let parsedHotelIds;
-  if (hotelIds) {
-    try {
-      parsedHotelIds = typeof hotelIds === 'string' ? JSON.parse(hotelIds) : hotelIds;
-    } catch (error) {
-      return res.status(400).json({
-        error: {
-          code: 'INVALID_INPUT',
-          message: 'hotelIds must be a valid JSON array',
-        },
-      });
-    }
-  }
-
-  const hotels = await homeService.getRecentViewedHotels(userId, parsedHotelIds);
-
-  res.status(200).json({
-    data: hotels,
-  });
-});
-
-/**
- * POST /api/home/recent-viewed-hotels
- * Record a hotel view for authenticated user
- */
-const recordHotelView = asyncHandler(async (req, res) => {
-  const userId = req.session.user.id;
-  const { hotelId } = req.body;
-
-  await homeService.recordHotelView(userId, hotelId);
-
-  res.status(201).json({
-    data: {
-      message: 'Hotel view recorded successfully',
-    },
-  });
-});
-
-/**
- * GET /api/home/recent-searches
- * Get recent searches for authenticated user
- */
-const getRecentSearches = asyncHandler(async (req, res) => {
-  const userId = req.session.user.id;
-  const { limit } = req.query;
-
-  const searches = await homeService.getRecentSearches(userId, limit ? parseInt(limit, 10) : 10);
-
-  res.status(200).json({
-    data: searches,
-  });
-});
-
-/**
- * DELETE /api/home/recent-searches/:searchId
- * Remove a recent search
- */
-const removeRecentSearch = asyncHandler(async (req, res) => {
-  const { searchId } = req.params;
-
-  await homeService.removeRecentSearch(parseInt(searchId, 10));
-
-  res.status(204).send();
-});
-
-/**
  * GET /api/home/popular-places
  * Get popular places (most searched locations)
  */
@@ -158,10 +84,6 @@ const getPopularDestinations = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  getRecentViewedHotels,
-  recordHotelView,
-  getRecentSearches,
-  removeRecentSearch,
   getPopularPlaces,
   getNearbyHotels,
   getTopRatedHotels,
