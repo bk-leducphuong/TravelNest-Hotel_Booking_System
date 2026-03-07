@@ -3,8 +3,10 @@ const {
   searchHotels,
   getHotelAvailability,
   getAutocompleteSuggestions,
+  getDestinationAutocomplete,
   saveSearchInformation,
   getRecentSearches,
+  getTrendingDestinations,
 } = require('@controllers/v1/search.controller.js');
 const { authenticate } = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
@@ -465,6 +467,63 @@ router.get(
 
 /**
  * @swagger
+ * /search/destinations/autocomplete:
+ *   get:
+ *     summary: Get autocomplete suggestions for destinations
+ *     description: Returns destination suggestions (cities and countries) based on user input
+ *     tags:
+ *       - Search
+ *     parameters:
+ *       - in: query
+ *         name: query
+ *         required: true
+ *         schema:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 100
+ *         description: Destination name prefix
+ *         example: "Ha"
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 20
+ *           default: 10
+ *         description: Maximum number of suggestions
+ *     responses:
+ *       200:
+ *         description: Destination autocomplete suggestions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     suggestions:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           text:
+ *                             type: string
+ *                           score:
+ *                             type: number
+ *       400:
+ *         description: Validation error
+ */
+router.get(
+  '/destinations/autocomplete',
+  validate(searchSchema.getDestinationAutocomplete),
+  getDestinationAutocomplete
+);
+
+/**
+ * @swagger
  * /search/log:
  *   post:
  *     summary: Save search information to analytics logs
@@ -599,5 +658,74 @@ router.post('/log', validate(searchSchema.saveSearchInformation), saveSearchInfo
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/recent', authenticate, validate(searchSchema.getRecentSearches), getRecentSearches);
+
+/**
+ * @swagger
+ * /search/destinations/trending:
+ *   get:
+ *     summary: Get trending destinations
+ *     description: |
+ *       Returns a list of popular/trending destinations (cities) based on booking data from ClickHouse.
+ *       Results are cached in Redis for performance.
+ *     tags:
+ *       - Search
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 20
+ *           default: 5
+ *         description: Maximum number of destinations to return
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 365
+ *           default: 30
+ *         description: Number of days to look back for trending data
+ *     responses:
+ *       200:
+ *         description: List of trending destinations
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       city:
+ *                         type: string
+ *                       country:
+ *                         type: string
+ *                       booking_count:
+ *                         type: integer
+ *                         description: Total bookings in the period
+ *                       revenue:
+ *                         type: number
+ *                         description: Total revenue for the period
+ *                       avg_booking_value:
+ *                         type: number
+ *                         description: Average booking value
+ *                       image_url:
+ *                         type: string
+ *                         nullable: true
+ *                         description: Featured city image URL
+ *       400:
+ *         description: Validation error
+ */
+router.get(
+  '/destinations/trending',
+  validate(searchSchema.getTrendingDestinations),
+  getTrendingDestinations
+);
 
 module.exports = router;

@@ -60,10 +60,10 @@ function transformSnapshotToDocument(snapshot) {
   const doc = {
     hotel_id: snapshot.hotel_id,
     hotel_name: snapshot.hotel_name,
+    city_id: snapshot.city_id || null,
     city: snapshot.city,
+    country_id: snapshot.country_id || null,
     country: snapshot.country,
-    latitude: parseFloat(snapshot.latitude),
-    longitude: parseFloat(snapshot.longitude),
     min_price: snapshot.min_price ? parseFloat(snapshot.min_price) : null,
     max_price: snapshot.max_price ? parseFloat(snapshot.max_price) : null,
     avg_rating: snapshot.avg_rating ? parseFloat(snapshot.avg_rating) : null,
@@ -82,10 +82,10 @@ function transformSnapshotToDocument(snapshot) {
   };
 
   // Add geo_point location field
-  if (doc.latitude && doc.longitude) {
+  if (snapshot.latitude && snapshot.longitude) {
     doc.location = {
-      lat: doc.latitude,
-      lon: doc.longitude,
+      lat: parseFloat(snapshot.latitude),
+      lon: parseFloat(snapshot.longitude),
     };
   }
 

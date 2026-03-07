@@ -154,27 +154,6 @@ WHERE is_deleted = 0
 GROUP BY hour_of_day, day_of_week;
 
 -- ============================================================================
--- Query examples (use these in your repository)
--- ============================================================================
-
--- Get popular destinations (last 30 days):
--- SELECT location, sum(search_count) as searches, sum(unique_users) as users
--- FROM travelnest.mv_popular_destinations
--- WHERE date >= today() - 30
--- GROUP BY location ORDER BY searches DESC LIMIT 10;
-
--- Get demand by travel date (next 90 days):
--- SELECT check_in_date, location, sum(search_count) as searches
--- FROM travelnest.mv_demand_by_travel_date
--- WHERE check_in_date BETWEEN today() AND today() + 90
--- GROUP BY check_in_date, location ORDER BY searches DESC;
-
--- Get user's favorite locations:
--- SELECT locations_visited, total_searches, last_search_time
--- FROM travelnest.mv_user_search_summary
--- WHERE user_id = 'xxx';
-
--- ============================================================================
 -- Hotel view events (recently viewed / trending)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS travelnest.hotel_view_events

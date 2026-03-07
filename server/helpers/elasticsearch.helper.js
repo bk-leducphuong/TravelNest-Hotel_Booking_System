@@ -16,6 +16,8 @@ class ElasticsearchHelper {
       // Location
       city,
       country,
+      cityId,
+      countryId,
       latitude,
       longitude,
       radius = 10, // km
@@ -49,8 +51,11 @@ class ElasticsearchHelper {
     };
 
     // Location filters
-    if (city) {
-      // Use match query for flexible city matching (handles case-insensitivity and typos)
+    if (cityId) {
+      query.bool.filter.push({
+        term: { city_id: cityId },
+      });
+    } else if (city) {
       query.bool.must.push({
         match: {
           city: {
@@ -62,7 +67,11 @@ class ElasticsearchHelper {
       });
     }
 
-    if (country) {
+    if (countryId) {
+      query.bool.filter.push({
+        term: { country_id: countryId },
+      });
+    } else if (country) {
       query.bool.filter.push({
         term: { country: country },
       });

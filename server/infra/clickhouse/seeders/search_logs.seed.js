@@ -26,7 +26,7 @@ require('dotenv').config({
 require('module-alias/register');
 
 const { getClient, close } = require('@config/clickhouse.config');
-const { VIETNAM_CITIES } = require('../../database/seeders/city.seed');
+const db = require('@models');
 
 let faker;
 async function loadFaker() {
@@ -40,8 +40,8 @@ const DEFAULT_ROW_COUNT = 10000;
 const DEFAULT_BATCH_SIZE = 1000;
 const DEFAULT_DAYS_BACK = 60;
 
-// Use only Vietnamese cities (provinces/municipalities) as destinations
-const DESTINATIONS = VIETNAM_CITIES.map((city) => city.name);
+// Destination pool loaded from MySQL `destinations` table (cities and countries)
+let DESTINATIONS = [];
 
 function formatDateTime(date) {
   if (!date) return null;
@@ -70,6 +70,12 @@ function formatDate(date) {
  */
 function generateSearchLogRow(options = {}) {
   const { daysBack = DEFAULT_DAYS_BACK } = options;
+
+  if (!DESTINATIONS.length) {
+    throw new Error(
+      'DESTINATIONS pool is empty. Ensure destinations are seeded in MySQL before seeding ClickHouse search logs.'
+    );
+  }
 
   const now = new Date();
   const searchTime =
@@ -113,10 +119,13 @@ function generateSearchLogRow(options = {}) {
     nights = Math.max(0, Math.round(diffMs / (24 * 60 * 60 * 1000)));
   }
 
+  const destination = faker.helpers.arrayElement(DESTINATIONS);
+
   return {
     search_id: faker.string.uuid(),
     user_id: faker.datatype.boolean({ probability: 0.8 }) ? faker.string.uuid() : null,
-    location: faker.helpers.arrayElement(DESTINATIONS),
+    destination_id: destination.id,
+    destination_type: destination.type,
     search_time: formatDateTime(searchTime),
     adults,
     children,
@@ -191,6 +200,19 @@ async function seedSearchLogs(options = {}) {
   } = options;
 
   const client = getClient();
+
+  // Load destination pool from MySQL
+  DESTINATIONS = await db.destinations.findAll({
+    where: { is_active: true },
+    attributes: ['id', 'type'],
+    raw: true,
+  });
+
+  if (!DESTINATIONS.length) {
+    throw new Error(
+      'No active destinations found in MySQL. Run database seeders for destinations before seeding ClickHouse search logs.'
+    );
+  }
 
   console.log('\n🌱 Starting ClickHouse search logs seeding...\n');
   console.log(`   Target table : travelnest.search_logs`);

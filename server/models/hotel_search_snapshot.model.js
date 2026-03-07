@@ -39,10 +39,32 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
         comment: 'Hotel name for display and search',
       },
+      city_id: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+          model: 'cities',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+        comment: 'FK to cities.id for normalized location',
+      },
       city: {
         type: DataTypes.STRING(255),
         allowNull: true,
         comment: 'City for location filtering',
+      },
+      country_id: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+          model: 'countries',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+        comment: 'FK to countries.id for normalized country',
       },
       country: {
         type: DataTypes.STRING(100),
@@ -186,10 +208,22 @@ module.exports = function (sequelize, DataTypes) {
           comment: 'Index for city-based searches',
         },
         {
+          name: 'idx_city_id_hss',
+          using: 'BTREE',
+          fields: [{ name: 'city_id' }],
+          comment: 'Index for city-based searches (FK)',
+        },
+        {
           name: 'idx_country',
           using: 'BTREE',
           fields: [{ name: 'country' }],
           comment: 'Index for country-based filtering',
+        },
+        {
+          name: 'idx_country_id_hss',
+          using: 'BTREE',
+          fields: [{ name: 'country_id' }],
+          comment: 'Index for country-based filtering (FK)',
         },
         // Price range filtering
         {
