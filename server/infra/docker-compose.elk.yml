@@ -33,64 +33,64 @@ services:
       timeout: 10s
       retries: 5
 
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.11.3
-    container_name: kibana
-    env_file: .env
-    environment:
-      - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_HOSTS}
-      # Kibana 8+ cannot use "elastic" superuser; must use kibana_system
-      - ELASTICSEARCH_USERNAME=kibana_system
-      - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
-    ports:
-      - '5601:5601'
-    networks:
-      - elk
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-
-  logstash:
-    image: docker.elastic.co/logstash/logstash:8.11.3
-    container_name: logstash
-    env_file: .env
-    volumes:
-      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
-      - ./logstash/pipeline:/usr/share/logstash/pipeline
-    ports:
-      - '5044:5044'
-      - '9600:9600'
-    environment:
-      - 'LS_JAVA_OPTS=-Xms1g -Xmx1g'
-      - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_HOSTS}
-      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME}
-      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD}
-    networks:
-      - elk
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-
-  filebeat:
-    image: docker.elastic.co/beats/filebeat:8.11.3
-    container_name: filebeat
-    user: root
-    env_file: .env
-    environment:
-      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME:-elastic}
-      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD}
-    volumes:
-      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ../logs:/logs:ro # Mount your application logs
-    command: filebeat -e -strict.perms=false
-    networks:
-      - elk
-    depends_on:
-      logstash:
-        condition: service_started
-
+  # kibana:
+  #   image: docker.elastic.co/kibana/kibana:8.11.3
+  #   container_name: kibana
+  #   env_file: .env
+  #   environment:
+  #     - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_HOSTS}
+  #     # Kibana 8+ cannot use "elastic" superuser; must use kibana_system
+  #     - ELASTICSEARCH_USERNAME=kibana_system
+  #     - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
+  #   ports:
+  #     - '5601:5601'
+  #   networks:
+  #     - elk
+  #   depends_on:
+  #     elasticsearch:
+  #       condition: service_healthy
+  #
+  # logstash:
+  #   image: docker.elastic.co/logstash/logstash:8.11.3
+  #   container_name: logstash
+  #   env_file: .env
+  #   volumes:
+  #     - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+  #     - ./logstash/pipeline:/usr/share/logstash/pipeline
+  #   ports:
+  #     - '5044:5044'
+  #     - '9600:9600'
+  #   environment:
+  #     - 'LS_JAVA_OPTS=-Xms1g -Xmx1g'
+  #     - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_HOSTS}
+  #     - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME}
+  #     - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD}
+  #   networks:
+  #     - elk
+  #   depends_on:
+  #     elasticsearch:
+  #       condition: service_healthy
+  #
+  # filebeat:
+  #   image: docker.elastic.co/beats/filebeat:8.11.3
+  #   container_name: filebeat
+  #   user: root
+  #   env_file: .env
+  #   environment:
+  #     - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME:-elastic}
+  #     - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD}
+  #   volumes:
+  #     - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+  #     - /var/lib/docker/containers:/var/lib/docker/containers:ro
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro
+  #     - ../logs:/logs:ro # Mount your application logs
+  #   command: filebeat -e -strict.perms=false
+  #   networks:
+  #     - elk
+  #   depends_on:
+  #     logstash:
+  #       condition: service_started
+  #
 volumes:
   elasticsearch_data:
     driver: local

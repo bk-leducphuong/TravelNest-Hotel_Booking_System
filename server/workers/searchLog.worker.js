@@ -19,7 +19,8 @@ const processSearchLogJob = async (job) => {
 
   try {
     const searchLog = await searchLogClickHouseRepository.createSearchLog({
-      location: searchData.city || searchData.country,
+      destinationId: searchData.destinationId || null,
+      destinationType: searchData.destinationType || '',
       userId,
       checkInDate: searchData.checkIn,
       checkOutDate: searchData.checkOut,

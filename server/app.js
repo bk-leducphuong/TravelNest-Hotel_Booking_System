@@ -91,6 +91,7 @@ const createApp = async () => {
     imageProcessingQueue,
     hotelSnapshotQueue,
     searchLogQueue,
+    hotelViewEventQueue,
     emailQueue,
     notificationQueue,
   } = require('@queues/index');
@@ -103,6 +104,7 @@ const createApp = async () => {
       new BullMQAdapter(imageProcessingQueue),
       new BullMQAdapter(hotelSnapshotQueue),
       new BullMQAdapter(searchLogQueue),
+      new BullMQAdapter(hotelViewEventQueue),
       new BullMQAdapter(emailQueue),
       new BullMQAdapter(notificationQueue),
     ],

@@ -48,20 +48,43 @@ const searchHotels = asyncHandler(async (req, res) => {
     limit: req.query.limit ? parseInt(req.query.limit, 10) : 20,
   };
 
-  const result = await searchService.searchHotels(searchParams);
+  const { destination, searchResults } = await searchService.searchHotels(searchParams);
 
   // Save search log asynchronously via BullMQ (don't wait)
-  const userId = req.session?.user?.user_id || null;
-  searchService
-    .saveSearchLog(searchParams, userId, {
-      resultCount: result.data?.pagination?.total || 0,
-      searchTimeMs: result.data?.search_metadata?.search_time_ms || 0,
-    })
-    .catch((err) => {
-      logger.error('Failed to queue search log:', err);
-    });
+  const userId = req.session?.user?.id || null;
+  const analyticsData = {
+    ...searchParams,
+    destinationId: destination?.id,
+    destination_type: destination?.type,
+  };
+  if (userId) {
+    // 1) Store recent search in Redis
+    searchService
+      .recordRecentSearch(userId, searchParams)
+      .catch((err) => logger.error({ err: err.message }, 'Failed to store recent search in Redis'));
 
-  res.status(200).json(result);
+    // 2) Queue analytics log via BullMQ
+    searchService
+      .saveSearchLog(analyticsData, userId, {
+        resultCount: searchResults?.data?.pagination?.total || 0,
+        searchTimeMs: searchResults?.data?.search_metadata?.search_time_ms || 0,
+      })
+      .catch((err) => {
+        logger.error('Failed to queue search log:', err);
+      });
+  } else {
+    // Anonymous users: analytics only, no per-user history
+    searchService
+      .saveSearchLog(analyticsData, null, {
+        resultCount: searchResults?.data?.pagination?.total || 0,
+        searchTimeMs: searchResults?.data?.search_metadata?.search_time_ms || 0,
+      })
+      .catch((err) => {
+        logger.error('Failed to queue search log:', err);
+      });
+  }
+
+  res.status(200).json(searchResults);
 });
 
 /**
@@ -104,11 +127,28 @@ const getAutocompleteSuggestions = asyncHandler(async (req, res) => {
 });
 
 /**
+ * GET /api/v1/search/destinations/autocomplete
+ * Get autocomplete suggestions for destinations (cities and countries)
+ *
+ * Query params: query (required), limit
+ */
+const getDestinationAutocomplete = asyncHandler(async (req, res) => {
+  const { query, limit } = req.query;
+
+  const result = await searchService.getDestinationAutocomplete(
+    query,
+    limit ? parseInt(limit, 10) : 10
+  );
+
+  res.status(200).json(result);
+});
+
+/**
  * POST /api/v1/search/log
  * Save search information to search logs (optional, for analytics)
  */
 const saveSearchInformation = asyncHandler(async (req, res) => {
-  const userId = req.session?.user?.user_id || null;
+  const userId = req.session?.user?.id || null;
   const searchData = req.body;
 
   const result = await searchService.saveSearchLog(searchData, userId, req.body.metadata || {});
@@ -122,9 +162,50 @@ const saveSearchInformation = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * GET /api/v1/search/destinations/trending
+ * Get top popular/trending destinations from ClickHouse (with Redis cache)
+ */
+const getTrendingDestinations = asyncHandler(async (req, res) => {
+  const { limit, days } = req.query;
+
+  const destinations = await searchService.getTrendingDestinations({
+    limit: limit ? parseInt(limit, 10) : 5,
+    days: days ? parseInt(days, 10) : 30,
+  });
+
+  res.status(200).json({
+    success: true,
+    data: {
+      destinations,
+    },
+  });
+});
+
+/**
+ * GET /api/v1/search/recent
+ * Get recent hotel search queries for authenticated user (from Redis)
+ */
+const getRecentSearches = asyncHandler(async (req, res) => {
+  const userId = req.session.user.id;
+  const { limit } = req.query;
+
+  const searches = await searchService.getRecentSearches(userId, limit ? parseInt(limit, 10) : 10);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      searches,
+    },
+  });
+});
+
 module.exports = {
   searchHotels,
   getHotelAvailability,
   getAutocompleteSuggestions,
+  getDestinationAutocomplete,
   saveSearchInformation,
+  getRecentSearches,
+  getTrendingDestinations,
 };

@@ -13,11 +13,160 @@ const { searchLogQueue } = require('@queues/index');
 const { addJob } = require('@utils/bullmq.utils');
 
 const elasticsearchHelper = require('../helpers/elasticsearch.helper');
+const destinationElasticsearchHelper = require('../helpers/destination_elasticsearch.helper');
 const searchRepository = require('../repositories/search.repository');
+const destinationRepository = require('../repositories/destination.repository');
+const imageRepository = require('../repositories/image.repository');
+const searchLogClickHouseRepository = require('../repositories/clickhouse/search_log.repository');
 const ApiError = require('../utils/ApiError');
 const logger = require('../config/logger.config');
+const redisClient = require('../config/redis.config');
 
 class SearchService {
+  _recentSearchKey(userId) {
+    return `recent_searches:user:${userId}`;
+  }
+
+  /**
+   * Store a compact representation of the user's recent search in Redis.
+   */
+  async recordRecentSearch(
+    userId,
+    rawParams,
+    { maxItems = 20, ttlSeconds = 60 * 60 * 24 * 30 } = {}
+  ) {
+    if (!userId) return;
+
+    const key = this._recentSearchKey(userId);
+
+    const payload = {
+      cityId: rawParams.cityId ?? null,
+      countryId: rawParams.countryId ?? null,
+      city: rawParams.city || null,
+      country: rawParams.country || null,
+      latitude: rawParams.latitude ?? null,
+      longitude: rawParams.longitude ?? null,
+      radius: rawParams.radius ?? null,
+      checkIn: rawParams.checkIn,
+      checkOut: rawParams.checkOut,
+      adults: rawParams.adults,
+      children: rawParams.children ?? 0,
+      rooms: rawParams.rooms ?? 1,
+      sortBy: rawParams.sortBy || 'relevance',
+      minPrice: rawParams.minPrice ?? null,
+      maxPrice: rawParams.maxPrice ?? null,
+      minRating: rawParams.minRating ?? null,
+      hotelClass: rawParams.hotelClass ?? null,
+      amenities: rawParams.amenities ?? null,
+      createdAt: new Date().toISOString(),
+    };
+
+    const value = JSON.stringify(payload);
+    const score = Date.now();
+
+    await redisClient.zAdd(key, [{ score, value }]);
+
+    const safeMax = Math.max(1, parseInt(maxItems, 10) || 20);
+    const total = await redisClient.zCard(key);
+    if (total > safeMax) {
+      await redisClient.zRemRangeByRank(key, 0, total - safeMax - 1);
+    }
+
+    await redisClient.expire(key, Math.max(60, ttlSeconds));
+  }
+
+  /**
+   * Get user's recent searches from Redis (most recent first).
+   */
+  async getRecentSearches(userId, limit = 10) {
+    if (!userId) return [];
+    const key = this._recentSearchKey(userId);
+    const safeLimit = Math.max(1, Math.min(50, parseInt(limit, 10) || 10));
+
+    const raw = await redisClient.zRange(key, 0, safeLimit - 1, { REV: true });
+    return raw
+      .map((s) => {
+        try {
+          return JSON.parse(s);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+  }
+
+  /**
+   * Get top popular/trending destinations from ClickHouse, cached in Redis.
+   * Includes city images (primary image + variants) when available.
+   */
+  async getTrendingDestinations({ limit = 5, days = 30 } = {}) {
+    const safeLimit = Math.max(1, Math.min(20, parseInt(limit, 10) || 5));
+    const safeDays = Math.max(1, Math.min(365, parseInt(days, 10) || 30));
+
+    const cacheKey = `trending_destinations:limit:${safeLimit}:days:${safeDays}`;
+
+    const cached = await redisClient.get(cacheKey);
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch {
+        // fall through to fetch fresh
+      }
+    }
+
+    const rows = await searchLogClickHouseRepository.findPopularPlaces(safeLimit, safeDays);
+
+    const destinations = [];
+    const cityIdsForImages = new Set();
+
+    for (const row of rows) {
+      const destination = (await destinationRepository.findActiveById(row.destination_id)) || null;
+
+      if (!destination) {
+        continue;
+      }
+
+      if (destination.type === 'city' && destination.city_id) {
+        cityIdsForImages.add(destination.city_id);
+      }
+
+      destinations.push({
+        id: destination.id,
+        type: destination.type,
+        cityId: destination.city_id,
+        countryId: destination.country_id,
+        displayName: destination.display_name,
+        countryName: destination.country_name,
+        searchCount: Number(row.search_count) || 0,
+        uniqueUsers: Number(row.unique_users) || 0,
+        images: null,
+      });
+    }
+
+    if (cityIdsForImages.size > 0) {
+      const imagesByCityId = await imageRepository.getCityImagesByCityIds(
+        Array.from(cityIdsForImages)
+      );
+
+      for (const dest of destinations) {
+        if (dest.type !== 'city' || !dest.cityId) continue;
+
+        const cityImages = imagesByCityId.get(dest.cityId) || [];
+        const primaryImage = cityImages.find((img) => img.isPrimary) || cityImages[0] || null;
+
+        dest.images = {
+          primary: primaryImage,
+        };
+      }
+    }
+
+    await redisClient.set(cacheKey, JSON.stringify(destinations), {
+      EX: 60 * 60, // 1 hour TTL
+    });
+
+    return destinations;
+  }
+
   /**
    * Main search hotels method
    *
@@ -28,14 +177,29 @@ class SearchService {
     const startTime = Date.now();
 
     try {
+      const destination = await this._resolveDestination(params);
+
+      const paramsWithDestination = {
+        ...params,
+        destinationId: destination?.id || null,
+        destinationType: destination?.type || null,
+        cityId: destination?.city_id || params.cityId || null,
+        countryId: destination?.country_id || params.countryId || null,
+        city:
+          destination?.type === 'city'
+            ? destination.display_name
+            : params.city || destination?.display_name || null,
+        country: destination?.country_name || params.country || null,
+      };
+
       // Calculate derived fields
-      const checkIn = new Date(params.checkIn);
-      const checkOut = new Date(params.checkOut);
+      const checkIn = new Date(paramsWithDestination.checkIn);
+      const checkOut = new Date(paramsWithDestination.checkOut);
       const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
-      const totalGuests = params.adults + (params.children || 0);
+      const totalGuests = paramsWithDestination.adults + (paramsWithDestination.children || 0);
 
       const validated = {
-        ...params,
+        ...paramsWithDestination,
         nights,
         totalGuests,
       };
@@ -82,7 +246,13 @@ class SearchService {
         'Hotel search completed'
       );
 
-      return response;
+      return {
+        destination: {
+          id: destination?.id || null,
+          type: destination?.type || null,
+        },
+        searchResults: response,
+      };
     } catch (error) {
       logger.error(error, 'Hotel search error:');
       throw error;
@@ -314,6 +484,10 @@ class SearchService {
           hasPrevPage: page > 1,
         },
         filters_applied: {
+          destinationId: params.destinationId,
+          destinationType: params.destinationType,
+          cityId: params.cityId,
+          countryId: params.countryId,
           city: params.city,
           country: params.country,
           checkIn: params.checkIn,
@@ -362,6 +536,10 @@ class SearchService {
           hasPrevPage: false,
         },
         filters_applied: {
+          destinationId: params.destinationId,
+          destinationType: params.destinationType,
+          cityId: params.cityId,
+          countryId: params.countryId,
           city: params.city,
           country: params.country,
           checkIn: params.checkIn,
@@ -473,6 +651,33 @@ class SearchService {
   }
 
   /**
+   * Get destination autocomplete suggestions
+   *
+   * @param {string} query - Destination name prefix
+   * @param {number} limit - Number of suggestions
+   */
+  async getDestinationAutocomplete(query, limit = 10) {
+    try {
+      const suggestions = await destinationElasticsearchHelper.getSuggestions(query, limit);
+
+      return {
+        success: true,
+        data: {
+          suggestions,
+        },
+      };
+    } catch (error) {
+      logger.error('Destination autocomplete error:', error);
+      return {
+        success: true,
+        data: {
+          suggestions: [],
+        },
+      };
+    }
+  }
+
+  /**
    * Save search log for analytics (async via BullMQ)
    *
    * @param {Object} searchData - Search data
@@ -487,6 +692,10 @@ class SearchService {
         'save-search-log',
         {
           searchData: {
+            destinationId: searchData.destinationId,
+            destinationType: searchData.destinationType,
+            cityId: searchData.cityId,
+            countryId: searchData.countryId,
             city: searchData.city,
             country: searchData.country,
             checkIn: searchData.checkIn,
@@ -521,6 +730,41 @@ class SearchService {
       logger.error(error, 'Failed to queue search log:');
       return null;
     }
+  }
+
+  /**
+   * Resolve unified destination (city or country) from raw search parameters.
+   *
+   * @private
+   */
+  async _resolveDestination(params) {
+    const explicitDestinationId = params.destinationId;
+    if (explicitDestinationId) {
+      const existing = await destinationRepository.findActiveById(explicitDestinationId);
+      if (existing) return existing;
+    }
+
+    const text = (params.city || params.country || params.location || '').trim();
+    if (!text) return null;
+
+    try {
+      const esResults = await destinationElasticsearchHelper.searchByText(text, 10);
+
+      const cities = esResults.filter((d) => d.type === 'city');
+      if (cities.length > 0) {
+        return cities[0];
+      }
+
+      const countries = esResults.filter((d) => d.type === 'country');
+      if (countries.length > 0) {
+        return countries[0];
+      }
+    } catch (error) {
+      logger.error(error, 'Destination ES resolution error, falling back to DB');
+    }
+
+    const fallback = await destinationRepository.findBestMatchByName(text);
+    return fallback;
   }
 }
 

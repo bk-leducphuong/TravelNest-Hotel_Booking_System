@@ -202,7 +202,6 @@ class SearchRepository {
         r.id as room_id,
         r.room_type,
         r.max_guests,
-        r.bed_type,
         r.room_size,
         SUM(ri.price_per_night) as total_price,
         AVG(ri.price_per_night) as avg_price_per_night,
@@ -217,7 +216,7 @@ class SearchRepository {
         AND ri.status = 'open'
         AND (ri.total_rooms - ri.booked_rooms) >= :requiredRooms
         AND r.max_guests >= :totalGuests
-      GROUP BY r.id, r.room_type, r.max_guests, r.bed_type, r.room_size
+      GROUP BY r.id, r.room_type, r.max_guests, r.room_size
       HAVING COUNT(DISTINCT ri.date) = :totalNights
       ORDER BY total_price ASC
     `;
@@ -238,7 +237,6 @@ class SearchRepository {
       room_id: room.room_id,
       room_type: room.room_type,
       max_guests: room.max_guests,
-      bed_type: room.bed_type,
       room_size: room.room_size,
       price_per_night: parseFloat(room.avg_price_per_night),
       total_price: parseFloat(room.total_price),

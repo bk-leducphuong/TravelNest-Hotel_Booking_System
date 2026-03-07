@@ -18,7 +18,16 @@ class SearchLogClickHouseRepository {
    * @returns {Promise<Object>} Created log with search_id
    */
   async createSearchLog(searchData) {
-    const { location, userId, checkInDate, checkOutDate, adults, children = 0, rooms } = searchData;
+    const {
+      destinationId,
+      destinationType,
+      userId,
+      checkInDate,
+      checkOutDate,
+      adults,
+      children = 0,
+      rooms,
+    } = searchData;
 
     const searchId = uuidv4();
 
@@ -36,7 +45,8 @@ class SearchLogClickHouseRepository {
           {
             search_id: searchId,
             user_id: userId || null,
-            location,
+            destination_id: destinationId || '00000000-0000-0000-0000-000000000000',
+            destination_type: destinationType || '',
             search_time: new Date().toISOString().slice(0, 19).replace('T', ' '),
             adults,
             children,
@@ -49,7 +59,7 @@ class SearchLogClickHouseRepository {
         format: 'JSONEachRow',
       });
 
-      logger.info({ searchId, location }, 'Search log created in ClickHouse');
+      logger.info({ searchId, destinationId, destinationType }, 'Search log created in ClickHouse');
 
       return { search_id: searchId };
     } catch (error) {
@@ -63,7 +73,6 @@ class SearchLogClickHouseRepository {
           insertValues: {
             search_id: searchId,
             user_id: userId || null,
-            location,
             search_time: new Date(),
             adults,
             children,
@@ -91,7 +100,6 @@ class SearchLogClickHouseRepository {
         query: `
           SELECT 
             toString(search_id) as search_id,
-            location,
             check_in_date,
             check_out_date,
             adults,
@@ -173,12 +181,13 @@ class SearchLogClickHouseRepository {
       const result = await this.client.query({
         query: `
           SELECT 
-            location,
+            destination_id,
+            destination_type,
             sum(search_count) as search_count,
             sum(unique_users) as unique_users
           FROM travelnest.mv_popular_destinations
           WHERE date >= today() - {days:UInt32}
-          GROUP BY location
+          GROUP BY destination_id, destination_type
           ORDER BY search_count DESC
           LIMIT {limit:UInt32}
         `,
@@ -216,13 +225,14 @@ class SearchLogClickHouseRepository {
         query: `
           SELECT 
             check_in_date,
-            location,
+            destination_id,
+            destination_type,
             sum(search_count) as search_count,
             avg(avg_nights) as avg_nights,
             avg(avg_guests) as avg_guests
           FROM travelnest.mv_demand_by_travel_date
           WHERE check_in_date BETWEEN today() AND today() + {nextDays:UInt32}
-          GROUP BY check_in_date, location
+          GROUP BY check_in_date, destination_id, destination_type
           ORDER BY search_count DESC
           LIMIT {limit:UInt32}
         `,
@@ -325,12 +335,12 @@ class SearchLogClickHouseRepository {
   }
 
   /**
-   * Get search trends by location (daily counts for last N days)
-   * @param {string} location
+   * Get search trends by destination (daily counts for last N days)
+   * @param {string} destinationId
    * @param {number} days
    * @returns {Promise<Array>}
    */
-  async getSearchTrendsByLocation(location, days = 30) {
+  async getSearchTrendsByDestination(destinationId, days = 30) {
     try {
       const result = await this.client.query({
         query: `
@@ -339,13 +349,13 @@ class SearchLogClickHouseRepository {
             sum(search_count) as search_count,
             sum(unique_users) as unique_users
           FROM travelnest.mv_popular_destinations
-          WHERE location = {location:String}
+          WHERE destination_id = {destinationId:UUID}
             AND date >= today() - {days:UInt32}
           GROUP BY date
           ORDER BY date ASC
         `,
         query_params: {
-          location,
+          destinationId,
           days,
         },
         format: 'JSONEachRow',
@@ -359,7 +369,6 @@ class SearchLogClickHouseRepository {
           errorCode: error.code,
           errorType: error.type,
           stack: error.stack,
-          location,
         },
         `Failed to fetch search trends from ClickHouse: ${error.message}`
       );

@@ -2,6 +2,7 @@ const hotelService = require('@services/hotel.service');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 const { computeNumberOfNights } = require('@helpers/hotel.helpers');
+const hotelViewEventService = require('@services/hotelViewEvent.service');
 
 /**
  * GET /api/hotels/:hotelId
@@ -22,6 +23,27 @@ const getHotelDetails = asyncHandler(async (req, res) => {
   };
 
   const result = await hotelService.getHotelDetails(hotelId, options);
+
+  // Emit view event asynchronously (deduped via Redis)
+  const userId = req.session?.user?.id || null;
+  const sessionId = req.sessionID || req.cookies?.['connect.sid'] || '';
+  const ipAddress =
+    (req.headers['x-forwarded-for'] || '').toString().split(',')[0].trim() ||
+    req.ip ||
+    req.connection?.remoteAddress ||
+    '';
+  const userAgent = req.get('user-agent') || '';
+
+  hotelViewEventService
+    .queueHotelViewEvent({ hotelId, userId, sessionId, ipAddress, userAgent })
+    .catch((err) => logger.error({ err: err.message }, 'Failed to queue hotel view event'));
+
+  // Track "recently viewed" for authenticated users (Redis)
+  if (userId) {
+    hotelService
+      .recordRecentlyViewedHotel(userId, hotelId)
+      .catch((err) => logger.error({ err: err.message }, 'Failed to record recently viewed hotel'));
+  }
 
   res.status(200).json({
     data: result,
@@ -82,9 +104,42 @@ const getNearbyPlaces = asyncHandler(async (req, res) => {
   res.status(200).json({ data: places });
 });
 
+/**
+ * GET /api/v1/hotels/recently-viewed
+ * Get recently viewed hotels (authenticated, from Redis)
+ */
+const getRecentlyViewedHotels = asyncHandler(async (req, res) => {
+  const userId = req.session.user.id;
+  const { limit } = req.query;
+
+  const hotels = await hotelService.getRecentlyViewedHotels(
+    userId,
+    limit ? parseInt(limit, 10) : 10
+  );
+
+  res.status(200).json({ data: hotels });
+});
+
+/**
+ * GET /api/v1/hotels/trending
+ * Get trending hotels (public, from ClickHouse)
+ */
+const getTrendingHotels = asyncHandler(async (req, res) => {
+  const { limit, days } = req.query;
+
+  const hotels = await hotelService.getTrendingHotels({
+    limit: limit ? parseInt(limit, 10) : 10,
+    days: days ? parseInt(days, 10) : 2,
+  });
+
+  res.status(200).json({ data: hotels });
+});
+
 module.exports = {
   getHotelDetails,
   searchRooms,
   getHotelPolicies,
   getNearbyPlaces,
+  getRecentlyViewedHotels,
+  getTrendingHotels,
 };

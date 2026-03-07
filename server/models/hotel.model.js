@@ -29,14 +29,27 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.STRING(255),
         allowNull: true,
       },
-      city: {
-        type: DataTypes.STRING(255),
+      city_id: {
+        type: DataTypes.UUID,
         allowNull: true,
+        references: {
+          model: 'cities',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+        comment: 'FK to cities.id',
       },
-      country: {
-        type: DataTypes.STRING(100),
+      country_id: {
+        type: DataTypes.UUID,
         allowNull: true,
-        comment: 'Country name for global search filtering',
+        references: {
+          model: 'countries',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+        comment: 'FK to countries.id',
       },
       phone_number: {
         type: DataTypes.STRING(30),
@@ -145,16 +158,16 @@ module.exports = function (sequelize, DataTypes) {
           comment: 'Non-unique index for geospatial queries',
         },
         {
-          name: 'idx_city',
+          name: 'idx_city_id',
           using: 'BTREE',
-          fields: [{ name: 'city' }],
-          comment: 'Index for city-based searches',
+          fields: [{ name: 'city_id' }],
+          comment: 'Index for city-based searches (FK to cities)',
         },
         {
-          name: 'idx_country',
+          name: 'idx_country_id',
           using: 'BTREE',
-          fields: [{ name: 'country' }],
-          comment: 'Index for country-based filtering',
+          fields: [{ name: 'country_id' }],
+          comment: 'Index for country-based filtering (FK to countries)',
         },
         {
           name: 'idx_status',
@@ -179,6 +192,14 @@ module.exports = function (sequelize, DataTypes) {
   );
 
   Hotel.associate = function (models) {
+    Hotel.belongsTo(models.cities, {
+      foreignKey: 'city_id',
+      as: 'city',
+    });
+    Hotel.belongsTo(models.countries, {
+      foreignKey: 'country_id',
+      as: 'country',
+    });
     Hotel.hasMany(models.bookings, {
       foreignKey: 'hotel_id',
       as: 'bookings',

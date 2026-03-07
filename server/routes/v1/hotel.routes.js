@@ -1,15 +1,151 @@
 const express = require('express');
 const {
+  getRecentlyViewedHotels,
+  getTrendingHotels,
   getHotelDetails,
   searchRooms,
   getHotelPolicies,
   getNearbyPlaces,
 } = require('@controllers/v1/hotel.controller.js');
+const { authenticate } = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
 const hotelSchema = require('@validators/v1/hotel.schema');
 const router = express.Router();
 
 // root route: /api/v1/hotels
+
+/**
+ * @swagger
+ * /hotels/recently-viewed:
+ *   get:
+ *     summary: Get recently viewed hotels
+ *     description: Returns a list of hotels recently viewed by the authenticated user, ordered by most recent first.
+ *     tags:
+ *       - Hotels
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 50
+ *           default: 10
+ *         description: Maximum number of hotels to return
+ *     responses:
+ *       200:
+ *         description: List of recently viewed hotels
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string, format: uuid }
+ *                       name: { type: string }
+ *                       description: { type: string }
+ *                       address: { type: string }
+ *                       city: { type: string }
+ *                       country: { type: string }
+ *                       hotelClass: { type: integer, description: "Star rating 1-5" }
+ *                       minPrice: { type: number, nullable: true }
+ *                       images:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id: { type: string }
+ *                             url: { type: string }
+ *                             isPrimary: { type: boolean }
+ *                       ratingSummary:
+ *                         type: object
+ *                         nullable: true
+ *                         properties:
+ *                           overallRating: { type: number }
+ *                           totalReviews: { type: integer }
+ *                       viewedAt: { type: string, format: date-time }
+ *       401:
+ *         description: Unauthorized - authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get(
+  '/recently-viewed',
+  authenticate,
+  validate(hotelSchema.getRecentlyViewedHotels),
+  getRecentlyViewedHotels
+);
+
+/**
+ * @swagger
+ * /hotels/trending:
+ *   get:
+ *     summary: Get trending hotels
+ *     description: Returns a list of trending hotels based on booking activity within the specified number of days.
+ *     tags:
+ *       - Hotels
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 50
+ *           default: 10
+ *         description: Maximum number of hotels to return
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 365
+ *           default: 2
+ *         description: Number of days to look back for trending data
+ *     responses:
+ *       200:
+ *         description: List of trending hotels
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string, format: uuid }
+ *                       name: { type: string }
+ *                       description: { type: string }
+ *                       address: { type: string }
+ *                       city: { type: string }
+ *                       country: { type: string }
+ *                       hotelClass: { type: integer, description: "Star rating 1-5" }
+ *                       minPrice: { type: number, nullable: true }
+ *                       images:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id: { type: string }
+ *                             url: { type: string }
+ *                             isPrimary: { type: boolean }
+ *                       ratingSummary:
+ *                         type: object
+ *                         nullable: true
+ *                         properties:
+ *                           overallRating: { type: number }
+ *                           totalReviews: { type: integer }
+ *                       bookingCount: { type: integer, description: "Number of bookings in the period" }
+ */
+router.get('/trending', validate(hotelSchema.getTrendingHotels), getTrendingHotels);
 
 /**
  * @swagger
