@@ -4,21 +4,17 @@ import router from '@/router/index'
 
 export default {
   // login for regular user
-  async login({ commit }, { payload, redirectRoute }) {
+  async login({ commit, dispatch }, { payload, redirectRoute }) {
     try {
-      const response = await AuthService.login(payload)
-      if (response.data) {
-        commit('setUserId', response.data.userId)
-        commit('setEmail', payload.email)
-        commit('setAuthentication', true)
-        commit('setUserRole', payload.userRole)
-        commit('setLoginFailure', false)
-        // Check for redirect query and navigate accordingly
-        router.push(redirectRoute)
-      }
+      await AuthService.login(payload)
+      // Sync auth state from server session
+      await dispatch('checkAuth')
+      commit('setEmail', payload.email)
+      commit('setLoginFailure', false)
+      router.push(redirectRoute)
     } catch (error) {
       commit('setLoginFailure', true)
-      router.push('/login')
+      throw error
     }
   },
   // common
@@ -72,39 +68,30 @@ export default {
     }
   },
   // register for regular user
-  async register({ commit }, { payload, redirectRoute }) {
+  async register({ commit, dispatch }, { payload, redirectRoute }) {
     try {
-      const response = await AuthService.register(payload)
-      if (response.data) {
-        commit('setUserId', response.data.userId)
-        commit('setEmail', payload.email)
-        commit('setAuthentication', true)
-        commit('setUserRole', payload.userRole)
-        commit('setLoginFailure', false)
-        // Check for redirect query and navigate accordingly
-        router.push(redirectRoute)
-      }
+      await AuthService.register(payload)
+      await dispatch('checkAuth')
+      commit('setEmail', payload.email)
+      commit('setLoginFailure', false)
+      router.push(redirectRoute)
     } catch (error) {
       commit('setLoginFailure', true)
-      router.push('/login')
+      throw error
     }
   },
   // for admin
-  async loginAdmin({ commit }, { payload }) {
+  async loginAdmin({ commit, dispatch }, { payload }) {
     try {
-      const response = await AuthService.loginAdmin(payload)
-      if (response.data) {
-        commit('setUserId', response.data.userId)
-        commit('setEmail', payload.email)
-        commit('setAuthentication', true)
-        commit('setUserRole', payload.userRole)
-        commit('setLoginFailure', false)
-        // Check for redirect query and navigate accordingly
-        router.replace('/admin/hotels-management')
-      }
+      await AuthService.loginAdmin(payload)
+      await dispatch('checkAuth')
+      commit('setEmail', payload.email)
+      commit('setLoginFailure', false)
+      router.replace('/admin/hotels-management')
     } catch (error) {
       console.log('Login or register failed! Pls try again!', error)
       commit('setLoginFailure', true)
+      throw error
     }
   }
 }

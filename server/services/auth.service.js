@@ -44,9 +44,9 @@ class AuthService {
     }
 
     // Validate active email
-    if (!(await validateEmail(email))) {
-      throw new ApiError(400, 'EMAIL_NOT_EXISTS', 'Email does not exist');
-    }
+    // if (!(await validateEmail(email))) {
+    //   throw new ApiError(400, 'EMAIL_NOT_EXISTS', 'Email does not exist');
+    // }
 
     return { exists: false };
   }

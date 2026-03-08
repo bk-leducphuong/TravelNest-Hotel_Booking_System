@@ -1,6 +1,7 @@
 import http from './http';
 
 export const AuthService = {
+  // Session & core auth (v1 routes)
   checkSession() {
     return http.get('/auth/session');
   },
@@ -16,12 +17,16 @@ export const AuthService = {
   register(userData) {
     return http.post('/auth/users', userData);
   },
+
+  // Password + OTP flows (keep legacy paths for now)
   forgotPassword(data) {
-    return http.post('/auth/password/forgot', data);
+    return http.post('/api/auth/password/forgot', data);
   },
   resetPassword(data) {
-    return http.post('/auth/password/reset', data);
+    return http.post('/api/auth/password/reset', data);
   },
+
+  // OAuth providers (redirect-based)
   loginWithGoogle() {
     window.location.href = `${import.meta.env.VITE_SERVER_HOST}/auth/google`;
   },
@@ -31,20 +36,13 @@ export const AuthService = {
   loginWithTwitter() {
     window.location.href = `${import.meta.env.VITE_SERVER_HOST}/auth/twitter`;
   },
-  loginWithSocialProvider(provider) {
-    return http.get(`/auth/login-${provider}`);
-  },
+
+  // Admin helpers – use same session endpoint with admin role
   loginAdmin(credentials) {
-    return http.post('/auth/admin/sessions', credentials);
+    return http.post('/auth/sessions', credentials);
   },
   registerAdmin(userData) {
-    return http.post('/auth/admin/users', userData);
-  },
-  sendSmsOtp(data) {
-    return http.post('/auth/otp/sms', data);
-  },
-  verifySmsOtp(data) {
-    return http.post('/auth/otp/verify', data);
+    return http.post('/auth/users', userData);
   },
 };
 
