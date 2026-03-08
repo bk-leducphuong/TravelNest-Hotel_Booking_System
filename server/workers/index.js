@@ -1,5 +1,6 @@
 require('module-alias/register');
 
+const http = require('http');
 const logger = require('@config/logger.config');
 
 const imageWorker = require('./image.worker');
@@ -18,6 +19,34 @@ const workers = [
   notificationWorker,
 ];
 
+let healthServer;
+
+function startHealthServer() {
+  const port = parseInt(process.env.WORKER_HEALTH_PORT || '4001', 10);
+
+  const server = http.createServer((req, res) => {
+    if (req.url === '/health' || req.url === '/healthz') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          status: 'ok',
+          workerCount: workers.length,
+          queues: workers.map((w) => w.name),
+        })
+      );
+    } else {
+      res.writeHead(404);
+      res.end();
+    }
+  });
+
+  server.listen(port, '0.0.0.0', () => {
+    logger.info({ port }, 'BullMQ worker health server listening');
+  });
+
+  return server;
+}
+
 async function startWorkers() {
   try {
     await Promise.all(workers.map((worker) => worker.run()));
@@ -26,6 +55,8 @@ async function startWorkers() {
       workerCount: workers.length,
       queues: workers.map((w) => w.name),
     });
+
+    healthServer = startHealthServer();
   } catch (error) {
     logger.error('Failed to start workers:', error);
     throw error;
@@ -42,6 +73,11 @@ async function shutdownWorkers() {
         logger.info(`Worker closed: ${worker.name}`);
       })
     );
+
+    if (healthServer) {
+      await new Promise((resolve) => healthServer.close(resolve));
+      logger.info('BullMQ worker health server closed');
+    }
 
     logger.info('All workers shut down successfully');
   } catch (error) {

@@ -184,7 +184,7 @@ module.exports = function (sequelize, DataTypes) {
         {
           name: 'idx_search_composite',
           using: 'BTREE',
-          fields: [{ name: 'status' }, { name: 'city' }],
+          fields: [{ name: 'status' }, { name: 'city_id' }],
           comment: 'Composite index for common search queries (rating in rating_summary table)',
         },
       ],

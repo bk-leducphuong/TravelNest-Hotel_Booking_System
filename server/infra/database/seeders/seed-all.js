@@ -22,6 +22,7 @@ const { seedPermissions } = require('./permission.seed');
 const { rebuildAllSnapshots } = require('./hotel_search_snapshot.seed');
 const { seedCountries } = require('./country.seed');
 const { seedCities } = require('./city.seed');
+const { seedDestinations } = require('./destinations.seed');
 
 // Parse command-line arguments
 function parseArgs() {
@@ -129,7 +130,14 @@ async function seedAll() {
       })
     );
 
-    // 2. Seed Users (creates roles first)
+    // 2. Seed Destinations (depends on Countries + Cities)
+    results.push(
+      await executeSeed('Destinations', seedDestinations, {
+        clearExisting: options.clearExisting,
+      })
+    );
+
+    // 3. Seed Users (creates roles first)
     results.push(
       await executeSeed('Users', seedUsers, {
         userCount: options.quick ? 20 : 50,
@@ -139,7 +147,7 @@ async function seedAll() {
       })
     );
 
-    // 3. Seed Amenities (standalone)
+    // 4. Seed Amenities (standalone)
     results.push(
       await executeSeed('Amenities', seedAmenities, {
         clearExisting: options.clearExisting,
