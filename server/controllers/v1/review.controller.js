@@ -12,7 +12,7 @@ const asyncHandler = require('@utils/asyncHandler');
  * Get all reviews for authenticated user
  */
 const getUserReviews = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
 
   const reviews = await reviewService.getUserReviews(userId);
 
@@ -49,7 +49,7 @@ const getHotelReviews = asyncHandler(async (req, res) => {
  * Create a review
  */
 const createReview = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { hotelId, rating, comment, reviewCriteria, bookingCode } = req.body;
 
   const review = await reviewService.createReview(userId, {
@@ -73,7 +73,7 @@ const createReview = asyncHandler(async (req, res) => {
  * Validate if user can review a booking
  */
 const validateReview = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { bookingCode, hotelId } = req.query;
 
   const result = await reviewService.validateReview(userId, bookingCode, hotelId);

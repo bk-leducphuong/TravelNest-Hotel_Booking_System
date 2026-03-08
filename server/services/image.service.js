@@ -32,7 +32,7 @@ class ImageService {
     }
 
     // Validate entity type
-    const validEntityTypes = ['hotel', 'room', 'review', 'user_avatar'];
+    const validEntityTypes = ['hotel', 'room', 'review', 'user_avatar', 'city', 'country'];
     if (!validEntityTypes.includes(entityType)) {
       throw new ApiError(
         400,
@@ -138,11 +138,12 @@ class ImageService {
       const imagesWithUrls = await Promise.all(
         images.map(async (img) => {
           // Generate URL for original image
-          const url = await getPresignedUrl(
-            img.bucket_name,
-            img.object_key,
-            24 * 60 * 60 // 24 hours
-          );
+          // const url = await getPresignedUrl(
+          //   img.bucket_name,
+          //   img.object_key,
+          //   24 * 60 * 60 // 24 hours
+          // );
+          const url = img.object_key;
 
           // Get variants
           const variants = await imageRepository.findVariantsByImageId(img.id);
@@ -150,11 +151,12 @@ class ImageService {
           // Generate URLs for variants
           const variantUrls = {};
           for (const variant of variants) {
-            const variantUrl = await getPresignedUrl(
-              variant.bucket_name,
-              variant.object_key,
-              24 * 60 * 60
-            );
+            // const variantUrl = await getPresignedUrl(
+            //   variant.bucket_name,
+            //   variant.object_key,
+            //   24 * 60 * 60
+            // );
+            const variantUrl = variant.object_key;
             variantUrls[variant.variant_type] = {
               url: variantUrl,
               width: variant.width,

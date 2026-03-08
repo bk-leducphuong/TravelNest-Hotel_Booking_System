@@ -150,3 +150,22 @@ exports.getNearbyPlaces = {
     }),
   }).optional(),
 };
+
+/**
+ * GET /api/v1/hotels/recently-viewed
+ */
+exports.getRecentlyViewedHotels = {
+  query: Joi.object({
+    limit: Joi.number().integer().min(1).max(50).default(10),
+  }),
+};
+
+/**
+ * GET /api/v1/hotels/trending
+ */
+exports.getTrendingHotels = {
+  query: Joi.object({
+    limit: Joi.number().integer().min(1).max(50).default(10),
+    days: Joi.number().integer().min(1).max(365).default(2),
+  }),
+};

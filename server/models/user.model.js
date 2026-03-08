@@ -25,6 +25,17 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.STRING(255),
         allowNull: false,
       },
+      full_name: {
+        type: DataTypes.VIRTUAL,
+        get() {
+          return `${this.first_name} ${this.last_name}`;
+        },
+        set(value) {
+          const [firstName, lastName] = value.split(' ');
+          this.setDataValue('first_name', firstName);
+          this.setDataValue('last_name', lastName);
+        },
+      },
       phone_number: {
         type: DataTypes.STRING(15),
         allowNull: true,

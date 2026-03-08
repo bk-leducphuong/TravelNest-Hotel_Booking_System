@@ -12,7 +12,7 @@ const asyncHandler = require('@utils/asyncHandler');
  * Get all bookings for authenticated user
  */
 const getUserBookings = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { includeCancelled } = req.query;
 
   const bookings = await bookingService.getUserBookings(userId, {
@@ -29,7 +29,7 @@ const getUserBookings = asyncHandler(async (req, res) => {
  * Get a specific booking by ID
  */
 const getBookingById = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { bookingId } = req.params;
 
   const booking = await bookingService.getBookingById(bookingId, userId);
@@ -44,7 +44,7 @@ const getBookingById = asyncHandler(async (req, res) => {
  * Get booking by booking code
  */
 const getBookingByCode = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { bookingCode } = req.params;
 
   const booking = await bookingService.getBookingByCode(bookingCode, userId);
@@ -59,7 +59,7 @@ const getBookingByCode = asyncHandler(async (req, res) => {
  * Cancel a booking
  */
 const cancelBooking = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { bookingId } = req.params;
   const { processRefund } = req.query;
 

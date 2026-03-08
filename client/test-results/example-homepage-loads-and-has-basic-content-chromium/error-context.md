@@ -1,0 +1,105 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e5] [cursor=pointer]: 
+      - heading "Genius" [level=2] [ref=e6]
+      - paragraph [ref=e7]:
+        - text: Sign in to
+        - strong [ref=e8]: save 10% or more
+        - text: with a free TravelNest membership
+      - button "Sign in or register" [ref=e9] [cursor=pointer]
+    - generic [ref=e12]:
+      - strong [ref=e15] [cursor=pointer]: TravelNest
+      - list [ref=e17]:
+        - listitem [ref=e18] [cursor=pointer]:
+          - strong [ref=e19]: VND
+        - listitem [ref=e20] [cursor=pointer]:
+          - img "Language" [ref=e21]
+        - listitem [ref=e22] [cursor=pointer]:
+          - generic [ref=e23]: 
+        - listitem [ref=e24] [cursor=pointer]:
+          - img [ref=e27]
+        - listitem [ref=e31]:
+          - generic [ref=e32]: List your property
+        - listitem [ref=e33]: Đăng kýĐăng nhập
+    - generic [ref=e34]:
+      - generic [ref=e37]:
+        - strong [ref=e38]: Find your next stay
+        - paragraph [ref=e39]: Search deals on hotels, homes, and much more...
+      - generic [ref=e42]:
+        - combobox [ref=e44]:
+          - generic [ref=e46]:
+            - img [ref=e49]
+            - textbox "Where are you goging?" [ref=e52]
+        - generic [ref=e54]:
+          - img [ref=e56]
+          - combobox "Nhận phòng" [ref=e58]
+          - generic [ref=e59]: đến
+          - combobox "Trả phòng" [ref=e60]
+        - textbox [ref=e62] [cursor=pointer]: 2 Adults · 0 Children · 1 Rooms
+        - button "Search" [ref=e63] [cursor=pointer]
+    - generic [ref=e64]:
+      - generic [ref=e65]:
+        - generic [ref=e66]:
+          - heading "Support" [level=3] [ref=e67]
+          - list [ref=e68]:
+            - listitem [ref=e69]: Coronavirus (COVID-19) FAQs
+            - listitem [ref=e70]: Manage your trips
+            - listitem [ref=e71]: Contact Customer Service
+            - listitem [ref=e72]: Safety resource centre
+        - generic [ref=e73]:
+          - heading "Discover" [level=3] [ref=e74]
+          - list [ref=e75]:
+            - listitem [ref=e76]: Genius loyalty programme
+            - listitem [ref=e77]: Seasonal and holiday deals
+            - listitem [ref=e78]: Travel articles
+            - listitem [ref=e79]: Booking.com for Business
+            - listitem [ref=e80]: Traveller Review Awards
+            - listitem [ref=e81]: Car hire
+            - listitem [ref=e82]: Flight finder
+            - listitem [ref=e83]: Restaurant reservations
+            - listitem [ref=e84]: Booking.com for Travel Agents
+        - generic [ref=e85]:
+          - heading "Terms and settings" [level=3] [ref=e86]
+          - list [ref=e87]:
+            - listitem [ref=e88]: Privacy & cookies
+            - listitem [ref=e89]: Terms and conditions
+            - listitem [ref=e90]: Partner dispute
+            - listitem [ref=e91]: Modern Slavery Statement
+            - listitem [ref=e92]: Human Rights Statement
+        - generic [ref=e93]:
+          - heading "Partners" [level=3] [ref=e94]
+          - list [ref=e95]:
+            - listitem [ref=e96]: Extranet login
+            - listitem [ref=e97]: Partner help
+            - listitem [ref=e98]: List your property
+            - listitem [ref=e99]: Become an affiliate
+        - generic [ref=e100]:
+          - heading "About" [level=3] [ref=e101]
+          - list [ref=e102]:
+            - listitem [ref=e103]: About Booking.com
+            - listitem [ref=e104]: How we work
+            - listitem [ref=e105]: Sustainability
+            - listitem [ref=e106]: Press centre
+            - listitem [ref=e107]: Careers
+            - listitem [ref=e108]: Investor relations
+            - listitem [ref=e109]: Corporate contact
+      - button "VND" [ref=e112] [cursor=pointer]
+      - generic [ref=e113]:
+        - paragraph [ref=e114]: TravelNest is part of Booking Holdings Inc., the world leader in online travel and related services.
+        - paragraph [ref=e115]: Copyright © 1996–2024 TravelNest™. All rights reserved.
+      - generic [ref=e116]:
+        - img "TravelNest" [ref=e117]
+        - img "Priceline" [ref=e118]
+        - img "Kayak" [ref=e119]
+        - img "Agoda" [ref=e120]
+        - img "OpenTable" [ref=e121]
+  - generic [ref=e122]:
+    - generic "Toggle devtools panel" [ref=e123] [cursor=pointer]:
+      - img [ref=e124]
+    - generic "Toggle Component Inspector" [ref=e129] [cursor=pointer]:
+      - img [ref=e130]
+```

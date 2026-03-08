@@ -1,3 +1,5 @@
+const { Op } = require('sequelize');
+const { images, image_variants } = require('../models');
 const { Images, ImageVariants } = require('../models/index.js');
 const sequelize = require('../config/database.config');
 
@@ -283,6 +285,72 @@ class ImageRepository {
         status: status,
       },
     });
+  }
+
+  /**
+   * Get images (with variants) for a set of city IDs.
+   *
+   * @param {Array<string>} cityIds - Array of city UUIDs
+   * @returns {Promise<Map<string, Array>>} Map<cityId, images[]>
+   */
+  async getCityImagesByCityIds(cityIds) {
+    if (!cityIds || cityIds.length === 0) {
+      return new Map();
+    }
+
+    const rows = await images.findAll({
+      where: {
+        entity_type: 'city',
+        entity_id: {
+          [Op.in]: cityIds,
+        },
+        status: 'active',
+      },
+      include: [
+        {
+          model: image_variants,
+          as: 'image_variants',
+        },
+      ],
+      order: [
+        ['is_primary', 'DESC'],
+        ['display_order', 'ASC'],
+        ['uploaded_at', 'DESC'],
+      ],
+    });
+
+    const byCityId = new Map();
+
+    for (const row of rows) {
+      const cityId = row.entity_id;
+      const variants = (row.image_variants || []).map((variant) => ({
+        id: variant.id,
+        variantType: variant.variant_type,
+        bucketName: variant.bucket_name,
+        objectKey: variant.object_key,
+        width: variant.width,
+        height: variant.height,
+      }));
+
+      const imageDto = {
+        id: row.id,
+        bucketName: row.bucket_name,
+        objectKey: row.object_key,
+        width: row.width,
+        height: row.height,
+        isPrimary: !!row.is_primary,
+        displayOrder: row.display_order,
+        variants,
+      };
+
+      if (!byCityId.has(cityId)) {
+        byCityId.set(cityId, []);
+      }
+
+      byCityId.get(cityId).push(imageDto);
+    }
+
+    return byCityId;
   }
 }
 

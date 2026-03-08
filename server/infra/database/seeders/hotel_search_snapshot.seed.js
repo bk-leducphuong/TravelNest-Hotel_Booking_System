@@ -4,19 +4,14 @@ require('dotenv').config({
 
 const db = require('../../../models');
 const sequelize = require('../../../config/database.config');
-const {
-  fullRefresh,
-  createInitialSnapshot,
-  upsertSnapshot,
-  getHotelBasicInfo,
-  recomputePricing,
-  recomputeRating,
-  recomputeAmenities,
-  getPrimaryImageUrl,
-  checkFreeCancellation,
-} = require('../../../repositories/hotel_search_snapshot.repository');
+const snapshotRepo = require('../../../repositories/hotel_search_snapshot.repository');
 
-const { hotels: Hotels, hotel_search_snapshots: HotelSearchSnapshots } = db;
+const {
+  hotels: Hotels,
+  hotel_search_snapshots: HotelSearchSnapshots,
+  cities: Cities,
+  countries: Countries,
+} = db;
 
 /**
  * Seed hotel search snapshots into the database
@@ -46,14 +41,17 @@ async function seedHotelSearchSnapshots(options = {}) {
         attributes: [
           'id',
           'name',
-          'city',
-          'country',
+          'city_id',
+          'country_id',
           'latitude',
           'longitude',
           'hotel_class',
           'status',
         ],
-        raw: true,
+        include: [
+          { model: Cities, as: 'city', attributes: ['name'] },
+          { model: Countries, as: 'country', attributes: ['name'] },
+        ],
       });
       console.log(`📋 Found ${hotels.length} specific hotels to process`);
     } else {
@@ -61,14 +59,17 @@ async function seedHotelSearchSnapshots(options = {}) {
         attributes: [
           'id',
           'name',
-          'city',
-          'country',
+          'city_id',
+          'country_id',
           'latitude',
           'longitude',
           'hotel_class',
           'status',
         ],
-        raw: true,
+        include: [
+          { model: Cities, as: 'city', attributes: ['name'] },
+          { model: Countries, as: 'country', attributes: ['name'] },
+        ],
       });
       console.log(`📋 Found ${hotels.length} total hotels to process`);
     }
@@ -88,7 +89,7 @@ async function seedHotelSearchSnapshots(options = {}) {
         if (useFullRefresh) {
           // Use fullRefresh to recompute all denormalized data
           console.log(`🔄 Full refresh for hotel: ${hotel.name} (${hotel.id})`);
-          await fullRefresh(hotel.id);
+          await snapshotRepo.fullRefresh(hotel.id);
           updated++;
         } else {
           // Check if snapshot already exists
@@ -97,15 +98,17 @@ async function seedHotelSearchSnapshots(options = {}) {
           if (existingSnapshot) {
             // Update existing snapshot
             console.log(`🔄 Updating snapshot for hotel: ${hotel.name} (${hotel.id})`);
-            await fullRefresh(hotel.id);
+            await snapshotRepo.fullRefresh(hotel.id);
             updated++;
           } else {
             // Create initial snapshot
             console.log(`➕ Creating snapshot for hotel: ${hotel.name} (${hotel.id})`);
-            await createInitialSnapshot(hotel.id, {
+            await snapshotRepo.createInitialSnapshot(hotel.id, {
               name: hotel.name,
-              city: hotel.city,
-              country: hotel.country,
+              city_id: hotel.city_id,
+              country_id: hotel.country_id,
+              city: hotel.city ? hotel.city.name : null,
+              country: hotel.country ? hotel.country.name : null,
               latitude: hotel.latitude,
               longitude: hotel.longitude,
               hotel_class: hotel.hotel_class,
@@ -151,15 +154,37 @@ async function seedHotelSearchSnapshotsByFilter(filters = {}) {
   const { city, country, status, hotel_class } = filters;
 
   const whereClause = {};
-  if (city) whereClause.city = city;
-  if (country) whereClause.country = country;
   if (status) whereClause.status = status;
   if (hotel_class) whereClause.hotel_class = hotel_class;
 
-  console.log(`🔍 Finding hotels with filters:`, JSON.stringify(whereClause, null, 2));
+  const include = [];
+  if (city) {
+    include.push({
+      model: Cities,
+      as: 'city',
+      where: { name: city },
+      attributes: [],
+      required: true,
+    });
+  }
+  if (country) {
+    include.push({
+      model: Countries,
+      as: 'country',
+      where: { name: country },
+      attributes: [],
+      required: true,
+    });
+  }
+
+  console.log(
+    `🔍 Finding hotels with filters:`,
+    JSON.stringify({ where: whereClause, city, country }, null, 2)
+  );
 
   const hotels = await Hotels.findAll({
     where: whereClause,
+    include,
     attributes: ['id'],
     raw: true,
   });

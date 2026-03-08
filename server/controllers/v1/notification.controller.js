@@ -12,7 +12,7 @@ const asyncHandler = require('@utils/asyncHandler');
  * Get notifications for authenticated user
  */
 const getNotifications = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { page, limit, unreadOnly } = req.query;
 
   const result = await notificationService.getNotifications(userId, {
@@ -36,7 +36,7 @@ const getNotifications = asyncHandler(async (req, res) => {
  * Mark a specific notification as read
  */
 const markNotificationAsRead = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
   const { notificationId } = req.params;
 
   await notificationService.markNotificationAsRead(notificationId, userId);
@@ -53,7 +53,7 @@ const markNotificationAsRead = asyncHandler(async (req, res) => {
  * Mark all notifications as read for authenticated user
  */
 const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
 
   const updatedCount = await notificationService.markAllNotificationsAsRead(userId);
 
@@ -70,7 +70,7 @@ const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
  * Get unread notification count for authenticated user
  */
 const getUnreadCount = asyncHandler(async (req, res) => {
-  const userId = req.session.user.user_id;
+  const userId = req.session.user.id;
 
   const count = await notificationService.getUnreadCount(userId);
 

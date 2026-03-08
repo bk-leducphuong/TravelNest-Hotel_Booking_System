@@ -9,7 +9,7 @@ const { buildSession } = require('@helpers/session.helper');
  * Check authentication status
  */
 const checkAuth = asyncHandler(async (req, res) => {
-  const session = buildSession(req.sessionID, req.session.userData || null);
+  const session = buildSession(req.sessionID, req.session.user || null);
 
   res.status(200).json({
     data: {
@@ -43,8 +43,8 @@ const login = asyncHandler(async (req, res) => {
   const sessionData = await authService.login(email, password, userRole);
 
   // Build and store session
-  const session = buildSession(req.sessionID, sessionData.userData);
-  req.session.userData = sessionData.userData;
+  const session = buildSession(req.sessionID, sessionData.user);
+  req.session.user = sessionData.user;
 
   res.status(201).json({
     data: {
@@ -84,8 +84,8 @@ const register = asyncHandler(async (req, res) => {
   const userData = await authService.register(email, password, firstName, lastName, userRole);
 
   // Build and store session
-  const session = buildSession(req.sessionID, userData.userData);
-  req.session.userData = userData.userData;
+  const session = buildSession(req.sessionID, userData.user);
+  req.session.user = userData.user;
 
   res.status(201).json({
     data: {
@@ -111,7 +111,7 @@ const oauthCallback = asyncHandler(async (req, res) => {
 
   const userWithContext = await authService.getUserContextForSession(req.user.id);
   const session = buildSession(req.sessionID, userWithContext);
-  req.session.userData = userWithContext;
+  req.session.user = userWithContext;
 
   res.status(200).json({
     data: {

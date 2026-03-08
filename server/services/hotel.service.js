@@ -1,8 +1,11 @@
 const { bucketName } = require('@config/minio.config');
-const { getPresignedUrl } = require('@utils/minio.utils');
+// const { getPresignedUrl } = require('@utils/minio.utils');
+const logger = require('@config/logger.config');
 
 const hotelRepository = require('../repositories/hotel.repository');
 const roomRepository = require('../repositories/room.repository');
+const redisClient = require('../config/redis.config');
+const hotelDailyViewsClickHouseRepository = require('../repositories/clickhouse/hotel_daily_views.repository');
 const ApiError = require('../utils/ApiError');
 
 /**
@@ -11,6 +14,108 @@ const ApiError = require('../utils/ApiError');
  */
 
 class HotelService {
+  _recentlyViewedKey(userId) {
+    return `recently_viewed_hotels:user:${userId}`;
+  }
+
+  /**
+   * Record a hotel as recently viewed for a user (Redis sorted set).
+   * Stores hotelId as member with score=timestamp; keeps only latest N.
+   */
+  async recordRecentlyViewedHotel(
+    userId,
+    hotelId,
+    { maxItems = 50, ttlSeconds = 60 * 60 * 24 * 30 } = {}
+  ) {
+    logger.debug({ userId, hotelId }, 'Recording recently viewed hotel');
+    if (!userId || !hotelId) return;
+
+    const key = this._recentlyViewedKey(userId);
+    const score = Date.now();
+
+    // Update recency
+    await redisClient.zAdd(key, [{ score, value: String(hotelId) }]);
+
+    // Trim to latest maxItems (rank 0 is smallest score)
+    const safeMax = Math.max(1, parseInt(maxItems, 10) || 50);
+    const total = await redisClient.zCard(key);
+    if (total > safeMax) {
+      await redisClient.zRemRangeByRank(key, 0, total - safeMax - 1);
+    }
+
+    // Best-effort TTL
+    await redisClient.expire(key, Math.max(60, ttlSeconds));
+  }
+
+  async _enrichHotelCardsByIds(hotelIds = []) {
+    if (!Array.isArray(hotelIds) || hotelIds.length === 0) return [];
+
+    const rows = await hotelRepository.findBasicByIds(hotelIds);
+    const byId = new Map(rows.map((h) => [String(h.id), h]));
+
+    const ordered = hotelIds
+      .map((id) => byId.get(String(id)))
+      .filter(Boolean)
+      .map((hotel) => (hotel.toJSON ? hotel.toJSON() : hotel));
+
+    // Attach a primary image URL (presigned). Keeps payload small.
+    return await Promise.all(
+      ordered.map(async (h) => {
+        const images = Array.isArray(h.images) ? h.images : [];
+        const primary =
+          images.find((img) => img.is_primary) ||
+          images.sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))[0] ||
+          null;
+
+        const primaryImageUrl = primary.object_key;
+        // primary && primary.object_key
+        //   ? await getPresignedUrl(primary.bucket_name || bucketName, primary.object_key, 3600)
+        //   : null;
+
+        return {
+          id: h.id,
+          name: h.name,
+          address: h.address,
+          city: h.city ? { id: h.city.id, name: h.city.name, slug: h.city.slug } : null,
+          country: h.country
+            ? { id: h.country.id, name: h.country.name, isoCode: h.country.iso_code }
+            : null,
+          latitude: h.latitude != null ? parseFloat(h.latitude) : null,
+          longitude: h.longitude != null ? parseFloat(h.longitude) : null,
+          hotelClass: h.hotel_class ?? null,
+          minPrice: h.min_price != null ? parseFloat(h.min_price) : null,
+          primaryImageUrl,
+        };
+      })
+    );
+  }
+
+  /**
+   * Get recently viewed hotels for a user from Redis and enrich from MySQL.
+   */
+  async getRecentlyViewedHotels(userId, limit = 10) {
+    if (!userId) return [];
+    const key = this._recentlyViewedKey(userId);
+
+    const safeLimit = Math.max(1, Math.min(50, parseInt(limit, 10) || 10));
+    // node-redis v4 uses zRange with { REV: true } instead of zRevRange
+    const hotelIds = await redisClient.zRange(key, 0, safeLimit - 1, { REV: true });
+
+    return await this._enrichHotelCardsByIds(hotelIds);
+  }
+
+  /**
+   * Get trending hotels from ClickHouse daily aggregates, enrich from MySQL.
+   */
+  async getTrendingHotels({ limit = 10, days = 2 } = {}) {
+    const rows = await hotelDailyViewsClickHouseRepository.findTrendingHotelIds({ limit, days });
+    const hotelIds = rows.map((r) => r.hotel_id);
+    const cards = await this._enrichHotelCardsByIds(hotelIds);
+
+    const viewsById = new Map(rows.map((r) => [String(r.hotel_id), r.views]));
+    return cards.map((c) => ({ ...c, views: viewsById.get(String(c.id)) || 0 }));
+  }
+
   /**
    * Get hotel details with comprehensive information
    * @param {string} hotelId - Hotel ID (UUID)
@@ -66,14 +171,16 @@ class HotelService {
     const images = await Promise.all(
       imageList.map(async (img) => {
         const bucket = img.bucket_name || bucketName;
-        const url = await getPresignedUrl(bucket, img.object_key, 3600);
+        // const url = await getPresignedUrl(bucket, img.object_key, 3600);
+        const url = img.object_key;
 
         // Generate presigned URLs for each variant
         const variantList = img.image_variants || [];
         const variants = await Promise.all(
           variantList.map(async (v) => {
             const variantBucket = v.bucket_name || bucketName;
-            const variantUrl = await getPresignedUrl(variantBucket, v.object_key, 3600);
+            // const variantUrl = await getPresignedUrl(variantBucket, v.object_key, 3600);
+            const variantUrl = v.object_key;
             return {
               id: v.id,
               variantType: v.variant_type,

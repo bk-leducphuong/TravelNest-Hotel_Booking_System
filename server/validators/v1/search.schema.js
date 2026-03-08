@@ -192,6 +192,22 @@ exports.getAutocompleteSuggestions = {
 };
 
 /**
+ * GET /api/v1/search/destinations/autocomplete
+ * Get autocomplete suggestions for destinations
+ */
+exports.getDestinationAutocomplete = {
+  query: Joi.object({
+    query: Joi.string().trim().min(1).max(100).required().messages({
+      'string.base': 'query must be a string',
+      'string.min': 'query must be at least 1 character',
+      'string.max': 'query must not exceed 100 characters',
+      'any.required': 'query is required',
+    }),
+    limit: Joi.number().integer().min(1).max(20).default(10),
+  }),
+};
+
+/**
  * POST /api/v1/search/log
  * Save search information to search logs
  */
@@ -238,4 +254,25 @@ exports.saveSearchInformation = {
 
       return value;
     }),
+};
+
+/**
+ * GET /api/v1/search/recent
+ * Get recent hotel searches for authenticated user
+ */
+exports.getRecentSearches = {
+  query: Joi.object({
+    limit: Joi.number().integer().min(1).max(50).default(10),
+  }),
+};
+
+/**
+ * GET /api/v1/search/destinations/trending
+ * Get top popular/trending destinations
+ */
+exports.getTrendingDestinations = {
+  query: Joi.object({
+    limit: Joi.number().integer().min(1).max(20).default(5),
+    days: Joi.number().integer().min(1).max(365).default(30),
+  }),
 };

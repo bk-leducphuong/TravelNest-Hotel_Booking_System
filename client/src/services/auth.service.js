@@ -1,49 +1,48 @@
-import http from './http'
+import http from './http';
 
 export const AuthService = {
+  // Session & core auth (v1 routes)
   checkSession() {
-    return http.get('/api/auth/session')
+    return http.get('/auth/session');
   },
   login(credentials) {
-    return http.post('/api/auth/sessions', credentials)
+    return http.post('/auth/sessions', credentials);
   },
   logout() {
-    return http.delete('/api/auth/sessions')
+    return http.delete('/auth/sessions');
   },
   checkEmail(data) {
-    return http.post('/api/auth/email/check', data)
+    return http.post('/auth/email/check', data);
   },
   register(userData) {
-    return http.post('/api/auth/users', userData)
+    return http.post('/auth/users', userData);
   },
+
+  // Password + OTP flows (keep legacy paths for now)
   forgotPassword(data) {
-    return http.post('/api/auth/password/forgot', data)
+    return http.post('/api/auth/password/forgot', data);
   },
   resetPassword(data) {
-    return http.post('/api/auth/password/reset', data)
+    return http.post('/api/auth/password/reset', data);
   },
+
+  // OAuth providers (redirect-based)
   loginWithGoogle() {
-    window.location.href = `${import.meta.env.VITE_SERVER_HOST}/api/auth/google`
+    window.location.href = `${import.meta.env.VITE_SERVER_HOST}/auth/google`;
   },
   loginWithFacebook() {
-    window.location.href = `${import.meta.env.VITE_SERVER_HOST}/api/auth/facebook`
+    window.location.href = `${import.meta.env.VITE_SERVER_HOST}/auth/facebook`;
   },
   loginWithTwitter() {
-    window.location.href = `${import.meta.env.VITE_SERVER_HOST}/api/auth/twitter`
+    window.location.href = `${import.meta.env.VITE_SERVER_HOST}/auth/twitter`;
   },
-  loginWithSocialProvider(provider) {
-    return http.get(`/api/auth/login-${provider}`)
-  },
+
+  // Admin helpers – use same session endpoint with admin role
   loginAdmin(credentials) {
-    return http.post('/api/auth/admin/sessions', credentials)
+    return http.post('/auth/sessions', credentials);
   },
   registerAdmin(userData) {
-    return http.post('/api/auth/admin/users', userData)
+    return http.post('/auth/users', userData);
   },
-  sendSmsOtp(data) {
-    return http.post('/api/auth/otp/sms', data)
-  },
-  verifySmsOtp(data) {
-    return http.post('/api/auth/otp/verify', data)
-  }
-}
+};
+

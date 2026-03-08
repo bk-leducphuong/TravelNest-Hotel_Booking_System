@@ -313,6 +313,45 @@ jobs:
           echo "**Deployed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "**URL:** https://deployserver.work" >> $GITHUB_STEP_SUMMARY
 
+      - name: Notify Discord of deployment status
+        if: always()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          JOB_STATUS: ${{ job.status }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_URL is not set. Skipping Discord notification."
+            exit 0
+          fi
+
+          if [ "$JOB_STATUS" = "success" ]; then
+            STATUS_EMOJI="✅"
+            STATUS_TEXT="succeeded"
+            COLOR=3066993
+          else
+            STATUS_EMOJI="❌"
+            STATUS_TEXT="failed"
+            COLOR=15158332
+          fi
+
+          payload=$(cat <<EOF
+          {
+            "embeds": [{
+              "title": "$STATUS_EMOJI Frontend deployment $STATUS_TEXT",
+              "description": "Environment: production\nBranch: $GITHUB_REF_NAME\nBy: $GITHUB_ACTOR\nWorkflow: $GITHUB_WORKFLOW #$GITHUB_RUN_NUMBER\nRepository: $GITHUB_REPOSITORY",
+              "color": $COLOR
+            }]
+          }
+          EOF
+          )
+
+          curl -X POST -H "Content-Type: application/json" -d "$payload" "$DISCORD_WEBHOOK_URL"
+
   # #############################################################################
   # # Job 5: Post-Deployment Tests
   # #############################################################################

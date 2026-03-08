@@ -17,9 +17,11 @@ const { seedRoomAmenities } = require('./room_amenity.seed');
 const { seedRoomInventory } = require('./room_inventory.seed');
 // const { seedBookings } = require('./booking.seed');
 const { seedReviews } = require('./review.seed');
-// const { seedNotifications } = require('./notification.seed');
+const { seedNotifications } = require('./notification.seed');
 const { seedPermissions } = require('./permission.seed');
 const { rebuildAllSnapshots } = require('./hotel_search_snapshot.seed');
+const { seedCountries } = require('./country.seed');
+const { seedCities } = require('./city.seed');
 
 // Parse command-line arguments
 function parseArgs() {
@@ -113,7 +115,21 @@ async function seedAll() {
     await sequelize.authenticate();
     console.log('✅ Database connection established\n');
 
-    // 1. Seed Users (creates roles first)
+    // 0. Seed Countries (Vietnam only)
+    results.push(
+      await executeSeed('Countries (Vietnam)', seedCountries, {
+        clearExisting: options.clearExisting,
+      })
+    );
+
+    // 1. Seed Cities (Vietnam only; depends on Countries)
+    results.push(
+      await executeSeed('Cities (Vietnam)', seedCities, {
+        clearExisting: options.clearExisting,
+      })
+    );
+
+    // 2. Seed Users (creates roles first)
     results.push(
       await executeSeed('Users', seedUsers, {
         userCount: options.quick ? 20 : 50,
@@ -123,14 +139,14 @@ async function seedAll() {
       })
     );
 
-    // 2. Seed Amenities (standalone)
+    // 3. Seed Amenities (standalone)
     results.push(
       await executeSeed('Amenities', seedAmenities, {
         clearExisting: options.clearExisting,
       })
     );
 
-    // 3. Seed Hotels (standalone)
+    // 4. Seed Hotels (standalone)
     results.push(
       await executeSeed('Hotels', seedHotels, {
         count: options.quick ? 10 : 20,
@@ -138,7 +154,7 @@ async function seedAll() {
       })
     );
 
-    // 4. Seed Hotel Amenities (depends on hotels + amenities)
+    // 5. Seed Hotel Amenities (depends on hotels + amenities)
     results.push(
       await executeSeed('Hotel Amenities', seedHotelAmenities, {
         minAmenitiesPerHotel: 5,
@@ -147,14 +163,14 @@ async function seedAll() {
       })
     );
 
-    // 5. Seed Hotel Policies (depends on hotels)
+    // 6. Seed Hotel Policies (depends on hotels)
     results.push(
       await executeSeed('Hotel Policies', seedHotelPolicies, {
         clearExisting: options.clearExisting,
       })
     );
 
-    // 6. Seed Nearby Places (depends on hotels)
+    // 7. Seed Nearby Places (depends on hotels)
     results.push(
       await executeSeed('Nearby Places', seedNearbyPlaces, {
         minPlacesPerHotel: 3,
@@ -163,7 +179,7 @@ async function seedAll() {
       })
     );
 
-    // 7. Seed Rooms (depends on hotels)
+    // 8. Seed Rooms (depends on hotels)
     results.push(
       await executeSeed('Rooms', seedRooms, {
         roomsPerHotel: options.quick ? { min: 3, max: 5 } : { min: 3, max: 8 },
@@ -171,7 +187,7 @@ async function seedAll() {
       })
     );
 
-    // 8. Seed Room Amenities (depends on rooms + amenities)
+    // 9. Seed Room Amenities (depends on rooms + amenities)
     results.push(
       await executeSeed('Room Amenities', seedRoomAmenities, {
         minAmenitiesPerRoom: 3,
@@ -180,7 +196,7 @@ async function seedAll() {
       })
     );
 
-    // 9. Seed Room Inventory (depends on rooms)
+    // 10. Seed Room Inventory (depends on rooms)
     results.push(
       await executeSeed('Room Inventory', seedRoomInventory, {
         daysAhead: options.quick ? 30 : 90,
@@ -191,7 +207,7 @@ async function seedAll() {
       })
     );
 
-    // 10. Seed Bookings (depends on hotels, rooms, users)
+    // 11. Seed Bookings (depends on hotels, rooms, users)
     // results.push(
     //   await executeSeed('Bookings', seedBookings, {
     //     bookingsPerHotel: options.quick ? { min: 10, max: 20 } : { min: 20, max: 50 },
@@ -199,7 +215,7 @@ async function seedAll() {
     //   })
     // );
 
-    // 11. Seed Reviews (depends on hotels, users, optionally bookings)
+    // 12. Seed Reviews (depends on hotels, users, optionally bookings)
     results.push(
       await executeSeed('Reviews', seedReviews, {
         reviewsPerHotel: options.quick ? { min: 5, max: 15 } : { min: 10, max: 30 },
@@ -208,7 +224,7 @@ async function seedAll() {
       })
     );
 
-    // 12. Seed Images (depends on hotels, rooms - requires API server)
+    // 13. Seed Images (depends on hotels, rooms - requires API server)
     if (!options.skipImages) {
       console.log(
         '\n⚠️  Image seeding requires the API server to be running and image files to be present.'
@@ -218,22 +234,22 @@ async function seedAll() {
       results.push({ name: 'Images', success: true, duration: 0, skipped: true });
     }
 
-    // 13. Seed Notifications (depends on users)
-    // results.push(
-    //   await executeSeed('Notifications', seedNotifications, {
-    //     notificationsPerUser: options.quick ? { min: 2, max: 5 } : { min: 3, max: 10 },
-    //     clearExisting: options.clearExisting,
-    //   })
-    // );
+    // 14. Seed Notifications (depends on users)
+    results.push(
+      await executeSeed('Notifications', seedNotifications, {
+        notificationsPerUser: options.quick ? { min: 2, max: 5 } : { min: 3, max: 10 },
+        clearExisting: options.clearExisting,
+      })
+    );
 
-    // 14. Seed Permissions (standalone)
+    // 15. Seed Permissions (standalone)
     results.push(
       await executeSeed('Permissions', seedPermissions, {
         clearExisting: options.clearExisting,
       })
     );
 
-    // 15. Seed Hotel Search Snapshots (depends on hotels)
+    // 16. Seed Hotel Search Snapshots (depends on hotels)
     if (!options.skipSnapshots) {
       results.push(
         await executeSeed('Hotel Search Snapshots', rebuildAllSnapshots, {

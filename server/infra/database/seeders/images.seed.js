@@ -15,7 +15,8 @@ const Hotels = db.hotels;
 const Rooms = db.rooms;
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000/api/v1';
-const IMAGES_DIR = path.join(__dirname, 'images');
+const HOTEL_IMAGES_DIR = path.join(__dirname, 'images/hotels');
+const ROOM_IMAGES_DIR = path.join(__dirname, 'images/rooms');
 
 const IMAGE_MAPPING = {
   hotel: ['hotel_1.jpg', 'hotel_2.jpg', 'hotel_3.jpg'],
@@ -104,10 +105,11 @@ async function processEntity(entityType, entityId, entityName, imageFiles) {
 
   for (let i = 0; i < imageFiles.length; i++) {
     const imageFile = imageFiles[i];
-    const imagePath = path.join(IMAGES_DIR, imageFile);
+    const hotelImagePath = path.join(HOTEL_IMAGES_DIR, imageFile);
+    const roomImagePath = path.join(ROOM_IMAGES_DIR, imageFile);
     const isPrimary = i === 0;
 
-    if (!fs.existsSync(imagePath)) {
+    if (!fs.existsSync(hotelImagePath) && !fs.existsSync(roomImagePath)) {
       console.log(`  ⚠️  Image not found: ${imageFile}`);
       stats.imagesFailed++;
       stats.errors.push({
@@ -206,16 +208,16 @@ async function checkPrerequisites() {
 
   const checks = [];
 
-  if (!fs.existsSync(IMAGES_DIR)) {
-    checks.push(`❌ Images directory not found: ${IMAGES_DIR}`);
+  if (!fs.existsSync(HOTEL_IMAGES_DIR) && !fs.existsSync(ROOM_IMAGES_DIR)) {
+    checks.push(`❌ Images directory not found: ${HOTEL_IMAGES_DIR} or ${ROOM_IMAGES_DIR}`);
   } else {
-    console.log(`✅ Images directory found: ${IMAGES_DIR}`);
+    console.log(`✅ Images directory found: ${HOTEL_IMAGES_DIR} or ${ROOM_IMAGES_DIR}`);
 
     const hotelImagesExist = IMAGE_MAPPING.hotel.every((img) =>
-      fs.existsSync(path.join(IMAGES_DIR, img))
+      fs.existsSync(path.join(HOTEL_IMAGES_DIR, img))
     );
     const roomImagesExist = IMAGE_MAPPING.room.every((img) =>
-      fs.existsSync(path.join(IMAGES_DIR, img))
+      fs.existsSync(path.join(ROOM_IMAGES_DIR, img))
     );
 
     if (hotelImagesExist) {

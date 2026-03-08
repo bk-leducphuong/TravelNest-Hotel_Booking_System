@@ -154,22 +154,42 @@ WHERE is_deleted = 0
 GROUP BY hour_of_day, day_of_week;
 
 -- ============================================================================
--- Query examples (use these in your repository)
+-- Hotel view events (recently viewed / trending)
 -- ============================================================================
+CREATE TABLE IF NOT EXISTS travelnest.hotel_view_events
+(
+    event_id    UUID,
+    hotel_id    UUID,
+    user_id     Nullable(UUID),
+    session_id  String,
+    viewed_at   DateTime,
+    ip_address  String,
+    user_agent  String
+)
+ENGINE = MergeTree()
+PARTITION BY toYYYYMM(viewed_at)
+ORDER BY (hotel_id, viewed_at, event_id)
+TTL viewed_at + INTERVAL 90 DAY;
 
--- Get popular destinations (last 30 days):
--- SELECT location, sum(search_count) as searches, sum(unique_users) as users
--- FROM travelnest.mv_popular_destinations
--- WHERE date >= today() - 30
--- GROUP BY location ORDER BY searches DESC LIMIT 10;
+-- ============================================================================
+-- Hotel daily views (trending / popular hotels)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS travelnest.hotel_daily_views
+(
+    date        Date,
+    hotel_id    UUID,
+    views       UInt64
+)
+ENGINE = SummingMergeTree()
+PARTITION BY toYYYYMM(date)
+ORDER BY (hotel_id, date);
 
--- Get demand by travel date (next 90 days):
--- SELECT check_in_date, location, sum(search_count) as searches
--- FROM travelnest.mv_demand_by_travel_date
--- WHERE check_in_date BETWEEN today() AND today() + 90
--- GROUP BY check_in_date, location ORDER BY searches DESC;
-
--- Get user's favorite locations:
--- SELECT locations_visited, total_searches, last_search_time
--- FROM travelnest.mv_user_search_summary
--- WHERE user_id = 'xxx';
+CREATE MATERIALIZED VIEW IF NOT EXISTS travelnest.hotel_views_daily_mv
+TO travelnest.hotel_daily_views
+AS
+SELECT
+    toDate(viewed_at) AS date,
+    hotel_id,
+    count() AS views
+FROM travelnest.hotel_view_events
+GROUP BY hotel_id, date;
