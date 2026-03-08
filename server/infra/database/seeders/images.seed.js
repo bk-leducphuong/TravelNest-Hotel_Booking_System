@@ -15,13 +15,9 @@ const Hotels = db.hotels;
 const Rooms = db.rooms;
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000/api/v1';
-const HOTEL_IMAGES_DIR = path.join(__dirname, 'images/hotels');
-const ROOM_IMAGES_DIR = path.join(__dirname, 'images/rooms');
-
-const IMAGE_MAPPING = {
-  hotel: ['hotel_1.jpg', 'hotel_2.jpg', 'hotel_3.jpg'],
-  room: ['room_1.jpeg', 'room_2.jpg', 'room_3.jpg'],
-};
+const IMAGES_BASE_DIR = path.join(__dirname, 'images');
+const HOTEL_IMAGES_DIR = path.join(IMAGES_BASE_DIR, 'hotels');
+const ROOM_IMAGES_DIR = path.join(IMAGES_BASE_DIR, 'rooms');
 
 const stats = {
   totalHotels: 0,
@@ -32,6 +28,56 @@ const stats = {
   endTime: null,
   errors: [],
 };
+
+/**
+ * Load image "albums" from a base directory.
+ *
+ * Supported structures:
+ * - Flat:   images/hotels/*.jpg
+ * - Nested: images/hotels/<any-folder>/*.jpg
+ *
+ * Returns an array of albums, where each album is an array of absolute file paths.
+ */
+function loadImageAlbums(baseDir) {
+  const albums = [];
+
+  if (!fs.existsSync(baseDir)) {
+    return albums;
+  }
+
+  const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+  const entries = fs.readdirSync(baseDir, { withFileTypes: true });
+
+  // Images directly under baseDir → one album
+  const directImages = entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => path.join(baseDir, entry.name))
+    .filter((fullPath) => imageExtensions.has(path.extname(fullPath).toLowerCase()));
+
+  if (directImages.length > 0) {
+    albums.push(directImages);
+  }
+
+  // Each subdirectory under baseDir → separate album
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+
+    const dirPath = path.join(baseDir, entry.name);
+    const files = fs
+      .readdirSync(dirPath)
+      .map((name) => path.join(dirPath, name))
+      .filter((fullPath) => {
+        const ext = path.extname(fullPath).toLowerCase();
+        return imageExtensions.has(ext) && fs.statSync(fullPath).isFile();
+      });
+
+    if (files.length > 0) {
+      albums.push(files);
+    }
+  }
+
+  return albums;
+}
 
 function printBanner() {
   console.log('\n' + '='.repeat(70));
@@ -104,12 +150,11 @@ async function processEntity(entityType, entityId, entityName, imageFiles) {
   console.log(`\n📦 Processing ${entityType}: ${entityName} (${entityId})`);
 
   for (let i = 0; i < imageFiles.length; i++) {
-    const imageFile = imageFiles[i];
-    const hotelImagePath = path.join(HOTEL_IMAGES_DIR, imageFile);
-    const roomImagePath = path.join(ROOM_IMAGES_DIR, imageFile);
+    const imagePath = imageFiles[i];
+    const imageFile = path.basename(imagePath);
     const isPrimary = i === 0;
 
-    if (!fs.existsSync(hotelImagePath) && !fs.existsSync(roomImagePath)) {
+    if (!fs.existsSync(imagePath)) {
       console.log(`  ⚠️  Image not found: ${imageFile}`);
       stats.imagesFailed++;
       stats.errors.push({
@@ -164,8 +209,19 @@ async function processHotels(limit = null) {
 
   console.log(`Found ${hotels.length} active hotels`);
 
+   const hotelAlbums = loadImageAlbums(HOTEL_IMAGES_DIR);
+
+   if (hotelAlbums.length === 0) {
+     console.log(`⚠️  No hotel images found in ${HOTEL_IMAGES_DIR}`);
+     return;
+   }
+
+   let albumIndex = 0;
+
   for (const hotel of hotels) {
-    await processEntity('hotel', hotel.id, hotel.name, IMAGE_MAPPING.hotel);
+    const album = hotelAlbums[albumIndex % hotelAlbums.length];
+    albumIndex += 1;
+    await processEntity('hotel', hotel.id, hotel.name, album);
   }
 }
 
@@ -197,9 +253,20 @@ async function processRooms(limit = null) {
 
   console.log(`Found ${rooms.length} active rooms`);
 
+   const roomAlbums = loadImageAlbums(ROOM_IMAGES_DIR);
+
+   if (roomAlbums.length === 0) {
+     console.log(`⚠️  No room images found in ${ROOM_IMAGES_DIR}`);
+     return;
+   }
+
+   let albumIndex = 0;
+
   for (const room of rooms) {
     const roomDisplayName = `${room.room_name} (${room.hotel?.name || 'Unknown Hotel'})`;
-    await processEntity('room', room.id, roomDisplayName, IMAGE_MAPPING.room);
+    const album = roomAlbums[albumIndex % roomAlbums.length];
+    albumIndex += 1;
+    await processEntity('room', room.id, roomDisplayName, album);
   }
 }
 
@@ -208,28 +275,24 @@ async function checkPrerequisites() {
 
   const checks = [];
 
-  if (!fs.existsSync(HOTEL_IMAGES_DIR) && !fs.existsSync(ROOM_IMAGES_DIR)) {
-    checks.push(`❌ Images directory not found: ${HOTEL_IMAGES_DIR} or ${ROOM_IMAGES_DIR}`);
+  if (!fs.existsSync(IMAGES_BASE_DIR)) {
+    checks.push(`❌ Images directory not found: ${IMAGES_BASE_DIR}`);
   } else {
-    console.log(`✅ Images directory found: ${HOTEL_IMAGES_DIR} or ${ROOM_IMAGES_DIR}`);
+    console.log(`✅ Images base directory found: ${IMAGES_BASE_DIR}`);
 
-    const hotelImagesExist = IMAGE_MAPPING.hotel.every((img) =>
-      fs.existsSync(path.join(HOTEL_IMAGES_DIR, img))
-    );
-    const roomImagesExist = IMAGE_MAPPING.room.every((img) =>
-      fs.existsSync(path.join(ROOM_IMAGES_DIR, img))
-    );
+    const hotelAlbums = loadImageAlbums(HOTEL_IMAGES_DIR);
+    const roomAlbums = loadImageAlbums(ROOM_IMAGES_DIR);
 
-    if (hotelImagesExist) {
-      console.log(`✅ All hotel images found (${IMAGE_MAPPING.hotel.length})`);
+    if (hotelAlbums.length > 0) {
+      console.log(`✅ Hotel image albums found: ${hotelAlbums.length}`);
     } else {
-      checks.push('❌ Some hotel images are missing');
+      checks.push(`❌ No hotel image albums found in ${HOTEL_IMAGES_DIR}`);
     }
 
-    if (roomImagesExist) {
-      console.log(`✅ All room images found (${IMAGE_MAPPING.room.length})`);
+    if (roomAlbums.length > 0) {
+      console.log(`✅ Room image albums found: ${roomAlbums.length}`);
     } else {
-      checks.push('❌ Some room images are missing');
+      checks.push(`❌ No room image albums found in ${ROOM_IMAGES_DIR}`);
     }
   }
 
