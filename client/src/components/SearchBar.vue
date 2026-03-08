@@ -113,6 +113,7 @@
   import { useToast } from 'vue-toastification';
   import { Location, Calendar } from '@element-plus/icons-vue';
   import { shallowRef } from 'vue';
+  import { SearchService } from '@/services/search.service';
 
   export default {
     setup() {
@@ -134,16 +135,6 @@
     },
     data() {
       return {
-        locations: [
-          { value: 'Phú Quốc', name: 'Phú Quốc', country: 'Việt Nam' },
-          { value: 'Hà Nội', name: 'Hà Nội', country: 'Việt Nam' },
-          { value: 'Sa Pa', name: 'Sa Pa', country: 'Việt Nam' },
-          { value: 'Đà Lạt', name: 'Đà Lạt', country: 'Việt Nam' },
-          { value: 'Đà Nẵng', name: 'Đà Nẵng', country: 'Việt Nam' },
-          { value: 'Nha Trang', name: 'Nha Trang', country: 'Việt Nam' },
-          { value: 'Vũng Tàu', name: 'Vũng Tàu', country: 'Việt Nam' },
-          { value: 'Hội An', name: 'Hội An', country: 'Việt Nam' },
-        ],
         showGuestSelector: false,
         selectedLocation: null,
         dateRange: null,
@@ -169,16 +160,30 @@
       },
     },
     methods: {
-      querySearch(queryString, cb) {
-        const results = queryString
-          ? this.locations.filter((location) =>
-              location.name.toLowerCase().includes(queryString.toLowerCase())
-            )
-          : this.locations;
-        cb(results);
+      async querySearch(queryString, cb) {
+        if (!queryString || !queryString.trim()) {
+          cb([]);
+          return;
+        }
+        try {
+          const response = await SearchService.getDestinationAutocomplete(
+            queryString.trim(),
+            10
+          );
+          const suggestions = response?.data?.suggestions ?? response?.suggestions ?? [];
+          const results = suggestions.map((s) => ({
+            name: s.text ?? s.payload?.display_name ?? '',
+            country: s.payload?.country_name ?? '',
+            value: s.text ?? s.payload?.display_name ?? '',
+          }));
+          cb(results);
+        } catch (error) {
+          console.error('Destination autocomplete error:', error);
+          cb([]);
+        }
       },
       handleSelect(item) {
-        this.selectedLocation = item.name;
+        this.selectedLocation = item.name || item.value;
       },
       disabledDate(time) {
         // Disable dates before today

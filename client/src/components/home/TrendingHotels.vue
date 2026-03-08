@@ -1,6 +1,6 @@
 <template>
-  <div class="hotel-container container" v-if="nearbyHotels.length > 0">
-    <h2 class="h2">{{ $t('userHome.nearbyHotels') }}</h2>
+  <div class="hotel-container container" v-if="trendingHotels.length > 0">
+    <h2 class="h2">{{ $t('userHome.trendingHotels') }}</h2>
     <Loading
       v-model:active="isLoading"
       :can-cancel="true"
@@ -20,21 +20,23 @@
             <div
               class="hotel-card"
               v-for="(hotel, index) in group"
-              :key="index"
+              :key="hotel.id || index"
               @click="redirectToHotelDetails(hotel)"
             >
               <div class="hotel-image">
-                <img v-if="hotel.image_urls" :src="JSON.parse(hotel.image_urls)[0]" :alt="hotel.name" />
-                <img v-else :src="'/assets/hotels/no-image.png'" :alt="hotel.name" />
-                <SavedHotelIcon :hotelId="hotel.hotel_id" />
+                <img
+                  v-if="hotel.primaryImageUrl"
+                  :src="getImageUrl(hotel.primaryImageUrl)"
+                  :alt="hotel.name"
+                />
+                <SavedHotelIcon :hotel-id="hotel.id" />
               </div>
               <div class="hotel-content">
                 <h2 class="hotel-name">{{ hotel.name }}</h2>
-                <p class="hotel-location">{{ hotel.address.slice(0, 35) }} ...</p>
-                <div class="hotel-rating">
-                  <span class="rating-badge">{{ hotel.overall_rating }}</span>
-                  <span class="rating-text">{{ hotel.reviewSummary }}</span>
-                  <span class="review-count">{{ hotel.reviewCount }}điểm đánh giá</span>
+                <p class="hotel-location">{{ displayAddress(hotel.address) }}</p>
+                <div class="hotel-rating" v-if="hotel.ratingSummary">
+                  <span class="rating-badge">{{ hotel.ratingSummary.overallRating }}</span>
+                  <span class="review-count">{{ hotel.ratingSummary.totalReviews }} đánh giá</span>
                 </div>
               </div>
             </div>
@@ -46,27 +48,28 @@
 </template>
 
 <script>
-  import { mapActions, mapGetters } from 'vuex';
+  import { mapActions } from 'vuex';
   import Loading from 'vue-loading-overlay';
   import 'vue-loading-overlay/dist/css/index.css';
   import SavedHotelIcon from '@/components/SavedHotelIcon.vue';
-  import { HomeService } from '@/services/home.service';
+  import { HotelService } from '@/services/hotel.service';
   import errorHandler from '@/request/errorHandler';
+  import { getImageUrl } from '@/utils/images';
 
   export default {
-    name: 'NearbyHotels',
+    name: 'TrendingHotels',
     components: {
       Loading,
       SavedHotelIcon,
     },
-    props: {
-      userLocation: {
-        type: String,
-        default: null,
-      },
+    data() {
+      return {
+        trendingHotels: [],
+        isLoading: false,
+        windowWidth: typeof window !== 'undefined' ? window.innerWidth : 1200,
+      };
     },
     computed: {
-      ...mapGetters('auth', ['isUserAuthenticated']),
       itemsPerSlide() {
         if (this.windowWidth >= 1400) return 5;
         if (this.windowWidth >= 1200) return 4;
@@ -75,27 +78,10 @@
       },
       groupedHotels() {
         const groups = [];
-        for (let i = 0; i < this.nearbyHotels.length; i += this.itemsPerSlide) {
-          groups.push(this.nearbyHotels.slice(i, i + this.itemsPerSlide));
+        for (let i = 0; i < this.trendingHotels.length; i += this.itemsPerSlide) {
+          groups.push(this.trendingHotels.slice(i, i + this.itemsPerSlide));
         }
         return groups;
-      },
-    },
-    data() {
-      return {
-        nearbyHotels: [],
-        isLoading: false,
-        windowWidth: typeof window !== 'undefined' ? window.innerWidth : 1200,
-      };
-    },
-    watch: {
-      userLocation: {
-        handler(newLocation) {
-          if (newLocation) {
-            this.loadNearbyHotels();
-          }
-        },
-        immediate: true,
       },
     },
     mounted() {
@@ -103,6 +89,7 @@
         window.addEventListener('resize', this.handleResize);
         this.handleResize();
       }
+      this.loadTrendingHotels();
     },
     beforeUnmount() {
       if (typeof window !== 'undefined') {
@@ -110,52 +97,42 @@
       }
     },
     methods: {
+      getImageUrl,
       handleResize() {
         this.windowWidth = window.innerWidth;
       },
-      ...mapActions('search', ['updateLocation']),
-      async loadNearbyHotels() {
+      displayAddress(address) {
+        if (!address) return '';
+        return address.length > 35 ? `${address.slice(0, 35)} ...` : address;
+      },
+      async loadTrendingHotels() {
         try {
           this.isLoading = true;
-          const response = await HomeService.getNearbyHotels(this.userLocation);
-          this.nearbyHotels = response.data || [];
+          const response = await HotelService.getTrendingHotels({ limit: 10, days: 30 });
+          const list = response?.data ?? response ?? [];
+          this.trendingHotels = Array.isArray(list) ? list : [];
         } catch (error) {
           errorHandler(error);
+          this.trendingHotels = [];
         } finally {
           this.isLoading = false;
         }
       },
-      async redirectToHotelDetails(hotel) {
-        try {
-          this.updateLocation(hotel.city);
-          const hotel_id = hotel.hotel_id;
+      ...mapActions('search', ['updateLocation']),
+      redirectToHotelDetails(hotel) {
+        const hotelId = hotel.id;
+        const cityName = hotel.city?.name ?? hotel.city ?? '';
+        if (cityName) this.updateLocation(cityName);
 
-          // Save viewed hotel to localStorage
-          const viewedHotels = localStorage.getItem('viewedHotels')
-            ? JSON.parse(localStorage.getItem('viewedHotels'))
-            : [];
+        const viewedHotels = localStorage.getItem('viewedHotels')
+          ? JSON.parse(localStorage.getItem('viewedHotels'))
+          : [];
+        const index = viewedHotels.findIndex((id) => id === hotelId);
+        if (index !== -1) viewedHotels.splice(index, 1);
+        viewedHotels.push(hotelId);
+        localStorage.setItem('viewedHotels', JSON.stringify(viewedHotels));
 
-          const index = viewedHotels.findIndex((hotelId) => hotelId === hotel_id);
-
-          if (index !== -1) {
-            viewedHotels.splice(index, 1);
-          }
-          viewedHotels.push(hotel_id);
-          localStorage.setItem('viewedHotels', JSON.stringify(viewedHotels));
-
-          // Record hotel view if authenticated
-          if (this.isUserAuthenticated) {
-            try {
-              await HomeService.recordHotelView(hotel_id);
-            } catch (error) {
-              errorHandler(error);
-            }
-          }
-
-          this.$router.push({ name: 'HotelDetails', params: { hotel_id: hotel_id } });
-        } catch (error) {
-          console.error('Error redirecting to hotel details:', error);
-        }
+        this.$router.push({ name: 'HotelDetails', params: { hotel_id: hotelId } });
       },
     },
   };

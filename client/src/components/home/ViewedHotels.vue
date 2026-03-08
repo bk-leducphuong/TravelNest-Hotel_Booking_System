@@ -14,25 +14,23 @@
             <div
               class="hotel-card"
               v-for="(hotel, index) in group"
-              :key="index"
+              :key="hotel.id || index"
               @click="redirectToHotelDetails(hotel)"
             >
               <div class="hotel-image">
                 <img
-                  v-if="hotel.image_urls"
-                  :src="JSON.parse(hotel.image_urls)[0]"
+                  v-if="hotel.primaryImageUrl"
+                  :src="getImageUrl(hotel.primaryImageUrl)"
                   :alt="hotel.name"
                 />
-                <img :src="'assets/hotels/no-image.png'" alt="hotel image" v-else />
-                <SavedHotelIcon :hotelId="hotel.hotel_id" />
+                <SavedHotelIcon :hotel-id="hotel.id" />
               </div>
               <div class="hotel-content">
                 <h2 class="hotel-name">{{ hotel.name }}</h2>
-                <p class="hotel-location">{{ hotel.address.slice(0, 35) }} ...</p>
-                <div class="hotel-rating">
-                  <span class="rating-badge">{{ hotel.overall_rating }}</span>
-                  <span class="rating-text">{{ hotel.reviewSummary }}</span>
-                  <span class="review-count">{{ hotel.reviewCount }}điểm đánh giá</span>
+                <p class="hotel-location">{{ displayAddress(hotel.address) }}</p>
+                <div class="hotel-rating" v-if="hotel.ratingSummary">
+                  <span class="rating-badge">{{ hotel.ratingSummary.overallRating }}</span>
+                  <span class="review-count">{{ hotel.ratingSummary.totalReviews }} đánh giá</span>
                 </div>
               </div>
             </div>
@@ -44,218 +42,219 @@
 </template>
 
 <script>
-import { mapActions, mapGetters } from 'vuex'
-import SavedHotelIcon from '@/components/SavedHotelIcon.vue'
-import { HomeService } from '@/services/home.service'
-import errorHandler from '@/request/errorHandler'
+  import { mapActions, mapGetters } from 'vuex';
+  import SavedHotelIcon from '@/components/SavedHotelIcon.vue';
+  import { HotelService } from '@/services/hotel.service';
+  import errorHandler from '@/request/errorHandler.js';
+  import { getImageUrl } from '@/utils/images';
 
-export default {
-  name: 'ViewedHotels',
-  components: {
-    SavedHotelIcon
-  },
-  props: {
-    viewedHotels: {
-      type: Array,
-      default: () => []
-    }
-  },
-  data() {
-    return {
-      windowWidth: typeof window !== 'undefined' ? window.innerWidth : 1200
-    }
-  },
-  computed: {
-    ...mapGetters('auth', ['isUserAuthenticated']),
-    itemsPerSlide() {
-      if (this.windowWidth >= 1400) return 5
-      if (this.windowWidth >= 1200) return 4
-      if (this.windowWidth >= 768) return 3
-      return 2
+  export default {
+    name: 'ViewedHotels',
+    components: {
+      SavedHotelIcon,
     },
-    groupedHotels() {
-      const groups = []
-      for (let i = 0; i < this.viewedHotels.length; i += this.itemsPerSlide) {
-        groups.push(this.viewedHotels.slice(i, i + this.itemsPerSlide))
+    data() {
+      return {
+        viewedHotels: [],
+        windowWidth: typeof window !== 'undefined' ? window.innerWidth : 1200,
+      };
+    },
+    computed: {
+      ...mapGetters('auth', ['isUserAuthenticated']),
+      itemsPerSlide() {
+        if (this.windowWidth >= 1400) return 5;
+        if (this.windowWidth >= 1200) return 4;
+        if (this.windowWidth >= 768) return 3;
+        return 2;
+      },
+      groupedHotels() {
+        const groups = [];
+        for (let i = 0; i < this.viewedHotels.length; i += this.itemsPerSlide) {
+          groups.push(this.viewedHotels.slice(i, i + this.itemsPerSlide));
+        }
+        return groups;
+      },
+    },
+    mounted() {
+      if (typeof window !== 'undefined') {
+        window.addEventListener('resize', this.handleResize);
+        this.handleResize();
       }
-      return groups
-    }
-  },
-  mounted() {
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', this.handleResize)
-      this.handleResize()
-    }
-  },
-  beforeUnmount() {
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('resize', this.handleResize)
-    }
-  },
-  methods: {
-    handleResize() {
-      this.windowWidth = window.innerWidth
+      this.loadViewedHotels();
     },
-    ...mapActions('search', ['updateLocation']),
-    async redirectToHotelDetails(hotel) {
-      try {
-        this.updateLocation(hotel.city)
-        const hotel_id = hotel.hotel_id
-        
-        // Save viewed hotel to localStorage
+    beforeUnmount() {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', this.handleResize);
+      }
+    },
+    methods: {
+      getImageUrl,
+      handleResize() {
+        this.windowWidth = window.innerWidth;
+      },
+      displayAddress(address) {
+        if (!address) return '';
+        return address.length > 35 ? `${address.slice(0, 35)} ...` : address;
+      },
+      ...mapActions('search', ['updateLocation']),
+      redirectToHotelDetails(hotel) {
+        const hotelId = hotel.id;
+        const cityName = hotel.city?.name ?? hotel.city ?? '';
+        if (cityName) this.updateLocation(cityName);
+
+        // Keep localStorage in sync for consistency (view is recorded by GET hotel details)
         const viewedHotels = localStorage.getItem('viewedHotels')
           ? JSON.parse(localStorage.getItem('viewedHotels'))
-          : []
+          : [];
+        const index = viewedHotels.findIndex((id) => id === hotelId);
+        if (index !== -1) viewedHotels.splice(index, 1);
+        viewedHotels.push(hotelId);
+        localStorage.setItem('viewedHotels', JSON.stringify(viewedHotels));
 
-        const index = viewedHotels.findIndex((hotelId) => hotelId === hotel_id)
-
-        if (index !== -1) {
-          viewedHotels.splice(index, 1)
+        this.$router.push({ name: 'HotelDetails', params: { hotel_id: hotelId } });
+      },
+      async loadViewedHotels() {
+        if (!this.isUserAuthenticated) {
+          this.viewedHotels = [];
+          return;
         }
-        viewedHotels.push(hotel_id)
-        localStorage.setItem('viewedHotels', JSON.stringify(viewedHotels))
-
-        // Record hotel view if authenticated
-        if (this.isUserAuthenticated) {
-          try {
-            await HomeService.recordHotelView(hotel_id)
-          } catch (error) {
-            errorHandler(error)
-          }
+        try {
+          // GET /api/v1/hotels/recently-viewed (authenticated only)
+          const response = await HotelService.getRecentlyViewed(10);
+          const list = response?.data ?? response ?? [];
+          this.viewedHotels = Array.isArray(list) ? list : [];
+        } catch (error) {
+          errorHandler(error);
+          this.viewedHotels = [];
         }
-
-        this.$router.push({ name: 'HotelDetails', params: { hotel_id: hotel_id } })
-      } catch (error) {
-        console.error('Error redirecting to hotel details:', error)
-      }
-    }
-  }
-}
+      },
+    },
+  };
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/styles/index.scss';
+  @import '@/assets/styles/index.scss';
 
-.hotel-container {
-  margin-bottom: 30px;
-  margin-top: 30px;
-  position: relative;
-}
-
-.h2 {
-  font-weight: bolder;
-  display: block;
-  font-size: 28px;
-}
-
-.slider-container {
-  position: relative;
-}
-
-.hotel-carousel {
-  :deep(.el-carousel__container) {
-    height: 360px;
+  .hotel-container {
+    margin-bottom: 30px;
+    margin-top: 30px;
+    position: relative;
   }
 
-  :deep(.el-carousel__item) {
-    padding: 0 $spacing-sm;
-  }
-}
-
-.hotel-group {
-  display: flex;
-  gap: $spacing-lg;
-  justify-content: center;
-  height: 100%;
-  align-items: flex-start;
-}
-
-.hotel-card {
-  height: 360px;
-  flex: 0 0 280px;
-  background: $white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  position: relative;
-  transition: transform 0.3s;
-  cursor: pointer;
-
-  &:hover {
-    transform: translateY(-5px);
+  .h2 {
+    font-weight: bolder;
+    display: block;
+    font-size: 28px;
   }
 
-  @media (max-width: 1400px) {
-    flex: 0 0 calc((100% - 60px) / 4);
-    max-width: 280px;
+  .slider-container {
+    position: relative;
   }
 
-  @media (max-width: 1200px) {
-    flex: 0 0 calc((100% - 40px) / 3);
-    max-width: 280px;
+  .hotel-carousel {
+    :deep(.el-carousel__container) {
+      height: 360px;
+    }
+
+    :deep(.el-carousel__item) {
+      padding: 0 $spacing-sm;
+    }
   }
 
-  @media (max-width: 768px) {
-    flex: 0 0 calc((100% - 20px) / 2);
-    max-width: 280px;
-  }
-}
-
-.hotel-image {
-  position: relative;
-  height: 60%;
-  overflow: hidden;
-
-  img {
-    width: 100%;
+  .hotel-group {
+    display: flex;
+    gap: $spacing-lg;
+    justify-content: center;
     height: 100%;
-    object-fit: cover;
-    border-radius: 0;
+    align-items: flex-start;
   }
-}
 
-.hotel-content {
-  height: 40%;
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
+  .hotel-card {
+    height: 360px;
+    flex: 0 0 280px;
+    background: $white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+    transition: transform 0.3s;
+    cursor: pointer;
 
-.hotel-name {
-  font-size: $font-size-base;
-  font-weight: 600;
-  margin: 0 0 5px 0;
-  color: $text-primary;
-}
+    &:hover {
+      transform: translateY(-5px);
+    }
 
-.hotel-location {
-  font-size: $font-size-sm;
-  color: $text-secondary;
-  margin: 0 0 10px 0;
-}
+    @media (max-width: 1400px) {
+      flex: 0 0 calc((100% - 60px) / 4);
+      max-width: 280px;
+    }
 
-.hotel-rating {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-}
+    @media (max-width: 1200px) {
+      flex: 0 0 calc((100% - 40px) / 3);
+      max-width: 280px;
+    }
 
-.rating-badge {
-  background: $primary-color;
-  color: $white;
-  padding: 4px 8px;
-  border-radius: $border-radius-sm;
-  font-weight: bold;
-}
+    @media (max-width: 768px) {
+      flex: 0 0 calc((100% - 20px) / 2);
+      max-width: 280px;
+    }
+  }
 
-.rating-text {
-  font-size: $font-size-sm;
-  color: $text-primary;
-}
+  .hotel-image {
+    position: relative;
+    height: 60%;
+    overflow: hidden;
 
-.review-count {
-  color: $text-secondary;
-  font-size: $font-size-sm;
-}
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 0;
+    }
+  }
+
+  .hotel-content {
+    height: 40%;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .hotel-name {
+    font-size: $font-size-base;
+    font-weight: 600;
+    margin: 0 0 5px 0;
+    color: $text-primary;
+  }
+
+  .hotel-location {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    margin: 0 0 10px 0;
+  }
+
+  .hotel-rating {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  .rating-badge {
+    background: $primary-color;
+    color: $white;
+    padding: 4px 8px;
+    border-radius: $border-radius-sm;
+    font-weight: bold;
+  }
+
+  .rating-text {
+    font-size: $font-size-sm;
+    color: $text-primary;
+  }
+
+  .review-count {
+    color: $text-secondary;
+    font-size: $font-size-sm;
+  }
 </style>

@@ -5,7 +5,7 @@
       <h4 class="h4">{{ $t('userHome.popularPlaces_1') }}</h4>
     </div>
     <Loading
-      v-model:active="_isLoading"
+      v-model:active="isPopularPlacesLoading"
       :can-cancel="true"
       :color="`#003b95`"
       :is-full-page="false"
@@ -14,10 +14,10 @@
       <div
         class="popular-place-card"
         v-for="(place, index) in popularPlaces.slice(0, 2)"
-        :key="index"
+        :key="place.id || index"
         @click="redirectToSearchResults(place)"
       >
-        <img :src="'assets/vietnam_city/' + place.location + '.jpg'" :alt="place.location" />
+        <img :src="getPlaceImage(place)" :alt="displayName(place)" />
       </div>
     </div>
     <div
@@ -27,10 +27,10 @@
       <div
         class="popular-place-card"
         v-for="(place, index) in popularPlaces.slice(2, 5)"
-        :key="index"
+        :key="place.id || index"
         @click="redirectToSearchResults(place)"
       >
-        <img :src="getCityImage(place.location)" :alt="place.location" />
+        <img :src="getPlaceImage(place)" :alt="displayName(place)" />
       </div>
     </div>
   </div>
@@ -39,35 +39,38 @@
 <script>
   import Loading from 'vue-loading-overlay';
   import 'vue-loading-overlay/dist/css/index.css';
-  import { HomeService } from '@/services/home.service';
-  import errorHandler from '@/request/errorHandler';
+  import { SearchService } from '@/services/search.service';
+  import errorHandler from '@/request/errorHandler.js';
+  import { getImageUrl } from '@/utils/images';
 
   export default {
     name: 'PopularPlaces',
     components: {
       Loading,
     },
-    props: {
-      popularPlaces: {
-        type: Array,
-        default: () => [],
-      },
-      isLoading: {
-        type: Boolean,
-        default: false,
-      },
+    data() {
+      return {
+        isPopularPlacesLoading: false,
+        popularPlaces: [],
+      };
     },
-    computed: {
-      _isLoading() {
-        return this.isLoading;
-      },
+    mounted() {
+      this.loadPopularPlaces();
     },
     methods: {
+      displayName(place) {
+        if (!place) return '';
+        return place.displayName ?? place.city ?? place.location ?? '—';
+      },
+      getPlaceImage(place) {
+        return getImageUrl(place?.images?.primary?.objectKey);
+      },
       redirectToSearchResults(place) {
+        const location = place?.displayName ?? place?.city ?? place?.location ?? '';
         this.$router.push({
           name: 'SearchResults',
           query: {
-            location: place.location,
+            location,
             checkInDate: '',
             checkOutDate: '',
             adults: '',
@@ -76,8 +79,19 @@
           },
         });
       },
-      getCityImage(location) {
-        return `assets/vietnam_city/${location}.jpg`;
+      async loadPopularPlaces() {
+        try {
+          this.isPopularPlacesLoading = true;
+          // GET /api/v1/search/destinations/trending
+          const response = await SearchService.getTrendingDestinations({ limit: 5, days: 30 });
+          const list = response?.data?.destinations ?? response?.destinations ?? [];
+          this.popularPlaces = Array.isArray(list) ? list : [];
+        } catch (error) {
+          errorHandler(error);
+          this.popularPlaces = [];
+        } finally {
+          this.isPopularPlacesLoading = false;
+        }
       },
     },
   };

@@ -1,5 +1,5 @@
 const { bucketName } = require('@config/minio.config');
-const { getPresignedUrl } = require('@utils/minio.utils');
+// const { getPresignedUrl } = require('@utils/minio.utils');
 const logger = require('@config/logger.config');
 
 const hotelRepository = require('../repositories/hotel.repository');
@@ -67,10 +67,10 @@ class HotelService {
           images.sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))[0] ||
           null;
 
-        const primaryImageUrl =
-          primary && primary.object_key
-            ? await getPresignedUrl(primary.bucket_name || bucketName, primary.object_key, 3600)
-            : null;
+        const primaryImageUrl = primary.object_key;
+        // primary && primary.object_key
+        //   ? await getPresignedUrl(primary.bucket_name || bucketName, primary.object_key, 3600)
+        //   : null;
 
         return {
           id: h.id,
@@ -171,14 +171,16 @@ class HotelService {
     const images = await Promise.all(
       imageList.map(async (img) => {
         const bucket = img.bucket_name || bucketName;
-        const url = await getPresignedUrl(bucket, img.object_key, 3600);
+        // const url = await getPresignedUrl(bucket, img.object_key, 3600);
+        const url = img.object_key;
 
         // Generate presigned URLs for each variant
         const variantList = img.image_variants || [];
         const variants = await Promise.all(
           variantList.map(async (v) => {
             const variantBucket = v.bucket_name || bucketName;
-            const variantUrl = await getPresignedUrl(variantBucket, v.object_key, 3600);
+            // const variantUrl = await getPresignedUrl(variantBucket, v.object_key, 3600);
+            const variantUrl = v.object_key;
             return {
               id: v.id,
               variantType: v.variant_type,

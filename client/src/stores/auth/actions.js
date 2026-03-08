@@ -41,19 +41,34 @@ export default {
   async checkAuth({ commit }) {
     try {
       const response = await AuthService.checkSession()
-      if (response.data.isAuthenticated) {
+      const payload = response?.data || {}
+      const session = payload.session
+      const isAuthenticated = !!payload.isAuthenticated && !!session && !!session.user
+
+      if (isAuthenticated) {
         commit('setAuthentication', true)
-        commit('setUserId', response.data.userId)
-        if (response.data.userRole === 'customer') {
-          commit('setUserRole', response.data.userRole)
-        } else if (response.data.userRole === 'partner') {
-          commit('setUserRole', response.data.userRole)
+        commit('setUserId', session.user.id)
+
+        // Map backend user type to existing frontend roles
+        // USER      -> customer (regular user)
+        // STAFF/ADMIN -> partner (hotel/admin side)
+        const userType = session.user.type
+        if (userType === 'USER') {
+          commit('setUserRole', 'customer')
+        } else if (userType === 'STAFF' || userType === 'ADMIN') {
+          commit('setUserRole', 'partner')
+        } else {
+          commit('setUserRole', '')
         }
       } else {
-        commit('setAuthentication', false) // Reset state if not authenticated
+        commit('setAuthentication', false)
+        commit('setUserId', null)
+        commit('setUserRole', '')
       }
     } catch (error) {
-      commit('setAuthentication', false) // Reset state if not authenticated
+      commit('setAuthentication', false)
+      commit('setUserId', null)
+      commit('setUserRole', '')
     }
   },
   // register for regular user

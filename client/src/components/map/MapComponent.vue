@@ -11,8 +11,13 @@
         <div class="hotel-card" v-for="hotel in hotels" :key="hotel.hotel_id"   @mouseover="hoveredHotelId = hotel.hotel_id"
           @mouseleave="hoveredHotelId = null">
           <div class="hotel-image">
-            <img :src="JSON.parse(hotel.image_urls)[0]" alt="hotel-image" />
-            <SavedHotelIcon :hotelId="hotel.hotel_id" />
+            <img
+              v-if="getHotelImage(hotel)"
+              :src="getHotelImage(hotel)"
+              alt="hotel-image"
+            />
+            <!-- Fallback: background-image on .hotel-image handles empty -->
+            <SavedHotelIcon :hotel-id="hotel.hotel_id" />
           </div>
           <div class="hotel-content">
             <div class="rating-row">
@@ -25,12 +30,12 @@
               <span class="genius-badge">Genius</span>
             </div>
 
-            <h2 class="hotel-name">{{ hotel.name }}</h2>
+            <h2 class="hotel-name">{{ hotel.hotel_name || hotel.name }}</h2>
 
             <div class="rating-score">
-              <span class="score">{{hotel.overall_rating}}</span>
+              <span class="score">{{ hotel.avg_rating ?? hotel.overall_rating ?? '—' }}</span>
               <span class="rating-text">Rất tốt</span>
-              <span class="review-count">• 166 đánh giá</span>
+              <span class="review-count">• {{ hotel.review_count ?? 0 }} đánh giá</span>
             </div>
 
             <div class="room-details">
@@ -38,8 +43,11 @@
               8 đêm, 2 người lớn
             </div>
 
-            <div class="price-section" v-if="hotel.lowestPrice">
-              <span class="current-price">VND {{ parseInt(hotel.lowestPrice).toLocaleString('vi-VN') }}</span>
+            <div class="price-section" v-if="hotel.min_price_for_dates ?? hotel.lowestPrice">
+              <span class="current-price"
+                >VND
+                {{ (hotel.min_price_for_dates ?? hotel.lowestPrice ?? 0).toLocaleString('vi-VN') }}</span
+              >
               <span class="price-info">Đã bao gồm thuế và phí</span>
             </div>
           </div>
@@ -53,7 +61,7 @@
               <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base"
                 name="OpenStreetMap"></LTileLayer>
               <LMarker v-for="hotel in hotels" :key="hotel.hotel_id" :lat-lng="[hotel.latitude, hotel.longitude]" :icon="hotel.hotel_id === hoveredHotelId ? redIcon : blueIcon">
-                <LPopup>{{ hotel.name }}</LPopup>
+                <LPopup>{{ hotel.hotel_name || hotel.name }}</LPopup>
               </LMarker>
             </LMap>
           </div>
@@ -118,8 +126,17 @@ export default {
     }
   },
   methods: {
+    getHotelImage(hotel) {
+      if (hotel.primary_image_url) return hotel.primary_image_url
+      try {
+        const urls = typeof hotel.image_urls === 'string' ? JSON.parse(hotel.image_urls) : hotel.image_urls
+        return Array.isArray(urls) && urls[0] ? urls[0] : null
+      } catch {
+        return null
+      }
+    },
     closeMapPopup() {
-      this.$emit('close-map-popup');
+      this.$emit('close-map-popup')
     }
   },
   mounted() {

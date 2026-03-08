@@ -222,7 +222,7 @@ router.post('/sessions', validate(authSchema.login), login);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete('/sessions', doubleCsrfProtection, validate(authSchema.logout), logout);
+router.delete('/sessions', validate(authSchema.logout), logout);
 
 /**
  * @swagger
@@ -280,7 +280,7 @@ router.post('/email/check', validate(authSchema.checkEmail), checkEmail);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/users', doubleCsrfProtection, validate(authSchema.register), register);
+router.post('/users', validate(authSchema.register), register);
 
 /**
  * @swagger

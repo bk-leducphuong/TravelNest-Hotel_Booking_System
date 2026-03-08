@@ -211,7 +211,7 @@ class HotelSearchSnapshotRepository {
 
     if (primaryImage) {
       return {
-        primary_image_url: `/images/${primaryImage.bucket_name}/${primaryImage.object_key}`,
+        primary_image_url: primaryImage.object_key,
       };
     }
 

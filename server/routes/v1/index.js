@@ -9,7 +9,6 @@ const router = express.Router();
 // Import all route modules
 const authRoutes = require('./auth.routes');
 const bookingRoutes = require('./booking.routes');
-const homeRoutes = require('./home.routes');
 const holdRoutes = require('./hold.routes');
 const hotelRoutes = require('./hotel.routes');
 const imageRoutes = require('./image.routes');
@@ -23,7 +22,6 @@ const userRoutes = require('./user.routes');
 
 // Mount all routes
 router.use('/search', searchRoutes);
-router.use('/home', homeRoutes);
 router.use('/hotels', hotelRoutes);
 router.use('/images', imageRoutes);
 router.use('/auth', authRoutes);
