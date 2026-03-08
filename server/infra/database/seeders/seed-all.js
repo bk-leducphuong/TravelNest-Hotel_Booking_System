@@ -17,7 +17,7 @@ const { seedRoomAmenities } = require('./room_amenity.seed');
 const { seedRoomInventory } = require('./room_inventory.seed');
 // const { seedBookings } = require('./booking.seed');
 const { seedReviews } = require('./review.seed');
-// const { seedNotifications } = require('./notification.seed');
+const { seedNotifications } = require('./notification.seed');
 const { seedPermissions } = require('./permission.seed');
 const { rebuildAllSnapshots } = require('./hotel_search_snapshot.seed');
 const { seedCountries } = require('./country.seed');
@@ -235,12 +235,12 @@ async function seedAll() {
     }
 
     // 14. Seed Notifications (depends on users)
-    // results.push(
-    //   await executeSeed('Notifications', seedNotifications, {
-    //     notificationsPerUser: options.quick ? { min: 2, max: 5 } : { min: 3, max: 10 },
-    //     clearExisting: options.clearExisting,
-    //   })
-    // );
+    results.push(
+      await executeSeed('Notifications', seedNotifications, {
+        notificationsPerUser: options.quick ? { min: 2, max: 5 } : { min: 3, max: 10 },
+        clearExisting: options.clearExisting,
+      })
+    );
 
     // 15. Seed Permissions (standalone)
     results.push(
