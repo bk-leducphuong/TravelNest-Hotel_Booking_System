@@ -14,7 +14,8 @@ const db = require('../../../models');
 const sequelize = require('../../../config/database.config');
 const { notifications, hotels, users, bookings } = db;
 
-// Notification types
+// Legacy notification type aliases (used for seeding convenience)
+// These are mapped to the new ENUM-based notification_type/category/priority below.
 const NOTIFICATION_TYPES = [
   'booking',
   'review',
@@ -72,6 +73,65 @@ const NOTIFICATION_MESSAGES = {
   ],
 };
 
+// Map legacy seed types to the new notifications table schema
+const LEGACY_TYPE_CONFIG = {
+  booking: {
+    type: 'booking_new',
+    category: 'booking',
+    priority: 'high',
+    title: 'New booking received',
+  },
+  review: {
+    type: 'review_new',
+    category: 'review',
+    priority: 'normal',
+    title: 'New review received',
+  },
+  cancellation: {
+    type: 'booking_cancelled',
+    category: 'booking',
+    priority: 'normal',
+    title: 'Booking cancelled',
+  },
+  payment: {
+    type: 'payment_success',
+    category: 'payment',
+    priority: 'high',
+    title: 'Payment received',
+  },
+  reminder: {
+    type: 'system_alert',
+    category: 'system',
+    priority: 'normal',
+    title: 'Booking reminder',
+  },
+  update: {
+    type: 'booking_status_update',
+    category: 'booking',
+    priority: 'normal',
+    title: 'Booking updated',
+  },
+  system: {
+    type: 'system_alert',
+    category: 'system',
+    priority: 'normal',
+    title: 'System alert',
+  },
+  promotion: {
+    type: 'promotion',
+    category: 'marketing',
+    priority: 'low',
+    title: 'New promotion',
+  },
+};
+
+const DEFAULT_NOTIFICATION_CONFIG = {
+  type: 'system_alert',
+  category: 'system',
+  priority: 'normal',
+  title: 'System notification',
+};
+
 /**
  * Generate a notification message based on type
  * @param {string} type - Notification type
@@ -103,22 +163,24 @@ function generateNotificationMessage(type, data = {}) {
 
 /**
  * Generate fake notification data
- * @param {number} senderId - Sender (user) ID
- * @param {number} receiverId - Receiver (hotel) ID
+ * @param {string|null} senderId - Sender (user) ID (nullable for system)
+ * @param {string} receiverId - Receiver (user) ID
  * @param {Object} options - Options
  * @returns {Object} Notification data object
  */
 function generateNotification(senderId, receiverId, options = {}) {
-  const notificationType = options.type || faker.helpers.arrayElement(NOTIFICATION_TYPES);
+  const legacyType = options.type || faker.helpers.arrayElement(NOTIFICATION_TYPES);
 
   // Get customer name if sender is a user
   let customerName = null;
-  if (senderId && senderId > 0) {
+  if (senderId) {
     customerName = faker.person.fullName();
   }
 
+  const typeConfig = LEGACY_TYPE_CONFIG[legacyType] || DEFAULT_NOTIFICATION_CONFIG;
+
   // Generate message based on type
-  const message = generateNotificationMessage(notificationType, {
+  const message = generateNotificationMessage(legacyType, {
     customerName,
     ...options.data,
   });
@@ -128,10 +190,13 @@ function generateNotification(senderId, receiverId, options = {}) {
     options.isRead !== undefined ? options.isRead : faker.datatype.boolean({ probability: 0.3 }); // 30% chance of being read
 
   const notification = {
-    sender_id: senderId,
-    reciever_id: receiverId,
-    notification_type: notificationType,
-    message: message,
+    receiver_id: receiverId,
+    sender_id: senderId || null,
+    notification_type: typeConfig.type,
+    category: typeConfig.category,
+    priority: typeConfig.priority,
+    title: options.title || typeConfig.title,
+    message,
     is_read: isRead,
     created_at: faker.date.past({ years: 1 }),
   };
@@ -211,7 +276,8 @@ async function seedNotifications(options = {}) {
     if (clearExisting) {
       console.log('🗑️  Clearing existing notifications...');
       if (hotelIds && Array.isArray(hotelIds) && hotelIds.length > 0) {
-        await notifications.destroy({ where: { reciever_id: hotelIds } });
+        // In the new schema, receiver_id references users.
+        await notifications.destroy({ where: { receiver_id: hotelIds } });
       } else {
         await notifications.destroy({ where: {}, truncate: true });
       }
@@ -245,13 +311,18 @@ async function seedNotifications(options = {}) {
       for (let i = 0; i < numNotifications; i++) {
         // Select a random user as sender (or system sender with ID 0)
         const useSystemSender = faker.datatype.boolean({ probability: 0.1 }); // 10% system notifications
-        let senderId = 0;
+        let senderId = null;
 
         if (!useSystemSender) {
           const randomUser =
             existingUsers[faker.number.int({ min: 0, max: existingUsers.length - 1 })];
           senderId = randomUser.id || randomUser.get?.('id');
         }
+
+        // Select a random user as receiver (who actually gets the notification)
+        const randomReceiver =
+          existingUsers[faker.number.int({ min: 0, max: existingUsers.length - 1 })];
+        const receiverId = randomReceiver.id || randomReceiver.get?.('id');
 
         // Determine notification type
         const notificationType = faker.helpers.arrayElement(NOTIFICATION_TYPES);
@@ -295,7 +366,7 @@ async function seedNotifications(options = {}) {
           }
         }
 
-        const notification = generateNotification(senderId, hotelId, {
+        const notification = generateNotification(senderId, receiverId, {
           type: notificationType,
           data: notificationData,
         });
@@ -319,20 +390,17 @@ async function seedNotifications(options = {}) {
 
     // Display summary
     const totalNotifications = await notifications.count();
-    const notificationsByHotel = await notifications.findAll({
+    const notificationsByReceiver = await notifications.findAll({
       attributes: [
-        'reciever_id',
-        [sequelize.fn('COUNT', sequelize.col('notification_id')), 'notification_count'],
+        'receiver_id',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'notification_count'],
       ],
-      group: ['reciever_id'],
+      group: ['receiver_id'],
       raw: true,
     });
 
     const notificationsByType = await notifications.findAll({
-      attributes: [
-        'notification_type',
-        [sequelize.fn('COUNT', sequelize.col('notification_id')), 'count'],
-      ],
+      attributes: ['notification_type', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
       group: ['notification_type'],
       raw: true,
     });
@@ -353,10 +421,12 @@ async function seedNotifications(options = {}) {
       });
     }
 
-    if (notificationsByHotel.length > 0 && notificationsByHotel.length <= 10) {
-      console.log('\n   Notifications per hotel:');
-      notificationsByHotel.forEach((item) => {
-        console.log(`     Hotel ${item.reciever_id}: ${item.notification_count} notification(s)`);
+    if (notificationsByReceiver.length > 0 && notificationsByReceiver.length <= 10) {
+      console.log('\n   Notifications per receiver:');
+      notificationsByReceiver.forEach((item) => {
+        console.log(
+          `     Receiver ${item.receiver_id}: ${item.notification_count} notification(s)`
+        );
       });
     }
   } catch (error) {
@@ -411,13 +481,18 @@ async function seedNotificationsForHotel(hotelId, count = 20, useBookings = fals
 
     for (let i = 0; i < count; i++) {
       const useSystemSender = faker.datatype.boolean({ probability: 0.1 });
-      let senderId = 0;
+      let senderId = null;
 
       if (!useSystemSender) {
         const randomUser =
           existingUsers[faker.number.int({ min: 0, max: existingUsers.length - 1 })];
-        senderId = randomUser.user_id || randomUser.get?.('user_id');
+        senderId = randomUser.id || randomUser.get?.('id');
       }
+
+      // Select a random user as receiver
+      const randomReceiver =
+        existingUsers[faker.number.int({ min: 0, max: existingUsers.length - 1 })];
+      const receiverId = randomReceiver.id || randomReceiver.get?.('id');
 
       const notificationType = faker.helpers.arrayElement(NOTIFICATION_TYPES);
       let notificationData = {};
@@ -457,7 +532,7 @@ async function seedNotificationsForHotel(hotelId, count = 20, useBookings = fals
         }
       }
 
-      const notification = generateNotification(senderId, hotelId, {
+      const notification = generateNotification(senderId, receiverId, {
         type: notificationType,
         data: notificationData,
       });
