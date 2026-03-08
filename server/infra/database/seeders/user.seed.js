@@ -13,7 +13,7 @@ async function loadFaker() {
 
 const db = require('../../../models');
 const sequelize = require('../../../config/database.config');
-const { users: Users, roles: Roles, user_roles: UserRoles } = db;
+const { users: Users, roles: Roles, user_roles: UserRoles, auth_accounts: AuthAccounts } = db;
 
 /**
  * Ensure roles exist in the database
@@ -55,11 +55,11 @@ async function ensureRolesExist() {
 }
 
 /**
- * Generate fake user data
+ * Generate fake user and auth account data
  * @param {Object} options - Options for generating user data
  * @param {string} options.roleName - User role: 'guest', 'hotel_manager', 'admin', etc.
  * @param {number} options.count - Number of users to generate
- * @returns {Promise<Array>} Array of user data objects
+ * @returns {Promise<Array>} Array of { userData, authAccountData, roleName }
  */
 async function generateUsers(options = {}) {
   const { roleName = 'guest', count = 10 } = options;
@@ -74,7 +74,7 @@ async function generateUsers(options = {}) {
       provider: faker.internet.domainName(),
     });
 
-    // Generate a random password and hash it
+    // Generate a random password and hash it (used for local auth account)
     const password = faker.internet.password({ length: 12 });
     const passwordHash = await bcrypt.hash(password, 10);
 
@@ -86,9 +86,9 @@ async function generateUsers(options = {}) {
     const countryCode = faker.helpers.arrayElement(['1', '44', '33', '49', '81']);
     const phoneNumber = `+${countryCode}${faker.string.numeric(10, { allowLeadingZeros: false })}`;
 
+    // Core user profile data (no password fields stored on users table)
     const userData = {
       email: email.toLowerCase(),
-      password_hash: passwordHash,
       first_name: firstName,
       last_name: lastName,
       phone_number: phoneNumber,
@@ -117,7 +117,14 @@ async function generateUsers(options = {}) {
       terms_accepted_at: faker.date.past({ years: 1 }),
     };
 
-    userDataArray.push({ userData, roleName });
+    // Local auth account linked to this user
+    const authAccountData = {
+      provider: 'local',
+      provider_user_id: email.toLowerCase(),
+      password_hash: passwordHash,
+    };
+
+    userDataArray.push({ userData, authAccountData, roleName });
   }
 
   return userDataArray;
@@ -175,6 +182,7 @@ async function seedUsers(options = {}) {
     if (clearExisting) {
       console.log('🗑️  Clearing existing users and user roles...');
       await UserRoles.destroy({ where: {}, truncate: true });
+      await AuthAccounts.destroy({ where: {}, truncate: true });
       await Users.destroy({ where: {}, truncate: true });
       console.log('✅ Existing users cleared');
     }
@@ -188,7 +196,7 @@ async function seedUsers(options = {}) {
     });
 
     const createdUsers = [];
-    for (const { userData, roleName } of userDataArray) {
+    for (const { userData, authAccountData, roleName } of userDataArray) {
       try {
         const [user, created] = await Users.findOrCreate({
           where: { email: userData.email },
@@ -196,6 +204,10 @@ async function seedUsers(options = {}) {
         });
         if (created) {
           await assignRoleToUser(user.id, roleMap[roleName]);
+          await AuthAccounts.create({
+            ...authAccountData,
+            user_id: user.id,
+          });
           createdUsers.push(user);
         }
       } catch (error) {
@@ -215,7 +227,7 @@ async function seedUsers(options = {}) {
     });
 
     const createdManagers = [];
-    for (const { userData, roleName } of managerDataArray) {
+    for (const { userData, authAccountData, roleName } of managerDataArray) {
       try {
         const [user, created] = await Users.findOrCreate({
           where: { email: userData.email },
@@ -223,6 +235,10 @@ async function seedUsers(options = {}) {
         });
         if (created) {
           await assignRoleToUser(user.id, roleMap[roleName]);
+          await AuthAccounts.create({
+            ...authAccountData,
+            user_id: user.id,
+          });
           createdManagers.push(user);
         }
       } catch (error) {
@@ -242,7 +258,7 @@ async function seedUsers(options = {}) {
     });
 
     const createdStaff = [];
-    for (const { userData, roleName } of staffDataArray) {
+    for (const { userData, authAccountData, roleName } of staffDataArray) {
       try {
         const [user, created] = await Users.findOrCreate({
           where: { email: userData.email },
@@ -250,6 +266,10 @@ async function seedUsers(options = {}) {
         });
         if (created) {
           await assignRoleToUser(user.id, roleMap[roleName]);
+          await AuthAccounts.create({
+            ...authAccountData,
+            user_id: user.id,
+          });
           createdStaff.push(user);
         }
       } catch (error) {
@@ -301,9 +321,14 @@ async function seedSingleUser(userData = {}, roleName = 'user') {
   // Ensure roles exist
   const roleMap = await ensureRolesExist();
 
+  const email = userData.email || faker.internet.email();
+
+  // Always create a local auth account with a known password for seeded users
+  const plainPassword = 'password123';
+  const passwordHash = await bcrypt.hash(plainPassword, 10);
+
   const defaultUser = {
-    email: faker.internet.email(),
-    password_hash: await bcrypt.hash('password123', 10),
+    email,
     first_name: faker.person.firstName(),
     last_name: faker.person.lastName(),
     phone_number: `+1${faker.string.numeric(10)}`,
@@ -320,6 +345,12 @@ async function seedSingleUser(userData = {}, roleName = 'user') {
 
     if (created && roleMap[roleName]) {
       await assignRoleToUser(createdUser.id, roleMap[roleName]);
+      await AuthAccounts.create({
+        user_id: createdUser.id,
+        provider: 'local',
+        provider_user_id: createdUser.email,
+        password_hash: passwordHash,
+      });
     }
 
     console.log(`✅ User created: ${createdUser.email} with role: ${roleName}`);
