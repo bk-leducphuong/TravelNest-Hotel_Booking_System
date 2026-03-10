@@ -1,7 +1,7 @@
 {
   "settings": {
     "number_of_shards": 2,
-    "number_of_replicas": 1,
+    "number_of_replicas": 0,
     "index": {
       "refresh_interval": "5s",
       "max_result_window": 10000,
@@ -202,18 +202,6 @@
       "error_stack": {
         "type": "text",
         "analyzer": "stack_trace_analyzer"
-      },
-      "request_id": {
-        "type": "keyword"
-      },
-      "user_id": {
-        "type": "keyword"
-      },
-      "status_code": {
-        "type": "short"
-      },
-      "response_time": {
-        "type": "float"
       },
       "client_ip": {
         "type": "ip"

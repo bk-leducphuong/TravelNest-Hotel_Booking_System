@@ -1,12 +1,14 @@
 filebeat.inputs:
-  # Application logs
+  # ============================================
+  # API Application Logs (JSON format)
+  # ============================================
   - type: log
     enabled: true
     paths:
-      - /logs/*.log
-      - /logs/**/*.log
+      - /logs/api/combined.log
     fields:
-      service: travelnest-server
+      service: travelnest-api
+      log_type: application
       environment: production
     fields_under_root: true
     json.keys_under_root: true
@@ -15,59 +17,141 @@ filebeat.inputs:
     multiline.pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
     multiline.negate: true
     multiline.match: after
+    exclude_files: ['\.gz$', '\.bak$', '\.[0-9]+$']
 
-  # Error logs
+  # ============================================
+  # API Error Logs (JSON format)
+  # ============================================
   - type: log
     enabled: true
     paths:
-      - /logs/error.log
+      - /logs/api/error.log
     fields:
-      service: travelnest-server
+      service: travelnest-api
       log_type: error
       environment: production
     fields_under_root: true
+    json.keys_under_root: true
+    json.add_error_key: true
+    json.message_key: message
+    multiline.pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
+    multiline.negate: true
+    multiline.match: after
+    exclude_files: ['\.gz$', '\.bak$', '\.[0-9]+$']
 
-  # Access logs
+  # ============================================
+  # Nginx Access Logs (Combined Log Format)
+  # ============================================
   - type: log
     enabled: true
     paths:
-      - /logs/access.log
+      - /logs/nginx/access.log
+      - /logs/nginx/api-access.log
+      - /logs/nginx/user-access.log
+      - /logs/nginx/admin-access.log
     fields:
-      service: travelnest-server
+      service: travelnest-nginx
       log_type: access
       environment: production
     fields_under_root: true
+    exclude_files: ['\.gz$', '\.bak$', '\.[0-9]+$']
 
-  # Docker container logs
-  - type: container
+  # ============================================
+  # Nginx Error Logs
+  # ============================================
+  - type: log
     enabled: true
     paths:
-      - '/var/lib/docker/containers/*/*.log'
-    processors:
-      - add_docker_metadata:
-          host: 'unix:///var/run/docker.sock'
+      - /logs/nginx/error.log
+      - /logs/nginx/api-error.log
+      - /logs/nginx/user-error.log
+      - /logs/nginx/admin-error.log
+    fields:
+      service: travelnest-nginx
+      log_type: error
+      environment: production
+    fields_under_root: true
+    multiline.pattern: '^[0-9]{4}/[0-9]{2}/[0-9]{2}'
+    multiline.negate: true
+    multiline.match: after
+    exclude_files: ['\.gz$', '\.bak$', '\.[0-9]+$']
 
-# Processors
+  # ============================================
+  # Docker Container Logs (DISABLED - using file logs instead)
+  # Enable this if you want to collect stdout/stderr from containers
+  # Disable file inputs above if using this to avoid duplicates
+  # ============================================
+  # - type: container
+  #   enabled: false
+  #   paths:
+  #     - '/var/lib/docker/containers/*/*.log'
+  #   processors:
+  #     - add_docker_metadata:
+  #         host: 'unix:///var/run/docker.sock'
+
+# ============================================
+# Global Processors
+# ============================================
 processors:
+  # Add host metadata (hostname, OS, etc.)
   - add_host_metadata:
       when.not.contains.tags: forwarded
+      netinfo.enabled: false
+  
+  # Add cloud metadata if running in cloud
   - add_cloud_metadata: ~
-  - add_docker_metadata: ~
+  
+  # Add Docker metadata for container logs
+  - add_docker_metadata:
+      host: 'unix:///var/run/docker.sock'
+      match_fields: ["container.id"]
+  
+  # Drop empty messages
+  - drop_event:
+      when:
+        or:
+          - equals:
+              message: ""
+          - equals:
+              message: "\n"
+  
+  # Rename container log fields for consistency
+  - rename:
+      fields:
+        - from: "container.name"
+          to: "container_name"
+      ignore_missing: true
+      fail_on_error: false
 
 # General
 name: travelnest-filebeat
 tags: ['travelnest', 'production', 'nodejs']
 
+# ============================================
 # Output to Logstash
+# ============================================
 output.logstash:
   hosts: ['logstash:5044']
   compression_level: 3
   worker: 2
   bulk_max_size: 2048
+  loadbalance: false
+  ttl: 300s
+  pipelining: 2
 
-# Kibana
+# ============================================
+# Kibana Setup
+# ============================================
 setup.kibana:
   host: 'kibana:5601'
+
+# ============================================
+# Internal Queue Configuration
+# ============================================
+queue.mem:
+  events: 4096
+  flush.min_events: 512
+  flush.timeout: 5s
 
 # Logging
 logging.level: info
