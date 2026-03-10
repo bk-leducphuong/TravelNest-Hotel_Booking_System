@@ -3,7 +3,8 @@ const logger = require('../config/logger.config');
 
 class ElasticsearchHelper {
   constructor() {
-    this.indexName = 'hotels';
+    this.hotelIndexName = 'hotels';
+    this.destinationIndexName = 'destinations';
   }
 
   /**
@@ -213,7 +214,7 @@ class ElasticsearchHelper {
   async search(query) {
     try {
       const response = await elasticsearchClient.search({
-        index: this.indexName,
+        index: this.hotelIndexName,
         body: query,
       });
 
@@ -254,15 +255,15 @@ class ElasticsearchHelper {
   }
 
   /**
-   * Get suggestions for autocomplete
+   * Get suggestions for hotel autocomplete
    * @param {string} prefix - Search prefix
    * @param {number} size - Number of suggestions
    * @returns {Promise<Array>}
    */
-  async getSuggestions(prefix, size = 10) {
+  async getHotelSuggestions(prefix, size = 10) {
     try {
       const response = await elasticsearchClient.search({
-        index: this.indexName,
+        index: this.hotelIndexName,
         body: {
           suggest: {
             'hotel-suggest': {
@@ -284,6 +285,75 @@ class ElasticsearchHelper {
       }));
     } catch (error) {
       logger.error('Elasticsearch suggestions error:', error);
+      return [];
+    }
+  }
+
+  async getDestinationSuggestions(prefix, size = 10) {
+    try {
+      const response = await elasticsearchClient.search({
+        index: this.destinationIndexName,
+        body: {
+          suggest: {
+            'destination-suggest': {
+              prefix,
+              completion: {
+                field: 'display_name.suggest',
+                size,
+                skip_duplicates: true,
+              },
+            },
+          },
+        },
+      });
+
+      const suggestions = response.suggest['destination-suggest'][0].options;
+
+      return suggestions.map((s) => ({
+        text: s.text,
+        score: s._score,
+        payload: s._source || null,
+      }));
+    } catch (error) {
+      logger.error('Destination ES suggestions error:', error);
+      return [];
+    }
+  }
+
+  async searchDestinationByText(query, size = 5) {
+    try {
+      const response = await elasticsearchClient.search({
+        index: this.destinationIndexName,
+        body: {
+          query: {
+            bool: {
+              must: [
+                {
+                  multi_match: {
+                    query,
+                    fields: ['display_name^3', 'normalized_name^2', 'slug'],
+                    fuzziness: 'AUTO',
+                    operator: 'and',
+                  },
+                },
+              ],
+              filter: [
+                {
+                  term: { is_active: true },
+                },
+              ],
+            },
+          },
+          size,
+        },
+      });
+
+      return response.hits.hits.map((hit) => ({
+        ...hit._source,
+        _score: hit._score,
+      }));
+    } catch (error) {
+      logger.error(error, 'Destination ES search error:');
       return [];
     }
   }

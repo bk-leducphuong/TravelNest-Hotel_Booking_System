@@ -1,27 +1,27 @@
 version: '3.9'
 
 services:
-  api:
-    build:
-      context: ..
-      dockerfile: infra/Dockerfile
-    container_name: travelnest-api
-    restart: unless-stopped
-    env_file:
-      - ../.env.production
-    environment:
-      NODE_ENV: production
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      clickhouse:
-        condition: service_healthy
-    ports:
-      - '3000:3000'
-    networks:
-      - travelnest-net
+  # api:
+  #   build:
+  #     context: ..
+  #     dockerfile: infra/Dockerfile
+  #   container_name: travelnest-api
+  #   restart: unless-stopped
+  #   env_file:
+  #     - ../.env.production
+  #   environment:
+  #     NODE_ENV: production
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #     clickhouse:
+  #       condition: service_healthy
+  #   ports:
+  #     - '3000:3000'
+  #   networks:
+  #     - travelnest-net
 
   mysql:
     image: mysql:8.0
@@ -115,26 +115,26 @@ services:
       retries: 5
       start_period: 10s # Gives the container time to initialize before health checks begin
 
-  bullmq-worker:
-    build:
-      context: ..
-      dockerfile: infra/Dockerfile
-    container_name: travelnest-bullmq-worker
-    restart: unless-stopped
-    env_file:
-      - ../.env.development
-    environment:
-      NODE_ENV: production
-    depends_on:
-      redis:
-        condition: service_healthy
-      mysql:
-        condition: service_healthy
-      clickhouse:
-        condition: service_healthy
-    command: ['npm', 'run', 'dev:bullmq-worker']
-    networks:
-      - travelnest-net
+  # bullmq-worker:
+  #   build:
+  #     context: ..
+  #     dockerfile: infra/Dockerfile
+  #   container_name: travelnest-bullmq-worker
+  #   restart: unless-stopped
+  #   env_file:
+  #     - ../.env.development
+  #   environment:
+  #     NODE_ENV: production
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #     mysql:
+  #       condition: service_healthy
+  #     clickhouse:
+  #       condition: service_healthy
+  #   command: ['npm', 'run', 'dev:bullmq-worker']
+  #   networks:
+  #     - travelnest-net
 
 networks:
   travelnest-net:

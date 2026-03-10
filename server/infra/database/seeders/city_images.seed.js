@@ -94,12 +94,12 @@ async function seedCityImages(options = {}) {
 
     for (let i = 0; i < vietnamCities.length; i++) {
       const city = vietnamCities[i];
-      console.log(`\n📦 Processing city ${i + 1}/${vietnamCities.length}: ${city.name} (${city.id})`);
+      console.log(
+        `\n📦 Processing city ${i + 1}/${vietnamCities.length}: ${city.name} (${city.id})`
+      );
 
       // Choose images in round-robin fashion so all files get used
-      const imagesForCity = primaryOnly
-        ? [imageFiles[i % imageFiles.length]]
-        : imageFiles;
+      const imagesForCity = primaryOnly ? [imageFiles[i % imageFiles.length]] : imageFiles;
 
       for (let j = 0; j < imagesForCity.length; j++) {
         const filename = imagesForCity[j];
@@ -168,4 +168,3 @@ if (require.main === module) {
 module.exports = {
   seedCityImages,
 };
-

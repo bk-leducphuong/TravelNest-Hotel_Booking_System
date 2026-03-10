@@ -12,7 +12,7 @@
 const { searchLogQueue } = require('@queues/index');
 const { addJob } = require('@utils/bullmq.utils');
 
-const { getPresignedUrl, bucketName } = require('@utils/minio.utils');
+const { bucketName } = require('@utils/minio.utils');
 const elasticsearchHelper = require('../helpers/elasticsearch.helper');
 const destinationElasticsearchHelper = require('../helpers/destination_elasticsearch.helper');
 const searchRepository = require('../repositories/search.repository');
@@ -160,58 +160,12 @@ class SearchService {
         };
       }
 
-      // Convert primary image and variants to presigned URLs (instead of bucket/objectKey)
-      //   const expirySeconds = 60 * 60; // 1 hour
-      //   for (const dest of destinations) {
-      //     const primary = dest.images?.primary;
-      //     if (!primary?.bucketName || !primary?.objectKey) {
-      //       dest.images.primary = null;
-      //       continue;
-      //     }
-      //
-      //     try {
-      //       const primaryUrl = await getPresignedUrl(
-      //         primary.bucketName || bucketName,
-      //         primary.objectKey,
-      //         expirySeconds
-      //       );
-      //       const variantsWithUrls = await Promise.all(
-      //         (primary.variants || []).map(async (v) => {
-      //           const url = await getPresignedUrl(
-      //             v.bucketName || bucketName,
-      //             v.objectKey,
-      //             expirySeconds
-      //           );
-      //           return {
-      //             id: v.id,
-      //             variantType: v.variantType,
-      //             width: v.width,
-      //             height: v.height,
-      //             url,
-      //           };
-      //         })
-      //       );
-      //       dest.images.primary = {
-      //         id: primary.id,
-      //         width: primary.width,
-      //         height: primary.height,
-      //         isPrimary: primary.isPrimary,
-      //         displayOrder: primary.displayOrder,
-      //         url: primaryUrl,
-      //         variants: variantsWithUrls,
-      //       };
-      //     } catch (err) {
-      //       logger.warn(err, 'Failed to get presigned URL for trending destination image');
-      //       dest.images.primary = null;
-      //     }
-      //   }
+      await redisClient.set(cacheKey, JSON.stringify(destinations), {
+        EX: 60 * 60, // 1 hour TTL
+      });
+
+      return destinations;
     }
-
-    await redisClient.set(cacheKey, JSON.stringify(destinations), {
-      EX: 60 * 60, // 1 hour TTL
-    });
-
-    return destinations;
   }
 
   /**
@@ -678,7 +632,7 @@ class SearchService {
    */
   async getAutocompleteSuggestions(query, limit = 10) {
     try {
-      const suggestions = await elasticsearchHelper.getSuggestions(query, limit);
+      const suggestions = await elasticsearchHelper.getHotelSuggestions(query, limit);
 
       return {
         success: true,
@@ -705,7 +659,7 @@ class SearchService {
    */
   async getDestinationAutocomplete(query, limit = 10) {
     try {
-      const suggestions = await destinationElasticsearchHelper.getSuggestions(query, limit);
+      const suggestions = await elasticsearchHelper.getDestinationSuggestions(query, limit);
 
       return {
         success: true,
@@ -795,7 +749,7 @@ class SearchService {
     if (!text) return null;
 
     try {
-      const esResults = await destinationElasticsearchHelper.searchByText(text, 10);
+      const esResults = await elasticsearchHelper.searchDestinationByText(text, 10);
 
       const cities = esResults.filter((d) => d.type === 'city');
       if (cities.length > 0) {
