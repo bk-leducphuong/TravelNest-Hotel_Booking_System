@@ -3,6 +3,15 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+# Build-time environment (injected via docker build args)
+# ARG NUXT_PUBLIC_API_BASE
+# ARG NITRO_PUBLIC_API_BASE
+# ARG NITRO_MINIO_URL
+#
+# ENV NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE} \
+#     NITRO_PUBLIC_API_BASE=${NITRO_PUBLIC_API_BASE} \
+#     NITRO_MINIO_URL=${NITRO_MINIO_URL}
+
 COPY package.json package-lock.json* ./
 RUN npm ci
 

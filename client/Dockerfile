@@ -1,19 +1,25 @@
 # Multi-stage build for optimized production image
 FROM node:18-alpine AS builder
 
-# Create app directory
 WORKDIR /usr/src/app
 
-# Copy package files
+# Build-time environment (injected via docker build args)
+# ARG VITE_SERVER_HOST
+# ARG VITE_ENV
+# ARG VITE_STRIPE_PUBLIC_KEY
+# ARG VITE_MINIO_URL
+#
+# ENV VITE_SERVER_HOST=${VITE_SERVER_HOST} \
+#     VITE_ENV=${VITE_ENV} \
+#     VITE_STRIPE_PUBLIC_KEY=${VITE_STRIPE_PUBLIC_KEY} \
+#     VITE_MINIO_URL=${VITE_MINIO_URL}
+
 COPY package*.json ./
 
-# Install dependencies
 RUN npm ci
 
-# Copy source code
 COPY . .
 
-# Build the application
 RUN npm run build
 
 # Production stage with nginx

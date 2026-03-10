@@ -55,6 +55,13 @@ jobs:
           cache: "npm"
           cache-dependency-path: admin-client/package-lock.json
 
+      - name: Create .env.production file
+        run: |
+          cat <<EOF > .env.production
+          NITRO_PUBLIC_API_BASE=${{ secrets.SERVER_HOST }}
+          NITRO_MINIO_URL=${{ secrets.MINIO_URL }}
+          EOF
+
       - name: Install dependencies
         working-directory: admin-client
         run: npm ci

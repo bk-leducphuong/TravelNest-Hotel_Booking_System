@@ -246,6 +246,11 @@ jobs:
             echo "🔄 Deploying new version..."
             docker compose up -d --no-deps --force-recreate api
 
+            sleep 10
+
+            # Deploy bullmq worker
+            docker compose up -d --no-deps --force-recreate worker
+
             # Wait for health check
             echo "⏳ Waiting for health check..."
             sleep 10

@@ -57,6 +57,15 @@ jobs:
           cache: "npm"
           cache-dependency-path: client/package-lock.json
 
+      - name: Create .env.production file
+        run: |
+          cat <<EOF > .env.production
+          VITE_SERVER_HOST=${{ secrets.SERVER_HOST }}
+          VITE_ENV=production
+          VITE_STRIPE_PUBLIC_KEY=${{ secrets.STRIPE_PUBLIC_KEY }}
+          VITE_MINIO_URL=${{ secrets.MINIO_URL }}
+          EOF
+
       - name: Install dependencies
         run: npm ci
 
