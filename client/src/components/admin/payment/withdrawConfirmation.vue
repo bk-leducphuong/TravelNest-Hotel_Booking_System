@@ -55,7 +55,7 @@ export default {
 </script>
 <template>
   <!-- Main Container -->
-  <div class="popup-container" id="withdrawPopup">
+  <div id="withdrawPopup" class="popup-container">
     <div class="popup-content">
       <h2>Withdraw Money</h2>
       <p class="message">Are you sure you want to withdraw the following amount?</p>

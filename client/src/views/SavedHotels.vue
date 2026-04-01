@@ -31,6 +31,9 @@ export default {
       }
     }
   },
+  async mounted() {
+    await this.getSavedHotels()
+  },
   methods: {
     async getSavedHotels() {
       try {
@@ -83,21 +86,18 @@ export default {
       const slider = event.target
       this.sliderPosition = slider.scrollLeft
     },
-  },
-  async mounted() {
-    await this.getSavedHotels()
   }
 }
 </script>
 <template>
-  <TheHeader :isSearchOpen="false" />
+  <TheHeader :is-search-open="false" />
   <div class="header-container">
     <div class="header-title">
       Saved hotels <span class="info-label">( {{ hotels.length }} properties saved )</span>
     </div>
     <div class="header">
       <div class="header-left">
-        <select class="dropdown" id="trip-list">
+        <select id="trip-list" class="dropdown">
           <option value="my-next-trip">My next trip</option>
           <option value="summer-trip">Summer Trip</option>
           <option value="weekend-getaway">Weekend Getaway</option>
@@ -117,8 +117,8 @@ export default {
     </div>
   </div>
   <div class="slider-container">
-    <div class="slider-wrapper" ref="slider" @scroll="handleScroll">
-      <div class="hotel-card" v-for="hotel in hotels" :key="hotel.hotel_id">
+    <div ref="slider" class="slider-wrapper" @scroll="handleScroll">
+      <div v-for="hotel in hotels" :key="hotel.hotel_id" class="hotel-card">
         <div>
           <img
             :src="JSON.parse(hotel.hotelInformation.image_urls)[0]"

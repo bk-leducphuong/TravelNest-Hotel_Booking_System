@@ -47,7 +47,7 @@
 
 <template>
   <NewUserPopup v-if="isNewUserPopupOpen" @close="isNewUserPopupOpen = false" />
-  <TheHeader :isSearchOpen="true" />
+  <TheHeader :is-search-open="true" />
   <div class="home-container">
     <RecentSearchs @update:recentSearches="handleRecentSearchesUpdate" />
     <ViewedHotels />

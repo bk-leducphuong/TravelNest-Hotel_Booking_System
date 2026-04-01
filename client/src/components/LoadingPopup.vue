@@ -1,31 +1,31 @@
 <template>
-  <div class="loading-popup-container" v-if="openLoadingPopup">
+  <div v-if="openLoadingPopup" class="loading-popup-container">
     <div class="loading-popup">
       <!-- Using vue-loading-overlay -->
       <Loading
+        v-if="!fail"
         :active="isLoading"
         :can-cancel="false"
         :is-full-page="false"
         :loader="'dots'"
         background-color="transparent"
-        v-if="!fail"
       >
       </Loading>
       <i
+        v-if="isLoaded && !fail"
         class="fa fa-check-circle"
         aria-hidden="true"
         style="color: #00ff4c; font-size: 60px; margin-top: 50px"
-        v-if="isLoaded && !fail"
       ></i>
       <i
+        v-if="fail"
         class="fa fa-times-circle"
         aria-hidden="true"
         style="color: red; font-size: 60px; margin-top: 50px"
-        v-if="fail"
       ></i>
-      <div class="title" v-if="isLoading && !fail">{{ startTitle }}</div>
-      <div class="title" v-if="isLoaded && !fail">{{ endTitle }}</div>
-      <div class="title" v-if="fail">Process failed! Please try again later.</div>
+      <div v-if="isLoading && !fail" class="title">{{ startTitle }}</div>
+      <div v-if="isLoaded && !fail" class="title">{{ endTitle }}</div>
+      <div v-if="fail" class="title">Process failed! Please try again later.</div>
     </div>
   </div>
 </template>

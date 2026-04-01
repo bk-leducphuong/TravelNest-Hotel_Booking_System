@@ -64,9 +64,9 @@ export default {
       <p>Vui lòng kiểm tra email xác nhận đặt phòng để tìm mã số đặt phòng và PIN</p>
       <form @submit.prevent="validateUser">
         <label for="room-number">Mã số đặt phòng</label>
-        <input type="text" id="room-number" name="room-number" v-model="bookingCode" />
+        <input id="room-number" v-model="bookingCode" type="text" name="room-number" />
         <label for="pin">Mã PIN</label>
-        <input type="text" id="pin" name="pin" />
+        <input id="pin" type="text" name="pin" />
         <button type="submit">Đánh giá ký nghị của bạn</button>
       </form>
     </div>

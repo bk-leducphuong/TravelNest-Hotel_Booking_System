@@ -181,7 +181,7 @@ export default {
   <!--  form-6  -->
   <div class="form-6">
     <div class="card">
-      <div class="steps" v-if="isMainFormOpened">
+      <div v-if="isMainFormOpened" class="steps">
         <div class="stepss step-1">
           <i class="fa-solid fa-circle-check"></i>
           <div>
@@ -262,22 +262,22 @@ export default {
       </div>
 
       <!-- add image popup -->
-      <div class="step-image" v-if="isAddImageOpened">
+      <div v-if="isAddImageOpened" class="step-image">
         <form action="">
           <h3>Khách sạn của Quý vị trông ra sao</h3>
           <p>
             <strong>Đăng tải ít nhất 5 ảnh.</strong> Càng đăng nhiều, Quý vị càng có cơ hội nhận đặt
             phòng. Quý vị có thể thêm ảnh sau.
           </p>
-          <div class="upload-container" id="dropZone">
+          <div id="dropZone" class="upload-container">
             <i class="fa-regular fa-image"></i>
             <h3>Kéo và thả hoặc</h3>
             <label class="upload-button" for="fileInput">
               <span>Đăng tải ảnh</span>
             </label>
             <input
-              type="file"
               id="fileInput"
+              type="file"
               accept="image/jpeg, image/png"
               multiple
               @change="handleFiles"
@@ -303,7 +303,7 @@ export default {
       <!-- end add image popup -->
 
       <!-- add room popup -->
-      <div class="container1" v-if="isAddRoomOpened">
+      <div v-if="isAddRoomOpened" class="container1">
         <h2>Chi tiết phòng</h2>
 
         <div class="section">
@@ -319,16 +319,16 @@ export default {
         <div class="section">
           <label>Quý vị có bao nhiêu phòng loại này?</label>
           <input
+            v-model="getJoinFormData.roomDetails.numberOfRooms"
             type="number"
             value="1"
             min="1"
-            v-model="getJoinFormData.roomDetails.numberOfRooms"
           />
         </div>
 
         <div class="section">
           <label>Có loại giường nào trong phòng này?</label>
-          <div class="bed-option" v-for="(bed, index) in getJoinFormData.bedOptions" :key="index">
+          <div v-for="(bed, index) in getJoinFormData.bedOptions" :key="index" class="bed-option">
             <span
               ><i class="fa-solid fa-bed"></i>{{ bed.name }}<br /><small
                 >Rộng {{ bed.width }} cm</small
@@ -378,11 +378,11 @@ export default {
           <div>
             <label>Có bao nhiêu khách có thể nghỉ ở phòng này</label>
             <div class="number-guest">
-              <input type="number" min="1" v-model="getJoinFormData.roomDetails.numberOfGuests" />
+              <input v-model="getJoinFormData.roomDetails.numberOfGuests" type="number" min="1" />
             </div>
             <label>Phòng này rộng bao nhiêu</label>
             <div class="area-room">
-              <input type="number" min="1" v-model="getJoinFormData.roomDetails.roomArea" />
+              <input v-model="getJoinFormData.roomDetails.roomArea" type="number" min="1" />
               <select>
                 <option value="">mét vuông</option>
                 <option value="">feet vuông</option>
@@ -392,21 +392,21 @@ export default {
             <label for="">Có được hút thuốc trong phòng này không?</label>
             <span style="margin-right: 10px"
               ><input
+                v-model="getJoinFormData.roomDetails.allowSmoke"
                 type="radio"
                 name="smoking"
                 value="yes"
                 style="margin-right: 3px"
-                v-model="getJoinFormData.roomDetails.allowSmoke"
               />
               Có</span
             >
             <span
               ><input
+                v-model="getJoinFormData.roomDetails.allowSmoke"
                 type="radio"
                 name="smoking"
                 value="no"
                 style="margin-right: 3px"
-                v-model="getJoinFormData.roomDetails.allowSmoke"
               />
               Không</span
             >

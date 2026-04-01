@@ -16,7 +16,7 @@ export default {
     <div class="popup-content">
       <div class="popup-header">
         <h2>Chọn ngôn ngữ của bạn</h2>
-        <button class="close-popup-btn" @click="this.$emit('close-language-popup')">✖</button>
+        <button class="close-popup-btn" @click="$emit('close-language-popup')">✖</button>
       </div>
       <p class="recommended-text">Được đề xuất cho bạn</p>
       <div class="languages">

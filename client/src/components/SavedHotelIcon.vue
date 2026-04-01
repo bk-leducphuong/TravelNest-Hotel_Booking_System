@@ -21,6 +21,9 @@ export default {
   computed: {
     ...mapGetters('auth', ['isUserAuthenticated'])
   },
+  mounted() {
+    this.checkFavoriteHotel()
+  },
   methods: {
     async saveFavoriteHotel() {
       try {
@@ -88,16 +91,13 @@ export default {
         console.error(error)
       }
     }
-  },
-  mounted() {
-    this.checkFavoriteHotel()
   }
 }
 </script>
 <template>
   <button class="favorite-button" @click.stop="saveFavoriteHotel()">
-    <i class="fa-solid fa-heart" style="color: #e70d0d" v-if="isFavorite"></i>
-    <i class="fa-regular fa-heart" v-else></i>
+    <i v-if="isFavorite" class="fa-solid fa-heart" style="color: #e70d0d"></i>
+    <i v-else class="fa-regular fa-heart"></i>
   </button>
 </template>
 <style scoped>

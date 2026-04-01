@@ -20,7 +20,6 @@ export default {
   data() {
     return {}
   },
-  mounted() {},
   computed: {
     currentComponent() {
       const params = this.$route.params.details
@@ -41,11 +40,12 @@ export default {
           return PersonalInformation
       }
     }
-  }
+  },
+  mounted() {}
 }
 </script>
 <template>
-  <TheHeader :isSearchOpen="false" />
+  <TheHeader :is-search-open="false" />
   <div class="account-settings">
     <!--Sidebar-->
     <div

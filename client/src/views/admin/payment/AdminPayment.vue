@@ -139,7 +139,7 @@ export default {
           <h2>Ready to Get Started?</h2>
           <p>Set up your Stripe account and start managing your earnings today.</p>
           <p>If you have already set up Stripe Connect, you can reset your Stripe Connect account by clicking the button below.</p>
-          <a @click="createAccount" class="cta-button">{{ isLoading ? "Loading..." : "Set Up Stripe Now" }}</a>
+          <a class="cta-button" @click="createAccount">{{ isLoading ? "Loading..." : "Set Up Stripe Now" }}</a>
         </div>
       </section>
 

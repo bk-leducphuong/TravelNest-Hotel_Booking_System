@@ -127,29 +127,29 @@ export default {
 <template>
   <Loading v-model:active="isLoading" :color="`#003b95`" :is-full-page="true" />
   <div class="validation-container">
-    <div class="password-card" v-if="step === 1">
+    <div v-if="step === 1" class="password-card">
       <i
         class="fa-solid fa-xmark"
         style="position: absolute; top: 15px; right: 15px; cursor: pointer"
-        @click="this.$emit('close')"
+        @click="$emit('close')"
       ></i>
       <h1 class="title">Reset Password</h1>
       <p class="subtitle">Enter your new password and confirm it.</p>
 
       <form @submit.prevent>
         <div class="password-container">
-          <input type="password" placeholder="New Password" v-model="newPassword" required />
+          <input v-model="newPassword" type="password" placeholder="New Password" required />
           <input
+            v-model="confirmPassword"
             type="password"
             placeholder="Confirm Password"
-            v-model="confirmPassword"
             required
           />
         </div>
         <button type="submit" class="submit-password-btn" @click="goSecondStep">Submit</button>
       </form>
     </div>
-    <div class="validation-card" v-if="step === 2">
+    <div v-if="step === 2" class="validation-card">
       <h1 class="title">OTP Verification</h1>
       <p class="subtitle">
         Enter the 4-digit verification code that was sent to your email if this email is exist.
@@ -158,14 +158,14 @@ export default {
       <form @submit.prevent>
         <div class="otp-container">
           <input
+            v-for="index in 4"
+            :key="index"
+            ref="inputs"
             type="text"
             class="otp-input"
             maxlength="1"
             pattern="[0-9]"
             required
-            v-for="index in 4"
-            :key="index"
-            ref="inputs"
             placeholder=" "
             @input="moveToNext($event.target.value, index - 1)"
             @keyup.delete="backToPrevious(index - 1)"

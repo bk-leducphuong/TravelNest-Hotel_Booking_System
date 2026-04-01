@@ -37,6 +37,13 @@ export default {
       this.getDailyRevenue()
     }
   },
+  mounted() {
+    this.calculateDate()
+    this.getTotalBookings()
+    this.getRoomSales()
+    this.getNewCustomers()
+    this.getDailyRevenue()
+  },
   methods: {
     calculateDate() {
       this.endDate = new Date()
@@ -124,13 +131,6 @@ export default {
         errorHandler(error)
       }
     }
-  },
-  mounted() {
-    this.calculateDate()
-    this.getTotalBookings()
-    this.getRoomSales()
-    this.getNewCustomers()
-    this.getDailyRevenue()
   }
 }
 </script>
@@ -169,7 +169,7 @@ export default {
           <div class="card">
             <h3 class="card-title">Rooms Sales</h3>
             <div class="room-stats" style="display: flex; flex-direction: column; gap: 10px">
-              <span style="font-size: 20px" v-for="room in roomSales" :key="room.room_id">
+              <span v-for="room in roomSales" :key="room.room_id" style="font-size: 20px">
                 {{ room.roomName }} : {{ room.book_count }} bookings
               </span>
             </div>
@@ -178,10 +178,10 @@ export default {
 
         <!-- Charts -->
         <div class="chart">
-          <RoomBookingChart :roomSales="roomSales" :totalBookings="totalBookings" />
+          <RoomBookingChart :room-sales="roomSales" :total-bookings="totalBookings" />
         </div>
         <div class="chart">
-          <SalesRevenue :dailyRevenue="dailyRevenue" :startDate="startDate" :endDate="endDate" />
+          <SalesRevenue :daily-revenue="dailyRevenue" :start-date="startDate" :end-date="endDate" />
         </div>
 
         <!-- End Charts -->
@@ -194,9 +194,9 @@ export default {
             <div class="card-content">
               <ul class="customer-list">
                 <li
-                  class="customer-item"
                   v-for="customer in newCustomers"
                   :key="customer.new_customers"
+                  class="customer-item"
                 >
                   <div class="avatar avatar-ab">
                     <img :src="customer.profile_picture_url" alt="profile_picture_url" />

@@ -14,7 +14,6 @@ const { addJob } = require('@utils/bullmq.utils');
 
 const { bucketName } = require('@utils/minio.utils');
 const elasticsearchHelper = require('../helpers/elasticsearch.helper');
-const destinationElasticsearchHelper = require('../helpers/destination_elasticsearch.helper');
 const searchRepository = require('../repositories/search.repository');
 const destinationRepository = require('../repositories/destination.repository');
 const imageRepository = require('../repositories/image.repository');

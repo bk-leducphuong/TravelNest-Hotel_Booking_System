@@ -67,7 +67,7 @@ export default {
 }
 </script>
 <template>
-  <TheHeader :isSearchOpen="false" />
+  <TheHeader :is-search-open="false" />
   <!-- progress bar -->
   <div class="stepper-wrapper">
     <div class="stepper">
@@ -124,7 +124,7 @@ export default {
           </div>
         </div>
         <div style="margin-top: 20px">
-          <span class="back-button" @click="this.$router.go(-1)">Đổi lựa chọn của bạn</span>
+          <span class="back-button" @click="$router.go(-1)">Đổi lựa chọn của bạn</span>
         </div>
       </div>
 
@@ -196,11 +196,11 @@ export default {
     </div>
 
     <!-- right container -->
-    <div class="sub_container2" v-if="currentStep == 2">
+    <div v-if="currentStep == 2" class="sub_container2">
       <!--account loged in-->
       <div class="hotel-info">
         <div style="display: flex; flex-direction: row">
-          <div class="signin-content" v-if="getUserInformation">
+          <div v-if="getUserInformation" class="signin-content">
             <div class="profile-image">
               <img :src="getUserInformation.profile_picture_url" alt="Profile" />
             </div>
@@ -225,14 +225,14 @@ export default {
             <div class="form-group">
               <label>Full name<span class="required">*</span></label>
               <input v-if="getUserInformation"  :disabled="getUserInformation.full_name != null" :placeholder="getUserInformation.full_name"  type="text" style="width: 95%" required />
-              <input type="text" v-else placeholder="your full name"> 
+              <input v-else type="text" placeholder="your full name"> 
             </div>
           </div>
 
           <div class="form-group">
             <label>Email address <span class="required">*</span></label>
             <input v-if="getUserInformation" disabled :placeholder="getUserInformation.email"  type="email" style="width: 96%" />
-            <input type="email" placeholder="Your email" v-else>
+            <input v-else type="email" placeholder="Your email">
             <div class="helper-text">Confirmation email goes to this address</div>
           </div>
 
@@ -250,7 +250,7 @@ export default {
                 <option selected>VN +84</option>
               </select>
               <input v-if="getUserInformation" disabled :placeholder="getUserInformation.phone_number" type="text" class="phone-number" required />
-              <input type="text" v-else placeholder="Your phone number"> 
+              <input v-else type="text" placeholder="Your phone number"> 
             </div>
             <div class="helper-text">Needed by the property to validate your booking</div>
           </div>
@@ -318,7 +318,7 @@ export default {
         <textarea></textarea>
 
         <div class="checkbox-item">
-          <input type="checkbox" id="parking" />
+          <input id="parking" type="checkbox" />
           <label for="parking" class="checkbox-label"
             >I would like free private parking on site</label
           >
@@ -426,13 +426,13 @@ export default {
       </div>
     </div>
 
-    <div class="sub_container2" v-if="currentStep == 3">
+    <div v-if="currentStep == 3" class="sub_container2">
       <div class="hotel-info">
         <h1>How do you want to pay?</h1>
         <CheckOut
-          :bookingInfor="getBookingInfor"
-          :searchData="getSearchData"
-          :userInfor="{
+          :booking-infor="getBookingInfor"
+          :search-data="getSearchData"
+          :user-infor="{
             fullName: getUserInformation.full_name,
             email: getUserInformation.email,
             phoneNumber: getUserInformation.phone_number

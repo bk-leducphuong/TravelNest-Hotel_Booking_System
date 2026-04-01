@@ -1,8 +1,8 @@
 <template>
   <div>
-    <div class="slide" v-if="isSearchOpen">
+    <div v-if="isSearchOpen" class="slide">
       <div class="container">
-        <div class="inner-wrap" v-if="this.$route.name === 'Home'">
+        <div v-if="$route.name === 'Home'" class="inner-wrap">
           <strong>{{ $t('userHeader.titleHeader') }}</strong>
           <br />
           <p>{{ $t('userHeader.subtitleHeader') }}</p>
@@ -11,7 +11,7 @@
     </div>
 
     <!-- Search bar -->
-    <div class="search" v-if="isSearchOpen">
+    <div v-if="isSearchOpen" class="search">
       <div class="container">
         <div class="search-bar">
           <!-- Location input with autocomplete -->
@@ -22,8 +22,8 @@
               :placeholder="$t('userHeader.locationInputPlaceholder')"
               :prefix-icon="LocationIcon"
               clearable
-              @select="handleSelect"
               class="search-input"
+              @select="handleSelect"
             >
               <template #default="{ item }">
                 <div class="location-item-suggestion">
@@ -46,23 +46,23 @@
               :disabled-date="disabledDate"
               format="DD/MM/YYYY"
               value-format="YYYY-MM-DD"
-              @change="handleDateChange"
               class="search-input"
+              @change="handleDateChange"
             />
           </div>
 
           <!-- Guest room input -->
-          <div class="guest-room-wrapper" v-click-outside="hideGuestSelector">
+          <div v-click-outside="hideGuestSelector" class="guest-room-wrapper">
             <input
-              type="text"
               v-model="guestDetails"
+              type="text"
               class="search-input"
-              @click="toggleGuestSelector"
               readonly
+              @click="toggleGuestSelector"
             />
 
             <!-- Guest room selector -->
-            <div v-if="showGuestSelector" class="guest-room-selector" id="guest-room-selector">
+            <div v-if="showGuestSelector" id="guest-room-selector" class="guest-room-selector">
               <div class="selector-item">
                 <span>{{ $t('userHeader.guestInputPlaceholder_1') }}</span>
                 <ElInputNumber
@@ -159,6 +159,33 @@
         );
       },
     },
+    async mounted() {
+      if (this.getSearchData) {
+        this.selectedLocation = this.getSearchData.location;
+        if (this.getSearchData.checkInDate && this.getSearchData.checkOutDate) {
+          // Ensure dates are not in the past
+          let checkInDate = this.getSearchData.checkInDate;
+          let checkOutDate = this.getSearchData.checkOutDate;
+
+          if (new Date(checkInDate).getTime() < new Date().getTime()) {
+            checkInDate = new Date().toISOString().split('T')[0];
+          }
+          if (new Date(checkOutDate).getTime() < new Date().getTime()) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            checkOutDate = tomorrow.toISOString().split('T')[0];
+          }
+
+          this.dateRange = [checkInDate, checkOutDate];
+          this.checkInDate = checkInDate;
+          this.checkOutDate = checkOutDate;
+        }
+        this.children = this.getSearchData.children;
+        this.adults = this.getSearchData.adults;
+        this.rooms = this.getSearchData.rooms;
+        this.numberOfDays = this.getSearchData.numberOfDays;
+      }
+    },
     methods: {
       async querySearch(queryString, cb) {
         if (!queryString || !queryString.trim()) {
@@ -232,33 +259,6 @@
           },
         });
       },
-    },
-    async mounted() {
-      if (this.getSearchData) {
-        this.selectedLocation = this.getSearchData.location;
-        if (this.getSearchData.checkInDate && this.getSearchData.checkOutDate) {
-          // Ensure dates are not in the past
-          let checkInDate = this.getSearchData.checkInDate;
-          let checkOutDate = this.getSearchData.checkOutDate;
-
-          if (new Date(checkInDate).getTime() < new Date().getTime()) {
-            checkInDate = new Date().toISOString().split('T')[0];
-          }
-          if (new Date(checkOutDate).getTime() < new Date().getTime()) {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            checkOutDate = tomorrow.toISOString().split('T')[0];
-          }
-
-          this.dateRange = [checkInDate, checkOutDate];
-          this.checkInDate = checkInDate;
-          this.checkOutDate = checkOutDate;
-        }
-        this.children = this.getSearchData.children;
-        this.adults = this.getSearchData.adults;
-        this.rooms = this.getSearchData.rooms;
-        this.numberOfDays = this.getSearchData.numberOfDays;
-      }
     },
   };
 </script>

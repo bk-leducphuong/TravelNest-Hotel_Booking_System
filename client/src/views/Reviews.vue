@@ -38,6 +38,9 @@ export default {
   computed: {
     ...mapGetters('user', ['getUserInformation'])
   },
+  async mounted() {
+    await this.getAllReviews()
+  },
   methods: {
     async getAllReviews() {
       try {
@@ -62,21 +65,18 @@ export default {
     editReview(bookingCode, hotelId, hotelName) {
       this.toast.info('Coming soon')
     }
-  },
-  async mounted() {
-    await this.getAllReviews()
   }
 }
 </script>
 <template>
-  <TheHeader :isSearchOpen="false" />
+  <TheHeader :is-search-open="false" />
   <div class="review-dashboard">
     <div class="left-container">
       <div class="profile-section">
         <img v-if="getUserInformation" :src="getUserInformation.profile_picture_url" alt="Profile" class="profile-image" />
         <div>
-          <h2 class="profile-name" v-if="getUserInformation">{{ getUserInformation.username }}</h2>
-          <a class="edit-profile" @click="this.$router.push('/account-settings/personal-information')">Edit your profile</a>
+          <h2 v-if="getUserInformation" class="profile-name">{{ getUserInformation.username }}</h2>
+          <a class="edit-profile" @click="$router.push('/account-settings/personal-information')">Edit your profile</a>
         </div>
       </div>
 
@@ -107,7 +107,7 @@ export default {
       <!-- <div class="right-header">
         <h2>Reviews</h2>
       </div> -->
-      <div class="review-card" v-for="(review, index) in reviews" :key="index">
+      <div v-for="(review, index) in reviews" :key="index" class="review-card">
         <div style="display: flex; gap: 16px; align-items: start">
           <img
             :src="JSON.parse(review.hotel.image_urls)[0]"
@@ -118,15 +118,15 @@ export default {
             <h4 v-if="review.review.length == 0">You haven't reviewed your stay at {{ review.hotel.name }}</h4>
             <h4 v-else>You have reviewed your stay at {{ review.hotel.name }}</h4>
             <div>
-              <span class="" v-if="review.review.length == 0"
+              <span v-if="review.review.length == 0" class=""
                 >You only have 60 days left to review.</span
               >
-              <span class="review-status" v-else>Reviewed</span>
+              <span v-else class="review-status">Reviewed</span>
             </div>
-            <button class="review-button"v-if="review.review.length == 0" @click="makeReview(review.booking_code, review.hotel.hotel_id, review.hotel.name)">
+            <button v-if="review.review.length == 0"class="review-button" @click="makeReview(review.booking_code, review.hotel.hotel_id, review.hotel.name)">
               Review your stay
             </button>
-            <button class="review-button" v-else @click="editReview(review.booking_code, review.hotel.hotel_id, review.hotel.name)">
+            <button v-else class="review-button" @click="editReview(review.booking_code, review.hotel.hotel_id, review.hotel.name)">
               Edit your review
             </button>
           </div>

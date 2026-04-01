@@ -63,13 +63,13 @@ export default {
 }
 </script>
 <template>
-  <Header :isSearchOpen="false" />
-  <LoadingPopup :isLoading="isLoading" :isLoaded="isLoaded" :startTitle="startTitle" :endTitle="endTitle" :fail="fail" :redirectUrl="redirectUrl"/>
+  <Header :is-search-open="false" />
+  <LoadingPopup :is-loading="isLoading" :is-loaded="isLoaded" :start-title="startTitle" :end-title="endTitle" :fail="fail" :redirect-url="redirectUrl"/>
   <!-- left section -->
   <div class="cancel-container">
     <!-- step 1 -->
-    <div class="cancel-left" v-if="step === 1">
-      <a @click="this.$router.back()" class="back-link">&lt; Back to my booking</a>
+    <div v-if="step === 1" class="cancel-left">
+      <a class="back-link" @click="$router.back()">&lt; Back to my booking</a>
       <h1 class="section-title">Step {{ step }} of 2</h1>
       <h2 class="reason-title">Reason for canceling</h2>
       <p class="reason-desc">
@@ -77,7 +77,7 @@ export default {
       </p>
       <form>
         <label for="reason" class="reason-label">Reason</label>
-        <select id="reason" class="reason-select" v-model="reason">
+        <select id="reason" v-model="reason" class="reason-select">
           <option value="Change of dates or destination">Change of dates or destination</option>
           <option value="Found a better price">Found a better price</option>
           <option value="Change of plans">Change of plans</option>
@@ -85,13 +85,13 @@ export default {
         </select>
         <div class="buttons">
           <button type="submit" class="btn-primary" @click="nextStep">Continue</button>
-          <a @click="this.$router.push('/bookings')" class="btn-link">I want to keep this booking</a>
+          <a class="btn-link" @click="$router.push('/bookings')">I want to keep this booking</a>
         </div>
       </form>
     </div>
 
     <!-- step 2 -->
-    <div class="cancel-left" v-if="step === 2">
+    <div v-if="step === 2" class="cancel-left">
       <a class="back-link" @click="backStep">&lt; Previous step</a>
       <h1 class="section-title">Step {{ step }} of 2</h1>
       <h2 class="reason-title">Confirm cancellation</h2>
@@ -100,10 +100,10 @@ export default {
         <a href="#" class="btn-link">contact us directly</a>.
       </p>
       <div class="buttons">
-        <button class="cancel-btn" @click="cancelBooking" :disabled="disableCancelBtn">
+        <button class="cancel-btn" :disabled="disableCancelBtn" @click="cancelBooking">
             <span>Cancel Booking</span>
         </button>
-        <a @click="this.$router.push('/bookings')" class="btn-link">I want to keep this booking</a>
+        <a class="btn-link" @click="$router.push('/bookings')">I want to keep this booking</a>
       </div>
     </div>
 

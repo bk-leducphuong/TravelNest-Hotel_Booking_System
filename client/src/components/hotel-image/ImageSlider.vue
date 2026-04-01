@@ -49,9 +49,10 @@ export default {
                 <div class="image-indicator">{{ currentImageIndex + 1 }} / {{ images.length }}</div>
                 <!-- Thumbnail List -->
                 <div class="thumbnail-list">
-                    <img v-for="(image, index) in images" :key="index" :src="image"
-                        :class="{ active: index === currentImageIndex }" @click="setImage(index)"
-                        class="thumbnail-image" alt="Thumbnail" />
+                    <img
+v-for="(image, index) in images" :key="index" :src="image"
+                        :class="{ active: index === currentImageIndex }" class="thumbnail-image"
+                        alt="Thumbnail" @click="setImage(index)" />
                 </div>
             </div>
         </div>

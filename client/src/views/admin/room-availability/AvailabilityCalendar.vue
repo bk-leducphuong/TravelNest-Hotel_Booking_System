@@ -130,6 +130,15 @@ export default {
   computed: {
     ...mapGetters('manageHotels', ['getCurrentManagingHotelId'])
   },
+  async mounted() {
+    // get all rooms
+    await this.getAllRooms()
+
+    const today = new Date()
+    this.currentMonth = today.getMonth() + 1
+    this.currentYear = today.getFullYear()
+    this.generateCalendar(this.currentYear, this.currentMonth) // Call explicitly
+  },
   methods: {
     selectYear(year) {
       this.currentYear = year
@@ -337,15 +346,6 @@ export default {
         this.isLoading = false
       }
     }
-  },
-  async mounted() {
-    // get all rooms
-    await this.getAllRooms()
-
-    const today = new Date()
-    this.currentMonth = today.getMonth() + 1
-    this.currentYear = today.getFullYear()
-    this.generateCalendar(this.currentYear, this.currentMonth) // Call explicitly
   }
 }
 </script>
@@ -358,13 +358,13 @@ export default {
       <div class="main-content">
         <div class="header">
           <div style="display: flex; gap: 10px; align-items: center">
-            <select class="room-select" v-model="currentRoom">
+            <select v-model="currentRoom" class="room-select">
               <option v-for="(room, index) in rooms" :key="room.room_id" :value="room">
                 {{ room.room_name }}
               </option>
             </select>
             <div style="display: flex; align-items: center; gap: 10px">
-              <select class="month-select" v-model="currentMonth">
+              <select v-model="currentMonth" class="month-select">
                 <option v-for="month in monthsInYear" :key="month.value" :value="month.value">
                   {{ month.text }} {{ currentYear }}
                 </option>
@@ -404,15 +404,15 @@ export default {
                 @mousemove="dragOver(weekIndex, dayIndex)"
                 @mouseup="stopDrag"
               >
-                <div class="date-number" v-if="day">{{ day }}</div>
-                <div class="number-available" style="font-size: 10px" v-if="day">
+                <div v-if="day" class="date-number">{{ day }}</div>
+                <div v-if="day" class="number-available" style="font-size: 10px">
                   {{
                     roomInventoryMap[weekIndex][dayIndex].total_inventory -
                     roomInventoryMap[weekIndex][dayIndex].total_reserved
                   }}
                   left to sell
                 </div>
-                <div class="room-price" v-if="day && currentRoom">
+                <div v-if="day && currentRoom" class="room-price">
                   VND
                   {{
                     parseInt(roomInventoryMap[weekIndex][dayIndex].price_per_night).toLocaleString(
@@ -426,29 +426,29 @@ export default {
           <div class="settings-panel">
             <div class="panel-section">
               <h3>Start date</h3>
-              <input disabled type="text" class="date-input" id="start-date" v-model="startDate" />
+              <input id="start-date" v-model="startDate" disabled type="text" class="date-input" />
               <h3>End date</h3>
-              <input disabled type="text" class="date-input" id="end-date" v-model="endDate" />
+              <input id="end-date" v-model="endDate" disabled type="text" class="date-input" />
             </div>
             <div class="panel-section">
               <h3>Open or close for bookings</h3>
               <div class="radio-group">
                 <label>
                   <input
+                    v-model="newRoomStatus"
                     type="radio"
                     name="status"
                     :disabled="!enableEdit"
-                    v-model="newRoomStatus"
                     value="open"
                   />
                   Open
                 </label>
                 <label>
                   <input
+                    v-model="newRoomStatus"
                     type="radio"
                     name="status"
                     :disabled="!enableEdit"
-                    v-model="newRoomStatus"
                     value="close"
                   />
                   Closed
@@ -456,10 +456,10 @@ export default {
               </div>
               <h3>How many left rooms to sell</h3>
               <input
+                v-model="numberOfLeftRoom"
                 :disabled="!enableEdit"
                 type="text"
                 class="price-input"
-                v-model="numberOfLeftRoom"
               />
               <div class="currency">Total price (VND)</div>
               <input
@@ -469,13 +469,13 @@ export default {
                 :value="price.toLocaleString('vi-VN')"
               />
               <div class="currency">Price for one days (VND)</div>
-              <input :disabled="!enableEdit" type="text" class="price-input" v-model="newPrice" />
+              <input v-model="newPrice" :disabled="!enableEdit" type="text" class="price-input" />
               <div class="action-button-container">
                 <button
                   class="edit-btn"
-                  @click="enableEdit = true"
                   :disabled="enableEdit"
                   :class="{ 'disabled-button': enableEdit }"
+                  @click="enableEdit = true"
                 >
                   Edit
                 </button>

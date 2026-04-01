@@ -48,6 +48,12 @@ export default {
   computed: {
     ...mapGetters('manageHotels', ['getCurrentManagingHotelId'])
   },
+
+  async mounted() {
+    this.isLoading = true
+    await this.getAllRoomAmenities()
+    this.isLoading = false
+  },
   methods: {
     async getAllRoomAmenities() {
       try {
@@ -141,12 +147,6 @@ export default {
     }
   },
 
-  async mounted() {
-    this.isLoading = true
-    await this.getAllRoomAmenities()
-    this.isLoading = false
-  },
-
   async beforeUnmount() {
     await this.saveAllAmenities()
   }
@@ -176,15 +176,15 @@ export default {
             <!-- Measurement Unit Selection -->
             <div class="form-group">
               <h2>What's your preferred unit of measurement?</h2>
-              <div class="switch-toggle" id="donvi">
+              <div id="donvi" class="switch-toggle">
                 <span
-                  @click="unitArea = 'squareMeter'"
                   :class="{ active: unitArea === 'squareMeter' }"
+                  @click="unitArea = 'squareMeter'"
                   >square meter</span
                 >
                 <span
-                  @click="unitArea = 'squareFeet'"
                   :class="{ active: unitArea === 'squareFeet' }"
+                  @click="unitArea = 'squareFeet'"
                   >square feet</span
                 >
               </div>
@@ -196,9 +196,9 @@ export default {
             <div class="form-group">
               <h2>Please enter the size of your room(s).</h2>
               <div class="input-group">
-                <label style="width: 30%" v-for="room in rooms" :key="room.room_id">
+                <label v-for="room in rooms" :key="room.room_id" style="width: 30%">
                   <span>{{ room.room_name }}</span>
-                  <input type="number" v-model="room.room_size" id="deluxe-two-bedroom-suite" />
+                  <input id="deluxe-two-bedroom-suite" v-model="room.room_size" type="number" />
                 </label>
               </div>
             </div>
@@ -214,9 +214,9 @@ export default {
             answering yes or no to each question
           </p>
           <div
-            style="display: flex; border-bottom: 1px solid #8a8a8a"
             v-for="amenity in topAmenities"
             :key="amenity.amenity"
+            style="display: flex; border-bottom: 1px solid #8a8a8a"
           >
             <div style="width: 50%">
               <h2>{{ amenity.amenity }}</h2>
@@ -230,15 +230,15 @@ export default {
                 flex-direction: column;
               "
             >
-              <div class="switch-toggle switch-3 switch-candy" id="1">
+              <div id="1" class="switch-toggle switch-3 switch-candy">
                 <span
-                  :class="{ active: amenity.room.length == this.rooms.length }"
+                  :class="{ active: amenity.room.length == rooms.length }"
                   @click="addAll(amenity.amenity)"
                   >All apartments</span
                 >
                 <span
                   :class="{
-                    active: amenity.room.length > 0 && amenity.room.length < this.rooms.length
+                    active: amenity.room.length > 0 && amenity.room.length < rooms.length
                   }"
                   >Some apartments</span
                 >
@@ -252,9 +252,9 @@ export default {
               <div style="display: flex; flex-direction: column">
                 <h2>Select where this amenity is available</h2>
 
-                <label class="container1" v-for="room in rooms" :key="room.room_id"
+                <label v-for="room in rooms" :key="room.room_id" class="container1"
                   >{{ room.room_name }}
-                  <input type="checkbox" v-model="amenity.room" :value="room.room_id" />
+                  <input v-model="amenity.room" type="checkbox" :value="room.room_id" />
                   <span class="checkmark"></span>
                 </label>
               </div>
@@ -278,9 +278,9 @@ export default {
             answering yes or no to each question
           </p>
           <div
-            style="display: flex; border-bottom: 1px solid #8a8a8a"
             v-for="amenity in recommendRoomAmenities"
             :key="amenity.amenity"
+            style="display: flex; border-bottom: 1px solid #8a8a8a"
           >
             <div style="width: 50%">
               <h2>{{ amenity.amenity }}</h2>
@@ -294,15 +294,15 @@ export default {
                 flex-direction: column;
               "
             >
-              <div class="switch-toggle switch-3 switch-candy" id="1">
+              <div id="1" class="switch-toggle switch-3 switch-candy">
                 <span
-                  :class="{ active: amenity.room.length == this.rooms.length }"
+                  :class="{ active: amenity.room.length == rooms.length }"
                   @click="addAll(amenity.amenity)"
                   >All apartments</span
                 >
                 <span
                   :class="{
-                    active: amenity.room.length > 0 && amenity.room.length < this.rooms.length
+                    active: amenity.room.length > 0 && amenity.room.length < rooms.length
                   }"
                   >Some apartments</span
                 >
@@ -316,9 +316,9 @@ export default {
               <div style="display: flex; flex-direction: column">
                 <h2>Select where this amenity is available</h2>
 
-                <label class="container1" v-for="room in rooms" :key="room.room_id"
+                <label v-for="room in rooms" :key="room.room_id" class="container1"
                   >{{ room.room_name }}
-                  <input type="checkbox" v-model="amenity.room" :value="room.room_id" />
+                  <input v-model="amenity.room" type="checkbox" :value="room.room_id" />
                   <span class="checkmark"></span>
                 </label>
               </div>

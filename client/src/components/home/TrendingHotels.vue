@@ -1,5 +1,5 @@
 <template>
-  <div class="hotel-container container" v-if="trendingHotels.length > 0">
+  <div v-if="trendingHotels.length > 0" class="hotel-container container">
     <h2 class="h2">{{ $t('userHome.trendingHotels') }}</h2>
     <Loading
       v-model:active="isLoading"
@@ -18,9 +18,9 @@
         <ElCarouselItem v-for="(group, groupIndex) in groupedHotels" :key="groupIndex">
           <div class="hotel-group">
             <div
-              class="hotel-card"
               v-for="(hotel, index) in group"
               :key="hotel.id || index"
+              class="hotel-card"
               @click="redirectToHotelDetails(hotel)"
             >
               <div class="hotel-image">
@@ -34,7 +34,7 @@
               <div class="hotel-content">
                 <h2 class="hotel-name">{{ hotel.name }}</h2>
                 <p class="hotel-location">{{ displayAddress(hotel.address) }}</p>
-                <div class="hotel-rating" v-if="hotel.ratingSummary">
+                <div v-if="hotel.ratingSummary" class="hotel-rating">
                   <span class="rating-badge">{{ hotel.ratingSummary.overallRating }}</span>
                   <span class="review-count">{{ hotel.ratingSummary.totalReviews }} đánh giá</span>
                 </div>

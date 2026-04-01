@@ -24,6 +24,8 @@ Dockerfile*
 docker-compose*.yml
 .dockerignore
 database/migrations
+# Docker compose local volume data
 elasticsearch/data
 minio-data
+minio-data-test
 ../docs

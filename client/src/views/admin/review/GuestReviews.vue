@@ -47,6 +47,12 @@ export default {
       }
     }
   },
+  async mounted() {
+    this.isLoading = true
+    await this.getAllReviews()
+    this.displayReviews = this.reviews // default view mode is all reviews
+    this.isLoading = false
+  },
   methods: {
     async getAllReviews() {
       try {
@@ -107,12 +113,6 @@ export default {
       this.$refs[`save-reply-${reviewId}`][0].style.display = 'inline' // show the save button
       this.$refs[`reply-${reviewId}`][0].style.display = 'none' // hide the reply section
     }
-  },
-  async mounted() {
-    this.isLoading = true
-    await this.getAllReviews()
-    this.displayReviews = this.reviews // default view mode is all reviews
-    this.isLoading = false
   }
 }
 </script>
@@ -159,7 +159,7 @@ export default {
           <!-- Reviews Section -->
           <div class="reviews-section">
             <div class="action-bar">
-              <div class="switch-toggle switch-3 switch-candy" id="1">
+              <div id="1" class="switch-toggle switch-3 switch-candy">
                 <span :class="{ active: viewMode === 'all' }" @click="viewMode = 'all'"
                   >All reviews</span
                 >
@@ -184,7 +184,7 @@ export default {
             </div>
 
             <div class="reviews">
-              <div class="review-card" v-for="review in displayReviews" :key="review.review_id">
+              <div v-for="review in displayReviews" :key="review.review_id" class="review-card">
                 <div class="review-header">
                   <span class="score">{{ review.rating }}</span>
                   <div>
@@ -199,18 +199,18 @@ export default {
                   Review date: {{ new Date(review.created_at).toLocaleDateString() }}
                 </div>
                 <br />
-                <div class="review-details" v-if="review.review_criteria.length > 0">
+                <div v-if="review.review_criteria.length > 0" class="review-details">
                   <p v-for="criteria in review.review_criteria" :key="criteria.criteria_name">
                     {{ criteria.criteria_name }}: <span class="bar"><span :style="{ width: criteria.score / 5 * 100 + '%' }"></span></span>
                   </p>
                 </div>
-                <div class="review-details" v-else>
+                <div v-else class="review-details">
                   <p v-if="review.rating >= 3">Đã đánh giá khách sạn của bạn tốt</p>
                   <p v-else>Đã đánh giá khách sạn của bạn chưa tốt</p>
                 </div>
                 <div class="line-break"></div>
                 <!-- show the comment -->
-                <div class="comment-section" v-if="viewMode !== 'all'">
+                <div v-if="viewMode !== 'all'" class="comment-section">
                   <h4>
                     <strong>We love this place!</strong>
                   </h4>
@@ -219,29 +219,29 @@ export default {
                   </p>
                 </div>
                 <!-- write your reply -->
-                <div class="reply-section" v-if="viewMode !== 'all'">
+                <div v-if="viewMode !== 'all'" class="reply-section">
                   <button
-                    @click="replyToReview(review.review_id)"
                     v-if="!replies[review.review_id]"
+                    @click="replyToReview(review.review_id)"
                   >
                     Reply
                   </button>
                   <button
-                    @click="saveReply(review.review_id)"
-                    style="background-color: #007bff; color: #fff; display: none"
                     :ref="`save-reply-${review.review_id}`"
+                    style="background-color: #007bff; color: #fff; display: none"
+                    @click="saveReply(review.review_id)"
                   >
                     Save
                   </button>
                   <div
-                    class="write-reply"
                     :ref="`write-reply-${review.review_id}`"
+                    class="write-reply"
                     style="display: none"
                   >
                     <label for="comment">Write your reply here...</label>
                     <textarea
-                      v-model="replies[review.review_id]"
                       id="comment"
+                      v-model="replies[review.review_id]"
                       name="comment"
                       rows="5"
                       placeholder="Write your review here..."
@@ -251,13 +251,12 @@ export default {
                 </div>
                 <!-- show your reply -->
                 <div
-                  class="comment-section"
                   v-if="viewMode !== 'all' && review.reply"
                   :ref="`reply-${review.review_id}`"
+                  class="comment-section"
                 >
                   <i
                     class="fa-solid fa-pen-to-square"
-                    @click="editReply(review.review_id)"
                     style="
                       font-size: 20px;
                       position: absolute;
@@ -265,6 +264,7 @@ export default {
                       right: 10px;
                       cursor: pointer;
                     "
+                    @click="editReply(review.review_id)"
                   ></i>
                   <h4>
                     <strong>Your reply</strong>

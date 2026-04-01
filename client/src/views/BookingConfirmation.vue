@@ -14,6 +14,9 @@ export default {
       bookingInformation: null
     }
   },
+  async mounted() {
+    await this.getBookingInformation()
+  },
   methods: {
     async getBookingInformation() {
       const bookingCode = this.$route.query.bookingCode
@@ -72,9 +75,6 @@ export default {
       // Convert Map to an array
       return Array.from(groupedBookings.values())
     },
-  },
-  async mounted() {
-    await this.getBookingInformation()
   }
 }
 </script>
@@ -84,7 +84,7 @@ export default {
     <div class="" style="padding: 0px 20px">
       <div class="inner-wrap">
         <div class="inner-logo">
-          <strong @click="this.$router.push('/')" style="cursor: pointer">Booking.com</strong>
+          <strong style="cursor: pointer" @click="$router.push('/')">Booking.com</strong>
         </div>
         <div class="inner-login">
           <ul>
@@ -98,7 +98,7 @@ export default {
     </div>
   </div>
   <!-- end header  -->
-  <div class="container" v-if="bookingInformation">
+  <div v-if="bookingInformation" class="container">
     <div class="success-card">
       <div class="success-header">
         <div class="success-icon"><i class="fa fa-check" aria-hidden="true" style="font-size: 50px; color: green;"></i></div>
@@ -116,7 +116,7 @@ export default {
             </div>
             <div class="detail-item">
               <div class="detail-label">Room Type</div>
-              <div class="detail-value" v-for="room in bookingInformation.rooms">{{ room.roomName }} x {{ room.quantity }}</div>
+              <div v-for="room in bookingInformation.rooms" class="detail-value">{{ room.roomName }} x {{ room.quantity }}</div>
             </div>
           </div>
         </div>
@@ -163,7 +163,7 @@ export default {
       </div>
 
       <div class="action-buttons">
-        <a @click="this.$router.push('/')" class="btn btn-primary">Home</a>
+        <a class="btn btn-primary" @click="$router.push('/')">Home</a>
         <a class="btn btn-secondary">Download Receipt</a>
       </div>
     </div>

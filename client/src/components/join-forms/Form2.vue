@@ -46,7 +46,7 @@ export default {
 }
 </script>
 <template>
-  <form class="multi-step-form" style="margin-bottom: 40px;" v-if="!openMapPopup">
+  <form v-if="!openMapPopup" class="multi-step-form" style="margin-bottom: 40px;">
     <!--  form-2  -->
     <div class="card">
       <div class="map-section">
@@ -74,13 +74,13 @@ export default {
       </div>
       <div class="form-button-container">
         <button type="button" class="previous" @click="$emit('previous')">Quay lại</button>
-        <button type="button" class="next" @click="goNext" :disabled="!checkForNext">
+        <button type="button" class="next" :disabled="!checkForNext" @click="goNext">
           Tiếp tục
         </button>
       </div>
     </div>
   </form>
-  <div id="map-container" class="leaflet-map-container" v-if="openMapPopup">
+  <div v-if="openMapPopup" id="map-container" class="leaflet-map-container">
     <LMap style="height: 500px; width: 80%" :zoom="zoom" :center="center" @click="onMapClick">
       <LTileLayer :url="tileUrl" :attribution="tileAttribution" />
       <LMarker v-if="markerPosition" :lat-lng="markerPosition"></LMarker>

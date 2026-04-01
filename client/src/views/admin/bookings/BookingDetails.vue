@@ -68,9 +68,9 @@ export default {
 }
 </script>
 <template>
-  <LoadingPopup :isLoading="isLoadingPopup" :isLoaded="isLoaded" :startTitle="startTitle" :endTitle="endTitle" :fail="fail" :redirectUrl="redirectUrl"/>
+  <LoadingPopup :is-loading="isLoadingPopup" :is-loaded="isLoaded" :start-title="startTitle" :end-title="endTitle" :fail="fail" :redirect-url="redirectUrl"/>
   <!-- cancel confirmation popup -->
-  <div class="cancel-confirmation-popup" v-if="doCancel">
+  <div v-if="doCancel" class="cancel-confirmation-popup">
     <div class="popup-content">
       <div class="popup-header">
         <h2>Are you sure you want to cancel this reservation?</h2>
@@ -207,16 +207,16 @@ export default {
           <div class="reservation-actions">
             <h4>Update this reservation</h4>
             <!-- <button class="action-btn">Change reservation dates & prices</button> -->
-            <button class="action-btn" v-if="getBookingInformation.status === 'confirmed'">Mark as a no-show</button>
-            <button class="action-btn" v-if="getBookingInformation.status === 'confirmed'" :disabled="doCancel" @click="doCancel = true">Request to cancel</button>
-            <button class="action-btn" v-if="getBookingInformation.status === 'confirmed'">Report guest misconduct</button>
+            <button v-if="getBookingInformation.status === 'confirmed'" class="action-btn">Mark as a no-show</button>
+            <button v-if="getBookingInformation.status === 'confirmed'" class="action-btn" :disabled="doCancel" @click="doCancel = true">Request to cancel</button>
+            <button v-if="getBookingInformation.status === 'confirmed'" class="action-btn">Report guest misconduct</button>
             <button class="action-btn">Print this page</button>
-            <button class="action-btn" v-if="getBookingInformation.status === 'confirmed'">Report credit card fraud</button>
-            <button class="action-btn" v-if="getBookingInformation.status === 'confirmed'">Report other chargeback cases</button>
+            <button v-if="getBookingInformation.status === 'confirmed'" class="action-btn">Report credit card fraud</button>
+            <button v-if="getBookingInformation.status === 'confirmed'" class="action-btn">Report other chargeback cases</button>
             <div class="divider"></div>
             <h4 v-if="getBookingInformation.status === 'confirmed'">Payment</h4>
-            <button class="payment-action-btn" v-if="getBookingInformation.status === 'confirmed'">Mark credit card as invalid</button>
-            <button class="payment-action-btn" v-if="getBookingInformation.status === 'confirmed'">View credit card details</button>
+            <button v-if="getBookingInformation.status === 'confirmed'" class="payment-action-btn">Mark credit card as invalid</button>
+            <button v-if="getBookingInformation.status === 'confirmed'" class="payment-action-btn">View credit card details</button>
           </div>
         </div>
       </div>

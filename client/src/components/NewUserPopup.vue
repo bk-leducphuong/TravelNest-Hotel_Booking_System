@@ -6,10 +6,10 @@ export default {
 <template>
   <div class="new-user-popup-overlay">
     <div class="new-user-popup">
-      <i class="fa-solid fa-xmark close-button" @click="this.$emit('close')"></i>
+      <i class="fa-solid fa-xmark close-button" @click="$emit('close')"></i>
       <h2>Genius</h2>
       <p>Sign in to <strong>save 10% or more</strong> with a free TravelNest membership</p>
-      <button @click="this.$router.push('/login')" class="sign-in-button">Sign in or register</button>
+      <button class="sign-in-button" @click="$router.push('/login')">Sign in or register</button>
     </div>
   </div>
 </template>

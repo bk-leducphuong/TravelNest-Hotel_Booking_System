@@ -1,5 +1,5 @@
 <template>
-  <div class="popular-container container" v-if="popularPlaces.length > 0">
+  <div v-if="popularPlaces.length > 0" class="popular-container container">
     <div class="popular-header">
       <h2 class="h2">{{ $t('userHome.popularPlaces') }}</h2>
       <h4 class="h4">{{ $t('userHome.popularPlaces_1') }}</h4>
@@ -12,22 +12,22 @@
     />
     <div class="popular-place-card-up-grid popular-place-card-grid">
       <div
-        class="popular-place-card"
         v-for="(place, index) in popularPlaces.slice(0, 2)"
         :key="place.id || index"
+        class="popular-place-card"
         @click="redirectToSearchResults(place)"
       >
         <img :src="getPlaceImage(place)" :alt="displayName(place)" />
       </div>
     </div>
     <div
-      class="popular-place-card-bottom-grid popular-place-card-grid"
       v-if="popularPlaces.length > 2"
+      class="popular-place-card-bottom-grid popular-place-card-grid"
     >
       <div
-        class="popular-place-card"
         v-for="(place, index) in popularPlaces.slice(2, 5)"
         :key="place.id || index"
+        class="popular-place-card"
         @click="redirectToSearchResults(place)"
       >
         <img :src="getPlaceImage(place)" :alt="displayName(place)" />

@@ -43,7 +43,7 @@ const initSocket = (server) => {
   const publicNamespace = io.of('/public');
 
   publicNamespace.on('connection', (socket) => {
-    logger.info(`Guest connected to /public`, { socketId: socket.id });
+    logger.info({ socketId: socket.id }, `Guest connected to /public`);
     publicController.handleConnection(publicNamespace, socket);
   });
 
@@ -58,10 +58,13 @@ const initSocket = (server) => {
   userNamespace.use(socketAuthorization([ROLES.USER, ROLES.ADMIN]));
 
   userNamespace.on('connection', (socket) => {
-    logger.info(`User connected to /user`, {
-      userId: socket.user.id,
-      socketId: socket.id,
-    });
+    logger.info(
+      {
+        userId: socket.user.id,
+        socketId: socket.id,
+      },
+      `User connected to /user`
+    );
     userController.handleConnection(userNamespace, socket);
   });
 
@@ -78,11 +81,14 @@ const initSocket = (server) => {
   );
 
   propertyNamespace.on('connection', (socket) => {
-    logger.info(`Property user connected to /property`, {
-      userId: socket.user.id,
-      roles: socket.user.roles,
-      socketId: socket.id,
-    });
+    logger.info(
+      {
+        userId: socket.user.id,
+        roles: socket.user.roles,
+        socketId: socket.id,
+      },
+      `Property user connected to /property`
+    );
     propertyController.handleConnection(propertyNamespace, socket);
   });
 
@@ -97,10 +103,13 @@ const initSocket = (server) => {
   supportNamespace.use(socketAuthorization([ROLES.SUPPORT_AGENT, ROLES.ADMIN]));
 
   supportNamespace.on('connection', (socket) => {
-    logger.info(`Support agent connected to /support`, {
-      userId: socket.user.id,
-      socketId: socket.id,
-    });
+    logger.info(
+      {
+        userId: socket.user.id,
+        socketId: socket.id,
+      },
+      `Support agent connected to /support`
+    );
     supportController.handleConnection(supportNamespace, socket);
   });
 
@@ -115,10 +124,13 @@ const initSocket = (server) => {
   adminNamespace.use(socketAuthorization([ROLES.ADMIN]));
 
   adminNamespace.on('connection', (socket) => {
-    logger.info(`Admin connected to /admin`, {
-      userId: socket.user.id,
-      socketId: socket.id,
-    });
+    logger.info(
+      {
+        userId: socket.user.id,
+        socketId: socket.id,
+      },
+      `Admin connected to /admin`
+    );
     adminController.handleConnection(adminNamespace, socket);
   });
 
@@ -168,9 +180,9 @@ const emitToNamespace = (namespaceName, event, data) => {
   try {
     const namespace = getNamespace(namespaceName);
     namespace.emit(event, data);
-    logger.info(`Emitted ${event} to namespace ${namespaceName}`);
+    logger.info({ namespaceName, event }, `Emitted ${event} to namespace ${namespaceName}`);
   } catch (error) {
-    logger.error(`Failed to emit to namespace ${namespaceName}:`, error);
+    logger.error({ namespaceName, error }, `Failed to emit to namespace ${namespaceName}:`);
   }
 };
 
@@ -186,9 +198,9 @@ const emitToUser = (userId, namespaceName, event, data) => {
     const namespace = getNamespace(namespaceName);
     const room = `user_${userId}`;
     namespace.to(room).emit(event, data);
-    logger.info(`Emitted ${event} to user ${userId} in namespace ${namespaceName}`);
+    logger.info({ userId, namespaceName, event }, `Emitted ${event} to user ${userId} in namespace ${namespaceName}`);
   } catch (error) {
-    logger.error(`Failed to emit to user ${userId}:`, error);
+    logger.error({ userId, error }, `Failed to emit to user ${userId}:`);
   }
 };
 
@@ -203,9 +215,9 @@ const emitToHotel = (hotelId, event, data) => {
     const propertyNamespace = getNamespace('/property');
     const room = `hotel_${hotelId}`;
     propertyNamespace.to(room).emit(event, data);
-    logger.info(`Emitted ${event} to hotel ${hotelId}`);
+    logger.info({ hotelId, event }, `Emitted ${event} to hotel ${hotelId}`);
   } catch (error) {
-    logger.error(`Failed to emit to hotel ${hotelId}:`, error);
+    logger.error({ hotelId, error }, `Failed to emit to hotel ${hotelId}:`);
   }
 };
 
@@ -228,7 +240,7 @@ const getSocketStats = async () => {
 
     return stats;
   } catch (error) {
-    logger.error('Failed to get socket stats:', error);
+    logger.error({ error }, 'Failed to get socket stats:');
     return {};
   }
 };

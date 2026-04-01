@@ -138,12 +138,12 @@ export default {
 }
 </script>
 <template>
-  <Header :isSearchOpen="false" />
+  <Header :is-search-open="false" />
   <div class="header-container">
     <div class="header-title">Bookings & Trips</div>
     <div class="header">
       <div class="header-left">
-        <select class="dropdown" id="trip-list" @change="arrangeBookings($event.target.value)">
+        <select id="trip-list" class="dropdown" @change="arrangeBookings($event.target.value)">
           <option value="all">Tất cả</option>
           <option value="today">Hôm nay</option>
           <option value="last-week">1 tuần trước</option>
@@ -159,7 +159,7 @@ export default {
     <div v-if="bookings.length == 0" class="no-bookings-found">
       <div>Bạn chưa có đặt phòng nào</div>
     </div>
-    <div class="booking-container" v-for="booking in arrangedBookings" :key="booking.booking_id">
+    <div v-for="booking in arrangedBookings" :key="booking.booking_id" class="booking-container">
       <h3 style="margin-bottom: 5px; font-weight: 700">{{ booking.hotel.city }}</h3>
       <p>
         {{ new Date(booking.bookedOn).toDateString() }}

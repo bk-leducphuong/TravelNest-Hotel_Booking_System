@@ -23,25 +23,33 @@
           <div class="notification-title">
             <span>Notifications</span>
           </div>
-          <div class="mark-all-read-btn" @click="markAllRead()" v-if="numberOfNewNotifications > 0">
+          <div v-if="numberOfNewNotifications > 0" class="mark-all-read-btn" @click="markAllRead()">
             <span>Mark all as read</span>
           </div>
         </div>
 
         <!-- Notification Content -->
         <div class="notification-content">
+          <!-- Loading state -->
+          <div v-if="isLoading" class="notification-loading">
+            <ElIcon class="is-loading" :size="30">
+              <Loading />
+            </ElIcon>
+          </div>
+
           <!-- Empty state -->
           <ElEmpty
-            v-if="notifications.length === 0"
+            v-else-if="notifications.length === 0"
             description="You have no notifications"
             :image-size="80"
           />
 
           <!-- Notification items -->
           <div
-            class="notification-item"
             v-for="notification in notifications"
-            :key="notification.notificationId"
+            v-else
+            :key="notification.id"
+            class="notification-item"
             @click="viewDetails(notification)"
           >
             <div class="notification-icon">
@@ -51,17 +59,17 @@
             </div>
             <div class="notification-text">
               <div class="notification-message">
-                <ElBadge is-dot :hidden="notification.is_read === 1" class="notification-dot">
+                <ElBadge is-dot :hidden="notification.is_read === true" class="notification-dot">
                   <span>{{ notification.message }}</span>
                 </ElBadge>
               </div>
-              <p class="notification-time">2 hrs ago</p>
+              <p class="notification-time">{{ formatNotificationTime(notification.created_at) }}</p>
             </div>
           </div>
         </div>
 
         <!-- Notification Footer -->
-        <div class="notification-footer" v-if="notifications.length > 0">
+        <div v-if="notifications.length > 0" class="notification-footer">
           <ElButton text type="primary" @click="handleSeeAll">See all</ElButton>
         </div>
       </div>
@@ -70,15 +78,18 @@
 </template>
 
 <script>
-  import axios from 'axios';
   import { mapGetters } from 'vuex';
-  import socket from '@/services/socket';
+  import socketService from '@/services/socket';
+  import NotificationService from '@/services/notification.service';
   import { useToast } from 'vue-toastification';
-  import { Bell } from '@element-plus/icons-vue';
+  import { Bell, Loading } from '@element-plus/icons-vue';
+  import { formatDistanceToNow } from 'date-fns';
 
   export default {
+    name: 'NotificationComponent',
     components: {
       Bell,
+      Loading,
     },
     setup() {
       const toast = useToast();
@@ -91,103 +102,159 @@
         isNotificationPopupVisible: false,
         notifications: [],
         numberOfNewNotifications: 0,
+        isLoading: false,
       };
     },
     computed: {
       ...mapGetters('auth', ['isUserAuthenticated', 'getUserId']),
     },
     watch: {
+      isUserAuthenticated: {
+        handler(isAuthenticated) {
+          if (isAuthenticated) {
+            this.setupNotificationListeners();
+            this.fetchNotifications();
+            this.fetchUnreadCount();
+          } else {
+            this.cleanup();
+          }
+        },
+        immediate: true,
+      },
       notifications: {
-        handler(newValue) {
-          this.calculateNumerOfNewNotifications();
+        handler() {
+          this.calculateNumberOfNewNotifications();
         },
         deep: true,
       },
     },
+    mounted() {
+      if (this.isUserAuthenticated) {
+        this.setupNotificationListeners();
+        this.fetchNotifications();
+        this.fetchUnreadCount();
+      }
+    },
     methods: {
-      joinRoom() {
-        if (this.isUserAuthenticated) {
-          // Tham gia vào room của admin
-          socket.emit('joinUserRoom', this.getUserId);
-          // Nhận thông báo mới
-          socket.on('newUserNotification', (data) => {
-            this.notifications.unshift(data);
-            this.calculateNumerOfNewNotifications();
-            // Auto show popover when new notification arrives
-            this.isNotificationPopupVisible = true;
-            // Auto hide after 5 seconds
-            setTimeout(() => {
-              this.isNotificationPopupVisible = false;
-            }, 5000);
-          });
-        } else {
-          console.log('User not logged in');
+      setupNotificationListeners() {
+        if (!socketService.isConnected('/user')) {
+          console.warn('Socket not connected yet. Listeners will be set up when socket connects.');
+          return;
         }
+
+        socketService.onNotification(this.handleNewNotification);
+
+        socketService.onBookingUpdate((data) => {
+          console.log('Booking update received:', data);
+        });
+
+        console.log('Notification listeners set up in Notification.vue');
       },
-      async getNotifiactions() {
+
+      handleNewNotification(notification) {
+        console.log('New notification received:', notification);
+        
+        this.notifications.unshift(notification);
+        this.calculateNumberOfNewNotifications();
+        
+        this.isNotificationPopupVisible = true;
+        
+        setTimeout(() => {
+          this.isNotificationPopupVisible = false;
+        }, 5000);
+
+        this.toast.info(notification.message || 'You have a new notification');
+      },
+
+      async fetchNotifications() {
         try {
-          const response = await axios.get(`${import.meta.env.VITE_SERVER_HOST}/api/notifications`, {
-            withCredentials: true,
+          this.isLoading = true;
+          const response = await NotificationService.getNotifications({
+            page: 1,
+            limit: 20,
           });
-          this.notifications = response.data.notifications;
+
+          this.notifications = response.data || [];
         } catch (error) {
           console.error('Error fetching notifications:', error);
+          this.toast.error('Failed to load notifications');
+        } finally {
+          this.isLoading = false;
         }
       },
-      calculateNumerOfNewNotifications() {
-        this.numberOfNewNotifications = 0;
-        this.notifications.forEach((notification) => {
-          if (notification.is_read == 0) {
-            this.numberOfNewNotifications++;
-          }
-        });
+
+      async fetchUnreadCount() {
+        try {
+          const response = await NotificationService.getUnreadCount();
+          this.numberOfNewNotifications = response.data?.unreadCount || 0;
+        } catch (error) {
+          console.error('Error fetching unread count:', error);
+        }
       },
+
+      calculateNumberOfNewNotifications() {
+        this.numberOfNewNotifications = this.notifications.filter(
+          (notification) => notification.is_read === false || notification.is_read === 0
+        ).length;
+      },
+
       async markAllRead() {
         try {
           this.notifications.forEach((notification) => {
-            notification.is_read = 1;
+            notification.is_read = true;
           });
           this.numberOfNewNotifications = 0;
 
-          await axios.get(
-            `${import.meta.env.VITE_SERVER_HOST}/api/notifications/mark-all-as-read`,
-            {
-              withCredentials: true,
-            }
-          );
-          
+          await NotificationService.markAllAsRead();
+
           this.toast.success('All notifications marked as read');
         } catch (error) {
           this.toast.error('Error marking notifications as read');
           console.error(error);
+          await this.fetchNotifications();
         }
       },
-      viewDetails(notification) {
-        // Mark notification as read when clicked
-        if (notification.is_read === 0) {
-          notification.is_read = 1;
-          this.calculateNumerOfNewNotifications();
-          // You can add API call here to update backend
+
+      async viewDetails(notification) {
+        if (notification.is_read === false || notification.is_read === 0) {
+          try {
+            notification.is_read = true;
+            this.calculateNumberOfNewNotifications();
+
+            await NotificationService.markAsRead(notification.id);
+          } catch (error) {
+            console.error('Error marking notification as read:', error);
+          }
         }
-        
-        // Close popover
+
         this.isNotificationPopupVisible = false;
-        
-        // Add navigation or detailed view logic here if needed
+
         console.log('View notification details:', notification);
       },
+
       handleSeeAll() {
         this.isNotificationPopupVisible = false;
-        // Add navigation to notifications page if exists
-        // this.$router.push('/notifications');
         console.log('Navigate to all notifications');
       },
+
+      formatNotificationTime(timestamp) {
+        if (!timestamp) return 'Just now';
+        try {
+          return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+        } catch (error) {
+          return 'Just now';
+        }
+      },
+
+      cleanup() {
+        socketService.offNotification(this.handleNewNotification);
+        socketService.offBookingUpdate();
+        this.notifications = [];
+        this.numberOfNewNotifications = 0;
+      },
     },
-    async mounted() {
-      if (this.isUserAuthenticated) {
-        await this.getNotifiactions();
-        this.joinRoom();
-      }
+    beforeUnmount() {
+      this.cleanup();
     },
   };
 </script>
@@ -259,6 +326,14 @@
         background: #a8a8a8;
       }
     }
+  }
+
+  .notification-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 120px;
+    color: #409eff;
   }
 
   .notification-item {

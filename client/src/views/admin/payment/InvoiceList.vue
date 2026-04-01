@@ -33,6 +33,22 @@ export default {
   computed: {
     ...mapGetters('manageHotels', ['getCurrentManagingHotelId'])
   },
+  async mounted() {
+    socket.on('payout-completed', async (data) => {
+      this.toast.success('Payout successful!')
+
+      this.invoices.forEach((invoice) => {
+        if (invoice.transaction_id == data.transactionId) {
+          invoice.status = 'done'
+        }
+      })
+    })
+    socket.on('payout-failed', async (data) => {
+      this.toast.error('Payout failed!')
+    })
+
+    await this.getInvoices()
+  },
   methods: {
     async getInvoices() {
       try {
@@ -78,31 +94,15 @@ export default {
         return false
       }
     }
-  },
-  async mounted() {
-    socket.on('payout-completed', async (data) => {
-      this.toast.success('Payout successful!')
-
-      this.invoices.forEach((invoice) => {
-        if (invoice.transaction_id == data.transactionId) {
-          invoice.status = 'done'
-        }
-      })
-    })
-    socket.on('payout-failed', async (data) => {
-      this.toast.error('Payout failed!')
-    })
-
-    await this.getInvoices()
   }
 }
 </script>
 <template>
   <WithdrawConfirmation
-    :withdrawAmount="withdrawAmount"
-    :withdrawTransactionId="withdrawTransactionId"
-    :hotelId="getCurrentManagingHotelId"
     v-if="isWithdrawConfirmationPopupOpen"
+    :withdraw-amount="withdrawAmount"
+    :withdraw-transaction-id="withdrawTransactionId"
+    :hotel-id="getCurrentManagingHotelId"
     @close="closeWithdrawConfirmationPopup"
   />
   <div class="invoice-list-container">

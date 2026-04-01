@@ -12,7 +12,7 @@ const logger = require('@config/logger.config');
  * @param {Socket} socket - Socket instance
  */
 exports.handleConnection = (namespace, socket) => {
-  logger.info(`Guest connected to /public namespace`, { socketId: socket.id });
+  logger.info({ socketId: socket.id }, `Guest connected to /public namespace`);
 
   // Join public rooms for broadcasts
   socket.join('public_general');
@@ -35,9 +35,13 @@ exports.handleConnection = (namespace, socket) => {
       const roomName = `hotel_page_${hotelId}`;
       socket.join(roomName);
 
-      logger.info(`Guest joined hotel page: ${hotelId}`, {
-        socketId: socket.id,
-      });
+      logger.info(
+        {
+          hotelId,
+          socketId: socket.id,
+        },
+        `Guest joined hotel page: ${hotelId}`
+      );
 
       const response = {
         success: true,
@@ -46,7 +50,7 @@ exports.handleConnection = (namespace, socket) => {
 
       if (callback) callback(response);
     } catch (error) {
-      logger.error('Error joining hotel page:', error);
+      logger.error({ error }, 'Error joining hotel page:');
       const errorResponse = {
         success: false,
         message: 'Failed to join hotel page',
@@ -61,11 +65,11 @@ exports.handleConnection = (namespace, socket) => {
       const roomName = `hotel_page_${hotelId}`;
       socket.leave(roomName);
 
-      logger.info(`Guest left hotel page: ${hotelId}`, { socketId: socket.id });
+      logger.info({ hotelId, socketId: socket.id }, `Guest left hotel page: ${hotelId}`);
 
       if (callback) callback({ success: true });
     } catch (error) {
-      logger.error('Error leaving hotel page:', error);
+      logger.error({ error }, 'Error leaving hotel page:');
       if (callback) callback({ success: false, message: 'Failed to leave hotel page' });
     }
   });
@@ -78,11 +82,14 @@ exports.handleConnection = (namespace, socket) => {
 
       // This would typically call a service to check availability
       // For now, just acknowledge the request
-      logger.info('Availability check requested', {
-        hotelId,
-        roomId,
-        socketId: socket.id,
-      });
+      logger.info(
+        {
+          hotelId,
+          roomId,
+          socketId: socket.id,
+        },
+        'Availability check requested'
+      );
 
       if (callback) {
         callback({
@@ -91,7 +98,7 @@ exports.handleConnection = (namespace, socket) => {
         });
       }
     } catch (error) {
-      logger.error('Error checking availability:', error);
+      logger.error({ error }, 'Error checking availability:');
       if (callback) {
         callback({ success: false, message: 'Availability check failed' });
       }
@@ -100,15 +107,18 @@ exports.handleConnection = (namespace, socket) => {
 
   // ==================== Event: Disconnect ====================
   socket.on('disconnect', (reason) => {
-    logger.info(`Guest disconnected from /public`, {
-      socketId: socket.id,
-      reason,
-    });
+    logger.info(
+      {
+        socketId: socket.id,
+        reason,
+      },
+      `Guest disconnected from /public`
+    );
   });
 
   // ==================== Error Handling ====================
   socket.on('error', (error) => {
-    logger.error('Socket error in /public namespace:', error);
+    logger.error({ error }, 'Socket error in /public namespace:');
   });
 };
 
@@ -121,7 +131,7 @@ exports.handleConnection = (namespace, socket) => {
 exports.broadcastAvailabilityUpdate = (namespace, hotelId, availabilityData) => {
   const roomName = `hotel_page_${hotelId}`;
   namespace.to(roomName).emit('availability:updated', availabilityData);
-  logger.info(`Broadcasted availability update to hotel page ${hotelId}`);
+  logger.info({ hotelId }, `Broadcasted availability update to hotel page ${hotelId}`);
 };
 
 /**

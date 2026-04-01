@@ -26,6 +26,14 @@ export default {
       isImageSliderOpen: false
     }
   },
+  watch: {
+    hotelImages(newValue) {
+      this.currentImages = newValue
+    }
+  },
+  mounted() {
+    this.selectRoom(0)
+  },
   methods: {
     // select room
     selectRoom(room) {
@@ -48,14 +56,6 @@ export default {
     closeImageSlider() {
       this.isImageSliderOpen = false
     }
-  },
-  watch: {
-    hotelImages(newValue) {
-      this.currentImages = newValue
-    }
-  },
-  mounted() {
-    this.selectRoom(0)
   }
 }
 </script>
@@ -63,10 +63,10 @@ export default {
   <ImageSlider
     v-if="isImageSliderOpen"
     :images="currentImages"
-    :isImageSliderOpen="isImageSliderOpen"
+    :is-image-slider-open="isImageSliderOpen"
     @close-image-slider="closeImageSlider"
   />
-  <div class="overlay" v-if="isOpenImageGallery">
+  <div v-if="isOpenImageGallery" class="overlay">
     <div class="hotel-card">
       <div class="hotel-header">
         <div class="hotel-title">
@@ -90,11 +90,11 @@ export default {
           </div>
         </div>
         <div
-          class="room-card"
           v-for="room in room_list"
           :key="room.room_id"
-          @click="selectRoom(room)"
+          class="room-card"
           :class="{ selected: currentSelectedRoomId === room.room_id }"
+          @click="selectRoom(room)"
         >
           <img
             :src="JSON.parse(room.room_image_urls)[0]"
@@ -110,11 +110,11 @@ export default {
 
       <div class="gallery">
         <img
+          v-for="(image, index) in currentImages"
+          :key="index"
           :src="image"
           alt="Room 1"
           class="gallery-image"
-          v-for="(image, index) in currentImages"
-          :key="index"
           @click="openImageSlider"
         />
       </div>

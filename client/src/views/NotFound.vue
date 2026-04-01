@@ -8,7 +8,7 @@
             </div>
             <h2>Page not found</h2>
             <p>The page you are looking for might have been removed had its name changed or is temporarily unavailable.</p>
-            <a @click="this.$router.push('/')">Go back to home page</a>
+            <a @click="$router.push('/')">Go back to home page</a>
             </div>
         </div>
 </template>

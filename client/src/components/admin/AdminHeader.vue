@@ -33,6 +33,10 @@ export default {
       this.calculateNumerOfNewNotifications()
     }
   },
+  mounted() {
+    this.getNotifiactions()
+    this.joinRoom()
+  },
   methods: {
     showNotificationIcon() {},
     joinRoom() {
@@ -137,15 +141,11 @@ export default {
     serverHost() {
       return import.meta.env.VITE_SERVER_HOST
     }
-  },
-  mounted() {
-    this.getNotifiactions()
-    this.joinRoom()
   }
 }
 </script>
 <template>
-  <LanguageSwitch @close-language-popup="closeLanguagePopup" v-if="showLanguagePopup" />
+  <LanguageSwitch v-if="showLanguagePopup" @close-language-popup="closeLanguagePopup" />
   <header class="top-header">
     <div class="header-container">
       <!-- account  -->
@@ -179,7 +179,7 @@ export default {
         </div>
       </div>
       <div class="function-button">
-        <div @click="openLanguagePopup()" class="language-btn">
+        <div class="language-btn" @click="openLanguagePopup()">
           <img
             :src="`https://flagcdn.com/w40/${getUserLanguage.split('-')[1].toLowerCase()}.png`"
             alt="Vietnam"
@@ -190,16 +190,16 @@ export default {
           <i class="fa-regular fa-circle-question" style="font-size: 23px"></i>
         </div>
         <!-- notification popup -->
-        <div class="notification-container" v-click-outside="hideNotficationPopup">
+        <div v-click-outside="hideNotficationPopup" class="notification-container">
           <div class="notification-icon" @click="openNotificationPopup">
-            <span class="notification-badge" v-if="numberOfNewNotifications > 0">{{
+            <span v-if="numberOfNewNotifications > 0" class="notification-badge">{{
               numberOfNewNotifications
             }}</span>
             <i class="fa-regular fa-bell"></i>
           </div>
         </div>
       </div>
-      <div class="notification-popup" v-if="isNotificationPopupVisible || haveNewNotifications">
+      <div v-if="isNotificationPopupVisible || haveNewNotifications" class="notification-popup">
         <div class="notification-header">
           <div class="notification-title">
             <span>Notifications</span>
@@ -210,8 +210,8 @@ export default {
         </div>
         <div class="notification-content">
           <div
-            class="notification-item"
             v-if="notifications.length == 0"
+            class="notification-item"
             style="justify-content: space-around"
           >
             <div class="notification-text">
@@ -219,9 +219,9 @@ export default {
             </div>
           </div>
           <div
-            class="notification-item"
             v-for="notification in notifications"
             :key="notification.notificationId"
+            class="notification-item"
             @click="viewDetails(notification)"
           >
             <div class="notification-icon">
@@ -230,10 +230,10 @@ export default {
             <div class="notification-text">
               <h4>
                 <i
+                  v-if="notification.is_read == 0"
                   class="fa fa-circle"
                   aria-hidden="true"
                   style="color: red; font-size: 10px"
-                  v-if="notification.is_read == 0"
                 ></i>
                 {{ notification.message }}
               </h4>

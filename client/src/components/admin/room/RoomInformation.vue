@@ -58,6 +58,17 @@ export default {
   computed: {
     ...mapGetters('manageHotels', ['getCurrentManagingHotelId'])
   },
+  mounted() {
+    if (this.mode == 'create') {
+      this.room = {
+        room_name: '',
+        room_type: '',
+        quantity: 1
+      }
+    }else {
+      this.room = this.roomInformation
+    }
+  },
   methods: {
     async saveRoomInformation() {
       try {
@@ -92,17 +103,6 @@ export default {
         console.log(error)
       }
     }
-  },
-  mounted() {
-    if (this.mode == 'create') {
-      this.room = {
-        room_name: '',
-        room_type: '',
-        quantity: 1
-      }
-    }else {
-      this.room = this.roomInformation
-    }
   }
 }
 </script>
@@ -117,8 +117,8 @@ export default {
           <div class="col-md-6 col-12">
             <label for="">Apartment Type</label>
             <br />
-            <select class="form-control" v-model="room.room_type">
-              <option :value="roomType" v-for="roomType in roomTypes" :key="roomType" :selected="roomType === room.room_type">
+            <select v-model="room.room_type" class="form-control">
+              <option v-for="roomType in roomTypes" :key="roomType" :value="roomType" :selected="roomType === room.room_type">
                 {{ roomType }}
               </option>
             </select>
@@ -127,8 +127,8 @@ export default {
           <div class="col-md-6 col-12">
             <label for="">Room name</label>
             <br />
-            <select class="form-control" v-model="room.room_name">
-              <option :value="roomName" v-for="roomName in roomName" :key="roomName" :selected="roomName === room.room_name">
+            <select v-model="room.room_name" class="form-control">
+              <option v-for="roomName in roomName" :key="roomName" :value="roomName" :selected="roomName === room.room_name">
                 {{ roomName }}
               </option>
             </select>
@@ -137,19 +137,19 @@ export default {
           <div class="col-md-6 col-12">
             <label for="">Custom name (optional)</label>
             <br />
-            <input class="form-control" type="text" v-model="room.room_name" />
+            <input v-model="room.room_name" class="form-control" type="text" />
             <p>Create an optional, custom name for your reference</p>
           </div>
           <div class="col-md-6 col-12">
             <label for="">Number of rooms (of this type)</label>
             <br />
-            <input class="form-control" type="number" placeholder="" v-model="room.quantity" />
+            <input v-model="room.quantity" class="form-control" type="number" placeholder="" />
             <p>Out of 4 apartment (in total)</p>
           </div>
           <div class="col-md-6 col-12">
             <label for="">Smoking policy</label>
             <br />
-            <select class="form-control" name="" id="">
+            <select id="" class="form-control" name="">
               <option value="non-smoking">None-smoking</option>
               <option value="non-smoking">Smoking</option>
             </select>
@@ -157,7 +157,7 @@ export default {
           <div class="col-md-6 col-12 offset-md-6">
             <label for="">Room near the pool</label>
             <br />
-            <select class="form-control" name="" id="">
+            <select id="" class="form-control" name="">
               <option value="non-smoking">No selection</option>
               <option value="non-smoking">All these rooms are near the pool</option>
               <option value="non-smoking">Some of these rooms are near the pool</option>
@@ -284,7 +284,7 @@ export default {
         </div>
         <div class="row">
           <div class="col-md-6 col-12">
-            <select name="" id="" style="width: 100%" class="form-control">
+            <select id="" name="" style="width: 100%" class="form-control">
               <option value="">Select a bed type</option>
               <option value="">Twin bed(s) / 90-130 cm wide</option>
               <option value="">Full bed(s) / 131-150 cm wide</option>
@@ -292,7 +292,7 @@ export default {
             </select>
           </div>
           <div class="col-md-6 col-12">
-            <select name="" id="" style="width: 100%" class="form-control">
+            <select id="" name="" style="width: 100%" class="form-control">
               <option value="">Select number of beds</option>
               <option value="">1</option>
               <option value="">2</option>

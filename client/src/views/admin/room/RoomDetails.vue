@@ -34,6 +34,11 @@ export default {
   computed: {
     ...mapGetters('manageHotels', ['getCurrentManagingHotelId'])
   },
+  async mounted() {
+    this.isLoading = true
+    await this.getAllRooms()
+    this.isLoading = false
+  },
   methods: {
     async getAllRooms() {
       try {
@@ -79,11 +84,6 @@ export default {
     serverHost() {
       return import.meta.env.VITE_SERVER_HOST
     }
-  },
-  async mounted() {
-    this.isLoading = true
-    await this.getAllRooms()
-    this.isLoading = false
   }
 }
 </script>
@@ -105,11 +105,11 @@ export default {
 
         <RoomInformation
           v-if="editRoomMode || createNewRoomMode"
-          :roomInformation="roomInformation"
+          :room-information="roomInformation"
           :mode="editRoomMode ? 'edit' : 'create'"
         />
 
-        <div class="room-details-container" v-if="!editRoomMode && !createNewRoomMode">
+        <div v-if="!editRoomMode && !createNewRoomMode" class="room-details-container">
           <div class="title">
             <h2>
               <strong>Room detail</strong>
@@ -118,7 +118,7 @@ export default {
           <div class="room__photos">
             <div class="room__total">
               <div class="row">
-                <div class="col-12 col-md-4" v-for="room in rooms" :key="room.room_id">
+                <div v-for="room in rooms" :key="room.room_id" class="col-12 col-md-4">
                   <div class="room__photo--element">
                     <div class="room__image">
                       <img

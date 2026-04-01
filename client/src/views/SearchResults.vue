@@ -191,7 +191,7 @@
   };
 </script>
 <template>
-  <TheHeader :isSearchOpen="true" />
+  <TheHeader :is-search-open="true" />
   <MapComponent v-if="openMapPopup" :hotels="hotels" @close-map-popup="closeMapPopup" />
   <!-- inforSearch -->
   <div class="inforSearch">
@@ -240,16 +240,16 @@
                   </p>
                   <div class="range-slider">
                     <input
-                      type="range"
                       id="slider-min"
+                      type="range"
                       min="100000"
                       max="3000000"
                       step="10000"
                       value="100000"
                     />
                     <input
-                      type="range"
                       id="slider-max"
+                      type="range"
                       min="100000"
                       max="3000000"
                       step="10000"
@@ -355,7 +355,7 @@
           <div class="col-9">
             <div class="inner-content">
               <strong
-                >{{ this.$route.query.location }}: {{ $t('searchResults.foundTitle_1') }}
+                >{{ $route.query.location }}: {{ $t('searchResults.foundTitle_1') }}
                 {{ hotels.length }} {{ $t('searchResults.foundTitle_2') }}</strong
               >
               <div class="arrange">
@@ -372,8 +372,8 @@
                 </div>
                 <div class="type-search">
                   <input
-                    type="text"
                     v-model="searchQuery"
+                    type="text"
                     placeholder="Search hotels..."
                     @input="filterHotels"
                   />
@@ -394,9 +394,9 @@
               </div>
 
               <div
-                class="room-infor"
                 v-for="hotel in displayHotels"
                 :key="hotel.hotel_id"
+                class="room-infor"
                 @click="redirectToHotelDetails(hotel.hotel_id)"
               >
                 <div class="inner-img">
@@ -454,7 +454,7 @@
                       <br />
                       <span> 1 giường đôi</span>
                       <br />
-                      <span class="desc" v-if="hotel.has_free_cancellation">
+                      <span v-if="hotel.has_free_cancellation" class="desc">
                         <i class="fa-solid fa-check"></i> Miễn phí hủy
                       </span>
                       <br />

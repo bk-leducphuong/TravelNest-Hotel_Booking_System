@@ -47,7 +47,7 @@ export default {
       <h2>Write a Review</h2>
       <form @submit.prevent="postReview">
         <label for="rating">Rating:</label>
-        <select id="rating" name="rating" v-model="rating">
+        <select id="rating" v-model="rating" name="rating">
           <option value="5">5 - Excellent</option>
           <option value="4">4 - Very Good</option>
           <option value="3">3 - Average</option>
@@ -57,8 +57,8 @@ export default {
 
         <label for="title">Review Title:</label>
         <input
-          type="text"
           id="title"
+          type="text"
           name="title"
           placeholder="Enter a title for your review"
           required
@@ -67,9 +67,9 @@ export default {
         <label for="review">Review:</label>
         <textarea
           id="review"
+          v-model="review"
           name="review"
           rows="5"
-          v-model="review"
           placeholder="Share your thoughts about your stay"
           required
         ></textarea>

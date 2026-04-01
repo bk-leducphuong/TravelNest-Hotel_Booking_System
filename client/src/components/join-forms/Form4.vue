@@ -24,7 +24,7 @@ export default {
       <div class="form-group">
         <h4 class="step-title">Khách sạn của Quý vị tên gì?</h4>
         <label for="alt-name">Tên chỗ nghỉ</label>
-        <input type="text" name="alt-name" id="alt-name" v-model="getJoinFormData.hotelName" />
+        <input id="alt-name" v-model="getJoinFormData.hotelName" type="text" name="alt-name" />
         <p class="sub-title">Tên này sẽ được hiển thị tới khách khi họ tìm kiếm chỗ nghỉ.</p>
       </div>
       <hr class="divider" />
@@ -38,35 +38,35 @@ export default {
           </label>
 
           <label class="rating-option">
-            <input type="radio" name="rating" value="1" v-model="getJoinFormData.rating" />
+            <input v-model="getJoinFormData.rating" type="radio" name="rating" value="1" />
             <span class="radio-custom"></span>
             <span class="label-text">1 sao</span>
             <span class="stars">⭐</span>
           </label>
 
           <label class="rating-option">
-            <input type="radio" name="rating" value="2" v-model="getJoinFormData.rating" />
+            <input v-model="getJoinFormData.rating" type="radio" name="rating" value="2" />
             <span class="radio-custom"></span>
             <span class="label-text">2 sao</span>
             <span class="stars">⭐⭐</span>
           </label>
 
           <label class="rating-option">
-            <input type="radio" name="rating" value="3" v-model="getJoinFormData.rating" />
+            <input v-model="getJoinFormData.rating" type="radio" name="rating" value="3" />
             <span class="radio-custom"></span>
             <span class="label-text">3 sao</span>
             <span class="stars">⭐⭐⭐</span>
           </label>
 
           <label class="rating-option">
-            <input type="radio" name="rating" value="4" v-model="getJoinFormData.rating" />
+            <input v-model="getJoinFormData.rating" type="radio" name="rating" value="4" />
             <span class="radio-custom"></span>
             <span class="label-text">4 sao</span>
             <span class="stars">⭐⭐⭐⭐</span>
           </label>
 
           <label class="rating-option">
-            <input type="radio" name="rating" value="5" v-model="getJoinFormData.rating" />
+            <input v-model="getJoinFormData.rating" type="radio" name="rating" value="5" />
             <span class="radio-custom"></span>
             <span class="label-text">5 sao</span>
             <span class="stars">⭐⭐⭐⭐⭐</span>
@@ -75,7 +75,7 @@ export default {
       </div>
       <div class="form-button-container">
         <button type="button" class="previous" @click="$emit('previous')">Quay lại</button>
-        <button type="button" class="next" @click="goNext" :disabled="!checkForNext">
+        <button type="button" class="next" :disabled="!checkForNext" @click="goNext">
           Tiếp tục
         </button>
       </div>

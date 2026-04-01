@@ -37,6 +37,16 @@ export default {
       'getCurrentManagingHotelId'
     ])
   },
+  async mounted() {
+    await this.getAllRoomPhotos()
+
+    this.hotelPhotos = JSON.parse(this.getCurrentManagingHotelInformation.image_urls)
+    // assign index for each photo
+    this.hotelPhotos = this.hotelPhotos.map((url, index) => ({
+      url,
+      index
+    }))
+  },
   methods: {
     async getAllRoomPhotos() {
       try {
@@ -239,16 +249,6 @@ export default {
         errorHandler(error)
       }
     }
-  },
-  async mounted() {
-    await this.getAllRoomPhotos()
-
-    this.hotelPhotos = JSON.parse(this.getCurrentManagingHotelInformation.image_urls)
-    // assign index for each photo
-    this.hotelPhotos = this.hotelPhotos.map((url, index) => ({
-      url,
-      index
-    }))
   }
 }
 </script>
@@ -280,15 +280,15 @@ export default {
           </div>
           <div class="main-photo-grid">
             <div class="photo-grid">
-              <div class="photo-cell" v-for="hotelPhoto in hotelPhotos" :key="hotelPhoto.index">
+              <div v-for="hotelPhoto in hotelPhotos" :key="hotelPhoto.index" class="photo-cell">
                 <div class="photo-container">
                   <img :src="hotelPhoto.url" alt="Photo 1" />
                   <label class="corner-checkbox">
                     <input
+                      v-model="selectedHotelPhotos"
                       type="checkbox"
                       class="checkbox"
                       :value="hotelPhoto.index"
-                      v-model="selectedHotelPhotos"
                     />
                   </label>
                 </div>
@@ -297,17 +297,17 @@ export default {
                 <span>Add photos</span>
               </div>
               <input
-                type="file"
                 ref="hotelPhotoInput"
+                type="file"
                 accept="image/jpeg, image/png"
-                @change="addHotelPhotos"
                 multiple
                 hidden
+                @change="addHotelPhotos"
               />
             </div>
           </div>
         </div>
-        <div class="container" v-for="(room, index) in rooms" :key="room.room_id">
+        <div v-for="(room, index) in rooms" :key="room.room_id" class="container">
           <div class="add-image">
             <div>
               <h1 class="text-header">{{ room.room_name }}</h1>
@@ -321,13 +321,13 @@ export default {
           </div>
           <div class="main-photo-grid">
             <div class="photo-grid">
-              <div class="photo-cell" v-for="roomPhoto in room.image_urls" :key="roomPhoto.index">
+              <div v-for="roomPhoto in room.image_urls" :key="roomPhoto.index" class="photo-cell">
                 <div class="photo-container">
                   <img :src="roomPhoto.url" alt="Photo 1" />
                   <label class="corner-checkbox">
                     <input
-                      :value="roomPhoto.index"
                       v-model="selectedRoomPhotos[index].selectedPhotos"
+                      :value="roomPhoto.index"
                       type="checkbox"
                       class="checkbox"
                     />
@@ -338,12 +338,12 @@ export default {
                 <span>Add photos</span>
               </div>
               <input
-                type="file"
                 :ref="room.room_id"
+                type="file"
                 accept="image/jpeg, image/png"
-                @change="addRoomPhotos(room.room_id, $event)"
                 multiple
                 hidden
+                @change="addRoomPhotos(room.room_id, $event)"
               />
             </div>
           </div>

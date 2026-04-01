@@ -14,10 +14,13 @@ const logger = require('@config/logger.config');
 exports.handleConnection = (namespace, socket) => {
   const userId = socket.user.id;
 
-  logger.info(`Admin connected to /admin namespace`, {
-    userId,
-    socketId: socket.id,
-  });
+  logger.info(
+    {
+      userId,
+      socketId: socket.id,
+    },
+    `Admin connected to /admin namespace`
+  );
 
   // Join admin room
   socket.join('administrators');
@@ -53,13 +56,13 @@ exports.handleConnection = (namespace, socket) => {
     try {
       socket.join('system_metrics');
 
-      logger.info(`Admin ${userId} subscribed to system metrics`);
+      logger.info({ userId }, `Admin ${userId} subscribed to system metrics`);
 
       if (callback) {
         callback({ success: true, message: 'Subscribed to system metrics' });
       }
     } catch (error) {
-      logger.error('Error subscribing to system metrics:', error);
+      logger.error({ error }, 'Error subscribing to system metrics:');
       if (callback) {
         callback({ success: false, message: 'Failed to subscribe' });
       }
@@ -77,13 +80,13 @@ exports.handleConnection = (namespace, socket) => {
       const monitorRoom = `monitor_user_${userId}`;
       socket.join(monitorRoom);
 
-      logger.info(`Admin ${socket.user.id} monitoring user ${userId}`);
+      logger.info({ adminId: socket.user.id, monitorUserId: userId }, `Admin ${socket.user.id} monitoring user ${userId}`);
 
       if (callback) {
         callback({ success: true, message: `Monitoring user ${userId}` });
       }
     } catch (error) {
-      logger.error('Error monitoring user:', error);
+      logger.error({ error }, 'Error monitoring user:');
       if (callback) {
         callback({ success: false, message: 'Failed to monitor user' });
       }
@@ -101,13 +104,13 @@ exports.handleConnection = (namespace, socket) => {
       const monitorRoom = `monitor_hotel_${hotelId}`;
       socket.join(monitorRoom);
 
-      logger.info(`Admin ${userId} monitoring hotel ${hotelId}`);
+      logger.info({ adminId: userId, hotelId }, `Admin ${userId} monitoring hotel ${hotelId}`);
 
       if (callback) {
         callback({ success: true, message: `Monitoring hotel ${hotelId}` });
       }
     } catch (error) {
-      logger.error('Error monitoring hotel:', error);
+      logger.error({ error }, 'Error monitoring hotel:');
       if (callback) {
         callback({ success: false, message: 'Failed to monitor hotel' });
       }
@@ -139,25 +142,25 @@ exports.handleConnection = (namespace, socket) => {
         // Broadcast to specific namespace
         const targetNs = namespace.server.of(targetNamespace);
         targetNs.emit('admin:broadcast', broadcastData);
-        logger.info(`Admin ${userId} broadcasted to namespace ${targetNamespace}`);
+        logger.info({ adminId: userId, targetNamespace }, `Admin ${userId} broadcasted to namespace ${targetNamespace}`);
       } else if (targetGroup) {
         // Broadcast to specific group across all namespaces
         namespace.server.emit('admin:broadcast', {
           ...broadcastData,
           targetGroup,
         });
-        logger.info(`Admin ${userId} broadcasted to group ${targetGroup}`);
+        logger.info({ adminId: userId, targetGroup }, `Admin ${userId} broadcasted to group ${targetGroup}`);
       } else {
         // Broadcast to all namespaces
         namespace.server.emit('admin:broadcast', broadcastData);
-        logger.info(`Admin ${userId} broadcasted globally`);
+        logger.info({ adminId: userId }, `Admin ${userId} broadcasted globally`);
       }
 
       if (callback) {
         callback({ success: true, message: 'Broadcast sent' });
       }
     } catch (error) {
-      logger.error('Error broadcasting:', error);
+      logger.error({ error }, 'Error broadcasting:');
       if (callback) {
         callback({ success: false, message: 'Failed to broadcast' });
       }
@@ -187,7 +190,7 @@ exports.handleConnection = (namespace, socket) => {
             reason: 'Administrative action',
             by: userId,
           });
-          logger.info(`Admin ${socket.user.id} terminated session for user ${userId}`);
+          logger.info({ adminId: socket.user.id, targetUserId: userId }, `Admin ${socket.user.id} terminated session for user ${userId}`);
           break;
 
         case 'suspend':
@@ -195,7 +198,7 @@ exports.handleConnection = (namespace, socket) => {
             reason: 'Account suspended',
             by: userId,
           });
-          logger.info(`Admin ${socket.user.id} suspended user ${userId}`);
+          logger.info({ adminId: socket.user.id, targetUserId: userId }, `Admin ${socket.user.id} suspended user ${userId}`);
           break;
 
         case 'restrict':
@@ -203,7 +206,7 @@ exports.handleConnection = (namespace, socket) => {
             reason: 'Account restricted',
             by: userId,
           });
-          logger.info(`Admin ${socket.user.id} restricted user ${userId}`);
+          logger.info({ adminId: socket.user.id, targetUserId: userId }, `Admin ${socket.user.id} restricted user ${userId}`);
           break;
 
         default:
@@ -214,7 +217,7 @@ exports.handleConnection = (namespace, socket) => {
         callback({ success: true, message: `User ${action} action completed` });
       }
     } catch (error) {
-      logger.error('Error managing user session:', error);
+      logger.error({ error }, 'Error managing user session:');
       if (callback) {
         callback({ success: false, message: 'Failed to manage session' });
       }
@@ -227,7 +230,7 @@ exports.handleConnection = (namespace, socket) => {
       // Get real-time platform statistics
       const stats = await getPlatformStats(namespace.server);
 
-      logger.info(`Admin ${userId} requested platform stats`);
+      logger.info({ userId }, `Admin ${userId} requested platform stats`);
 
       if (callback) {
         callback({
@@ -236,7 +239,7 @@ exports.handleConnection = (namespace, socket) => {
         });
       }
     } catch (error) {
-      logger.error('Error getting platform stats:', error);
+      logger.error({ error }, 'Error getting platform stats:');
       if (callback) {
         callback({ success: false, message: 'Failed to get stats' });
       }
@@ -248,7 +251,7 @@ exports.handleConnection = (namespace, socket) => {
     try {
       const sessions = await getActiveSessions(namespace.server);
 
-      logger.info(`Admin ${userId} requested active sessions`);
+      logger.info({ userId }, `Admin ${userId} requested active sessions`);
 
       if (callback) {
         callback({
@@ -257,7 +260,7 @@ exports.handleConnection = (namespace, socket) => {
         });
       }
     } catch (error) {
-      logger.error('Error getting active sessions:', error);
+      logger.error({ error }, 'Error getting active sessions:');
       if (callback) {
         callback({ success: false, message: 'Failed to get active sessions' });
       }
@@ -271,16 +274,20 @@ exports.handleConnection = (namespace, socket) => {
 
       socket.join('system_logs');
 
-      logger.info(`Admin ${userId} subscribed to system logs`, {
-        level,
-        service,
-      });
+      logger.info(
+        {
+          userId,
+          level,
+          service,
+        },
+        `Admin ${userId} subscribed to system logs`
+      );
 
       if (callback) {
         callback({ success: true, message: 'Subscribed to system logs' });
       }
     } catch (error) {
-      logger.error('Error subscribing to logs:', error);
+      logger.error({ error }, 'Error subscribing to logs:');
       if (callback) {
         callback({ success: false, message: 'Failed to subscribe to logs' });
       }
@@ -300,7 +307,7 @@ exports.handleConnection = (namespace, socket) => {
         timestamp: new Date(),
       });
 
-      logger.warn(`Admin ${userId} ${enabled ? 'enabled' : 'disabled'} maintenance mode`);
+      logger.warn({ userId, enabled }, `Admin ${userId} ${enabled ? 'enabled' : 'disabled'} maintenance mode`);
 
       if (callback) {
         callback({
@@ -309,7 +316,7 @@ exports.handleConnection = (namespace, socket) => {
         });
       }
     } catch (error) {
-      logger.error('Error toggling maintenance mode:', error);
+      logger.error({ error }, 'Error toggling maintenance mode:');
       if (callback) {
         callback({
           success: false,
@@ -321,11 +328,14 @@ exports.handleConnection = (namespace, socket) => {
 
   // ==================== Event: Disconnect ====================
   socket.on('disconnect', (reason) => {
-    logger.info(`Admin disconnected from /admin namespace`, {
-      userId,
-      socketId: socket.id,
-      reason,
-    });
+    logger.info(
+      {
+        userId,
+        socketId: socket.id,
+        reason,
+      },
+      `Admin disconnected from /admin namespace`
+    );
 
     // Notify other admins
     socket.to('administrators').emit('admin:offline', {
@@ -336,7 +346,7 @@ exports.handleConnection = (namespace, socket) => {
 
   // ==================== Error Handling ====================
   socket.on('error', (error) => {
-    logger.error('Socket error in /admin namespace:', { userId, error });
+    logger.error({ userId, error }, 'Socket error in /admin namespace:');
   });
 };
 
@@ -396,7 +406,7 @@ async function getActiveSessions(io) {
  */
 exports.broadcastSystemAlert = (namespace, alertData) => {
   namespace.to('administrators').emit('system:alert', alertData);
-  logger.warn('Broadcasted system alert to admins', alertData);
+  logger.warn({ alertData }, 'Broadcasted system alert to admins');
 };
 
 /**

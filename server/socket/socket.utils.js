@@ -16,7 +16,7 @@ const emitToRooms = (namespace, rooms, event, data) => {
   rooms.forEach((room) => {
     namespace.to(room).emit(event, data);
   });
-  logger.info(`Emitted ${event} to ${rooms.length} rooms`);
+  logger.info({ event, roomCount: rooms.length }, `Emitted ${event} to ${rooms.length} rooms`);
 };
 
 /**
@@ -57,7 +57,7 @@ const disconnectUser = async (io, userId, reason = 'Administrative action') => {
     for (const socket of sockets) {
       socket.emit('session:terminated', { reason });
       socket.disconnect(true);
-      logger.info(`Disconnected socket ${socket.id} for user ${userId}`, { reason });
+      logger.info({ socketId: socket.id, userId, reason }, `Disconnected socket ${socket.id} for user ${userId}`);
     }
   }
 };
@@ -134,7 +134,7 @@ const broadcastToRole = async (io, role, event, data) => {
     });
   }
 
-  logger.info(`Broadcasted ${event} to all users with role ${role}`);
+  logger.info({ role, event }, `Broadcasted ${event} to all users with role ${role}`);
 };
 
 /**
@@ -148,9 +148,12 @@ const broadcastToRole = async (io, role, event, data) => {
 const emitWithAck = (socket, event, data, timeout = 5000) => {
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
-      logger.warn(`No acknowledgment received for ${event}`, {
-        socketId: socket.id,
-      });
+      logger.warn(
+        {
+          socketId: socket.id,
+        },
+        `No acknowledgment received for ${event}`
+      );
       resolve(false);
     }, timeout);
 
@@ -182,7 +185,7 @@ const createRateLimiter = (limit = 10, windowMs = 1000) => {
     const recentRequests = socketRequests.filter((time) => now - time < windowMs);
 
     if (recentRequests.length >= limit) {
-      logger.warn(`Rate limit exceeded for socket ${socketId}`);
+      logger.warn({ socketId }, `Rate limit exceeded for socket ${socketId}`);
       return next(new Error('Rate limit exceeded'));
     }
 
@@ -254,13 +257,16 @@ const validateEventData = (schema, data) => {
  */
 const logSocketEvent = (socket, event, data, direction = 'incoming') => {
   if (process.env.NODE_ENV === 'development') {
-    logger.debug(`Socket event ${direction}`, {
-      socketId: socket.id,
-      userId: socket.user?.id,
-      namespace: socket.nsp.name,
-      event,
-      data: JSON.stringify(data).slice(0, 200), // Limit data size in logs
-    });
+    logger.debug(
+      {
+        socketId: socket.id,
+        userId: socket.user?.id,
+        namespace: socket.nsp.name,
+        event,
+        data: JSON.stringify(data).slice(0, 200),
+      },
+      `Socket event ${direction}`
+    );
   }
 };
 
@@ -307,7 +313,7 @@ const wrapEventHandler = (handler) => {
       await handler(...args);
     } catch (error) {
       const callback = args[args.length - 1];
-      logger.error('Socket event handler error:', error);
+      logger.error({ error }, 'Socket event handler error:');
 
       if (typeof callback === 'function') {
         callback(createErrorResponse('HANDLER_ERROR', error.message));
@@ -360,7 +366,7 @@ const cleanupRoom = async (namespace, roomName) => {
   sockets.forEach((socket) => {
     if (!socket.connected) {
       socket.leave(roomName);
-      logger.info(`Removed disconnected socket ${socket.id} from room ${roomName}`);
+      logger.info({ socketId: socket.id, roomName }, `Removed disconnected socket ${socket.id} from room ${roomName}`);
     }
   });
 };

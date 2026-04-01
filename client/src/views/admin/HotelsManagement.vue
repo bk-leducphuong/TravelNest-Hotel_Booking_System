@@ -30,12 +30,12 @@ export default {
 </script>
 <template>
   <!-- header  -->
-  <LoginHeader :isAdminLogin="false" />
+  <LoginHeader :is-admin-login="false" />
   <!-- end header  -->
   <div class="container">
     <div class="header">
       <h1>Hotel Management</h1>
-      <button class="add-hotel-btn" @click="this.$router.push('/join/become-a-host')">
+      <button class="add-hotel-btn" @click="$router.push('/join/become-a-host')">
         <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             stroke-linecap="round"
@@ -65,9 +65,9 @@ export default {
 
     <div v-if="getManagingHotels == []">
       <div
+        v-if="getManagingHotels.length == 0"
         class="not-found-hotels"
         style="margin-top: 80px; text-align: center; font-size: 30px; font-weight: 700"
-        v-if="getManagingHotels.length == 0"
       >
         <span>Bạn chưa đăng khách sạn nào</span>
       </div>
@@ -76,9 +76,9 @@ export default {
     <div class="hotel-grid">
       <!-- Hotel Card 1 -->
 
-      <div class="hotel-card" v-for="hotel in getManagingHotels" :key="hotel.hotel_id">
+      <div v-for="hotel in getManagingHotels" :key="hotel.hotel_id" class="hotel-card">
         <img v-if="JSON.parse(hotel.image_urls)" :src="JSON.parse(hotel.image_urls)[0]" alt="hotel-image" class="hotel-image" />
-        <img :src="serverHost() + '/uploads/hotels/no-image.png'" class="hotel-image" alt="no image" v-else>
+        <img v-else :src="serverHost() + '/uploads/hotels/no-image.png'" class="hotel-image" alt="no image">
         <div class="hotel-info">
           <h2 class="hotel-name">{{ hotel.name }}</h2>
           <div class="hotel-location">

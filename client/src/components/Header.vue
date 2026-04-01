@@ -4,14 +4,14 @@
       <Notification />
       <li>
         <span
-          ><a @click="this.$router.push('/join')">{{ $t('userHeader.postProperty') }}</a></span
+          ><a @click="$router.push('/join')">{{ $t('userHeader.postProperty') }}</a></span
         >
       </li>
-      <li v-if="!this.isUserAuthenticated">
-        <a @click="this.$router.push('/login')" class="login" style="margin-right: 5px">Đăng ký</a>
-        <a @click="this.$router.push('/login')" class="login" style="margin-left: 5px">Đăng nhập</a>
+      <li v-if="!isUserAuthenticated">
+        <a class="login" style="margin-right: 5px" @click="$router.push('/login')">Đăng ký</a>
+        <a class="login" style="margin-left: 5px" @click="$router.push('/login')">Đăng nhập</a>
       </li>
-      <li v-if="this.isUserAuthenticated">
+      <li v-if="isUserAuthenticated">
         <AccountMenu />
       </li>
     </template>
@@ -28,17 +28,17 @@
   import SearchBar from './SearchBar.vue';
 
   export default {
-    props: {
-      isSearchOpen: {
-        type: Boolean,
-        required: true,
-      },
-    },
     components: {
       AccountMenu,
       BaseHeader,
       Notification,
       SearchBar,
+    },
+    props: {
+      isSearchOpen: {
+        type: Boolean,
+        required: true,
+      },
     },
     computed: {
       ...mapGetters('auth', ['isUserAuthenticated']),

@@ -35,6 +35,9 @@ export default {
       isAvatarEdit: false
     }
   },
+  async mounted() {
+    await this.getUserInfo()
+  },
   methods: {
     // get user information
     async getUserInfo() {
@@ -176,16 +179,13 @@ export default {
       this.avatarFile = '';
       this.uploadAvatarImage = '';
     }
-  },
-  async mounted() {
-    await this.getUserInfo()
   }
 }
 </script>
 <template>
   <!-- avatar uploading popup -->
   <!-- Overlay -->
-  <div class="popup-overlay" id="popupOverlay" v-if="isAvatarEdit">
+  <div v-if="isAvatarEdit" id="popupOverlay" class="popup-overlay">
     <!-- Popup Content -->
     <div class="popup-content">
       <div class="popup-header">
@@ -194,13 +194,13 @@ export default {
       </div>
       <div class="popup-body">
         <div class="avatar-circle">
-          <img :src="uploadAvatarImage" v-if="uploadAvatarImage" alt="avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;"/>
+          <img v-if="uploadAvatarImage" :src="uploadAvatarImage" alt="avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;"/>
           <img v-if="!uploadAvatarImage" :src="avatar" alt="avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;"/>
         </div>
         <label for="fileInput" class="upload-btn">Chọn tập tin</label>
-        <input v-on:change="handleFileUpload" type="file" id="fileInput" class="file-input" accept="image/*" />
+        <input id="fileInput" type="file" class="file-input" accept="image/*" @change="handleFileUpload" />
       </div>
-      <button class="save-btn" :disabled="!avatarFile" id="saveButton" @click="editAvatar">Lưu</button>
+      <button id="saveButton" class="save-btn" :disabled="!avatarFile" @click="editAvatar">Lưu</button>
     </div>
   </div>
   <!-- Main Content Container -->
@@ -228,21 +228,21 @@ export default {
             "
             @click="isAvatarEdit = true"
           >
-            <img :src="this.avatar" alt="avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;"/>
+            <img :src="avatar" alt="avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;"/>
         </div>
         </div>
         <!-- name  -->
         <div class="detail-item">
           <label for="name" style="width: 20%">Name</label>
-          <div class="container1" v-if="isNameEdit">
+          <div v-if="isNameEdit" class="container1">
             <div class="edit-container">
               <div style="width: 50%; padding-right: 30px">
                 <P1>First name(s)</P1><br /><br />
-                <input type="text" v-model="firstName" />
+                <input v-model="firstName" type="text" />
               </div>
               <div style="width: 50%; padding-right: 30px">
                 <P1>Last name(s)</P1><br /><br />
-                <input type="text" v-model="lastName" />
+                <input v-model="lastName" type="text" />
               </div>
             </div>
             <div class="button-container">
@@ -252,7 +252,7 @@ export default {
               <button class="edit-button" @click="editName">Save</button>
             </div>
           </div>
-          <div class="display-container" v-if="!isNameEdit">
+          <div v-if="!isNameEdit" class="display-container">
             <div class="value">{{ name || "Choose your name" }}</div>
             <button class="edit-button" @click="isNameEdit = true">Edit</button>
           </div>
@@ -260,11 +260,11 @@ export default {
         <!-- display name -->
         <div class="detail-item">
           <label for="display-name" style="width: 20%">Display name</label>
-          <div class="container1" v-if="isDisplayNameEdit">
+          <div v-if="isDisplayNameEdit" class="container1">
             <div class="edit-container">
               <div style="width: 300px; padding-right: 30px">
                 <P1>Display name</P1><br /><br />
-                <input type="text" style="width: 100%" v-model="displayName" />
+                <input v-model="displayName" type="text" style="width: 100%" />
               </div>
             </div>
             <div class="button-container">
@@ -273,7 +273,7 @@ export default {
               <button class="edit-button"  @click="editDisplayName">Save</button>
             </div>
           </div>
-          <div class="display-container" v-if="!isDisplayNameEdit">
+          <div v-if="!isDisplayNameEdit" class="display-container">
             <div class="value">{{ displayName || "Choose a display name" }}</div>
             <button class="edit-button" @click="isDisplayNameEdit = true">Edit</button>
           </div>
@@ -281,11 +281,11 @@ export default {
         <!-- email -->
         <div class="detail-item">
           <label for="email" style="width: 20%">Email address</label>
-          <div class="container1" v-if="isEmailEdit">
+          <div v-if="isEmailEdit" class="container1">
             <div class="edit-container">
               <div style="width: 430px; padding-right: 30px">
                 <P1>Email address</P1><br /><br />
-                <input type="text" style="width: 100%" v-model="email" />
+                <input v-model="email" type="text" style="width: 100%" />
                 <p>
                   We'll send a verification link to your new email address. Please check your inbox.
                 </p>
@@ -296,19 +296,19 @@ export default {
               <button class="edit-button" @click="editEmail">Save</button>
             </div>
           </div>
-          <div class="display-container" v-if="!isEmailEdit">
-            <div class="value">{{ this.email || "youremail@gmail.com" }} <span class="verified">Verified</span></div>
+          <div v-if="!isEmailEdit" class="display-container">
+            <div class="value">{{ email || "youremail@gmail.com" }} <span class="verified">Verified</span></div>
             <button class="edit-button" @click="isEmailEdit = true">Edit</button>
           </div>
         </div>
         <!-- phone number  -->
         <div class="detail-item">
           <label for="phoneNumber" style="width: 20%">Phone number</label>
-          <div class="container1" v-if="isPhoneNumberEdit">
+          <div v-if="isPhoneNumberEdit" class="container1">
             <div class="edit-container">
               <div style="width: 300px; padding-right: 30px">
                 <P1>Phone number</P1><br /><br />
-                <input type="text" style="width: 100%" v-model="phoneNumber" />
+                <input v-model="phoneNumber" type="text" style="width: 100%" />
               </div>
             </div>
             <div class="button-container">
@@ -317,7 +317,7 @@ export default {
               <button class="edit-button" @click="editPhoneNumber">Save</button>
             </div>
           </div>
-          <div class="display-container" v-if="!isPhoneNumberEdit">
+          <div v-if="!isPhoneNumberEdit" class="display-container">
             <div class="value">{{ phoneNumber || "Your phone number" }}</div>
             <button class="edit-button" @click="isPhoneNumberEdit = true">Edit</button>
           </div>
@@ -325,11 +325,11 @@ export default {
         <!-- date of birth  -->
         <div class="detail-item">
           <label for="dob" style="width: 20%">Date of birth</label>
-          <div class="container1" v-if="isDateOfBirthEdit">
+          <div v-if="isDateOfBirthEdit" class="container1">
             <div class="edit-container">
               <div style="width: 430px; padding-right: 30px">
                 <P1>Date of birth</P1><br /><br />
-                <input type="date" v-model="dateOfBirth" />
+                <input v-model="dateOfBirth" type="date" />
               </div>
             </div>
             <div class="button-container">
@@ -338,7 +338,7 @@ export default {
               <button class="edit-button" @click="editDateOfBirth">Save</button>
             </div>
           </div>
-          <div class="display-container" v-if="!isDateOfBirthEdit">
+          <div v-if="!isDateOfBirthEdit" class="display-container">
             <div class="value">{{ new Date(dateOfBirth).toLocaleDateString('vi-VN') || "Enter your date of birth" }}</div>
             <button class="edit-button" @click="isDateOfBirthEdit = true">Edit</button>
           </div>
@@ -346,11 +346,11 @@ export default {
         <!-- nationality  -->
         <div class="detail-item">
           <label for="nationality" style="width: 20%">Nationality</label>
-          <div class="container1" v-if="isNationalityEdit">
+          <div v-if="isNationalityEdit" class="container1">
             <div class="edit-container">
               <div style="width: 300px; padding-right: 30px">
                 <P1>Nationality</P1><br /><br />
-                <input type="text" style="width: 100%" v-model="nationality" />
+                <input v-model="nationality" type="text" style="width: 100%" />
               </div>
             </div>
             <div class="button-container">
@@ -359,7 +359,7 @@ export default {
               <button class="edit-button" @click="editNationality">Save</button>
             </div>
           </div>
-          <div class="display-container" v-if="!isNationalityEdit">
+          <div v-if="!isNationalityEdit" class="display-container">
             <div class="value">{{ nationality || "Select your nationality" }}</div>
             <button class="edit-button" @click="isNationalityEdit = true">Edit</button>
           </div>
@@ -367,11 +367,12 @@ export default {
         <!-- gender  -->
         <div class="detail-item">
           <label for="sex" style="width: 20%">Gender</label>
-          <div class="container1" v-if="isGenderEdit">
+          <div v-if="isGenderEdit" class="container1">
             <div class="edit-container">
               <div style="width: 300px; padding-right: 30px">
                 <P1>Gender</P1><br /><br />
                 <select
+                  v-model="gender"
                   style="
                     border-radius: 5px;
                     border-color: #4285f4;
@@ -380,7 +381,6 @@ export default {
                     width: 100px;
                     height: 29px;
                   "
-                  v-model="gender"
                 >
                   <option value="male">Male</option>
                   /
@@ -396,7 +396,7 @@ export default {
               <button class="edit-button" @click="editGender">Save</button>
             </div>
           </div>
-          <div class="display-container" v-if="!isGenderEdit">
+          <div v-if="!isGenderEdit" class="display-container">
             <div class="value">{{ gender || "Select your gender" }}</div>
             <button class="edit-button" @click="isGenderEdit = true">Edit</button>
           </div>
@@ -404,24 +404,24 @@ export default {
         <!-- address  -->
         <div class="detail-item">
           <label for="address" style="width: 20%">Address</label>
-          <div class="container1" v-if="isAddressEdit">
+          <div v-if="isAddressEdit" class="container1">
             <div class="edit-container" style="flex-direction: column">
               <div style="padding-right: 30px">
                 <P1>National</P1><br />
-                <input type="text" style="width: 100%" placeholder="Chọn quốc gia nơi bạn sống" v-model="country"/>
+                <input v-model="country" type="text" style="width: 100%" placeholder="Chọn quốc gia nơi bạn sống"/>
               </div>
               <div style="padding-right: 30px">
                 <P1>Address</P1><br />
-                <input type="text" placeholder="Tên đường và số nhà/căn hộ" v-model="address" style="width: 100%" />
+                <input v-model="address" type="text" placeholder="Tên đường và số nhà/căn hộ" style="width: 100%" />
               </div>
               <div style="display: flex; justify-content: space-between">
                 <div style="padding-right: 30px">
                   <P1>Town/City</P1><br />
-                  <input type="text" style="width: 100%" v-model="city"/>
+                  <input v-model="city" type="text" style="width: 100%"/>
                 </div>
                 <div style="padding-right: 30px">
                   <P1>Postal code</P1><br />
-                  <input type="text" style="width: 100%" v-model="postalCode"/>
+                  <input v-model="postalCode" type="text" style="width: 100%"/>
                 </div>
               </div>
             </div>
@@ -430,7 +430,7 @@ export default {
               <button class="edit-button" @click="editAddress">Save</button>
             </div>
           </div>
-          <div class="display-container" v-if="!isAddressEdit">
+          <div v-if="!isAddressEdit" class="display-container">
             <div class="value">{{ address || "Select your address" }}, {{ country }}</div>
             <button class="edit-button" @click="isAddressEdit = true">Edit</button>
           </div>

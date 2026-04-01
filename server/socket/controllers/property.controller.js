@@ -17,12 +17,15 @@ exports.handleConnection = (namespace, socket) => {
   const userRoles = socket.user.roles;
   const hotelRoles = socket.user.hotelRoles;
 
-  logger.info(`Property user connected to /property namespace`, {
-    userId,
-    roles: userRoles,
-    hotelCount: hotelRoles.length,
-    socketId: socket.id,
-  });
+  logger.info(
+    {
+      userId,
+      roles: userRoles,
+      hotelCount: hotelRoles.length,
+      socketId: socket.id,
+    },
+    `Property user connected to /property namespace`
+  );
 
   // Join user's personal room
   const userRoom = `property_user_${userId}`;
@@ -32,7 +35,7 @@ exports.handleConnection = (namespace, socket) => {
   hotelRoles.forEach((hotelRole) => {
     const hotelRoom = `hotel_${hotelRole.hotelId}`;
     socket.join(hotelRoom);
-    logger.info(`Auto-joined hotel room: ${hotelRoom}`, { userId });
+    logger.info({ userId, hotelRoom }, `Auto-joined hotel room: ${hotelRoom}`);
   });
 
   // Send welcome message
@@ -76,9 +79,14 @@ exports.handleConnection = (namespace, socket) => {
       socket.activeHotelId = hotelId;
       socket.activeHotelRole = hotelRole?.role || ROLES.ADMIN;
 
-      logger.info(`User ${userId} set active hotel to ${hotelId}`, {
-        role: socket.activeHotelRole,
-      });
+      logger.info(
+        {
+          userId,
+          hotelId,
+          role: socket.activeHotelRole,
+        },
+        `User ${userId} set active hotel to ${hotelId}`
+      );
 
       if (callback) {
         callback({
@@ -88,7 +96,7 @@ exports.handleConnection = (namespace, socket) => {
         });
       }
     } catch (error) {
-      logger.error('Error setting active hotel:', error);
+      logger.error({ error }, 'Error setting active hotel:');
       if (callback) {
         callback({ success: false, message: 'Failed to set active hotel' });
       }
@@ -106,7 +114,7 @@ exports.handleConnection = (namespace, socket) => {
       const roomName = `booking_${bookingId}`;
       socket.join(roomName);
 
-      logger.info(`Property user ${userId} subscribed to booking ${bookingId}`);
+      logger.info({ userId, bookingId }, `Property user ${userId} subscribed to booking ${bookingId}`);
 
       if (callback) {
         callback({
@@ -115,7 +123,7 @@ exports.handleConnection = (namespace, socket) => {
         });
       }
     } catch (error) {
-      logger.error('Error subscribing to booking:', error);
+      logger.error({ error }, 'Error subscribing to booking:');
       if (callback) {
         callback({ success: false, message: 'Failed to subscribe' });
       }
@@ -156,13 +164,13 @@ exports.handleConnection = (namespace, socket) => {
         timestamp: new Date(),
       });
 
-      logger.info(`Booking ${bookingId} status updated to ${status} by user ${userId}`);
+      logger.info({ bookingId, status, userId }, `Booking ${bookingId} status updated to ${status} by user ${userId}`);
 
       if (callback) {
         callback({ success: true, message: 'Booking status updated' });
       }
     } catch (error) {
-      logger.error('Error updating booking status:', error);
+      logger.error({ error }, 'Error updating booking status:');
       if (callback) {
         callback({
           success: false,
@@ -220,15 +228,20 @@ exports.handleConnection = (namespace, socket) => {
         timestamp: new Date(),
       });
 
-      logger.info(`Inventory updated for hotel ${hotelId}, room ${roomId}`, {
-        userId,
-      });
+      logger.info(
+        {
+          hotelId,
+          roomId,
+          userId,
+        },
+        `Inventory updated for hotel ${hotelId}, room ${roomId}`
+      );
 
       if (callback) {
         callback({ success: true, message: 'Inventory updated' });
       }
     } catch (error) {
-      logger.error('Error updating inventory:', error);
+      logger.error({ error }, 'Error updating inventory:');
       if (callback) {
         callback({ success: false, message: 'Failed to update inventory' });
       }
@@ -253,7 +266,7 @@ exports.handleConnection = (namespace, socket) => {
       const analyticsRoom = `analytics_${hotelId}`;
       socket.join(analyticsRoom);
 
-      logger.info(`User ${userId} subscribed to analytics for hotel ${hotelId}`);
+      logger.info({ userId, hotelId }, `User ${userId} subscribed to analytics for hotel ${hotelId}`);
 
       if (callback) {
         callback({
@@ -262,7 +275,7 @@ exports.handleConnection = (namespace, socket) => {
         });
       }
     } catch (error) {
-      logger.error('Error subscribing to analytics:', error);
+      logger.error({ error }, 'Error subscribing to analytics:');
       if (callback) {
         callback({
           success: false,
@@ -302,7 +315,7 @@ exports.handleConnection = (namespace, socket) => {
         });
       }
     } catch (error) {
-      logger.error('Error getting online staff:', error);
+      logger.error({ error }, 'Error getting online staff:');
       if (callback) {
         callback({ success: false, message: 'Failed to get online staff' });
       }
@@ -349,13 +362,13 @@ exports.handleConnection = (namespace, socket) => {
         timestamp: new Date(),
       });
 
-      logger.info(`User ${userId} broadcasted message to hotel ${hotelId}`);
+      logger.info({ userId, hotelId }, `User ${userId} broadcasted message to hotel ${hotelId}`);
 
       if (callback) {
         callback({ success: true, message: 'Message broadcasted' });
       }
     } catch (error) {
-      logger.error('Error broadcasting message:', error);
+      logger.error({ error }, 'Error broadcasting message:');
       if (callback) {
         callback({ success: false, message: 'Failed to broadcast message' });
       }
@@ -364,11 +377,14 @@ exports.handleConnection = (namespace, socket) => {
 
   // ==================== Event: Disconnect ====================
   socket.on('disconnect', (reason) => {
-    logger.info(`Property user disconnected from /property namespace`, {
-      userId,
-      socketId: socket.id,
-      reason,
-    });
+    logger.info(
+      {
+        userId,
+        socketId: socket.id,
+        reason,
+      },
+      `Property user disconnected from /property namespace`
+    );
 
     // Notify other staff in hotels that user went offline
     hotelRoles.forEach((hotelRole) => {
@@ -383,7 +399,7 @@ exports.handleConnection = (namespace, socket) => {
 
   // ==================== Error Handling ====================
   socket.on('error', (error) => {
-    logger.error('Socket error in /property namespace:', { userId, error });
+    logger.error({ userId, error }, 'Socket error in /property namespace:');
   });
 };
 
@@ -418,7 +434,7 @@ function getOnlineStaffInRoom(namespace, roomName) {
 exports.sendNewBookingNotification = (namespace, hotelId, bookingData) => {
   const hotelRoom = `hotel_${hotelId}`;
   namespace.to(hotelRoom).emit('booking:new', bookingData);
-  logger.info(`Sent new booking notification to hotel ${hotelId}`);
+  logger.info({ hotelId }, `Sent new booking notification to hotel ${hotelId}`);
 };
 
 /**
@@ -430,7 +446,7 @@ exports.sendNewBookingNotification = (namespace, hotelId, bookingData) => {
 exports.sendInventoryAlert = (namespace, hotelId, alertData) => {
   const hotelRoom = `hotel_${hotelId}`;
   namespace.to(hotelRoom).emit('inventory:alert', alertData);
-  logger.info(`Sent inventory alert to hotel ${hotelId}`);
+  logger.info({ hotelId }, `Sent inventory alert to hotel ${hotelId}`);
 };
 
 /**
@@ -442,5 +458,5 @@ exports.sendInventoryAlert = (namespace, hotelId, alertData) => {
 exports.sendReviewAlert = (namespace, hotelId, reviewData) => {
   const hotelRoom = `hotel_${hotelId}`;
   namespace.to(hotelRoom).emit('review:new', reviewData);
-  logger.info(`Sent review alert to hotel ${hotelId}`);
+  logger.info({ hotelId }, `Sent review alert to hotel ${hotelId}`);
 };

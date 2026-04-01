@@ -40,11 +40,11 @@ export default {
             <label>Nhận phòng</label>
             <div class="time-inputs">
               <div class="time-input">
-                <input type="time" class="time-select" id="checkInFrom" v-model="getJoinFormData.checkInFrom">
+                <input id="checkInFrom" v-model="getJoinFormData.checkInFrom" type="time" class="time-select">
                 <label class="sub-label" for="checkInFrom">Từ</label>
               </div>
               <div class="time-input">
-                <input type="time" class="time-select" id="checkInTo" v-model="getJoinFormData.checkInTo">
+                <input id="checkInTo" v-model="getJoinFormData.checkInTo" type="time" class="time-select">
                   
                 <label class="sub-label" for="checkInTo">Đến</label>
               </div>
@@ -54,11 +54,11 @@ export default {
             <label>Trả phòng</label>
             <div class="time-inputs">
               <div class="time-input">
-                <input type="time" class="time-select" id="checkOutFrom" v-model="getJoinFormData.checkOutFrom">
+                <input id="checkOutFrom" v-model="getJoinFormData.checkOutFrom" type="time" class="time-select">
                 <label class="sub-label" for="checkOutFrom">Từ</label>
               </div>
               <div class="time-input">
-                <input type="time" class="time-select" id="checkOutTo" v-model="getJoinFormData.checkOutTo">
+                <input id="checkOutTo" v-model="getJoinFormData.checkOutTo" type="time" class="time-select">
                 <label class="sub-label" for="checkOutTo">Đến</label>
               </div>
             </div>
@@ -73,12 +73,12 @@ export default {
         <h3 class="sub-title">Quý vị có tiếp đón trẻ em không?</h3>
         <div class="radio-group">
           <label class="radio-option">
-            <input type="radio" name="children" value="true" v-model="getJoinFormData.haveChildren" />
+            <input v-model="getJoinFormData.haveChildren" type="radio" name="children" value="true" />
             <span class="radio-custom"></span>
             <span>Có</span>
           </label>
           <label class="radio-option">
-            <input type="radio" name="children" value="false" v-model="getJoinFormData.haveChildren" />
+            <input v-model="getJoinFormData.haveChildren" type="radio" name="children" value="false" />
             <span class="radio-custom"></span>
             <span>Không</span>
           </label>
@@ -89,12 +89,12 @@ export default {
         <h3 class="sub-title">Quý vị có cho phép vật nuôi không?</h3>
         <div class="radio-group">
           <label class="radio-option">
-            <input type="radio" name="pets" value="true" v-model="getJoinFormData.havePet" />
+            <input v-model="getJoinFormData.havePet" type="radio" name="pets" value="true" />
             <span class="radio-custom"></span>
             <span>Có</span>
           </label>
           <label class="radio-option">
-            <input type="radio" name="pets" value="false" v-model="getJoinFormData.havePet" />
+            <input v-model="getJoinFormData.havePet" type="radio" name="pets" value="false" />
             <span class="radio-custom"></span>
             <span>Không</span>
           </label>
@@ -102,7 +102,7 @@ export default {
       </div>
       <div class="form-button-container">
         <button type="button" class="previous" @click="$emit('previous')">Quay lại</button>
-        <button type="button" class="next" @click="goNext" :disabled="!checkForNext">
+        <button type="button" class="next" :disabled="!checkForNext" @click="goNext">
           Tiếp tục
         </button>
       </div>

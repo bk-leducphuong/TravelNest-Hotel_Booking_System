@@ -71,7 +71,7 @@ export default {
     </div>
 
     <div class="legend-grid">
-      <div class="legend-item" v-for="roomLabel in roomLabels" :key="roomLabel">
+      <div v-for="roomLabel in roomLabels" :key="roomLabel" class="legend-item">
         <div
           class="legend-color"
           :style="{ backgroundColor: roomColors[roomLabels.indexOf(roomLabel)] }"

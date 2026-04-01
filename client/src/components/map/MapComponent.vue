@@ -8,7 +8,8 @@
         </div>
 
         <!-- Hotel cards -->
-        <div class="hotel-card" v-for="hotel in hotels" :key="hotel.hotel_id"   @mouseover="hoveredHotelId = hotel.hotel_id"
+        <div
+v-for="hotel in hotels" :key="hotel.hotel_id" class="hotel-card"   @mouseover="hoveredHotelId = hotel.hotel_id"
           @mouseleave="hoveredHotelId = null">
           <div class="hotel-image">
             <img
@@ -43,7 +44,7 @@
               8 đêm, 2 người lớn
             </div>
 
-            <div class="price-section" v-if="hotel.min_price_for_dates ?? hotel.lowestPrice">
+            <div v-if="hotel.min_price_for_dates ?? hotel.lowestPrice" class="price-section">
               <span class="current-price"
                 >VND
                 {{ (hotel.min_price_for_dates ?? hotel.lowestPrice ?? 0).toLocaleString('vi-VN') }}</span
@@ -58,7 +59,8 @@
         <div class="map-placeholder">
           <div style="height: 480px; width: 800px">
             <LMap ref="map" v-model:zoom="zoom" :center="center" :use-global-leaflet="false">
-              <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base"
+              <LTileLayer
+url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base"
                 name="OpenStreetMap"></LTileLayer>
               <LMarker v-for="hotel in hotels" :key="hotel.hotel_id" :lat-lng="[hotel.latitude, hotel.longitude]" :icon="hotel.hotel_id === hoveredHotelId ? redIcon : blueIcon">
                 <LPopup>{{ hotel.hotel_name || hotel.name }}</LPopup>
@@ -109,6 +111,12 @@ export default {
     LPopup,
     SavedHotelIcon
   },
+  props: {
+    hotels: {
+      type: Array,
+      required: true
+    }
+  },
   data() {
     return {
       openMapPopup: true,
@@ -119,11 +127,8 @@ export default {
       redIcon
     }
   },
-  props: {
-    hotels: {
-      type: Array,
-      required: true
-    }
+  mounted() {
+    console.log(this.hotels)
   },
   methods: {
     getHotelImage(hotel) {
@@ -138,9 +143,6 @@ export default {
     closeMapPopup() {
       this.$emit('close-map-popup')
     }
-  },
-  mounted() {
-    console.log(this.hotels)
   }
 }
 </script>

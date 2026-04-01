@@ -25,9 +25,9 @@ export default {
 }
 </script>
 <template>
-  <div class="popup-container" v-click-outside="hidePopup">
+  <div v-click-outside="hidePopup" class="popup-container">
     <!-- Main Button -->
-    <button @click="this.showPopup = !this.showPopup" class="popup-button">
+    <button class="popup-button" @click="showPopup = !showPopup">
       <div style="border-radius: 5px; width: 170px; height: 35px; margin: 0 auto">
         <div class="avatar">
           <img v-if="getUserInformation" :src="getUserInformation.profile_picture_url" alt="avatar" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover;"/>
@@ -63,11 +63,11 @@ export default {
 
     <!-- Popup Content -->
     <Transition name="fade">
-      <div v-if="this.showPopup" class="popup">
+      <div v-if="showPopup" class="popup">
         <div class="popup-arrow"></div>
 
         <nav class="nav-menu">
-          <a @click="this.$router.push('/account-settings')" class="nav-item">
+          <a class="nav-item" @click="$router.push('/account-settings')">
             <svg
               class="nav-icon"
               viewBox="0 0 24 24"
@@ -81,7 +81,7 @@ export default {
             <span class="nav-text">Manage account</span>
           </a>
 
-          <a  @click="this.$router.push('/bookings')" class="nav-item">
+          <a  class="nav-item" @click="$router.push('/bookings')">
             <svg
               class="nav-icon"
               viewBox="0 0 24 24"
@@ -125,7 +125,7 @@ export default {
             <span class="nav-text">Rewards & Wallet</span>
           </a>
 
-          <a @click="this.$router.push('/reviews')" class="nav-item">
+          <a class="nav-item" @click="$router.push('/reviews')">
             <svg
               class="nav-icon"
               viewBox="0 0 24 24"
@@ -140,7 +140,7 @@ export default {
             <span class="nav-text">Reviews</span>
           </a>
 
-          <a class="nav-item" @click="this.$router.push('/saved-hotels')">
+          <a class="nav-item" @click="$router.push('/saved-hotels')">
             <svg
               class="nav-icon"
               viewBox="0 0 24 24"
@@ -155,7 +155,7 @@ export default {
             <span class="nav-text">Saved</span>
           </a>
 
-          <a href="#" class="nav-item" @click="this.logout({haveRedirect: true})">
+          <a href="#" class="nav-item" @click="logout({haveRedirect: true})">
             <svg
               class="nav-icon"
               viewBox="0 0 24 24"

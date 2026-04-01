@@ -1,10 +1,10 @@
 <template>
-  <LanguageSwitch @close-language-popup="closeLanguagePopup" v-if="showLanguagePopup" />
+  <LanguageSwitch v-if="showLanguagePopup" @close-language-popup="closeLanguagePopup" />
   <div :class="headerClass">
-    <div class="container" v-if="useContainer">
+    <div v-if="useContainer" class="container">
       <div class="inner-wrap">
         <div class="inner-logo">
-          <a @click="this.$router.push('/')"><strong>TravelNest</strong></a>
+          <a @click="$router.push('/')"><strong>TravelNest</strong></a>
         </div>
         <div class="inner-login">
           <ul>
@@ -25,9 +25,9 @@
         </div>
       </div>
     </div>
-    <div class="inner-wrap" v-else>
+    <div v-else class="inner-wrap">
       <div class="inner-logo">
-        <strong><a @click="this.$router.push('/')">TravelNest</a></strong>
+        <strong><a @click="$router.push('/')">TravelNest</a></strong>
       </div>
       <div class="inner-login">
         <ul>

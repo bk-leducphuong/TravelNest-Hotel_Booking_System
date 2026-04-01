@@ -7,42 +7,42 @@ export default {
 }
 </script>
 <template>
-  <TheHeader :isSearchOpen="false" />
+  <TheHeader :is-search-open="false" />
   <div class="container">
     <h1>Cài đặt tài khoản</h1>
     <p>Quản lý trải nghiệm Booking.com của bạn</p>
     <div class="feature-container">
-      <div class="feature" @click="this.$router.push('/account-settings/personal-information')">
+      <div class="feature" @click="$router.push('/account-settings/personal-information')">
         <div class="icon">+</div>
         <h2>Thông tin cá nhân</h2>
         <p>Cập nhật thông tin của bạn và tìm hiểu các thông tin này được sử dụng ra sao.</p>
         <a>Quản lý thông tin cá nhân</a>
       </div>
-      <div class="feature" @click="this.$router.push('/account-settings/general-settings')">
+      <div class="feature" @click="$router.push('/account-settings/general-settings')">
         <div class="icon">+</div>
         <h2>Cài đặt chung</h2>
         <p>Cá nhân hóa tài khoản để phù hợp với nhu cầu của bạn.</p>
         <a>Quản lý tùy chọn</a>
       </div>
-      <div class="feature" @click="this.$router.push('/account-settings/security-settings')">
+      <div class="feature" @click="$router.push('/account-settings/security-settings')">
         <div class="icon">+</div>
         <h2>Cài đặt bảo mật</h2>
         <p>Thay đổi thiết lập bảo mật, cài đặt xác thực bổ sung hoặc xóa tài khoản của bạn.</p>
         <a>Quản lý bảo mật tài khoản</a>
       </div>
-      <div class="feature" @click="this.$router.push('/account-settings/privacy-settings')">
+      <div class="feature" @click="$router.push('/account-settings/privacy-settings')">
         <div class="icon">+</div>
         <h2>Quản lý quyền riêng tư và dữ liệu</h2>
         <p>Thực hiện quyền riêng tư, kiểm soát dữ liệu hoặc trích xuất thông tin của bạn.</p>
         <a>Quản lý quyền riêng tư</a>
       </div>
-      <div class="feature" @click="this.$router.push('/account-settings/email-settings')">
+      <div class="feature" @click="$router.push('/account-settings/email-settings')">
         <div class="icon">+</div>
         <h2>Cài đặt email</h2>
         <p>Chọn những gì được thông báo đến bạn và tất cả các thông báo không cần thiết.</p>
         <a>Quản lý thông báo</a>
       </div>
-      <div class="feature" @click="this.$router.push('/account-settings/payment-settings')">
+      <div class="feature" @click="$router.push('/account-settings/payment-settings')">
         <div class="icon">+</div>
         <h2>Phương thức thanh toán</h2>
         <p>Thêm hoặc bớt các phương thức thanh toán một cách dễ dàng hơn.</p>

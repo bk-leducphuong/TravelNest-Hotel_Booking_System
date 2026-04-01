@@ -1,13 +1,13 @@
 <!-- src/views/Login.vue -->
 <template>
   <ForgotPassword
-    :email="email"
-    :userRole="userRole"
-    @close="closeForgotPassword"
     v-if="isForgotPassword"
+    :email="email"
+    :user-role="userRole"
+    @close="closeForgotPassword"
   />
-  <LoginHeader :isAdminLogin="false" />
-  <div class="container" v-if="step === 1">
+  <LoginHeader :is-admin-login="false" />
+  <div v-if="step === 1" class="container">
     <h1>{{ $t('loginHeader') }}</h1>
     <p>
       Bạn có thể đăng nhập tài khoản Booking.com của mình để truy cập các dịch vụ của chúng tôi.
@@ -15,10 +15,10 @@
     <form @submit.prevent="checkEmail">
       <label for="email">Địa chỉ email</label>
       <input
-        type="email"
         id="email"
-        name="email"
         v-model="email"
+        type="email"
+        name="email"
         placeholder="Nhập địa chỉ email của bạn"
         required
       />
@@ -26,19 +26,19 @@
     </form>
     <p>hoặc sử dụng một trong các lựa chọn này</p>
     <div class="social-login">
-      <button @click="socialLogin('facebook')" class="social-btn">
+      <button class="social-btn" @click="socialLogin('facebook')">
         <img src="../assets/icons/facebook.png" alt="Facebook" />
       </button>
-      <button @click="socialLogin('google')" class="social-btn">
+      <button class="social-btn" @click="socialLogin('google')">
         <img src="../assets/icons/search.png" alt="Google" />
       </button>
-      <button @click="socialLogin('twitter')" class="social-btn">
+      <button class="social-btn" @click="socialLogin('twitter')">
         <img src="../assets/icons/twitter.png" alt="Twitter" />
       </button>
     </div>
   </div>
 
-  <div class="container" v-if="step === 2">
+  <div v-if="step === 2" class="container">
     <div>
       <h1>{{ isNewUser ? 'Tạo mật khẩu' : 'Nhập mật khẩu của bạn' }}</h1>
       <p>
@@ -53,25 +53,25 @@
       <div>
         <label for="password">Mật khẩu</label>
         <input
-          type="password"
           id="password"
+          v-model="password"
+          type="password"
           name="password"
           placeholder="Nhập mật khẩu"
-          v-model="password"
           required
         />
       </div>
-      <div class="forgot-password" @click="isForgotPassword = true" v-if="!isNewUser">
+      <div v-if="!isNewUser" class="forgot-password" @click="isForgotPassword = true">
         Forgot password?
       </div>
 
       <div v-if="isNewUser">
         <label for="confirm password">Xác nhận mật khẩu</label>
         <input
-          type="password"
           id="confirm password"
-          name="confirm password"
           v-model="confirmPassword"
+          type="password"
+          name="confirm password"
           placeholder="Nhập mật khẩu"
           required
         />

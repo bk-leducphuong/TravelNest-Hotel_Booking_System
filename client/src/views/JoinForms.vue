@@ -1,5 +1,5 @@
 <template>
-  <LoginHeader :isAdminLogin="true" />
+  <LoginHeader :is-admin-login="true" />
   <div>
     <div class="stepper-wrapper">
       <div class="stepper">
@@ -17,7 +17,7 @@
     </div>
 
     <!-- Display current step component -->
-    <component :is="currentComponent" @next="nextStep" @previous="previousStep" class="form"/>
+    <component :is="currentComponent" class="form" @next="nextStep" @previous="previousStep"/>
   </div>
 </template>
 

@@ -1,17 +1,17 @@
 <!-- src/views/Login.vue -->
 <template>
-  <LoginHeader :isAdminLogin="true" />
+  <LoginHeader :is-admin-login="true" />
 
-  <div class="container" v-if="step === 1">
+  <div v-if="step === 1" class="container">
     <h4>{{ $t('loginHeader') }}</h4>
     <p>Nhập email để trở thành đối tác của chúng tôi</p>
     <form @submit.prevent="checkEmail">
       <label for="email">Địa chỉ email hay số điện thoại</label>
       <input
-        type="email"
         id="email"
-        name="email"
         v-model="email"
+        type="email"
+        name="email"
         placeholder="Nhập địa chỉ email của bạn hoặc số điện thoại"
         required
       />
@@ -20,7 +20,7 @@
     </form>
   </div>
 
-  <div class="container" v-if="step === 2">
+  <div v-if="step === 2" class="container">
     <div>
       <h4>
         {{ isNewUser ? 'Hãy điền các thông tin để hoàn thiện đăng kí' : 'Nhập mật khẩu của bạn' }}
@@ -36,43 +36,43 @@
     <form @submit.prevent="submitSecondForm">
       <div v-if="isNewUser">
         <label for="password">Tên</label>
-        <input type="text" placeholder="Nhập tên của bạn" v-model="firstName" required />
+        <input v-model="firstName" type="text" placeholder="Nhập tên của bạn" required />
       </div>
       <div v-if="isNewUser">
         <label for="password">Họ</label>
-        <input type="text" placeholder="Nhập họ của bạn" v-model="lastName" required />
+        <input v-model="lastName" type="text" placeholder="Nhập họ của bạn" required />
       </div>
       <div v-if="isNewUser">
         <label for="password">Số điện thoại</label>
         <input
+          v-model="phoneNumber"
           type="text"
           placeholder="Nhập số điện thoại của bạn"
-          v-model="phoneNumber"
           required
         />
       </div>
       <div>
         <label for="password">Mật khẩu</label>
         <input
-          type="password"
           id="password"
+          v-model="password"
+          type="password"
           name="password"
           placeholder="Nhập mật khẩu"
-          v-model="password"
           required
         />
       </div>
-      <div class="forgot-password" @click="isForgotPassword = true" v-if="!isNewUser">
+      <div v-if="!isNewUser" class="forgot-password" @click="isForgotPassword = true">
         Forgot password?
       </div>
 
       <div v-if="isNewUser">
         <label for="confirm password">Xác nhận mật khẩu</label>
         <input
-          type="password"
           id="confirm password"
-          name="confirm password"
           v-model="confirmPassword"
+          type="password"
+          name="confirm password"
           placeholder="Nhập mật khẩu"
           required
         />
@@ -94,7 +94,7 @@
   <OtpVerification
     v-if="openVerificationPopup"
     :phone-number="phoneNumber"
-    :userRole="userRole"
+    :user-role="userRole"
     @update-is-verified="updateIsVerified"
   />
 </template>

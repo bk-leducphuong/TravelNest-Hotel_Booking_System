@@ -11,16 +11,16 @@ import axios from 'axios'
 import { useRoute } from 'vue-router'
 
 export default {
-  mounted() {
-    const route = useRoute()
-    this.connectedAccountId = route.params.connectedAccountId
-  },
   data() {
     return {
       accountLinkCreatePending: false,
       error: false,
       connectedAccountId: null
     }
+  },
+  mounted() {
+    const route = useRoute()
+    this.connectedAccountId = route.params.connectedAccountId
   },
   methods: {
     async createAccountLink() {

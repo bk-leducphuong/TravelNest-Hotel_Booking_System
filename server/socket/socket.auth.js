@@ -6,7 +6,7 @@ const {
   RolePermissions,
   HotelUsers,
 } = require('@models/index.js');
-const { logger } = require('@config/logger.config');
+const logger = require('@config/logger.config');
 const ApiError = require('@utils/ApiError');
 const { ROLES } = require('@constants/roles');
 const {
@@ -78,15 +78,19 @@ const socketAuthentication = async (socket, next) => {
     });
 
     if (!user) {
-      logger.warn(`User ${session.user.id} not found in database`);
+      logger.warn({ userId: session.user.id }, `User ${session.user.id} not found in database`);
       return next(new ApiError(401, 'UNAUTHORIZED', 'User not found'));
     }
 
     // Check user status
     if (user.status !== 'active') {
-      logger.warn(`Inactive user ${user.id} attempted socket connection`, {
-        status: user.status,
-      });
+      logger.warn(
+        {
+          userId: user.id,
+          status: user.status,
+        },
+        `Inactive user ${user.id} attempted socket connection`
+      );
       return next(
         new ApiError(403, 'FORBIDDEN', `Account is ${user.status}. Please contact support.`)
       );
@@ -105,15 +109,18 @@ const socketAuthentication = async (socket, next) => {
     };
 
     // Log successful authentication
-    logger.info(`Socket authenticated: User ${user.id}`, {
-      userId: user.id,
-      roles: socket.user.roles,
-      socketId: socket.id,
-    });
+    logger.info(
+      {
+        userId: user.id,
+        roles: socket.user.roles,
+        socketId: socket.id,
+      },
+      `Socket authenticated: User ${user.id}`
+    );
 
     next();
   } catch (error) {
-    logger.error('Socket authentication error:', error);
+    logger.error({ error }, 'Socket authentication error:');
     next(new ApiError(500, 'AUTH_ERROR', 'Authentication failed'));
   }
 };
@@ -138,28 +145,34 @@ const socketAuthorization = (allowedRoles) => {
       const hasRole = socket.user.roles.some((userRole) => roles.includes(userRole));
 
       if (!hasRole) {
-        logger.warn(`User ${socket.user.id} attempted unauthorized access`, {
-          userId: socket.user.id,
-          userRoles: socket.user.roles,
-          requiredRoles: roles,
-          socketId: socket.id,
-        });
+        logger.warn(
+          {
+            userId: socket.user.id,
+            userRoles: socket.user.roles,
+            requiredRoles: roles,
+            socketId: socket.id,
+          },
+          `User ${socket.user.id} attempted unauthorized access`
+        );
         return next(
           new ApiError(403, 'FORBIDDEN', `Access denied. Required roles: ${roles.join(', ')}`)
         );
       }
 
       // Log successful authorization
-      logger.info(`Socket authorized: User ${socket.user.id}`, {
-        userId: socket.user.id,
-        roles: socket.user.roles,
-        namespace: socket.nsp.name,
-        socketId: socket.id,
-      });
+      logger.info(
+        {
+          userId: socket.user.id,
+          roles: socket.user.roles,
+          namespace: socket.nsp.name,
+          socketId: socket.id,
+        },
+        `Socket authorized: User ${socket.user.id}`
+      );
 
       next();
     } catch (error) {
-      logger.error('Socket authorization error:', error);
+      logger.error({ error }, 'Socket authorization error:');
       next(new ApiError(500, 'AUTH_ERROR', 'Authorization failed'));
     }
   };
@@ -190,11 +203,14 @@ const socketPermissionCheck = (requiredPermissions) => {
       const hasPermission = permissions.some((perm) => socket.user.permissions.includes(perm));
 
       if (!hasPermission) {
-        logger.warn(`User ${socket.user.id} lacks required permissions for socket event`, {
-          userId: socket.user.id,
-          userPermissions: socket.user.permissions,
-          requiredPermissions: permissions,
-        });
+        logger.warn(
+          {
+            userId: socket.user.id,
+            userPermissions: socket.user.permissions,
+            requiredPermissions: permissions,
+          },
+          `User ${socket.user.id} lacks required permissions for socket event`
+        );
         return next(
           new ApiError(
             403,
@@ -206,7 +222,7 @@ const socketPermissionCheck = (requiredPermissions) => {
 
       next();
     } catch (error) {
-      logger.error('Socket permission check error:', error);
+      logger.error({ error }, 'Socket permission check error:');
       next(new ApiError(500, 'AUTH_ERROR', 'Permission check failed'));
     }
   };
@@ -256,11 +272,14 @@ const socketHotelContext = (required = true) => {
           const hotelRoom = `hotel_${hotelId}`;
           await socket.join(hotelRoom);
 
-          logger.info(`Socket joined hotel room: ${hotelRoom}`, {
-            userId: socket.user.id,
-            hotelId,
-            socketId: socket.id,
-          });
+          logger.info(
+            {
+              userId: socket.user.id,
+              hotelId,
+              socketId: socket.id,
+            },
+            `Socket joined hotel room: ${hotelRoom}`
+          );
 
           const response = {
             success: true,
@@ -270,7 +289,7 @@ const socketHotelContext = (required = true) => {
 
           if (callback) callback(response);
         } catch (error) {
-          logger.error('Error setting hotel context:', error);
+          logger.error({ error }, 'Error setting hotel context:');
           const errorResponse = {
             success: false,
             message: 'Failed to set hotel context',
@@ -286,10 +305,13 @@ const socketHotelContext = (required = true) => {
         // Timeout if context not provided
         setTimeout(() => {
           if (!socket.hotelContext) {
-            logger.warn('Hotel context not provided within timeout', {
-              userId: socket.user.id,
-              socketId: socket.id,
-            });
+            logger.warn(
+              {
+                userId: socket.user.id,
+                socketId: socket.id,
+              },
+              'Hotel context not provided within timeout'
+            );
             next(new ApiError(400, 'CONTEXT_REQUIRED', 'Hotel context is required'));
           }
         }, 5000);
@@ -297,7 +319,7 @@ const socketHotelContext = (required = true) => {
         next();
       }
     } catch (error) {
-      logger.error('Socket hotel context error:', error);
+      logger.error({ error }, 'Socket hotel context error:');
       next(new ApiError(500, 'CONTEXT_ERROR', 'Hotel context setup failed'));
     }
   };

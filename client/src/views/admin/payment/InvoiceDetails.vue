@@ -10,6 +10,11 @@ export default {
     return {
         
     }
+   }, 
+   mounted() {
+    this.getHotelOwnerInformation()
+    this.getBookingInformation()
+    this.getBuyerInformation()
    },
    methods: {
     getHotelOwnerInformation() {
@@ -21,11 +26,6 @@ export default {
     getBuyerInformation() {
         //TODO: get buyer information
     }
-   }, 
-   mounted() {
-    this.getHotelOwnerInformation()
-    this.getBookingInformation()
-    this.getBuyerInformation()
    }
 }
 </script>

@@ -31,85 +31,85 @@ export default {
 <template>
      <div class="dashboard-container">
       <nav class="dashboard">
-        <div class="logo" @click="this.$router.push('/admin/hotels-management')">TravelNest</div>
+        <div class="logo" @click="$router.push('/admin/hotels-management')">TravelNest</div>
 
         <ul class="nav-menu">
           <!-- Home -->
           <div class="nav-item-container">
             <div class="title-nav-item" >
-              <li class="nav-item" @click="this.$router.push(`/admin/${hotelId}/home`)"><i class="fa fa-home" aria-hidden="true"></i>Home</li> 
+              <li class="nav-item" @click="$router.push(`/admin/${hotelId}/home`)"><i class="fa fa-home" aria-hidden="true"></i>Home</li> 
             </div>
           </div>
           <!-- Availability -->
           <div class="nav-item-container">
-            <div class="title-nav-item" @click="this.isRoomAvailabilitySelected = !this.isRoomAvailabilitySelected">
+            <div class="title-nav-item" @click="isRoomAvailabilitySelected = !isRoomAvailabilitySelected">
               <li class="nav-item"><i class="fa fa-calendar" aria-hidden="true"></i>Availability</li>
-              <i class="fa fa-angle-right" aria-hidden="true" style="margin-right: 10px;" v-if="!this.isRoomAvailabilitySelected"></i>
-              <i class="fa fa-angle-down" aria-hidden="true" style="margin-right: 10px;" v-if="this.isRoomAvailabilitySelected"></i>
+              <i v-if="!isRoomAvailabilitySelected" class="fa fa-angle-right" aria-hidden="true" style="margin-right: 10px;"></i>
+              <i v-if="isRoomAvailabilitySelected" class="fa fa-angle-down" aria-hidden="true" style="margin-right: 10px;"></i>
             </div>
-            <div class="child-item-container" v-if="this.isRoomAvailabilitySelected">
-              <li class="child-item" @click="this.$router.push(`/admin/${hotelId}/room-availability/availability-calendar`)">Availability calendar</li>
+            <div v-if="isRoomAvailabilitySelected" class="child-item-container">
+              <li class="child-item" @click="$router.push(`/admin/${hotelId}/room-availability/availability-calendar`)">Availability calendar</li>
             </div>
           </div>
           <!-- Bookings -->
           <div class="nav-item-container">
-            <div class="title-nav-item" @click="this.isBookingsSelected = !this.isBookingsSelected">
+            <div class="title-nav-item" @click="isBookingsSelected = !isBookingsSelected">
               <li class="nav-item"><i class="fa fa-list" aria-hidden="true"></i>Bookings</li>
-              <i class="fa fa-angle-right" aria-hidden="true" style="margin-right: 10px;" v-if="!this.isBookingsSelected"></i>
-              <i class="fa fa-angle-down" aria-hidden="true" style="margin-right: 10px;" v-if="this.isBookingsSelected"></i>
+              <i v-if="!isBookingsSelected" class="fa fa-angle-right" aria-hidden="true" style="margin-right: 10px;"></i>
+              <i v-if="isBookingsSelected" class="fa fa-angle-down" aria-hidden="true" style="margin-right: 10px;"></i>
             </div>
-            <div class="child-item-container" v-if="this.isBookingsSelected">
-              <li class="child-item" @click="this.$router.push(`/admin/${hotelId}/bookings/all`)">All bookings</li>
+            <div v-if="isBookingsSelected" class="child-item-container">
+              <li class="child-item" @click="$router.push(`/admin/${hotelId}/bookings/all`)">All bookings</li>
               <!-- <li class="child-item" @click="this.$router.push('/admin/payment/invoices')">Invoices</li> -->
             </div>
           </div>
           <!-- Property -->
           <div class="nav-item-container">
-            <div class="title-nav-item" @click="this.isRoomSelected = !this.isRoomSelected">
+            <div class="title-nav-item" @click="isRoomSelected = !isRoomSelected">
               <li class="nav-item" ><i class="fa fa-pencil" aria-hidden="true"></i>Property</li>
-              <i class="fa fa-angle-right" aria-hidden="true" style="margin-right: 10px;" v-if="!this.isRoomSelected"></i>
-              <i class="fa fa-angle-down" aria-hidden="true" style="margin-right: 10px;" v-if="this.isRoomSelected"></i>
+              <i v-if="!isRoomSelected" class="fa fa-angle-right" aria-hidden="true" style="margin-right: 10px;"></i>
+              <i v-if="isRoomSelected" class="fa fa-angle-down" aria-hidden="true" style="margin-right: 10px;"></i>
             </div>
-            <div class="child-item-container" v-if="this.isRoomSelected">
-              <li class="child-item" @click="this.$router.push(`/admin/${hotelId}/room/room-details`)">Room details</li>
-              <li class="child-item" @click="this.$router.push(`/admin/${hotelId}/room/room-photos`)">Room photos</li>
-              <li class="child-item" @click="this.$router.push(`/admin/${hotelId}/room/room-amenities`)">Room amenities</li>
-              <li class="child-item" @click="this.$router.push(`/admin/${hotelId}/room/room-details`)">Policies</li>
-              <li class="child-item" @click="this.$router.push(`/admin/${hotelId}/room/room-details`)">Room services</li>
+            <div v-if="isRoomSelected" class="child-item-container">
+              <li class="child-item" @click="$router.push(`/admin/${hotelId}/room/room-details`)">Room details</li>
+              <li class="child-item" @click="$router.push(`/admin/${hotelId}/room/room-photos`)">Room photos</li>
+              <li class="child-item" @click="$router.push(`/admin/${hotelId}/room/room-amenities`)">Room amenities</li>
+              <li class="child-item" @click="$router.push(`/admin/${hotelId}/room/room-details`)">Policies</li>
+              <li class="child-item" @click="$router.push(`/admin/${hotelId}/room/room-details`)">Room services</li>
             </div>
           </div>
           <!-- Payment -->
           <div class="nav-item-container">
-            <div class="title-nav-item" @click="this.isPaymentSelected = !this.isPaymentSelected">
+            <div class="title-nav-item" @click="isPaymentSelected = !isPaymentSelected">
               <li class="nav-item" ><i class="fa fa-credit-card-alt" aria-hidden="true"></i>Payment</li>
-              <i class="fa fa-angle-right" aria-hidden="true" style="margin-right: 10px;" v-if="!this.isPaymentSelected"></i>
-              <i class="fa fa-angle-down" aria-hidden="true" style="margin-right: 10px;" v-if="this.isPaymentSelected"></i>
+              <i v-if="!isPaymentSelected" class="fa fa-angle-right" aria-hidden="true" style="margin-right: 10px;"></i>
+              <i v-if="isPaymentSelected" class="fa fa-angle-down" aria-hidden="true" style="margin-right: 10px;"></i>
             </div>
-            <div class="child-item-container" v-if="this.isPaymentSelected">
-              <li class="child-item" @click="this.$router.push(`/admin/${hotelId}/payment`)">Payment methods</li>
+            <div v-if="isPaymentSelected" class="child-item-container">
+              <li class="child-item" @click="$router.push(`/admin/${hotelId}/payment`)">Payment methods</li>
               <!-- <li class="child-item" @click="this.$router.push(`/admin/${hotelId}/payment/stripe-connect-account-management`)">Stripe management</li> -->
                <li class="child-item"><a href="https://connect.stripe.com/express_login" target="_blank">Stripe management</a></li>
-              <li class="child-item" @click="this.$router.push(`/admin/${hotelId}/payment/invoices`)">Invoices</li>
+              <li class="child-item" @click="$router.push(`/admin/${hotelId}/payment/invoices`)">Invoices</li>
             </div>
           </div>
           <!-- Guest reviews -->
           <div class="nav-item-container">
             <div class="title-nav-item">
-              <li class="nav-item" @click="this.isReviewSelected = !this.isReviewSelected"><i class="fa fa-comments" aria-hidden="true"></i>Guest reviews</li>
-              <i class="fa fa-angle-right" aria-hidden="true" style="margin-right: 10px;" v-if="!this.isReviewSelected"></i>
-              <i class="fa fa-angle-down" aria-hidden="true" style="margin-right: 10px;" v-if="this.isReviewSelected"></i>
+              <li class="nav-item" @click="isReviewSelected = !isReviewSelected"><i class="fa fa-comments" aria-hidden="true"></i>Guest reviews</li>
+              <i v-if="!isReviewSelected" class="fa fa-angle-right" aria-hidden="true" style="margin-right: 10px;"></i>
+              <i v-if="isReviewSelected" class="fa fa-angle-down" aria-hidden="true" style="margin-right: 10px;"></i>
             </div>
-            <div class="child-item-container" v-if="this.isReviewSelected">
-              <li class="child-item" @click="this.$router.push(`/admin/${hotelId}/review/guest-reviews`)">Guest reviews</li>
-              <li class="child-item" @click="this.$router.push(`/admin/${hotelId}/review/guest-experiences`)">Guest experiences</li>
+            <div v-if="isReviewSelected" class="child-item-container">
+              <li class="child-item" @click="$router.push(`/admin/${hotelId}/review/guest-reviews`)">Guest reviews</li>
+              <li class="child-item" @click="$router.push(`/admin/${hotelId}/review/guest-experiences`)">Guest experiences</li>
             </div>
           </div>
           <!-- Analytics -->
           <div class="nav-item-container">
             <div class="title-nav-item  ">
-              <li class="nav-item" @click="this.$router.push('/admin/home')"><i class="fa fa-bar-chart" aria-hidden="true"></i>Analytics</li>
-              <i class="fa fa-angle-right" aria-hidden="true" style="margin-right: 10px;" v-if="!this.selected"></i>
-              <i class="fa fa-angle-down" aria-hidden="true" style="margin-right: 10px;" v-if="this.selected"></i>
+              <li class="nav-item" @click="$router.push('/admin/home')"><i class="fa fa-bar-chart" aria-hidden="true"></i>Analytics</li>
+              <i v-if="!selected" class="fa fa-angle-right" aria-hidden="true" style="margin-right: 10px;"></i>
+              <i v-if="selected" class="fa fa-angle-down" aria-hidden="true" style="margin-right: 10px;"></i>
             </div>
             <div class="child-item-container">
               <li class="child-item"></li>
@@ -118,7 +118,7 @@ export default {
           <!-- Support -->
           <div class="nav-item-container">
             <div class="title-nav-item  ">
-              <li class="nav-item" @click="this.$router.push('/admin/home')"><i class="fa fa-phone" aria-hidden="true"></i>Support</li>
+              <li class="nav-item" @click="$router.push('/admin/home')"><i class="fa fa-phone" aria-hidden="true"></i>Support</li>
             </div>
             <div class="child-item-container">
               <li class="child-item"></li>

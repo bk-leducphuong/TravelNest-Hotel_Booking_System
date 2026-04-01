@@ -1,5 +1,5 @@
 <template>
-  <LoadingPopup :isLoading="isLoading" :startTitle="startTitle" :endTitle="endTitle" :isLoaded="isLoaded" :redirectUrl="redirectUrl" :fail="fail"/>
+  <LoadingPopup :is-loading="isLoading" :start-title="startTitle" :end-title="endTitle" :is-loaded="isLoaded" :redirect-url="redirectUrl" :fail="fail"/>
   <div class="payment-form">
     <form @submit.prevent="handleSubmit">
       <div id="card-element"></div>

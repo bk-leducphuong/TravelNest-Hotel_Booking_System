@@ -14,10 +14,13 @@ const logger = require('@config/logger.config');
 exports.handleConnection = (namespace, socket) => {
   const userId = socket.user.id;
 
-  logger.info(`Support agent connected to /support namespace`, {
-    userId,
-    socketId: socket.id,
-  });
+  logger.info(
+    {
+      userId,
+      socketId: socket.id,
+    },
+    `Support agent connected to /support namespace`
+  );
 
   // Join support agent room
   socket.join('support_agents');
@@ -53,7 +56,7 @@ exports.handleConnection = (namespace, socket) => {
       const chatRoom = `support_chat_${ticketId}`;
       socket.join(chatRoom);
 
-      logger.info(`Support agent ${userId} joined chat for ticket ${ticketId}`);
+      logger.info({ userId, ticketId }, `Support agent ${userId} joined chat for ticket ${ticketId}`);
 
       // Notify user that agent joined
       socket.to(chatRoom).emit('support:agentJoined', {
@@ -65,7 +68,7 @@ exports.handleConnection = (namespace, socket) => {
         callback({ success: true, message: 'Joined support chat' });
       }
     } catch (error) {
-      logger.error('Error joining support chat:', error);
+      logger.error({ error }, 'Error joining support chat:');
       if (callback) {
         callback({ success: false, message: 'Failed to join support chat' });
       }
@@ -98,13 +101,13 @@ exports.handleConnection = (namespace, socket) => {
         timestamp: new Date(),
       });
 
-      logger.info(`Support agent ${userId} sent message for ticket ${ticketId}`);
+      logger.info({ userId, ticketId }, `Support agent ${userId} sent message for ticket ${ticketId}`);
 
       if (callback) {
         callback({ success: true, message: 'Message sent' });
       }
     } catch (error) {
-      logger.error('Error sending support message:', error);
+      logger.error({ error }, 'Error sending support message:');
       if (callback) {
         callback({ success: false, message: 'Failed to send message' });
       }
@@ -142,13 +145,13 @@ exports.handleConnection = (namespace, socket) => {
         timestamp: new Date(),
       });
 
-      logger.info(`Ticket ${ticketId} assigned to agent ${assignToAgentId} by ${userId}`);
+      logger.info({ ticketId, assignedBy: userId, assignToAgentId }, `Ticket ${ticketId} assigned to agent ${assignToAgentId} by ${userId}`);
 
       if (callback) {
         callback({ success: true, message: 'Ticket assigned' });
       }
     } catch (error) {
-      logger.error('Error assigning ticket:', error);
+      logger.error({ error }, 'Error assigning ticket:');
       if (callback) {
         callback({ success: false, message: 'Failed to assign ticket' });
       }
@@ -177,13 +180,13 @@ exports.handleConnection = (namespace, socket) => {
         timestamp: new Date(),
       });
 
-      logger.info(`Ticket ${ticketId} status updated to ${status} by agent ${userId}`);
+      logger.info({ ticketId, status, userId }, `Ticket ${ticketId} status updated to ${status} by agent ${userId}`);
 
       if (callback) {
         callback({ success: true, message: 'Ticket status updated' });
       }
     } catch (error) {
-      logger.error('Error updating ticket status:', error);
+      logger.error({ error }, 'Error updating ticket status:');
       if (callback) {
         callback({ success: false, message: 'Failed to update ticket status' });
       }
@@ -210,16 +213,21 @@ exports.handleConnection = (namespace, socket) => {
         timestamp: new Date(),
       });
 
-      logger.info(`Ticket ${ticketId} escalated by agent ${userId}`, {
-        reason,
-        priority,
-      });
+      logger.info(
+        {
+          ticketId,
+          reason,
+          priority,
+          userId,
+        },
+        `Ticket ${ticketId} escalated by agent ${userId}`
+      );
 
       if (callback) {
         callback({ success: true, message: 'Ticket escalated' });
       }
     } catch (error) {
-      logger.error('Error escalating ticket:', error);
+      logger.error({ error }, 'Error escalating ticket:');
       if (callback) {
         callback({ success: false, message: 'Failed to escalate ticket' });
       }
@@ -238,7 +246,7 @@ exports.handleConnection = (namespace, socket) => {
         });
       }
     } catch (error) {
-      logger.error('Error getting online agents:', error);
+      logger.error({ error }, 'Error getting online agents:');
       if (callback) {
         callback({ success: false, message: 'Failed to get online agents' });
       }
@@ -255,7 +263,7 @@ exports.handleConnection = (namespace, socket) => {
 
       // This would call user service to get details
       // For now, just acknowledge
-      logger.info(`Support agent ${socket.user.id} requested details for user ${userId}`);
+      logger.info({ agentId: socket.user.id, targetUserId: userId }, `Support agent ${socket.user.id} requested details for user ${userId}`);
 
       if (callback) {
         callback({
@@ -264,7 +272,7 @@ exports.handleConnection = (namespace, socket) => {
         });
       }
     } catch (error) {
-      logger.error('Error getting user details:', error);
+      logger.error({ error }, 'Error getting user details:');
       if (callback) {
         callback({ success: false, message: 'Failed to get user details' });
       }
@@ -273,11 +281,14 @@ exports.handleConnection = (namespace, socket) => {
 
   // ==================== Event: Disconnect ====================
   socket.on('disconnect', (reason) => {
-    logger.info(`Support agent disconnected from /support namespace`, {
-      userId,
-      socketId: socket.id,
-      reason,
-    });
+    logger.info(
+      {
+        userId,
+        socketId: socket.id,
+        reason,
+      },
+      `Support agent disconnected from /support namespace`
+    );
 
     // Notify other agents that agent went offline
     socket.to('support_agents').emit('agent:offline', {
@@ -288,7 +299,7 @@ exports.handleConnection = (namespace, socket) => {
 
   // ==================== Error Handling ====================
   socket.on('error', (error) => {
-    logger.error('Socket error in /support namespace:', { userId, error });
+    logger.error({ userId, error }, 'Socket error in /support namespace:');
   });
 };
 
@@ -321,7 +332,7 @@ function getOnlineAgents(namespace) {
  */
 exports.notifyNewTicket = (namespace, ticketData) => {
   namespace.to('support_agents').emit('ticket:new', ticketData);
-  logger.info(`Notified support agents of new ticket ${ticketData.ticketId}`);
+  logger.info({ ticketId: ticketData.ticketId }, `Notified support agents of new ticket ${ticketData.ticketId}`);
 };
 
 /**
@@ -333,5 +344,5 @@ exports.notifyNewTicket = (namespace, ticketData) => {
 exports.sendMessageToChat = (namespace, ticketId, messageData) => {
   const chatRoom = `support_chat_${ticketId}`;
   namespace.to(chatRoom).emit('support:messageReceived', messageData);
-  logger.info(`Sent message to support chat ${ticketId}`);
+  logger.info({ ticketId }, `Sent message to support chat ${ticketId}`);
 };

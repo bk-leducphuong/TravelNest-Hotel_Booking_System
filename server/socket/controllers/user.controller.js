@@ -15,10 +15,13 @@ const notificationService = require('@services/notification.service');
 exports.handleConnection = (namespace, socket) => {
   const userId = socket.user.id;
 
-  logger.info(`User connected to /user namespace`, {
-    userId,
-    socketId: socket.id,
-  });
+  logger.info(
+    {
+      userId,
+      socketId: socket.id,
+    },
+    `User connected to /user namespace`
+  );
 
   // Join user's personal room for targeted notifications
   const userRoom = `user_${userId}`;
@@ -101,9 +104,14 @@ exports.handleConnection = (namespace, socket) => {
       const roomName = `booking_${bookingId}`;
       socket.join(roomName);
 
-      logger.info(`User ${userId} subscribed to booking ${bookingId}`, {
-        socketId: socket.id,
-      });
+      logger.info(
+        {
+          userId,
+          bookingId,
+          socketId: socket.id,
+        },
+        `User ${userId} subscribed to booking ${bookingId}`
+      );
 
       if (callback) {
         callback({
@@ -112,7 +120,7 @@ exports.handleConnection = (namespace, socket) => {
         });
       }
     } catch (error) {
-      logger.error('Error subscribing to booking:', error);
+      logger.error({ error }, 'Error subscribing to booking:');
       if (callback) {
         callback({ success: false, message: 'Failed to subscribe to booking' });
       }
@@ -125,13 +133,13 @@ exports.handleConnection = (namespace, socket) => {
       const roomName = `booking_${bookingId}`;
       socket.leave(roomName);
 
-      logger.info(`User ${userId} unsubscribed from booking ${bookingId}`);
+      logger.info({ userId, bookingId }, `User ${userId} unsubscribed from booking ${bookingId}`);
 
       if (callback) {
         callback({ success: true });
       }
     } catch (error) {
-      logger.error('Error unsubscribing from booking:', error);
+      logger.error({ error }, 'Error unsubscribing from booking:');
       if (callback) {
         callback({ success: false, message: 'Failed to unsubscribe' });
       }
@@ -214,16 +222,19 @@ exports.handleConnection = (namespace, socket) => {
 
   // ==================== Event: Disconnect ====================
   socket.on('disconnect', (reason) => {
-    logger.info(`User disconnected from /user namespace`, {
-      userId,
-      socketId: socket.id,
-      reason,
-    });
+    logger.info(
+      {
+        userId,
+        socketId: socket.id,
+        reason,
+      },
+      `User disconnected from /user namespace`
+    );
   });
 
   // ==================== Error Handling ====================
   socket.on('error', (error) => {
-    logger.error('Socket error in /user namespace:', { userId, error });
+    logger.error({ userId, error }, 'Socket error in /user namespace:');
   });
 };
 
@@ -236,7 +247,7 @@ exports.handleConnection = (namespace, socket) => {
 exports.sendNotification = (namespace, userId, notification) => {
   const userRoom = `user_${userId}`;
   namespace.to(userRoom).emit('notification:new', notification);
-  logger.info(`Sent notification to user ${userId}`);
+  logger.info({ userId }, `Sent notification to user ${userId}`);
 };
 
 /**
@@ -251,5 +262,5 @@ exports.sendBookingUpdate = (namespace, userId, bookingId, updateData) => {
   const bookingRoom = `booking_${bookingId}`;
 
   namespace.to(userRoom).to(bookingRoom).emit('booking:updated', updateData);
-  logger.info(`Sent booking update to user ${userId} for booking ${bookingId}`);
+  logger.info({ userId, bookingId }, `Sent booking update to user ${userId} for booking ${bookingId}`);
 };

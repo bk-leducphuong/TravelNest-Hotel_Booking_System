@@ -19,8 +19,8 @@ export default {
 }
 </script>
 <template>
-  <Header :isSearchOpen="false" />
-  <div class="confirmation-container" v-if="getBookingInformation.status === 'confirmed'">
+  <Header :is-search-open="false" />
+  <div v-if="getBookingInformation.status === 'confirmed'" class="confirmation-container">
     <h1 class="greeting">Thanks, {{ getUserInformation.username}}!</h1>
     <h2 class="confirmation-title">Your booking in {{ getBookingInformation.hotel.name }} is confirmed.</h2>
     <ul class="details-list">
@@ -52,7 +52,7 @@ export default {
     </div>
   </div>
 
-  <div class="confirmation-container" v-if="getBookingInformation.status != 'confirmed'">
+  <div v-if="getBookingInformation.status != 'confirmed'" class="confirmation-container">
     <h1 class="greeting">Thank you for using our service!</h1>
     <h2 class="confirmation-title">Your booking in {{ getBookingInformation.hotel.name }} is {{ getBookingInformation.status }}.</h2>
   </div>
@@ -85,7 +85,7 @@ export default {
     </div>
 
     <!-- Right Section -->
-    <div class="details-right" v-if="getBookingInformation.status === 'confirmed'">
+    <div v-if="getBookingInformation.status === 'confirmed'" class="details-right">
       <h2 class="subheading">Is everything correct?</h2>
       <p class="note">
         You can always view or change your booking online – no registration required.
@@ -98,7 +98,7 @@ export default {
         <li><a href="#" class="action-link"><i class="fa-solid fa-wrench" style="color: #005eff;"></i> Change your room</a></li>
       </ul>
     </div>
-    <div class="details-right" v-if="getBookingInformation.status !== 'confirmed'">
+    <div v-if="getBookingInformation.status !== 'confirmed'" class="details-right">
       <h2 class="subheading">What happens next?</h2>
       <p class="note">
         

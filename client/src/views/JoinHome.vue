@@ -9,7 +9,7 @@ export default {
 
 <template>
   <div class="join-container">
-    <LoginHeader :isAdminLogin="true" />
+    <LoginHeader :is-admin-login="true" />
     <div class="main-container">
       <div class="left-main-container">
         <h1 class="main-title">
@@ -29,7 +29,7 @@ export default {
           <li>Chọn một trong hai cách nhận đơn đặt: xác nhận tức thì và xem trước để duyệt</li>
           <li>Chúng tôi xử lý thanh toán thay bạn</li>
         </ul>
-        <button class="get-started-button" @click="this.$router.push('/admin/login')">
+        <button class="get-started-button" @click="$router.push('/admin/login')">
           Bắt đầu ngay
         </button>
         <div class="login-text">

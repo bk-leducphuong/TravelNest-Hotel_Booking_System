@@ -17,6 +17,9 @@ export default {
       consentGiven: false
     }
   },
+  mounted() {
+    this.checkExistingConsent()
+  },
   methods: {
     acceptCookies() {
       this.setCookieConsent(true)
@@ -43,9 +46,6 @@ export default {
         }
       }
     }
-  },
-  mounted() {
-    this.checkExistingConsent()
   }
 }
 </script>

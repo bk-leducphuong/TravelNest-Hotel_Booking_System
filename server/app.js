@@ -133,7 +133,7 @@ const createApp = async () => {
     res.send('Welcome to the Hotel Booking API');
   });
 
-  return app;
+  return server;
 };
 
 module.exports = createApp;

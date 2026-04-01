@@ -46,6 +46,10 @@ export default {
       comment: null
     }
   },
+  async mounted() {
+    await this.validateReview()
+    await this.checkAlreadyReviewed()
+  },
   methods: {
     async validateReview() {
       try {
@@ -119,18 +123,14 @@ export default {
         errorHandler(error)
       }
     }
-  },
-  async mounted() {
-    await this.validateReview()
-    await this.checkAlreadyReviewed()
   }
 }
 </script>
 <template>
-  <TheHeader :isSearchOpen="false" />
+  <TheHeader :is-search-open="false" />
   <div class="review-container">
     <div class="review-section">
-      <h3>Review {{ this.$route.query.hn }}</h3>
+      <h3>Review {{ $route.query.hn }}</h3>
       <p>Let me know how your stay was.</p>
     </div>
     <!-- Section 1: Service Rating -->
@@ -139,15 +139,15 @@ export default {
       <div v-for="criteria in reviewCriteria" :key="criteria.name">
         <label>{{ criteria.name }}</label>
         <div class="rating-group faces">
-          <input type="radio" v-model="criteria.value" value="1" :id="`${criteria.name}-1`" />
+          <input :id="`${criteria.name}-1`" v-model="criteria.value" type="radio" value="1" />
           <label :for="`${criteria.name}-1`" :class="{ selected: criteria.value == 1 }">😡</label>
-          <input type="radio" v-model="criteria.value" value="2" :id="`${criteria.name}-2`" />
+          <input :id="`${criteria.name}-2`" v-model="criteria.value" type="radio" value="2" />
           <label :for="`${criteria.name}-2`" :class="{ selected: criteria.value == 2 }">😟</label>
-          <input type="radio" v-model="criteria.value" value="3" :id="`${criteria.name}-3`" />
+          <input :id="`${criteria.name}-3`" v-model="criteria.value" type="radio" value="3" />
           <label :for="`${criteria.name}-3`" :class="{ selected: criteria.value == 3 }">😐</label>
-          <input type="radio" v-model="criteria.value" value="4" :id="`${criteria.name}-4`" />
+          <input :id="`${criteria.name}-4`" v-model="criteria.value" type="radio" value="4" />
           <label :for="`${criteria.name}-4`" :class="{ selected: criteria.value == 4 }">😊</label>
-          <input type="radio" v-model="criteria.value" value="5" :id="`${criteria.name}-5`" />
+          <input :id="`${criteria.name}-5`" v-model="criteria.value" type="radio" value="5" />
           <label :for="`${criteria.name}-5`" :class="{ selected: criteria.value == 5 }">😍</label>
         </div>
       </div>
@@ -158,15 +158,15 @@ export default {
       <h3>Overall Rating</h3>
       <p>How was your stay experienced at this hotel?</p>
       <div class="rating-group faces">
-        <input type="radio" v-model="overallRating" value="1" :id="`overall-1`" />
+        <input :id="`overall-1`" v-model="overallRating" type="radio" value="1" />
         <label :for="`overall-1`" :class="{ selected: overallRating == 1 }">😡</label>
-        <input type="radio" v-model="overallRating" value="2" :id="`overall-2`" />
+        <input :id="`overall-2`" v-model="overallRating" type="radio" value="2" />
         <label :for="`overall-2`" :class="{ selected: overallRating == 2 }">😟</label>
-        <input type="radio" v-model="overallRating" value="3" :id="`overall-3`" />
+        <input :id="`overall-3`" v-model="overallRating" type="radio" value="3" />
         <label :for="`overall-3`" :class="{ selected: overallRating == 3 }">😐</label>
-        <input type="radio" v-model="overallRating" value="4" :id="`overall-4`" />
+        <input :id="`overall-4`" v-model="overallRating" type="radio" value="4" />
         <label :for="`overall-4`" :class="{ selected: overallRating == 4 }">😊</label>
-        <input type="radio" v-model="overallRating" value="5" :id="`overall-5`" />
+        <input :id="`overall-5`" v-model="overallRating" type="radio" value="5" />
         <label :for="`overall-5`" :class="{ selected: overallRating == 5 }">😍</label>
       </div>
     </div>
@@ -175,7 +175,7 @@ export default {
     <div class="review-section">
       <h3>Write Your Comments</h3>
       <p>Please write your reviews about your feeling during staying at this hotel.</p>
-      <textarea name="comments" id="comments" v-model="comment" placeholder="Write your feedback here..."></textarea>
+      <textarea id="comments" v-model="comment" name="comments" placeholder="Write your feedback here..."></textarea>
       <div style="display: flex; align-items: center; gap: 5px">
         <input type="checkbox" name="booking_code" value="bc" style="width: 18px; height: 18px" />
         <span for="booking_code">Post this review as a anonymous</span>

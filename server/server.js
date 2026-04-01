@@ -6,8 +6,8 @@ const createApp = require('./app');
 const PORT = process.env.PORT || 3000;
 
 createApp()
-  .then((app) => {
-    app.listen(PORT, () => {
+  .then((server) => {
+    server.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
     });
   })

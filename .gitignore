@@ -40,3 +40,8 @@ server/infra/.env
 
 server/secrets/*
 
+# Docker compose local volume data
+server/infra/minio-data/
+server/infra/minio-data-test/
+server/infra/elasticsearch/data/
+

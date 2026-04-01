@@ -1,5 +1,5 @@
 <template>
-  <div class="recent-search-container container" v-if="recentSearches.length > 0">
+  <div v-if="recentSearches.length > 0" class="recent-search-container container">
     <h2 class="h2">{{ $t('userHome.recentSearches') }}</h2>
     <div class="slider-container">
       <ElCarousel
@@ -12,9 +12,9 @@
         <ElCarouselItem v-for="(group, groupIndex) in groupedSearches" :key="groupIndex">
           <div class="search-group">
             <div
-              class="search-card"
               v-for="(search, index) in group"
               :key="searchKey(search, groupIndex * itemsPerSlide + index)"
+              class="search-card"
               @click="redirectToSearchResults(search)"
             >
               <div class="search-image">

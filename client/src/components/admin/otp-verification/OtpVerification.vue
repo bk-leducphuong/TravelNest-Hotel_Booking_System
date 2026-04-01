@@ -27,6 +27,10 @@ export default {
       numberOfAttempts: 0
     }
   },
+  async mounted() {
+    await this.sendSmsOtp()
+    this.$refs.inputs[0].focus()
+  },
   methods: {
     async moveToNext(input, index) {
       // Check if the input is a number
@@ -107,10 +111,6 @@ export default {
         console.error('Error during OTP verification:', error)
       }
     }
-  },
-  async mounted() {
-    await this.sendSmsOtp()
-    this.$refs.inputs[0].focus()
   }
 }
 </script>
@@ -126,14 +126,14 @@ export default {
       <form @submit.prevent>
         <div class="otp-container">
           <input
+            v-for="index in 4"
+            :key="index"
+            ref="inputs"
             type="text"
             class="otp-input"
             maxlength="1"
             pattern="[0-9]"
             required
-            v-for="index in 4"
-            :key="index"
-            ref="inputs"
             placeholder=" "
             @input="moveToNext($event.target.value, index - 1)"
             @keyup.delete="backToPrevious(index - 1)"
