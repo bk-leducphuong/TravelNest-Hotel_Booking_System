@@ -73,6 +73,7 @@ const options = {
       { name: 'Hotels', description: 'Hotel operations' },
       { name: 'Rooms', description: 'Room operations' },
       { name: 'Hold', description: 'Temporary room holds during checkout' },
+      { name: 'Payments', description: 'Payment intents and payment history' },
       { name: 'Bookings', description: 'Booking operations' },
       { name: 'Reviews', description: 'Review operations' },
       { name: 'Search', description: 'Search operations' },
