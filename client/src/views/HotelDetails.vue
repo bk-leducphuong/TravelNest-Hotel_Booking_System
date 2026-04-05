@@ -193,16 +193,22 @@
         }
       },
 
-      async applyChange() {
+      async applyChange(searchData) {
         try {
           this.isSearchRoomLoading = true;
+
+          // Use the search data passed from RoomSearchBar
+          if (searchData && searchData.dateRange) {
+            this.dateRange = searchData.dateRange;
+          }
+
           this.extractDate(this.dateRange);
 
           const params = {
             checkInDate: this.checkInDate,
             checkOutDate: this.checkOutDate,
-            numberOfRooms: this.numberOfRooms,
-            numberOfGuests: this.numberOfGuests,
+            numberOfRooms: searchData?.numberOfRooms || this.numberOfRooms,
+            numberOfGuests: searchData?.numberOfGuests || this.numberOfGuests,
           };
 
           const response = await HotelService.searchAvailableRooms(this.hotel_id, params);

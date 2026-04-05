@@ -44,7 +44,7 @@
       </div>
 
       <!-- Search button -->
-      <button class="search-button" :disabled="isLoading" @click="$emit('search')">
+      <button class="search-button" :disabled="isLoading" @click="handleSearch">
         {{ isLoading ? 'Đang tìm...' : 'Áp dụng' }}
       </button>
     </div>
@@ -78,7 +78,8 @@ export default {
   emits: ['search', 'update:numberOfGuests', 'update:numberOfRooms'],
   data() {
     return {
-      showGuestSelector: false
+      showGuestSelector: false,
+      flatpickrInstance: null
     }
   },
   computed: {
@@ -89,7 +90,7 @@ export default {
   mounted() {
     // Initialize flatpickr on the date input
     if (this.$refs.dateInput) {
-      flatpickr(this.$refs.dateInput, {
+      this.flatpickrInstance = flatpickr(this.$refs.dateInput, {
         dateFormat: 'd/m/Y',
         locale: 'vn',
         mode: 'range',
@@ -124,6 +125,15 @@ export default {
         else if (action === 'decrement' && newValue > 1) newValue--
         this.$emit('update:numberOfRooms', newValue)
       }
+    },
+    handleSearch() {
+      const searchData = {
+        dateRange: this.$refs.dateInput.value,
+        selectedDates: this.flatpickrInstance?.selectedDates || [],
+        numberOfGuests: this.numberOfGuests,
+        numberOfRooms: this.numberOfRooms
+      }
+      this.$emit('search', searchData)
     }
   }
 }
