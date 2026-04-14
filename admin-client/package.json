@@ -1,5 +1,5 @@
 {
-  "name": "admin-client",
+  "name": "@travelnest/admin-client",
   "type": "module",
   "private": true,
   "scripts": {
@@ -30,15 +30,15 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "eslint-config-prettier": "^10.1.5",
-    "prettier": "^3.5.3",
     "@element-plus/nuxt": "^1.1.5",
     "@nuxt/test-utils": "^4.0.0",
     "@playwright/test": "^1.58.2",
     "@vue/test-utils": "^2.4.6",
     "element-plus": "^2.13.2",
+    "eslint-config-prettier": "^10.1.5",
     "happy-dom": "^20.7.0",
     "playwright-core": "^1.58.2",
+    "prettier": "^3.5.3",
     "vitest": "^4.0.18",
     "vue-tsc": "^2.2.0"
   }

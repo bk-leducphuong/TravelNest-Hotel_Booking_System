@@ -1,5 +1,5 @@
 {
-  "name": "scrape-hotel",
+  "name": "@travelnest/scrape-data",
   "version": "1.0.0",
   "description": "",
   "main": "hotel.js",

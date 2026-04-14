@@ -1,0 +1,33 @@
+{
+  "name": "travelnest-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TravelNest Hotel Booking System - Monorepo",
+  "workspaces": [
+    "client",
+    "server",
+    "admin-client",
+    "scrape_data"
+  ],
+  "scripts": {
+    "dev:client": "yarn workspace @travelnest/client dev",
+    "dev:server": "yarn workspace @travelnest/server dev",
+    "dev:admin": "yarn workspace @travelnest/admin-client dev",
+    "build:client": "yarn workspace @travelnest/client build",
+    "build:server": "yarn workspace @travelnest/server build",
+    "build:admin": "yarn workspace @travelnest/admin-client build",
+    "lint": "yarn workspaces foreach -A run lint",
+    "lint:fix": "yarn workspaces foreach -A run lint:fix",
+    "format": "yarn workspaces foreach -A run format",
+    "test": "yarn workspaces foreach -A run test",
+    "clean": "yarn workspaces foreach -A exec rm -rf node_modules && rm -rf node_modules",
+    "clean:build": "rm -rf client/dist server/dist admin-client/.output"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "yarn": ">=1.22.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3"
+  }
+}

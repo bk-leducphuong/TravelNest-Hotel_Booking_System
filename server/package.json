@@ -1,5 +1,5 @@
 {
-  "name": "server",
+  "name": "@travelnest/server",
   "version": "1.0.0",
   "description": "Booking hotel platform",
   "type": "commonjs",
