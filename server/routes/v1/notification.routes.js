@@ -187,6 +187,8 @@ router.use(authenticate);
  *               description: Number of notifications that were updated
  *               example: 10
 
+ */
+
 /**
  * @swagger
  * /notifications:

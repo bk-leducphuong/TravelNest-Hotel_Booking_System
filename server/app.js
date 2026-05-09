@@ -1,5 +1,13 @@
 /** ********************* External Libraries ************************ */
-require('module-alias/register');
+const path = require('path');
+const moduleAlias = require('module-alias');
+
+const { _moduleAliases = {} } = require('./package.json');
+
+Object.entries(_moduleAliases).forEach(([alias, target]) => {
+  moduleAlias.addAlias(alias, path.join(__dirname, target));
+});
+
 const http = require('http');
 
 const express = require('express');
