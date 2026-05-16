@@ -60,7 +60,7 @@ Guests can search and book stays, while property owners manage listings, availab
   - MySQL (primary database)
   - Redis (cache, sessions, queues)
   - Elasticsearch (search + logs)
-  - ClickHouse (analytics)
+  - MongoDB + Mongoose (analytics)
   - MinIO / S3‑compatible object storage
 - **Integrations**: Stripe (payments), Infobip (SMS), email validation, Nodemailer, Socket.IO.
 - **Deployment**: Docker Compose on a VPS behind Cloudflare Tunnel, with GitHub Actions CI/CD.
@@ -74,7 +74,7 @@ This repository is structured as a monorepo:
 - **`server/`** – Node.js/Express API and background workers  
   See `server/README.md` for:
   - Tech stack details
-  - Local setup (DB, Redis, Elasticsearch, ClickHouse)
+  - Local setup (DB, Redis, Elasticsearch, MongoDB)
   - Running and testing the API
 
 - **`client/`** – Vue 3 user‑facing web app  
@@ -170,4 +170,3 @@ If you are interested in contributing, you can:
 
 Each package (`server`, `client`, `admin-client`, `deploy`) includes a **Roadmap** section
 with future improvements specific to that part of the system.
-

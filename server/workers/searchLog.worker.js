@@ -2,7 +2,7 @@ require('module-alias/register');
 const { Worker } = require('bullmq');
 const config = require('@config/bullmq.config');
 const logger = require('@config/logger.config');
-const searchLogClickHouseRepository = require('@repositories/clickhouse/search_log.repository');
+const searchLogRepository = require('@repositories/mongodb/search_log.repository');
 
 const queueName = 'searchLog';
 
@@ -18,7 +18,7 @@ const processSearchLogJob = async (job) => {
   );
 
   try {
-    const searchLog = await searchLogClickHouseRepository.createSearchLog({
+    const searchLog = await searchLogRepository.createSearchLog({
       destinationId: searchData.destinationId || null,
       destinationType: searchData.destinationType || '',
       userId,
@@ -34,7 +34,7 @@ const processSearchLogJob = async (job) => {
         searchLogId: searchLog.search_id,
         userId,
       },
-      `Search log created in ClickHouse`
+      `Search log created in MongoDB`
     );
 
     return { success: true, searchLogId: searchLog.search_id };

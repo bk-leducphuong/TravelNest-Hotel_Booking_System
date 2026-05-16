@@ -2,7 +2,7 @@ require('module-alias/register');
 const { Worker } = require('bullmq');
 const config = require('@config/bullmq.config');
 const logger = require('@config/logger.config');
-const hotelViewEventClickHouseRepository = require('@repositories/clickhouse/hotel_view_event.repository');
+const hotelViewEventRepository = require('@repositories/mongodb/hotel_view_event.repository');
 
 const queueName = config.queues.hotelViewEvent.name;
 
@@ -13,12 +13,11 @@ const processHotelViewEventJob = async (job) => {
     return { success: true, inserted: 0 };
   }
 
-  const { inserted, eventIds } =
-    await hotelViewEventClickHouseRepository.insertHotelViewEvents(events);
+  const { inserted, eventIds } = await hotelViewEventRepository.insertHotelViewEvents(events);
 
   logger.info(
     { inserted, jobId: job.id, queue: queueName },
-    `[Worker] Inserted hotel view events into ClickHouse`
+    `[Worker] Inserted hotel view events into MongoDB`
   );
 
   return { success: true, inserted, eventIds };

@@ -28,7 +28,7 @@ class HotelViewEventService {
   }
 
   /**
-   * Queue hotel view events for ClickHouse insertion.
+   * Queue hotel view events for MongoDB insertion.
    * @returns {Promise<{ jobId: string } | null>}
    */
   async queueHotelViewEvent({

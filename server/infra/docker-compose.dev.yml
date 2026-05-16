@@ -74,32 +74,26 @@ services:
     env_file:
       - ../.env.development
 
-  clickhouse:
-    image: clickhouse/clickhouse-server:24.3-alpine
-    container_name: travelnest-clickhouse-test
+  mongodb:
+    image: mongo:7
+    container_name: travelnest-mongodb-test
     restart: unless-stopped
     ports:
-      - '8123:8123' # HTTP
-      - '9009:9000' # Native (optional)
+      - '27017:27017'
     environment:
-      CLICKHOUSE_DB: ${CLICKHOUSE_DATABASE:-travelnest}
-      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE:-travelnest_analytics}
     volumes:
-      - clickhouse_data_test:/var/lib/clickhouse
-    ulimits:
-      nofile:
-        soft: 262144
-        hard: 262144
+      - mongodb_data_test:/data/db
     networks:
       - travelnest-net-test
     env_file:
       - ../.env.development
     healthcheck:
-      test: ['CMD', 'clickhouse-client', '--query', 'SELECT 1']
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok']
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s # Gives the container time to initialize before health checks begin
+      start_period: 10s
 
   api:
     build:
@@ -111,12 +105,14 @@ services:
       - ../.env.development
     environment:
       NODE_ENV: development
+      MONGODB_URI: mongodb://mongodb:27017/${MONGODB_DATABASE:-travelnest_analytics}
+      MONGODB_DATABASE: ${MONGODB_DATABASE:-travelnest_analytics}
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
-      clickhouse:
+      mongodb:
         condition: service_healthy
     ports:
       - '3000:3000'
@@ -133,12 +129,14 @@ services:
       - ../.env.development
     environment:
       NODE_ENV: development
+      MONGODB_URI: mongodb://mongodb:27017/${MONGODB_DATABASE:-travelnest_analytics}
+      MONGODB_DATABASE: ${MONGODB_DATABASE:-travelnest_analytics}
     depends_on:
       redis:
         condition: service_healthy
       mysql:
         condition: service_healthy
-      clickhouse:
+      mongodb:
         condition: service_healthy
     command: ['npm', 'run', 'dev:bullmq-worker']
     networks:
@@ -152,4 +150,4 @@ volumes:
   mysql_data_test:
   redis_data_test:
   # redis-insight-data:
-  clickhouse_data_test:
+  mongodb_data_test:

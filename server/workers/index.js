@@ -2,6 +2,7 @@ require('module-alias/register');
 
 const http = require('http');
 const logger = require('@config/logger.config');
+const mongoDb = require('@config/mongodb.config');
 
 const imageWorker = require('./image.worker');
 const hotelSnapshotWorker = require('./hotelSnapshot.worker');
@@ -49,6 +50,8 @@ function startHealthServer() {
 
 async function startWorkers() {
   try {
+    await mongoDb.connect();
+
     await Promise.all(workers.map((worker) => worker.run()));
 
     logger.info('All BullMQ workers started', {
@@ -78,6 +81,8 @@ async function shutdownWorkers() {
       await new Promise((resolve) => healthServer.close(resolve));
       logger.info('BullMQ worker health server closed');
     }
+
+    await mongoDb.close();
 
     logger.info('All workers shut down successfully');
   } catch (error) {

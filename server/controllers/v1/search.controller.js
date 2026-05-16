@@ -164,7 +164,7 @@ const saveSearchInformation = asyncHandler(async (req, res) => {
 
 /**
  * GET /api/v1/search/destinations/trending
- * Get top popular/trending destinations from ClickHouse (with Redis cache)
+ * Get top popular/trending destinations from MongoDB analytics (with Redis cache)
  */
 const getTrendingDestinations = asyncHandler(async (req, res) => {
   const { limit, days } = req.query;

@@ -5,7 +5,7 @@ const logger = require('@config/logger.config');
 const hotelRepository = require('../repositories/hotel.repository');
 const roomRepository = require('../repositories/room.repository');
 const redisClient = require('../config/redis.config');
-const hotelDailyViewsClickHouseRepository = require('../repositories/clickhouse/hotel_daily_views.repository');
+const hotelDailyViewsRepository = require('../repositories/mongodb/hotel_daily_views.repository');
 const ApiError = require('../utils/ApiError');
 
 /**
@@ -61,6 +61,8 @@ class HotelService {
     // Attach a primary image URL (presigned). Keeps payload small.
     return await Promise.all(
       ordered.map(async (h) => {
+        const parseNullableNumber = (value) =>
+          value !== null && value !== undefined ? parseFloat(value) : null;
         const images = Array.isArray(h.images) ? h.images : [];
         const primary =
           images.find((img) => img.is_primary) ||
@@ -80,10 +82,10 @@ class HotelService {
           country: h.country
             ? { id: h.country.id, name: h.country.name, isoCode: h.country.iso_code }
             : null,
-          latitude: h.latitude != null ? parseFloat(h.latitude) : null,
-          longitude: h.longitude != null ? parseFloat(h.longitude) : null,
+          latitude: parseNullableNumber(h.latitude),
+          longitude: parseNullableNumber(h.longitude),
           hotelClass: h.hotel_class ?? null,
-          minPrice: h.min_price != null ? parseFloat(h.min_price) : null,
+          minPrice: parseNullableNumber(h.min_price),
           primaryImageUrl,
         };
       })
@@ -105,10 +107,10 @@ class HotelService {
   }
 
   /**
-   * Get trending hotels from ClickHouse daily aggregates, enrich from MySQL.
+   * Get trending hotels from MongoDB view events, enrich from MySQL.
    */
   async getTrendingHotels({ limit = 10, days = 2 } = {}) {
-    const rows = await hotelDailyViewsClickHouseRepository.findTrendingHotelIds({ limit, days });
+    const rows = await hotelDailyViewsRepository.findTrendingHotelIds({ limit, days });
     const hotelIds = rows.map((r) => r.hotel_id);
     const cards = await this._enrichHotelCardsByIds(hotelIds);
 

@@ -2,7 +2,7 @@ const sequelize = require('@config/database.config');
 const redisClient = require('@config/redis.config');
 const { minioClient, bucketName } = require('@config/minio.config');
 const elasticsearchClient = require('@config/elasticsearch.config');
-const clickhouseClient = require('@config/clickhouse.config');
+const mongoDb = require('@config/mongodb.config');
 const logger = require('@config/logger.config');
 
 /**
@@ -25,10 +25,10 @@ class HealthService {
       this.checkRedisConnection(),
       this.checkMinIOConnection(),
       this.checkElasticsearchConnection(),
-      this.checkClickHouseConnection(),
+      this.checkMongoDBConnection(),
     ]);
 
-    const [nodeCheck, mysqlCheck, redisCheck, minioCheck, elasticsearchCheck, clickhouseCheck] =
+    const [nodeCheck, mysqlCheck, redisCheck, minioCheck, elasticsearchCheck, mongoDbCheck] =
       checks;
 
     const services = {
@@ -37,7 +37,7 @@ class HealthService {
       redis: this._formatCheckResult(redisCheck),
       minio: this._formatCheckResult(minioCheck),
       elasticsearch: this._formatCheckResult(elasticsearchCheck),
-      clickhouse: this._formatCheckResult(clickhouseCheck),
+      mongodb: this._formatCheckResult(mongoDbCheck),
     };
 
     // Determine overall status
@@ -310,35 +310,35 @@ class HealthService {
   }
 
   /**
-   * Check ClickHouse connection health
+   * Check MongoDB connection health
    * @returns {Promise<Object>}
    */
-  async checkClickHouseConnection() {
+  async checkMongoDBConnection() {
     const startTime = Date.now();
     try {
-      const isHealthy = await clickhouseClient.ping();
+      const isHealthy = await mongoDb.ping();
 
       if (!isHealthy) {
-        throw new Error('ClickHouse ping failed');
+        throw new Error('MongoDB ping failed');
       }
 
       const responseTime = Date.now() - startTime;
 
       return {
         status: 'healthy',
-        message: 'ClickHouse connection is active',
+        message: 'MongoDB connection is active',
         details: {
-          host: process.env.CLICKHOUSE_HOST || 'http://localhost:8123',
-          database: process.env.CLICKHOUSE_DATABASE || 'travelnest',
+          host: process.env.MONGODB_HOST || 'localhost',
+          database: process.env.MONGODB_DATABASE || 'travelnest_analytics',
         },
         responseTime,
       };
     } catch (error) {
-      logger.error('ClickHouse health check failed:', error);
+      logger.error('MongoDB health check failed:', error);
       const responseTime = Date.now() - startTime;
       return {
         status: 'unhealthy',
-        message: 'ClickHouse connection failed',
+        message: 'MongoDB connection failed',
         error: error.message,
         responseTime,
       };

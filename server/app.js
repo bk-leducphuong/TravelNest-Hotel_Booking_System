@@ -1,3 +1,4 @@
+/* eslint-disable import/order */
 /** ********************* External Libraries ************************ */
 const path = require('path');
 const moduleAlias = require('module-alias');
@@ -18,6 +19,7 @@ const cookieParser = require('cookie-parser');
 /** ********************* Config ************************ */
 const logger = require('@config/logger.config');
 const db = require('@models');
+const mongoDb = require('@config/mongodb.config');
 const { initSocket } = require('@socket/index');
 const { initBucket } = require('@config/minio.config');
 const { setupSwagger } = require('@config/swagger.config');
@@ -42,6 +44,9 @@ const createApp = async () => {
   require('@models/index.js');
   logger.info('Database connected successfully');
 
+  await mongoDb.connect();
+  logger.info('MongoDB connected successfully');
+
   const app = express();
 
   // Initialize s3 bucket
@@ -53,6 +58,7 @@ const createApp = async () => {
   // Socket io
   const server = http.createServer(app);
   initSocket(server);
+  app.set('httpServer', server);
 
   app.use(express.static('public'));
   app.use(

@@ -3,11 +3,16 @@ require('dotenv').config({
 });
 const logger = require('./config/logger.config');
 const createApp = require('./app');
+const mongoDb = require('./config/mongodb.config');
 const PORT = process.env.PORT || 3000;
+
+let httpServer;
 
 createApp()
   .then((app) => {
-    app.listen(PORT, () => {
+    httpServer = app.get('httpServer');
+
+    httpServer.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
     });
   })
@@ -16,3 +21,23 @@ createApp()
     logger.error({ error }, 'Failed to start server');
     process.exit(1);
   });
+
+async function shutdown(signal) {
+  logger.info(`Received ${signal}, shutting down server...`);
+
+  if (httpServer) {
+    await new Promise((resolve) => httpServer.close(resolve));
+  }
+
+  await mongoDb.close();
+  process.exit(0);
+}
+
+['SIGTERM', 'SIGINT'].forEach((signal) => {
+  process.once(signal, () => {
+    shutdown(signal).catch((error) => {
+      logger.error({ error }, 'Server shutdown failed');
+      process.exit(1);
+    });
+  });
+});

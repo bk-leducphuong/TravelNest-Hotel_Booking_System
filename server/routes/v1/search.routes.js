@@ -665,7 +665,7 @@ router.get('/recent', authenticate, validate(searchSchema.getRecentSearches), ge
  *   get:
  *     summary: Get trending destinations
  *     description: |
- *       Returns a list of popular/trending destinations (cities) based on booking data from ClickHouse.
+ *       Returns a list of popular/trending destinations (cities) based on MongoDB analytics data.
  *       Results are cached in Redis for performance.
  *     tags:
  *       - Search

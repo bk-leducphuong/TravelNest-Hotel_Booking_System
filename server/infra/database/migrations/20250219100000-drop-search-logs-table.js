@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Drop search_logs table - data migrated to ClickHouse
+    // Drop search_logs table - analytics data moved out of MySQL
     await queryInterface.dropTable('search_logs');
   },
 

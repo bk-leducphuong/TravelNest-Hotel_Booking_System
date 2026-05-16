@@ -11,12 +11,14 @@ services:
       - ../.env.production
     environment:
       NODE_ENV: production
+      MONGODB_URI: mongodb://mongodb:27017/${MONGODB_DATABASE:-travelnest_analytics}
+      MONGODB_DATABASE: ${MONGODB_DATABASE:-travelnest_analytics}
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
-      clickhouse:
+      mongodb:
         condition: service_healthy
     ports:
       - '3000:3000'
@@ -90,30 +92,24 @@ services:
     networks:
       - travelnest-net
 
-  clickhouse:
-    image: clickhouse/clickhouse-server:24.3-alpine
-    container_name: travelnest-clickhouse
+  mongodb:
+    image: mongo:7
+    container_name: travelnest-mongodb
     restart: unless-stopped
     ports:
-      - '8123:8123' # HTTP
-      - '9009:9000' # Native (optional)
+      - '27017:27017'
     environment:
-      CLICKHOUSE_DB: ${CLICKHOUSE_DATABASE:-travelnest}
-      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE:-travelnest_analytics}
     volumes:
-      - clickhouse_data:/var/lib/clickhouse
-    ulimits:
-      nofile:
-        soft: 262144
-        hard: 262144
+      - mongodb_data:/data/db
     networks:
       - travelnest-net
     healthcheck:
-      test: ['CMD', 'clickhouse-client', '--query', 'SELECT 1']
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok']
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s # Gives the container time to initialize before health checks begin
+      start_period: 10s
 
   bullmq-worker:
     build:
@@ -125,12 +121,14 @@ services:
       - ../.env.development
     environment:
       NODE_ENV: production
+      MONGODB_URI: mongodb://mongodb:27017/${MONGODB_DATABASE:-travelnest_analytics}
+      MONGODB_DATABASE: ${MONGODB_DATABASE:-travelnest_analytics}
     depends_on:
       redis:
         condition: service_healthy
       mysql:
         condition: service_healthy
-      clickhouse:
+      mongodb:
         condition: service_healthy
     command: ['npm', 'run', 'dev:bullmq-worker']
     networks:
@@ -144,4 +142,4 @@ volumes:
   mysql_data:
   redis_data:
   # redis-insight-data:
-  clickhouse_data:
+  mongodb_data:

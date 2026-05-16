@@ -126,5 +126,4 @@ Refer to the test configuration (Vitest, Playwright) for more details on how tes
 - [ ] Harden access control and role-based UI visibility.
 - [ ] Improve performance on large datasets (infinite scroll, table virtualization).
 - [ ] Add auditing views for sensitive actions (refunds, payouts, manual overrides).
-- [ ] Enhance admin dashboards with more analytics powered by ClickHouse.
-
+- [ ] Enhance admin dashboards with more analytics powered by MongoDB.

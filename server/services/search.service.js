@@ -18,7 +18,7 @@ const destinationElasticsearchHelper = require('../helpers/destination_elasticse
 const searchRepository = require('../repositories/search.repository');
 const destinationRepository = require('../repositories/destination.repository');
 const imageRepository = require('../repositories/image.repository');
-const searchLogClickHouseRepository = require('../repositories/clickhouse/search_log.repository');
+const searchLogRepository = require('../repositories/mongodb/search_log.repository');
 const ApiError = require('../utils/ApiError');
 const logger = require('../config/logger.config');
 const redisClient = require('../config/redis.config');
@@ -97,7 +97,7 @@ class SearchService {
   }
 
   /**
-   * Get top popular/trending destinations from ClickHouse, cached in Redis.
+   * Get top popular/trending destinations from MongoDB analytics, cached in Redis.
    * Includes city images (primary image + variants) when available.
    */
   async getTrendingDestinations({ limit = 5, days = 30 } = {}) {
@@ -115,7 +115,7 @@ class SearchService {
       }
     }
 
-    const rows = await searchLogClickHouseRepository.findPopularPlaces(safeLimit, safeDays);
+    const rows = await searchLogRepository.findPopularPlaces(safeLimit, safeDays);
 
     const destinations = [];
     const cityIdsForImages = new Set();

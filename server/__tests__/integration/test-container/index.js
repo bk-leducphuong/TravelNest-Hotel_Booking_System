@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 const { MySqlContainer } = require('@testcontainers/mysql');
 const { RedisContainer } = require('@testcontainers/redis');
+const { GenericContainer } = require('testcontainers');
 
 let startedContainers = null;
 
@@ -38,6 +39,15 @@ async function startTestContainers() {
 
   console.log(`Redis started at ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`);
 
+  // MongoDB analytics
+  const mongodb = await new GenericContainer('mongo:7').withExposedPorts(27017).start();
+  process.env.MONGODB_URI = `mongodb://${mongodb.getHost()}:${mongodb.getMappedPort(
+    27017
+  )}/travelnest_analytics_test`;
+  process.env.MONGODB_DATABASE = 'travelnest_analytics_test';
+
+  console.log(`MongoDB started at ${process.env.MONGODB_URI}`);
+
   // Session secret for express-session
   process.env.SESSION_SECRET_KEY = process.env.SESSION_SECRET_KEY || 'test-session-secret';
 
@@ -47,7 +57,7 @@ async function startTestContainers() {
   await db.sequelize.sync({ alter: false, force: false });
   console.log('Database schema initialized');
 
-  startedContainers = { mysql, redis };
+  startedContainers = { mysql, redis, mongodb };
   return startedContainers;
 }
 
@@ -57,8 +67,8 @@ async function stopTestContainers() {
   }
 
   console.log('Stopping Testcontainers environment for integration tests...');
-  const { mysql, redis } = startedContainers;
-  const toStop = [mysql, redis].filter(Boolean);
+  const { mysql, redis, mongodb } = startedContainers;
+  const toStop = [mysql, redis, mongodb].filter(Boolean);
   await Promise.all(toStop.map((c) => c.stop()));
   console.log('Testcontainers environment stopped');
 

@@ -13,7 +13,7 @@ It powers search, bookings, reviews, notifications, payments, and analytics for 
   - BullMQ for background jobs (`email`, `notifications`, analytics, etc.)
 - **Search & Analytics**:
   - Elasticsearch for hotel search and log indexing
-  - ClickHouse for search and booking analytics
+  - MongoDB + Mongoose for search and view analytics
 - **Storage**:
   - MinIO / S3-compatible storage for media
   - (Optionally) Cloudinary for image delivery
@@ -42,7 +42,7 @@ flowchart LR
     API --> DB[(MySQL)]
     API --> RDS[(Redis)]
     API --> ES[(Elasticsearch)]
-    API --> CH[(ClickHouse)]
+    API --> MDB[(MongoDB Analytics)]
     API --> MINIO[(MinIO / S3)]
   end
 
@@ -61,7 +61,7 @@ flowchart LR
 - A running MySQL and Redis instance (local Docker is fine for development)
 - Optional (but recommended for full feature set):
   - Elasticsearch
-  - ClickHouse
+  - MongoDB
 
 ### Environment Variables
 
@@ -73,6 +73,8 @@ At minimum you will need:
   - `PORT` (default: `3000`)
 - **Database**
   - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
+- **MongoDB analytics**
+  - `MONGODB_URI`, `MONGODB_DATABASE`
 - **Redis**
   - `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` (if enabled)
 - **Sessions & Security**
@@ -114,9 +116,9 @@ Useful database commands:
   - `npm run seed:hotel`
   - `npm run seed:booking`
 
-### Elasticsearch & ClickHouse Setup (Optional for Local Dev)
+### Elasticsearch & MongoDB Analytics Setup (Optional for Local Dev)
 
-If you have Elasticsearch and ClickHouse running locally:
+If you have Elasticsearch and MongoDB running locally:
 
 ```bash
 # Hotels search index
@@ -126,8 +128,9 @@ npm run es:seed-hotels
 # Log index
 npm run es:setup-logs
 
-# Initialize ClickHouse analytics schema (requires docker container name from deploy stack)
-npm run clickhouse:init
+# Seed MongoDB analytics data
+npm run mongo:seed:search_logs
+npm run mongo:seed:hotel_views
 ```
 
 These commands are primarily used in production via the deployment scripts; for local development you can skip them if you do not need full‑text search or analytics.
@@ -186,4 +189,3 @@ npm run format
 - [ ] Introduce per-tenant and per-user rate limiting strategies.
 - [ ] Improve observability (structured logs, metrics, and tracing across services).
 - [ ] Add background jobs for heavy reporting and data exports.
-
