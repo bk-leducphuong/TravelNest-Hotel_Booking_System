@@ -714,7 +714,7 @@ class SearchService {
         },
       };
     } catch (error) {
-      logger.error('Destination autocomplete error:', error);
+      logger.error({ error }, 'Destination autocomplete error:');
       return {
         success: true,
         data: {

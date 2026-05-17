@@ -154,10 +154,10 @@ async function seedAll() {
       })
     );
 
-    // 4. Seed Hotels (standalone)
+    // 4. Seed Hotels (depends on Countries + Cities)
     results.push(
       await executeSeed('Hotels', seedHotels, {
-        count: options.quick ? 10 : 20,
+        hotelsPerCity: options.quick ? 80 : 200,
         clearExisting: options.clearExisting,
       })
     );

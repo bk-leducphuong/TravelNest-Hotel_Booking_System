@@ -16,8 +16,6 @@ const { CURRENCIES } = require('../../../constants/common');
 
 const { rooms: Rooms, room_inventory: RoomInventory } = db;
 
-const INVENTORY_STATUSES = ['open', 'close', 'sold_out', 'maintenance'];
-
 /**
  * Format date as YYYY-MM-DD for DATEONLY
  * @param {Date} d
@@ -47,26 +45,13 @@ function generateInventoryForRoom(roomId, quantity, startDate, endDate, options 
 
   while (current <= end) {
     const dateStr = toDateOnly(current);
-    const booked = faker.number.int({ min: 0, max: Math.max(0, quantity - 1) });
-    const held = faker.number.int({
-      min: 0,
-      max: Math.max(0, quantity - booked),
-    });
-    const status = faker.helpers.arrayElement([
-      'open',
-      'open',
-      'open',
-      'open',
-      ...INVENTORY_STATUSES.filter((s) => s !== 'open'),
-    ]);
-
     records.push({
       room_id: roomId,
       date: dateStr,
       total_rooms: quantity,
-      booked_rooms: status === 'sold_out' ? quantity : booked,
-      held_rooms: status === 'sold_out' ? 0 : held,
-      status,
+      booked_rooms: 0,
+      held_rooms: 0,
+      status: 'open',
       price_per_night: String(
         faker.number.float({ min: priceMin, max: priceMax, fractionDigits: 2 })
       ),
@@ -88,6 +73,7 @@ function generateInventoryForRoom(roomId, quantity, startDate, endDate, options 
  * @param {number} options.priceMin - Min price per night (default: 80)
  * @param {number} options.priceMax - Max price per night (default: 350)
  * @param {string} options.currency - Currency code (default: 'USD')
+ * @param {number} options.batchSize - Number of inventory rows to insert per batch (default: 10000)
  * @returns {Promise<{ created: number }>}
  */
 async function seedRoomInventory(options = {}) {
@@ -98,6 +84,7 @@ async function seedRoomInventory(options = {}) {
     priceMin = 80,
     priceMax = 350,
     currency = 'USD',
+    batchSize = 10000,
   } = options;
 
   if (!CURRENCIES.includes(currency)) {
@@ -132,25 +119,36 @@ async function seedRoomInventory(options = {}) {
     endDate.setDate(endDate.getDate() + daysAhead - 1);
 
     const opts = { priceMin, priceMax, currency };
-    const allRecords = [];
+    let created = 0;
+    let pendingRecords = [];
 
     for (const room of roomList) {
       const quantity = Math.max(1, Number(room.quantity) || 1);
       const records = generateInventoryForRoom(room.id, quantity, startDate, endDate, opts);
-      allRecords.push(...records);
+      pendingRecords.push(...records);
+
+      if (pendingRecords.length >= batchSize) {
+        await RoomInventory.bulkCreate(pendingRecords, {
+          validate: true,
+        });
+        created += pendingRecords.length;
+        pendingRecords = [];
+        console.log(`📊 Created ${created} room_inventory row(s)`);
+      }
     }
 
-    if (allRecords.length > 0) {
-      await RoomInventory.bulkCreate(allRecords, {
+    if (pendingRecords.length > 0) {
+      await RoomInventory.bulkCreate(pendingRecords, {
         validate: true,
       });
-      console.log(`✅ Created ${allRecords.length} room_inventory row(s)`);
+      created += pendingRecords.length;
+      console.log(`📊 Created ${created} room_inventory row(s)`);
     }
 
     const total = await RoomInventory.count();
     console.log(`🎉 Total room_inventory rows: ${total}`);
 
-    return { created: allRecords.length };
+    return { created };
   } catch (error) {
     console.error('❌ Error seeding room inventory:', error);
     throw error;

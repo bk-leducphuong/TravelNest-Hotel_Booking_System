@@ -4,15 +4,19 @@ const path = require('path');
 
 const NodeFormData = require('form-data');
 const axios = require('axios');
+const { Op } = require('sequelize');
 
 const db = require('../../../models');
 const logger = require('../../../config/logger.config');
+const { deleteObjects } = require('../../../utils/minio.utils');
 require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });
 
 const Hotels = db.hotels;
 const Rooms = db.rooms;
+const Images = db.images;
+const ImageVariants = db.image_variants;
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000/api/v1';
 const API_ORIGIN = new URL(API_BASE_URL).origin;
@@ -120,6 +124,100 @@ function printStats() {
   console.log('='.repeat(70) + '\n');
 }
 
+function groupObjectKeysByBucket(rows) {
+  const grouped = new Map();
+
+  for (const row of rows) {
+    const bucketName = row.bucket_name;
+    const objectKey = row.object_key;
+
+    if (!bucketName || !objectKey) continue;
+
+    if (!grouped.has(bucketName)) {
+      grouped.set(bucketName, new Set());
+    }
+
+    grouped.get(bucketName).add(objectKey);
+  }
+
+  return grouped;
+}
+
+async function deleteMinioObjects(rows) {
+  const grouped = groupObjectKeysByBucket(rows);
+
+  for (const [bucketName, objectKeys] of grouped.entries()) {
+    await deleteObjects(bucketName, Array.from(objectKeys));
+  }
+}
+
+async function cleanupExistingImages(entityType, entityIds) {
+  if (!entityIds || entityIds.length === 0) {
+    return;
+  }
+
+  const images = await Images.findAll({
+    where: {
+      entity_type: entityType,
+      entity_id: {
+        [Op.in]: entityIds,
+      },
+    },
+    attributes: ['id', 'bucket_name', 'object_key'],
+    raw: true,
+  });
+
+  if (images.length === 0) {
+    console.log(`No existing ${entityType} images found to clean`);
+    return;
+  }
+
+  const imageIds = images.map((image) => image.id);
+  const variants = await ImageVariants.findAll({
+    where: {
+      image_id: {
+        [Op.in]: imageIds,
+      },
+    },
+    attributes: ['id', 'bucket_name', 'object_key'],
+    raw: true,
+  });
+
+  console.log(
+    `Cleaning existing ${entityType} images: ${images.length} originals, ${variants.length} variants`
+  );
+
+  await deleteMinioObjects([...images, ...variants]);
+
+  const transaction = await db.sequelize.transaction();
+
+  try {
+    await ImageVariants.destroy({
+      where: {
+        image_id: {
+          [Op.in]: imageIds,
+        },
+      },
+      transaction,
+    });
+
+    await Images.destroy({
+      where: {
+        id: {
+          [Op.in]: imageIds,
+        },
+      },
+      transaction,
+    });
+
+    await transaction.commit();
+    console.log(`Cleaned ${images.length} existing ${entityType} image records`);
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+}
+
 async function uploadImage(entityType, entityId, imagePath, isPrimary = false) {
   try {
     const imageBuffer = fs.readFileSync(imagePath);
@@ -211,14 +309,19 @@ async function processHotels(limit = null) {
 
   console.log(`Found ${hotels.length} active hotels`);
 
-   const hotelAlbums = loadImageAlbums(HOTEL_IMAGES_DIR);
+  const hotelAlbums = loadImageAlbums(HOTEL_IMAGES_DIR);
 
-   if (hotelAlbums.length === 0) {
-     console.log(`⚠️  No hotel images found in ${HOTEL_IMAGES_DIR}`);
-     return;
-   }
+  if (hotelAlbums.length === 0) {
+    console.log(`⚠️  No hotel images found in ${HOTEL_IMAGES_DIR}`);
+    return;
+  }
 
-   let albumIndex = 0;
+  await cleanupExistingImages(
+    'hotel',
+    hotels.map((hotel) => hotel.id)
+  );
+
+  let albumIndex = 0;
 
   for (const hotel of hotels) {
     const album = hotelAlbums[albumIndex % hotelAlbums.length];
@@ -255,14 +358,19 @@ async function processRooms(limit = null) {
 
   console.log(`Found ${rooms.length} active rooms`);
 
-   const roomAlbums = loadImageAlbums(ROOM_IMAGES_DIR);
+  const roomAlbums = loadImageAlbums(ROOM_IMAGES_DIR);
 
-   if (roomAlbums.length === 0) {
-     console.log(`⚠️  No room images found in ${ROOM_IMAGES_DIR}`);
-     return;
-   }
+  if (roomAlbums.length === 0) {
+    console.log(`⚠️  No room images found in ${ROOM_IMAGES_DIR}`);
+    return;
+  }
 
-   let albumIndex = 0;
+  await cleanupExistingImages(
+    'room',
+    rooms.map((room) => room.id)
+  );
+
+  let albumIndex = 0;
 
   for (const room of rooms) {
     const roomDisplayName = `${room.room_name} (${room.hotel?.name || 'Unknown Hotel'})`;

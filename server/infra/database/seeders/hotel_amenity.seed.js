@@ -119,7 +119,7 @@ async function seedHotelAmenities(options = {}) {
           defaults: {
             hotel_id: hotel.id,
             amenity_id: amenityId,
-            is_available: faker.datatype.boolean({ probability: 0.9 }),
+            is_available: true,
             is_free: faker.datatype.boolean({ probability: 0.85 }),
             additional_info: await maybeAdditionalInfo(),
           },

@@ -10,7 +10,15 @@ export const SearchService = {
   },
 
   saveSearch(searchData) {
-    return http.post('/search', { searchData });
+    return http.post('/search/log', {
+      city: searchData.city ?? searchData.location,
+      checkIn: searchData.checkIn ?? searchData.checkInDate,
+      checkOut: searchData.checkOut ?? searchData.checkOutDate,
+      adults: parseInt(searchData.adults, 10) || 1,
+      children: parseInt(searchData.children, 10) || 0,
+      rooms: parseInt(searchData.rooms, 10) || 1,
+      nights: parseInt(searchData.nights ?? searchData.numberOfDays, 10) || undefined,
+    });
   },
 
   /**

@@ -102,7 +102,7 @@ async function seedRoomAmenities(options = {}) {
           defaults: {
             room_id: room.id,
             amenity_id: amenityId,
-            is_available: faker.datatype.boolean({ probability: 0.9 }),
+            is_available: true,
             additional_info: maybeAdditionalInfo(),
           },
         });

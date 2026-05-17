@@ -110,6 +110,7 @@ npm run seed:all:quick
 Useful database commands:
 
 - Run all seeds: `npm run seed:all`
+- Clear database, Elasticsearch seed indices, MongoDB analytics, and MinIO seed images: `npm run seed:clear`
 - Clear and reseed: `npm run seed:all:clear`
 - Run a specific seed, for example:
   - `npm run seed:user`

@@ -12,7 +12,7 @@ async function loadFaker() {
 
 const db = require('../../../models');
 const sequelize = require('../../../config/database.config');
-const { ROOM_TYPES, ROOM_STATUSES } = require('../../../constants/rooms');
+const { ROOM_TYPES } = require('../../../constants/rooms');
 const { rooms: Rooms, hotels: Hotels } = db;
 
 /**
@@ -45,12 +45,7 @@ function generateRoomsForHotel(hotelId, count) {
       room_size: roomSize,
       room_type: roomType,
       quantity,
-      status: faker.helpers.arrayElement([
-        'active',
-        'active',
-        'active',
-        ...ROOM_STATUSES.filter((s) => s !== 'active'),
-      ]),
+      status: 'active',
     });
   }
 

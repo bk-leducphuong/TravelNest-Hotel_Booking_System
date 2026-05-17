@@ -85,7 +85,7 @@ const createApp = async () => {
   app.use(passport.session());
 
   // Rate limiter
-  app.use(limiter);
+  // app.use(limiter);
 
   // Swagger API documentation (before routes)
   setupSwagger(app);
