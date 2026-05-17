@@ -11,6 +11,7 @@ pids
 *.pid
 *.seed
 *.pid.lock
+.tmp/
 
 # Coverage
 coverage
@@ -50,4 +51,3 @@ infra/database/*.sqlite
 public/uploads/
 infra/minio-data/
 infra/elasticsearch/data/
-

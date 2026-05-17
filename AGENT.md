@@ -96,6 +96,47 @@ Backend tests use Jest. Integration tests may require Docker/Testcontainers and 
 
 Primary storage is MySQL via Sequelize. Redis is used for sessions, cache/rate limiting, and BullMQ. MongoDB stores analytics such as search logs and hotel view events. Elasticsearch powers search/log indexes. MinIO/S3-compatible storage handles media. Stripe, SMTP/Nodemailer, Infobip, OAuth providers, and Socket.IO are integrated.
 
+### Real Infra Access For Debugging
+
+Use the root `Makefile` helpers when you need to inspect real local development data. They load `server/.env.development` by default and call the native CLIs, so verify the command before running writes or deletes.
+
+Prerequisite CLIs:
+
+```bash
+mysql
+redis-cli
+mc
+curl
+mongosh
+```
+
+Quick checks:
+
+```bash
+make infra-check
+make infra-mysql ARGS="-e 'SHOW TABLES;'"
+make infra-redis ARGS="PING"
+make infra-minio
+make infra-elasticsearch
+make infra-mongodb ARGS="--eval 'db.getCollectionNames()'"
+```
+
+Target a different env file when needed:
+
+```bash
+make infra-mysql ENV_FILE=server/.env.development ARGS="-e 'SELECT COUNT(*) FROM hotels;'"
+```
+
+Connection scripts live in `server/scripts/infra/`:
+
+- `mysql.sh`: uses `MYSQL_CLI_*`, falling back to `DB_*`; dev compose publishes MySQL on `localhost:3307`.
+- `redis.sh`: uses `REDIS_CLI_*`, falling back to `REDIS_*`.
+- `minio.sh`: configures an `mc` alias from `MINIO_CLI_*`/`MINIO_*`; with no args it lists the configured bucket.
+- `elasticsearch.sh`: runs `curl` against `ELASTICSEARCH_CLI_URL`/`ELASTICSEARCH_HOSTS`; with no args it calls `_cluster/health?pretty`.
+- `mongodb.sh`: uses `MONGODB_CLI_URI`, falling back to `MONGODB_URI`.
+
+Prefer read-only SQL/queries while debugging. For destructive commands, state the exact data impact first and get explicit user approval.
+
 Common setup commands from `server/`:
 
 ```bash
@@ -197,4 +238,3 @@ If a test cannot run because local services or Docker are unavailable, report th
 - `server/.env.format` contains a typo in `NODE_ENV=delelopment`; use `development` when running the server.
 - Admin env naming may be inconsistent between `.env.example` and `nuxt.config.ts`; verify before making runtime config changes.
 - Some local folders like `server/node_modules` and `admin-client/.nuxt` may be present in the working tree. Treat them as generated/dependency output.
-
