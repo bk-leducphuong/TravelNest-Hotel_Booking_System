@@ -1,13 +1,8 @@
 /* eslint-disable no-console */
 const path = require('path');
-const moduleAlias = require('module-alias');
+require('../../../register-aliases');
 
 const serverRoot = path.resolve(__dirname, '../../..');
-const { _moduleAliases = {} } = require(path.join(serverRoot, 'package.json'));
-
-Object.entries(_moduleAliases).forEach(([alias, target]) => {
-  moduleAlias.addAlias(alias, path.join(serverRoot, target));
-});
 
 require('dotenv').config({
   path: path.join(serverRoot, `.env.${process.env.NODE_ENV || 'development'}`),

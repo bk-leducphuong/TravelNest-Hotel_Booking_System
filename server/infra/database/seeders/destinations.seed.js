@@ -2,7 +2,7 @@ require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });
 
-require('module-alias/register');
+require('../../../register-aliases');
 
 const db = require('../../../models');
 const sequelize = require('../../../config/database.config');
@@ -181,4 +181,3 @@ module.exports = {
   normalizeName,
   slugify,
 };
-

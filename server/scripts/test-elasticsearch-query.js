@@ -3,7 +3,7 @@
  * Usage: node scripts/test-elasticsearch-query.js
  */
 
-require('module-alias/register');
+require('../register-aliases');
 
 const elasticsearchHelper = require('@helpers/elasticsearch.helper');
 const logger = require('@config/logger.config');

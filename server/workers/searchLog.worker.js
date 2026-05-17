@@ -1,4 +1,4 @@
-require('module-alias/register');
+require('../register-aliases');
 const { Worker } = require('bullmq');
 const config = require('@config/bullmq.config');
 const logger = require('@config/logger.config');

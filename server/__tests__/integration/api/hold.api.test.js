@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const request = require('supertest');
-require('module-alias/register');
+require('../../../register-aliases');
 const holdService = require('@services/hold.service');
 
 jest.mock('@services/hold.service');

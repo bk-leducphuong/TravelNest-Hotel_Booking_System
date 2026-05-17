@@ -1,4 +1,4 @@
-require('module-alias/register');
+require('../register-aliases');
 
 const http = require('http');
 const logger = require('@config/logger.config');

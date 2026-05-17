@@ -69,7 +69,7 @@ module.exports = function (sequelize, DataTypes) {
       is_primary: {
         type: DataTypes.BOOLEAN,
         allowNull: true,
-        defaultValue: false,
+        defaultValue: null,
       },
       status: {
         type: DataTypes.ENUM('active', 'processing', 'deleted'),

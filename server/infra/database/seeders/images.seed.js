@@ -1,4 +1,4 @@
-require('module-alias/register');
+require('../../../register-aliases');
 const fs = require('fs');
 const path = require('path');
 
@@ -15,6 +15,8 @@ const Hotels = db.hotels;
 const Rooms = db.rooms;
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000/api/v1';
+const API_ORIGIN = new URL(API_BASE_URL).origin;
+const HEALTH_CHECK_URL = process.env.HEALTH_CHECK_URL || `${API_ORIGIN}/health/live`;
 const IMAGES_BASE_DIR = path.join(__dirname, 'images');
 const HOTEL_IMAGES_DIR = path.join(IMAGES_BASE_DIR, 'hotels');
 const ROOM_IMAGES_DIR = path.join(IMAGES_BASE_DIR, 'rooms');
@@ -297,12 +299,14 @@ async function checkPrerequisites() {
   }
 
   try {
-    const response = await axios.get(`${API_BASE_URL}/health`, {
+    await axios.get(HEALTH_CHECK_URL, {
       timeout: 5000,
     });
-    console.log(`✅ API server is running at ${API_BASE_URL}`);
+    console.log(`✅ API server is running at ${API_ORIGIN}`);
   } catch (error) {
-    checks.push(`❌ API server not reachable at ${API_BASE_URL}`);
+    const status = error.response?.status ? `HTTP ${error.response.status}` : error.code;
+    const message = status || error.message || 'Unknown error';
+    checks.push(`❌ API server not reachable at ${HEALTH_CHECK_URL}: ${message}`);
   }
 
   try {
@@ -313,7 +317,7 @@ async function checkPrerequisites() {
   }
 
   if (checks.length > 0) {
-    console.log('\n' + '⚠️  PREREQUISITE CHECKS FAILED:'.red);
+    console.log('\n⚠️  PREREQUISITE CHECKS FAILED:');
     checks.forEach((check) => console.log(`   ${check}`));
     console.log('\nPlease fix the issues above before running the test.\n');
     return false;

@@ -172,7 +172,7 @@ class ImageService {
             mimeType: img.mime_type,
             width: img.width,
             height: img.height,
-            isPrimary: img.is_primary,
+            isPrimary: !!img.is_primary,
             displayOrder: img.display_order,
             status: img.status,
             uploadedAt: img.uploaded_at,

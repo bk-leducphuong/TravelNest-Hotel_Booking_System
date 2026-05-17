@@ -5,7 +5,7 @@
  * Usage: node scripts/cleanup-duplicate-indexes.js
  */
 
-require('module-alias/register');
+require('../register-aliases');
 
 const sequelize = require('@config/database.config');
 const logger = require('@config/logger.config');

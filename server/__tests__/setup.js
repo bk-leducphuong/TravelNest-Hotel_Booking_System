@@ -1,5 +1,5 @@
 // Jest setup file - runs before each test file
-require('module-alias/register');
+require('../register-aliases');
 
 // Mock environment variables for testing (can be overridden by Testcontainers)
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';

@@ -36,7 +36,7 @@ class ImageRepository {
       original_filename: originalFilename,
       file_size: fileSize,
       mime_type: mimeType,
-      is_primary: isPrimary || false,
+      is_primary: isPrimary ? true : null,
       status: status || 'processing',
     });
   }
@@ -236,9 +236,9 @@ class ImageRepository {
     const transaction = await sequelize.transaction();
 
     try {
-      // Set all images for this entity to not primary
+      // Use NULL for non-primary images so the unique_primary index only constrains true primaries.
       await Images.update(
-        { is_primary: false },
+        { is_primary: null },
         {
           where: {
             entity_type: entityType,

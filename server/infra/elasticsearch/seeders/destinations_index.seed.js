@@ -16,7 +16,7 @@ require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });
 
-require('module-alias/register');
+require('../../../register-aliases');
 
 const elasticsearchClient = require('../../../config/elasticsearch.config');
 const db = require('../../../models');

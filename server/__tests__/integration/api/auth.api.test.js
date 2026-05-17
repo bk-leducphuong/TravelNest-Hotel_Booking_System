@@ -1,4 +1,4 @@
-require('module-alias/register');
+require('../../../register-aliases');
 const request = require('supertest');
 
 const createApp = require('../../../app');

@@ -1,4 +1,4 @@
-require('module-alias/register');
+require('../register-aliases');
 const path = require('path');
 
 const { Worker } = require('bullmq');

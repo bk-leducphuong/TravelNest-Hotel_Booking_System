@@ -25,7 +25,7 @@ require('dotenv').config({
 });
 
 // Add module alias support
-require('module-alias/register');
+require('../../../register-aliases');
 
 const { Op } = require('sequelize');
 

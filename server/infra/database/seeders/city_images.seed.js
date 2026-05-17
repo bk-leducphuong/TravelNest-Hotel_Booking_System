@@ -2,7 +2,7 @@ require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });
 
-require('module-alias/register');
+require('../../../register-aliases');
 
 const fs = require('fs');
 const path = require('path');
@@ -168,4 +168,3 @@ if (require.main === module) {
 module.exports = {
   seedCityImages,
 };
-
