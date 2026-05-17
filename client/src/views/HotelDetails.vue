@@ -145,13 +145,13 @@ export default {
 
       return {
         ...room,
-        room_id: room.roomId,
-        room_name: room.roomName,
+        room_id: room.roomId || room.room_id,
+        room_name: room.roomName || room.room_name,
         room_amenities: JSON.stringify(roomAmenities),
         room_image_urls: JSON.stringify(roomImageUrls),
-        max_guests: room.maxGuests,
-        price_per_night: room.pricePerNight,
-        available_rooms: room.availableRooms
+        max_guests: room.maxGuests || room.max_guests,
+        price_per_night: room.pricePerNight || room.price_per_night,
+        available_rooms: room.availableRooms || room.available_rooms
       }
     },
     normalizeReview(review) {
@@ -211,7 +211,7 @@ export default {
 
         this.hotel = {
           ...hotel,
-          hotel_id: hotel.id,
+          hotel_id: hotel.id || hotel.hotel_id || this.$route.params.hotel_id,
           overall_rating:
             details.ratingSummary?.overallRating || details.ratingBreakdown?.overall || 0,
           check_in_time: details.checkInOut?.checkInTime,
@@ -341,7 +341,7 @@ export default {
           totalPrice: this.totalPriceSelectedRooms,
           totalRooms: this.totalSelectedRooms,
           selectedRooms: this.selectedRooms,
-          numberOfGuests: this.getSearchData.adults,
+          numberOfGuests: this.adults + this.children,
           checkInDate: this.getSearchData.checkInDate,
           checkOutDate: this.getSearchData.checkOutDate,
           numberOfDays: this.getSearchData.numberOfDays

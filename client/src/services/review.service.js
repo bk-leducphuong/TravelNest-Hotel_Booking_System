@@ -1,23 +1,23 @@
 import http from './http'
 
 export const ReviewService = {
-  getReviews() {
-    return http.get('/api/reviews')
+  getReviews(params = {}) {
+    return http.get('/reviews', { params })
   },
 
   getHotelReviews(hotelId, params = {}) {
-    return http.get(`/api/reviews/hotels/${hotelId}`, { params })
+    return http.get(`/reviews/hotels/${hotelId}`, { params })
   },
 
   validateReview(params) {
-    return http.get('/api/reviews/validate', { params })
+    return http.get('/reviews/validate', { params })
   },
 
   checkReview(params) {
-    return http.get('/api/reviews/check', { params })
+    return http.get('/reviews/check', { params })
   },
 
   createReview(reviewData) {
-    return http.post('/api/reviews', reviewData)
+    return http.post('/reviews', reviewData)
   }
 }

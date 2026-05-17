@@ -2,18 +2,18 @@ import http from './http'
 
 export const NotificationService = {
   getNotifications(params = {}) {
-    return http.get('/api/notifications', { params })
+    return http.get('/notifications', { params })
   },
 
   getUnreadCount() {
-    return http.get('/api/notifications/unread-count')
+    return http.get('/notifications/unread-count')
   },
 
   markAllAsRead() {
-    return http.patch('/api/notifications/read-all')
+    return http.patch('/notifications/read-all')
   },
 
   markAsRead(notificationId) {
-    return http.patch(`/api/notifications/${notificationId}/read`)
+    return http.patch(`/notifications/${notificationId}/read`)
   }
 }

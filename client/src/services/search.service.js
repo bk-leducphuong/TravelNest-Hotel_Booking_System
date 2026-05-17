@@ -9,6 +9,16 @@ export const SearchService = {
     return http.get('/search/hotels', { params });
   },
 
+  getHotelAvailability(hotelId, params = {}) {
+    return http.get(`/search/hotels/${hotelId}/availability`, { params });
+  },
+
+  getAutocompleteSuggestions(query, limit = 10) {
+    return http.get('/search/autocomplete', {
+      params: { query, limit },
+    });
+  },
+
   saveSearch(searchData) {
     return http.post('/search/log', {
       city: searchData.city ?? searchData.location,

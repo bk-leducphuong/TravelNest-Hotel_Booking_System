@@ -1,9 +1,11 @@
-import http from './http';
+import http, { apiBaseURL } from './http';
 
 export const AuthService = {
-  // Session & core auth (v1 routes)
   checkSession() {
     return http.get('/auth/session');
+  },
+  getCsrfToken() {
+    return http.get('/auth/csrf-token');
   },
   login(credentials) {
     return http.post('/auth/sessions', credentials);
@@ -18,26 +20,16 @@ export const AuthService = {
     return http.post('/auth/users', userData);
   },
 
-  // Password + OTP flows (keep legacy paths for now)
-  forgotPassword(data) {
-    return http.post('/api/auth/password/forgot', data);
-  },
-  resetPassword(data) {
-    return http.post('/api/auth/password/reset', data);
-  },
-
-  // OAuth providers (redirect-based)
   loginWithGoogle() {
-    window.location.href = `${import.meta.env.VITE_SERVER_HOST}/auth/google`;
+    window.location.href = `${apiBaseURL}/auth/google`;
   },
   loginWithFacebook() {
-    window.location.href = `${import.meta.env.VITE_SERVER_HOST}/auth/facebook`;
+    return Promise.reject(new Error('Facebook OAuth is not available in the backend API'));
   },
   loginWithTwitter() {
-    window.location.href = `${import.meta.env.VITE_SERVER_HOST}/auth/twitter`;
+    window.location.href = `${apiBaseURL}/auth/twitter`;
   },
 
-  // Admin helpers – use same session endpoint with admin role
   loginAdmin(credentials) {
     return http.post('/auth/sessions', credentials);
   },
@@ -45,4 +37,3 @@ export const AuthService = {
     return http.post('/auth/users', userData);
   },
 };
-

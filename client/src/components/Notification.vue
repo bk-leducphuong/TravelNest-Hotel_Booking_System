@@ -1,6 +1,6 @@
 <template>
   <ElPopover
-    :visible="isNotificationPopupVisible"
+    v-model:visible="isNotificationPopupVisible"
     placement="bottom"
     :width="350"
     trigger="click"
@@ -41,7 +41,7 @@
           <div
             class="notification-item"
             v-for="notification in notifications"
-            :key="notification.notificationId"
+            :key="notification.id"
             @click="viewDetails(notification)"
           >
             <div class="notification-icon">
@@ -51,7 +51,7 @@
             </div>
             <div class="notification-text">
               <div class="notification-message">
-                <ElBadge is-dot :hidden="notification.is_read === 1" class="notification-dot">
+                <ElBadge is-dot :hidden="notification.is_read" class="notification-dot">
                   <span>{{ notification.message }}</span>
                 </ElBadge>
               </div>
@@ -70,9 +70,9 @@
 </template>
 
 <script>
-  import axios from 'axios';
   import { mapGetters } from 'vuex';
   import socket from '@/services/socket';
+  import { NotificationService } from '@/services/notification.service';
   import { useToast } from 'vue-toastification';
   import { Bell } from '@element-plus/icons-vue';
 
@@ -126,10 +126,8 @@
       },
       async getNotifiactions() {
         try {
-          const response = await axios.get(`${import.meta.env.VITE_SERVER_HOST}/api/notifications`, {
-            withCredentials: true,
-          });
-          this.notifications = response.data.notifications;
+          const response = await NotificationService.getNotifications();
+          this.notifications = response.data || [];
         } catch (error) {
           console.error('Error fetching notifications:', error);
         }
@@ -137,7 +135,7 @@
       calculateNumerOfNewNotifications() {
         this.numberOfNewNotifications = 0;
         this.notifications.forEach((notification) => {
-          if (notification.is_read == 0) {
+          if (!notification.is_read) {
             this.numberOfNewNotifications++;
           }
         });
@@ -145,16 +143,11 @@
       async markAllRead() {
         try {
           this.notifications.forEach((notification) => {
-            notification.is_read = 1;
+            notification.is_read = true;
           });
           this.numberOfNewNotifications = 0;
 
-          await axios.get(
-            `${import.meta.env.VITE_SERVER_HOST}/api/notifications/mark-all-as-read`,
-            {
-              withCredentials: true,
-            }
-          );
+          await NotificationService.markAllAsRead();
           
           this.toast.success('All notifications marked as read');
         } catch (error) {
@@ -164,8 +157,8 @@
       },
       viewDetails(notification) {
         // Mark notification as read when clicked
-        if (notification.is_read === 0) {
-          notification.is_read = 1;
+        if (!notification.is_read) {
+          notification.is_read = true;
           this.calculateNumerOfNewNotifications();
           // You can add API call here to update backend
         }

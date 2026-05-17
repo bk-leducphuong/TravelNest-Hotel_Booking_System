@@ -8,15 +8,30 @@ export default {
   // check if room is available or not before booking the room
   async checkRoomAvailability({ state }) {
     try {
-      // check if room is available or not
-      // Assuming state.bookingInfor contains hotelId and other necessary params
-      const { hotelId, ...params } = state.bookingInfor
+      const bookingInfor = state.bookingInfor
+      const hotelId = bookingInfor?.hotel?.hotel_id
+
+      if (!hotelId || !bookingInfor?.selectedRooms?.length) {
+        return false
+      }
+
+      const params = {
+        checkIn: bookingInfor.checkInDate,
+        checkOut: bookingInfor.checkOutDate,
+        adults: bookingInfor.numberOfGuests,
+        children: 0,
+        rooms: Math.max(...bookingInfor.selectedRooms.map((room) => Number(room.roomQuantity)))
+      }
+
       const response = await HotelService.checkRoomAvailability(hotelId, params)
-      // The original action returned a boolean from response.data.isAvailable.
-      // The service returns the full response data. We need to adapt this.
-      // Based on the api-docs, it returns an object with data and meta, or error.
-      // For now, I will assume the response structure is similar to what the original code expected.
-      return response.data.isAvailable // This might need adjustment based on actual API response
+      const availableRooms = response.data?.availability?.available_rooms || []
+
+      return bookingInfor.selectedRooms.every((selectedRoom) => {
+        const room = availableRooms.find(
+          (availableRoom) => availableRoom.room_id === selectedRoom.room_id
+        )
+        return room && Number(room.available_rooms) >= Number(selectedRoom.roomQuantity)
+      })
     } catch (error) {
       console.error(error)
       return false // Assume not available on error

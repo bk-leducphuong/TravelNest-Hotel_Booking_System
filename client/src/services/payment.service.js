@@ -2,18 +2,18 @@ import http from './http'
 
 export const PaymentService = {
   getPayments(params = {}) {
-    return http.get('/api/payments', { params })
+    return http.get('/payments', { params })
   },
 
   createPaymentIntent(paymentData) {
-    return http.post('/api/payments', paymentData)
+    return http.post('/payments', paymentData)
   },
 
   getPaymentByBookingId(bookingId) {
-    return http.get(`/api/payments/bookings/${bookingId}`)
+    return http.get(`/payments/bookings/${bookingId}`)
   },
 
   getPaymentByTransactionId(transactionId) {
-    return http.get(`/api/payments/transactions/${transactionId}`)
+    return http.get(`/payments/transactions/${transactionId}`)
   }
 }

@@ -21,19 +21,19 @@ export const HotelService = {
     return http.get(`/hotels/${hotelId}`, { params });
   },
 
+  getHotelPolicies(hotelId) {
+    return http.get(`/hotels/${hotelId}/policies`);
+  },
+
+  getNearbyPlaces(hotelId, params = {}) {
+    return http.get(`/hotels/${hotelId}/nearby-places`, { params });
+  },
+
   searchAvailableRooms(hotelId, params) {
     return http.get(`/hotels/${hotelId}/rooms`, { params });
   },
 
   checkRoomAvailability(hotelId, params) {
-    // The selectedRooms parameter might need to be stringified if it's an array of objects.
-    // The backend seems to expect a JSON string or array of objects.
-    // The http client should handle this correctly if `params.selectedRooms` is an array.
-    if (params.selectedRooms && Array.isArray(params.selectedRooms)) {
-      params.selectedRooms = JSON.stringify(params.selectedRooms);
-    }
-    return http.get(`/hotels/${hotelId}/rooms/availability`, {
-      params,
-    });
+    return http.get(`/search/hotels/${hotelId}/availability`, { params });
   },
 };
