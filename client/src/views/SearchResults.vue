@@ -36,11 +36,49 @@
         filteredHotels: [],
         isLoading: false,
         pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+        lastSavedSearchKey: '',
       };
     },
     computed: {
       ...mapGetters('search', ['getSearchData']),
       ...mapGetters('auth', ['isUserAuthenticated']),
+      totalResults() {
+        return this.pagination.total || this.hotels.length;
+      },
+      showPagination() {
+        return !this.searchQuery && this.pagination.totalPages > 1;
+      },
+      pageNumbers() {
+        const totalPages = this.pagination.totalPages;
+        const currentPage = this.pagination.page;
+        const delta = 2;
+        const pages = [];
+        const start = Math.max(1, currentPage - delta);
+        const end = Math.min(totalPages, currentPage + delta);
+
+        if (start > 1) {
+          pages.push(1);
+          if (start > 2) pages.push('start-ellipsis');
+        }
+
+        for (let page = start; page <= end; page += 1) {
+          pages.push(page);
+        }
+
+        if (end < totalPages) {
+          if (end < totalPages - 1) pages.push('end-ellipsis');
+          pages.push(totalPages);
+        }
+
+        return pages;
+      },
+      currentResultStart() {
+        if (this.totalResults === 0) return 0;
+        return (this.pagination.page - 1) * this.pagination.limit + 1;
+      },
+      currentResultEnd() {
+        return Math.min(this.pagination.page * this.pagination.limit, this.totalResults);
+      },
       sortByParam() {
         const map = {
           priceLowToHigh: 'price_asc',
@@ -55,8 +93,9 @@
         async handler() {
           if (this.isSearchUrlValid()) {
             this.isLoading = true;
+            this.syncPaginationFromRoute();
             this.updateSearchDataInStore();
-            await this.saveSearchInformation();
+            await this.saveSearchInformationOnce();
             await this.searchHotels();
             this.isLoading = false;
           } else {
@@ -68,7 +107,10 @@
       sortCriteria: {
         async handler() {
           if (this.isSearchUrlValid() && this.hotels.length > 0) {
-            this.pagination.page = 1;
+            if (this.pagination.page !== 1 || this.$route.query.page) {
+              this.updateRoutePage(1);
+              return;
+            }
             this.isLoading = true;
             await this.searchHotels();
             this.isLoading = false;
@@ -117,6 +159,31 @@
         this.updateAdults(this.$route.query.adults);
         this.updateRooms(this.$route.query.rooms);
         this.updateChildren(this.$route.query.children);
+      },
+      getSearchCriteriaKey() {
+        const { location, checkInDate, checkOutDate, adults, children, rooms, numberOfDays } =
+          this.$route.query;
+
+        return JSON.stringify({
+          location,
+          checkInDate,
+          checkOutDate,
+          adults,
+          children,
+          rooms,
+          numberOfDays,
+        });
+      },
+      async saveSearchInformationOnce() {
+        const searchKey = this.getSearchCriteriaKey();
+        if (searchKey === this.lastSavedSearchKey) return;
+
+        this.lastSavedSearchKey = searchKey;
+        await this.saveSearchInformation();
+      },
+      syncPaginationFromRoute() {
+        const page = parseInt(this.$route.query.page, 10);
+        this.pagination.page = Number.isInteger(page) && page > 0 ? page : 1;
       },
       async searchHotels() {
         try {
@@ -167,8 +234,31 @@
         this.$router.push({ name: 'HotelDetails', params: { hotel_id: hotelId } });
       },
       handleSort() {
-        // Trigger reactivity by updating the computed property
-        // Sorting is handled automatically in the computed property `sortedHotels`
+        // Kept for the template change event; the watcher handles server-side sorting.
+      },
+      updateRoutePage(page) {
+        const nextPage = Math.min(Math.max(page, 1), this.pagination.totalPages || page);
+        this.$router.push({
+          query: {
+            ...this.$route.query,
+            page: nextPage,
+          },
+        });
+      },
+      async changePage(page) {
+        if (
+          page === this.pagination.page ||
+          page < 1 ||
+          (this.pagination.totalPages && page > this.pagination.totalPages)
+        ) {
+          return;
+        }
+
+        this.updateRoutePage(page);
+        this.$nextTick(() => {
+          const container = document.querySelector('.inner-content');
+          container?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
       },
       filterHotels() {
         const query = this.searchQuery.toLowerCase();
@@ -186,7 +276,7 @@
       },
     },
     mounted() {
-      this.displayHotels = this.sortedHotels;
+      this.displayHotels = this.hotels;
     },
   };
 </script>
@@ -356,7 +446,7 @@
             <div class="inner-content">
               <strong
                 >{{ this.$route.query.location }}: {{ $t('searchResults.foundTitle_1') }}
-                {{ hotels.length }} {{ $t('searchResults.foundTitle_2') }}</strong
+                {{ totalResults }} {{ $t('searchResults.foundTitle_2') }}</strong
               >
               <div class="arrange">
                 <div class="selection-search">
@@ -481,6 +571,47 @@
                     </div>
                   </div>
                 </div>
+              </div>
+
+              <div v-if="showPagination" class="pagination-wrapper">
+                <p class="pagination-summary">
+                  Hiển thị {{ currentResultStart }}-{{ currentResultEnd }} trong
+                  {{ totalResults }} chỗ nghỉ
+                </p>
+                <nav class="pagination" aria-label="Search results pagination">
+                  <button
+                    type="button"
+                    class="pagination-button"
+                    :disabled="pagination.page <= 1 || isLoading"
+                    @click="changePage(pagination.page - 1)"
+                  >
+                    Trước
+                  </button>
+
+                  <template v-for="page in pageNumbers" :key="page">
+                    <span v-if="typeof page === 'string'" class="pagination-ellipsis">...</span>
+                    <button
+                      v-else
+                      type="button"
+                      class="pagination-button page-number"
+                      :class="{ active: page === pagination.page }"
+                      :aria-current="page === pagination.page ? 'page' : null"
+                      :disabled="isLoading"
+                      @click="changePage(page)"
+                    >
+                      {{ page }}
+                    </button>
+                  </template>
+
+                  <button
+                    type="button"
+                    class="pagination-button"
+                    :disabled="pagination.page >= pagination.totalPages || isLoading"
+                    @click="changePage(pagination.page + 1)"
+                  >
+                    Sau
+                  </button>
+                </nav>
               </div>
             </div>
           </div>
@@ -984,6 +1115,61 @@
 
   .address-container {
     display: flex;
+  }
+
+  .pagination-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 24px 0 8px;
+    padding: 16px 0;
+    border-top: 1px solid #e6e6e6;
+  }
+
+  .pagination-summary {
+    margin: 0;
+    color: #595959;
+    font-size: 14px;
+  }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .pagination-button {
+    min-width: 38px;
+    height: 38px;
+    margin: 0;
+    border: 1px solid #006ce4;
+    border-radius: 4px;
+    background-color: #fff;
+    color: #006ce4;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .pagination-button:hover:not(:disabled),
+  .pagination-button.active {
+    background-color: #003b95;
+    border-color: #003b95;
+    color: #fff;
+  }
+
+  .pagination-button:disabled {
+    border-color: #d9d9d9;
+    color: #999;
+    cursor: not-allowed;
+  }
+
+  .pagination-ellipsis {
+    min-width: 24px;
+    text-align: center;
+    color: #595959;
   }
   /* end room  */
 

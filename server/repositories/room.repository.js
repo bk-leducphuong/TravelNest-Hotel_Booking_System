@@ -16,20 +16,6 @@ class RoomRepository {
     const sequelize = require('../config/database.config');
     const { Op } = require('sequelize');
 
-    // Build subquery for room inventory aggregation
-    const inventorySubquery = `(
-      SELECT 
-        ri.room_id,
-        SUM(ri.price_per_night) AS total_price,
-        MIN(ri.total_rooms - ri.booked_rooms - COALESCE(ri.held_rooms, 0)) AS available_rooms
-      FROM room_inventory AS ri
-      WHERE 
-        ri.date BETWEEN :checkInDate AND :checkOutDate
-        AND ri.status = 'open'
-      GROUP BY ri.room_id
-      HAVING COUNT(CASE WHEN (ri.total_rooms - ri.booked_rooms - COALESCE(ri.held_rooms, 0)) >= :numberOfRooms THEN 1 END) = :numberOfNights
-    )`;
-
     // Build where conditions
     const whereConditions = {
       hotel_id: hotelId,
@@ -56,7 +42,8 @@ class RoomRepository {
             SELECT SUM(ri.price_per_night) 
             FROM room_inventory AS ri 
             WHERE ri.room_id = rooms.id 
-            AND ri.date BETWEEN '${checkInDate}' AND '${checkOutDate}'
+            AND ri.date >= '${checkInDate}'
+            AND ri.date < '${checkOutDate}'
             AND ri.status = 'open'
           )`),
           'price_per_night',
@@ -66,7 +53,8 @@ class RoomRepository {
             SELECT MIN(ri.total_rooms - ri.booked_rooms - COALESCE(ri.held_rooms, 0))
             FROM room_inventory AS ri 
             WHERE ri.room_id = rooms.id 
-            AND ri.date BETWEEN '${checkInDate}' AND '${checkOutDate}'
+            AND ri.date >= '${checkInDate}'
+            AND ri.date < '${checkOutDate}'
             AND ri.status = 'open'
           )`),
           'available_rooms',
@@ -79,7 +67,8 @@ class RoomRepository {
             SELECT ri.room_id
             FROM room_inventory AS ri
             WHERE 
-              ri.date BETWEEN '${checkInDate}' AND '${checkOutDate}'
+              ri.date >= '${checkInDate}'
+              AND ri.date < '${checkOutDate}'
               AND ri.status = 'open'
             GROUP BY ri.room_id
             HAVING COUNT(CASE WHEN (ri.total_rooms - ri.booked_rooms - COALESCE(ri.held_rooms, 0)) >= ${numberOfRooms} THEN 1 END) = ${numberOfNights}

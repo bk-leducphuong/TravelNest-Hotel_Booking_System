@@ -2,17 +2,17 @@
 import TheHeader from '@/components/Header.vue'
 import TheFooter from '@/components/Footer.vue'
 import MapComponent from '@/components/map/MapComponent.vue'
-import axios from 'axios'
 import { mapActions, mapGetters } from 'vuex'
 import ImageGallery from '@/components/hotel-image/ImageGallery.vue'
 import { useToast } from 'vue-toastification'
 import Loading from 'vue-loading-overlay'
 import 'vue-loading-overlay/dist/css/index.css'
+import { HotelService } from '@/services/hotel.service'
 
 // import ReviewForm from '@/components/review/ReviewForm.vue'
 import ReviewValidation from '@/components/review/ReviewValidation.vue'
 
-import errorHandler from '@/request/errorHandler';
+import errorHandler from '@/request/errorHandler'
 
 export default {
   components: {
@@ -124,24 +124,107 @@ export default {
         this.calculateNumberOfDays(this.checkInDate, this.checkOutDate)
       }
     },
+    toArray(value) {
+      if (Array.isArray(value)) return value
+      if (typeof value !== 'string') return []
+
+      try {
+        const parsed = JSON.parse(value || '[]')
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        return []
+      }
+    },
+    normalizeRoom(room) {
+      const roomAmenities = this.toArray(room.roomAmenities)
+        .map((amenity) => (typeof amenity === 'string' ? amenity : amenity.name))
+        .filter(Boolean)
+      const roomImageUrls = this.toArray(room.roomImageUrls)
+        .map((image) => (typeof image === 'string' ? image : image.object_key || image.url))
+        .filter(Boolean)
+
+      return {
+        ...room,
+        room_id: room.roomId,
+        room_name: room.roomName,
+        room_amenities: JSON.stringify(roomAmenities),
+        room_image_urls: JSON.stringify(roomImageUrls),
+        max_guests: room.maxGuests,
+        price_per_night: room.pricePerNight,
+        available_rooms: room.availableRooms
+      }
+    },
+    normalizeReview(review) {
+      return {
+        ...review,
+        review_id: review.id,
+        profile_picture_url: review.user?.profilePictureUrl || '',
+        username: review.user?.firstName || 'Khách',
+        country: review.user?.country,
+        created_at: review.createdAt,
+        rating: review.ratingOverall,
+        comment: review.comment
+      }
+    },
+    normalizeReviewCriterias(ratingBreakdown = {}) {
+      const labels = {
+        cleanliness: 'Sạch sẽ',
+        location: 'Vị trí',
+        service: 'Dịch vụ',
+        valueForMoney: 'Đáng giá tiền',
+        overall: 'Tổng quan'
+      }
+
+      return Object.entries(labels)
+        .map(([key, label]) => {
+          const score = Number(ratingBreakdown[key])
+          if (!Number.isFinite(score)) return null
+
+          return {
+            criteria_name: label,
+            average_score: score / 2
+          }
+        })
+        .filter(Boolean)
+    },
+    normalizeNearbyPlace(place) {
+      return {
+        ...place,
+        place_id: place.id,
+        place_name: place.name,
+        place_latitude: place.latitude,
+        place_longitude: place.longitude
+      }
+    },
     async getHotelDetails() {
       try {
-        const response = await axios.post(`${import.meta.env.VITE_SERVER_HOST}/api/hotels/get-hotel-details`, {
-          hotelId: this.$route.params.hotel_id,
+        const response = await HotelService.getHotelDetails(this.$route.params.hotel_id, {
           checkInDate: this.getSearchData.checkInDate,
           checkOutDate: this.getSearchData.checkOutDate,
-          numberOfDays: this.getSearchData.numberOfDays,
           numberOfRooms: this.getSearchData.rooms,
           numberOfGuests:
             parseInt(this.getSearchData.adults) + parseInt(this.getSearchData.children)
         })
 
-        this.hotel = response.data.hotel
-        this.room_list = response.data.rooms
-        this.reviews = response.data.reviews
-        this.reviewCriterias = response.data.reviewCriterias
-        this.nearbyPlaces = response.data.nearbyPlaces
-        this.hotelImages = JSON.parse(this.hotel.image_urls)
+        const details = response.data || {}
+        const hotel = details.hotel || {}
+
+        this.hotel = {
+          ...hotel,
+          hotel_id: hotel.id,
+          overall_rating:
+            details.ratingSummary?.overallRating || details.ratingBreakdown?.overall || 0,
+          check_in_time: details.checkInOut?.checkInTime,
+          check_out_time: details.checkInOut?.checkOutTime
+        }
+        this.room_list = (details.rooms || []).map(this.normalizeRoom)
+        this.reviews = (details.reviews || []).map(this.normalizeReview)
+        this.reviewCriterias = this.normalizeReviewCriterias(details.ratingBreakdown)
+        this.nearbyPlaces = (details.nearbyPlaces || []).map(this.normalizeNearbyPlace)
+        this.hotelImages = (details.images || [])
+          .slice()
+          .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+          .map((image) => image.url)
       } catch (error) {
         errorHandler(error)
       }
@@ -194,22 +277,19 @@ export default {
         this.isSearchRoomLoading = true
 
         this.extractDate(this.dateRange)
-        const response = await axios.post(`${import.meta.env.VITE_SERVER_HOST}/api/hotels/search-room`, {
-          hotel_id: this.hotel_id,
+        const response = await HotelService.searchAvailableRooms(this.hotel_id, {
           checkInDate: this.checkInDate,
           checkOutDate: this.checkOutDate,
-          numberOfDays: this.numberOfDays,
-          adults: this.adults,
-          children: this.children,
-          rooms: this.rooms
+          numberOfRooms: this.rooms,
+          numberOfGuests: this.adults + this.children
         })
 
         // update search data in store
         this.updateSearchDataInStore()
 
-        this.room_list = response.data.available_rooms
+        this.room_list = (response.data || []).map(this.normalizeRoom)
       } catch (error) {
-        errorHandler(error);
+        errorHandler(error)
       } finally {
         this.isSearchRoomLoading = false
       }
@@ -349,26 +429,27 @@ export default {
 
     this.hotel_id = this.$route.params.hotel_id
     // Fetch hotel details using hotelId
-    await this.getHotelDetails(),
-      // date picker popup
-      flatpickr(this.$refs.dateInput, {
-        dateFormat: 'd/m/Y', // Định dạng ngày
-        locale: 'vn', // Ngôn ngữ tiếng Việt cho tên ngày tháng
-        mode: 'range', // Cho phép chọn dải ngày
+    await this.getHotelDetails()
 
-        minDate: 'today', // Không cho phép chọn ngày trong quá khứ
-        showMonths: 2, // Hiển thị 2 tháng cạnh nhau
-        onChange: function (selectedDates, dateStr, instance) {},
-        mode: 'range',
-        locale: {
-          rangeSeparator: ' đến ' // Thay "to" bằng "đến"
-        },
-        onValueUpdate: function (selectedDates, dateStr, instance) {
-          // Thêm "Từ" vào trước ngày bắt đầu
-          const display = instance.element.value
-          instance.element.value = 'Từ ' + display
-        }
-      })
+    // date picker popup
+    flatpickr(this.$refs.dateInput, {
+      dateFormat: 'd/m/Y', // Định dạng ngày
+      locale: 'vn', // Ngôn ngữ tiếng Việt cho tên ngày tháng
+      mode: 'range', // Cho phép chọn dải ngày
+
+      minDate: 'today', // Không cho phép chọn ngày trong quá khứ
+      showMonths: 2, // Hiển thị 2 tháng cạnh nhau
+      onChange: function (selectedDates, dateStr, instance) {},
+      mode: 'range',
+      locale: {
+        rangeSeparator: ' đến ' // Thay "to" bằng "đến"
+      },
+      onValueUpdate: function (selectedDates, dateStr, instance) {
+        // Thêm "Từ" vào trước ngày bắt đầu
+        const display = instance.element.value
+        instance.element.value = 'Từ ' + display
+      }
+    })
   }
 }
 </script>
