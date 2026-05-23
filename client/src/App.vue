@@ -1,12 +1,31 @@
 <script>
 import { mapActions } from 'vuex'
+import AiChatWidget from './components/ai-chat/AiChatWidget.vue'
 
 export default {
   name: 'App',
+  components: {
+    AiChatWidget
+  },
   data() {
     return {
       hotels: [],
     }
+  },
+  mounted() {
+    const language = localStorage.getItem('language') ? localStorage.getItem('language') : navigator.language || navigator.userLanguage
+    this.updateUserLanguage(language)
+    this.$i18n.locale = language.split('-')[0]
+
+    // Fetch user location and update Vuex store
+    this.getUserLocation()
+      .then((location) => {
+        this.updateUserLocation(location) // Dispatch action to update user location
+      })
+      .catch((error) => {
+        console.error('Failed to get user location:', error)
+        // You can handle the error here, e.g., show a default location
+      })
   },
   methods: {
     ...mapActions('user', ['updateUserLocation', 'updateUserLanguage']),
@@ -50,28 +69,21 @@ export default {
         return Promise.reject('Geolocation not supported')
       }
     },
-  },
-  mounted() {
-    const language = localStorage.getItem('language') ? localStorage.getItem('language') : navigator.language || navigator.userLanguage
-    this.updateUserLanguage(language)
-    this.$i18n.locale = language.split('-')[0]
-
-    // Fetch user location and update Vuex store
-    this.getUserLocation()
-      .then((location) => {
-        this.updateUserLocation(location) // Dispatch action to update user location
-      })
-      .catch((error) => {
-        console.error('Failed to get user location:', error)
-        // You can handle the error here, e.g., show a default location
-      })
   }
 }
 </script>
 
 <template>
-  <!-- <cookie-consent @consent-given="handleConsent" /> -->
-  <RouterView />
+  <div class="app-root">
+    <!-- <cookie-consent @consent-given="handleConsent" /> -->
+    <RouterView />
+    <AiChatWidget />
+  </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.app-root {
+  width: 100%;
+  min-height: 100%;
+}
+</style>
