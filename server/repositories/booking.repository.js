@@ -3,7 +3,9 @@ const { Op } = require('sequelize');
 const {
   Bookings,
   BookingRooms,
+  Cities,
   Hotels,
+  Images,
   Rooms,
   Transactions,
   Refunds,
@@ -164,7 +166,26 @@ class BookingRepository {
   async findHotelById(hotelId) {
     return await Hotels.findOne({
       where: { id: hotelId },
-      attributes: ['id', 'name', 'city', 'image_urls'],
+      attributes: ['id', 'name', 'city_id'],
+      include: [
+        {
+          model: Cities,
+          as: 'city',
+          attributes: ['id', 'name'],
+          required: false,
+        },
+        {
+          model: Images,
+          as: 'images',
+          where: { status: 'active' },
+          attributes: ['id', 'object_key', 'is_primary', 'display_order'],
+          required: false,
+        },
+      ],
+      order: [
+        [{ model: Images, as: 'images' }, 'is_primary', 'DESC'],
+        [{ model: Images, as: 'images' }, 'display_order', 'ASC'],
+      ],
     });
   }
 
@@ -313,10 +334,27 @@ class BookingRepository {
       include: [
         {
           model: Hotels,
-          attributes: ['id', 'name', 'city', 'image_urls'],
+          as: 'hotel',
+          attributes: ['id', 'name', 'city_id'],
+          include: [
+            {
+              model: Cities,
+              as: 'city',
+              attributes: ['id', 'name'],
+              required: false,
+            },
+            {
+              model: Images,
+              as: 'images',
+              where: { status: 'active' },
+              attributes: ['id', 'object_key', 'is_primary', 'display_order'],
+              required: false,
+            },
+          ],
         },
         {
           model: Rooms,
+          as: 'room',
           attributes: ['id', 'room_name'],
         },
       ],

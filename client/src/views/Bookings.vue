@@ -1,12 +1,12 @@
 <script>
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
-import axios from 'axios'
 import Loading from 'vue-loading-overlay'
 import 'vue-loading-overlay/dist/css/index.css'
 import { mapActions } from 'vuex'
 import router from '@/router/index.js'
 import { getFirstImageUrl } from '@/utils/images'
+import { BookingService } from '@/services/booking.service'
 
 export default {
   components: {
@@ -26,12 +26,11 @@ export default {
     async getAllBookings() {
       try {
         this.isLoading = true
-        const response = await axios.get('http://localhost:3000/api/booking/get-all-bookings', {
-          withCredentials: true
-        })
-        const bookings = response.data.bookings
+        const response = await BookingService.getBookings()
+        const bookings = response.data || []
         // group bookings which have the same booking code
         this.bookings = this.groupBookings(bookings)
+        this.arrangedBookings = this.bookings
       } catch (error) {
         console.error(error)
       } finally {
@@ -44,9 +43,9 @@ export default {
       bookings.forEach((booking) => {
         const bookingCode = booking.booking_code
         const room = {
-          roomId: booking.room_id,
+          roomId: booking.room?.room_id || booking.room_id,
           quantity: booking.quantity,
-          roomName: booking.roomName
+          roomName: booking.room?.room_name || booking.roomName
         }
         if (!groupedBookings.has(bookingCode)) {
           groupedBookings.set(bookingCode, {

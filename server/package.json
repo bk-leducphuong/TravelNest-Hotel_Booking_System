@@ -4,20 +4,9 @@
   "description": "Booking hotel platform",
   "type": "commonjs",
   "main": "server.js",
-  "nodemonConfig": {
-    "ignore": [
-      "api/elasticsearch/*",
-      "infra/database/migrations/*",
-      "infra/database/seeders/*",
-      "infra/elasticsearch/data/*",
-      "infra/elasticsearch/seeders/*",
-      "infra/minio-data/*",
-      "docs/*"
-    ]
-  },
   "scripts": {
     "start": "cross-env NODE_ENV=production node server.js",
-    "dev": "cross-env NODE_ENV=development nodemon server.js",
+    "dev": "cross-env NODE_ENV=development nodemon --config nodemon.json server.js",
     "db:init": "cross-env NODE_ENV=development node infra/database/init.js",
     "db:clear": "cross-env NODE_ENV=development node scripts/clear-database.js",
     "seed:clear": "cross-env NODE_ENV=development node scripts/clear-seed-data.js",
@@ -57,7 +46,7 @@
     "migrate:seed": "cross-env NODE_ENV=development sequelize-cli db:seed:all",
     "migrate:seed:undo": "cross-env NODE_ENV=development sequelize-cli db:seed:undo:all",
     "start:bullmq-worker": "cross-env NODE_ENV=production node workers/index.js",
-    "dev:bullmq-worker": "cross-env NODE_ENV=development nodemon workers/index.js",
+    "dev:bullmq-worker": "cross-env NODE_ENV=development nodemon --config nodemon.json workers/index.js",
     "es:setup-hotels": "cross-env NODE_ENV=development node infra/elasticsearch/setup-hotels-index.js",
     "es:setup-hotels:force": "cross-env NODE_ENV=development node infra/elasticsearch/setup-hotels-index.js --force",
     "es:setup-logs": "cross-env NODE_ENV=development node infra/elasticsearch/setup-logs-index.js",
@@ -91,6 +80,7 @@
     "@services": "services",
     "@queues": "queues",
     "@workers": "workers",
+    "@events": "events",
     "@socket": "socket",
     "@utils": "utils",
     "@interfaces": "interfaces",

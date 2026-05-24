@@ -17,7 +17,7 @@ export default {
     },
     hotelImages: {
       type: Array,
-      requied: true
+      required: true
     }
   },
   data() {
@@ -28,6 +28,7 @@ export default {
     }
   },
   methods: {
+    getFirstImageUrl,
     // select room
     selectRoom(room) {
       if (room === 0) {

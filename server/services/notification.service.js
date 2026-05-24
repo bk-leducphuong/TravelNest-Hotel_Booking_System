@@ -1,6 +1,6 @@
 const notificationRepository = require('../repositories/notification.repository');
 const ApiError = require('../utils/ApiError');
-const { logger } = require('../config/logger.config');
+const logger = require('../config/logger.config');
 const {
   NOTIFICATION_TYPES,
   NOTIFICATION_CATEGORIES,

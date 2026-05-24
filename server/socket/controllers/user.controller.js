@@ -253,3 +253,19 @@ exports.sendBookingUpdate = (namespace, userId, bookingId, updateData) => {
   namespace.to(userRoom).to(bookingRoom).emit('booking:updated', updateData);
   logger.info(`Sent booking update to user ${userId} for booking ${bookingId}`);
 };
+
+/**
+ * Send hold expiry event to a user
+ * @param {Namespace} namespace - Socket.IO /user namespace
+ * @param {string} userId - User ID
+ * @param {Object} payload - Hold expiry payload
+ */
+exports.sendHoldExpired = (namespace, userId, payload) => {
+  const userRoom = `user_${userId}`;
+
+  namespace.to(userRoom).emit('hold:expired', payload);
+  logger.info('Sent hold expired event to user', {
+    userId,
+    holdId: payload?.holdId,
+  });
+};

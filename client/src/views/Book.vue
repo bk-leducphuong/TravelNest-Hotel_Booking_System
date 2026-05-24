@@ -5,6 +5,7 @@
   import { mapGetters } from 'vuex';
   import { useToast } from 'vue-toastification';
   import { getImageUrl } from '@/utils/images';
+  import { getUserSocket } from '@/services/userSocket';
 
   export default {
     components: {
@@ -34,6 +35,7 @@
         arrivalOptions,
         isHoldConvertedToBooking: false,
         isReleasingHold: false,
+        userSocket: null,
       };
     },
     computed: {
@@ -99,6 +101,35 @@
           this.isReleasingHold = false;
         }
       },
+      handleHoldExpired(payload) {
+        const holdId = this.getBookingInfor?.holdId;
+
+        if (!holdId || payload?.holdId !== holdId || this.isHoldConvertedToBooking) {
+          return;
+        }
+
+        this.isHoldConvertedToBooking = true;
+        this.toast.error('Your room hold has expired. Please select the room again.');
+
+        this.$router.replace({
+          name: 'HotelDetails',
+          params: {
+            hotel_id: payload.hotelId || this.getBookingInfor?.hotel?.hotel_id,
+          },
+        });
+      },
+      connectHoldExpirySocket() {
+        this.userSocket = getUserSocket();
+        this.userSocket.on('hold:expired', this.handleHoldExpired);
+      },
+    },
+    mounted() {
+      this.connectHoldExpirySocket();
+    },
+    beforeUnmount() {
+      if (this.userSocket) {
+        this.userSocket.off('hold:expired', this.handleHoldExpired);
+      }
     },
     async beforeRouteLeave(to) {
       if (to.name === 'BookingConfirmation') {

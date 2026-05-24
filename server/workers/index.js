@@ -3,6 +3,7 @@ require('../register-aliases');
 const http = require('http');
 const logger = require('@config/logger.config');
 const mongoDb = require('@config/mongodb.config');
+const { scheduleHoldExpiryScanner } = require('@queues/holdExpiry.queue');
 
 const imageWorker = require('./image.worker');
 const hotelSnapshotWorker = require('./hotelSnapshot.worker');
@@ -10,6 +11,7 @@ const searchLogWorker = require('./searchLog.worker');
 const hotelViewEventWorker = require('./hotelViewEvent.worker');
 const emailWorker = require('./email.worker');
 const notificationWorker = require('./notification.worker');
+const holdExpiryWorker = require('./holdExpiry.worker');
 
 const workers = [
   imageWorker,
@@ -18,6 +20,7 @@ const workers = [
   hotelViewEventWorker,
   emailWorker,
   notificationWorker,
+  holdExpiryWorker,
 ];
 
 let healthServer;
@@ -52,6 +55,7 @@ async function startWorkers() {
   try {
     await mongoDb.connect();
 
+    await scheduleHoldExpiryScanner();
     await Promise.all(workers.map((worker) => worker.run()));
 
     logger.info('All BullMQ workers started', {

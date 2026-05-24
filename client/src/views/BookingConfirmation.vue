@@ -1,7 +1,7 @@
 <script>
-import axios from 'axios'
 import { useToast } from 'vue-toastification'
-import errorHandler from '@/request/errorHandler';
+import errorHandler from '@/request/errorHandler'
+import { BookingService } from '@/services/booking.service'
 export default {
   setup() {
     // Get toast interface
@@ -20,12 +20,10 @@ export default {
       if (bookingCode) {
         try {
           // get all bookings of user
-          const response = await axios.get('http://localhost:3000/api/booking/get-all-bookings', {
-            withCredentials: true
-          })
+          const response = await BookingService.getBookings()
 
           // filter bookings to find booking which has the same bookingCode
-          let bookings = response.data.bookings.filter(booking => booking.booking_code == bookingCode)
+          let bookings = (response.data || []).filter(booking => booking.booking_code == bookingCode)
 
           bookings = this.groupBookings(bookings)
           
@@ -48,9 +46,9 @@ export default {
       bookings.forEach((booking) => {
         const bookingCode = booking.booking_code
         const room = {
-          roomId: booking.room_id,
+          roomId: booking.room?.room_id || booking.room_id,
           quantity: booking.quantity,
-          roomName: booking.roomName
+          roomName: booking.room?.room_name || booking.roomName
         }
         if (!groupedBookings.has(bookingCode)) {
           groupedBookings.set(bookingCode, {

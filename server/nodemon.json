@@ -1,0 +1,13 @@
+{
+  "ext": "ts,js,json",
+  "ignore": [
+    "**/infra/minio-data/**",
+    "**/infra/minio-data-test/**",
+    "**/api/elasticsearch/**",
+    "**/infra/database/migrations/**",
+    "**/infra/database/seeders/**",
+    "**/infra/elasticsearch/data/**",
+    "**/infra/elasticsearch/seeders/**",
+    "**/docs/**"
+  ]
+}

@@ -1,4 +1,3 @@
-/* eslint-disable import/order */
 /** ********************* External Libraries ************************ */
 require('./register-aliases');
 
@@ -14,6 +13,7 @@ const logger = require('@config/logger.config');
 const db = require('@models');
 const mongoDb = require('@config/mongodb.config');
 const { initSocket } = require('@socket/index');
+const { startHoldExpirySubscriber } = require('@events/holdExpiry.subscriber');
 const { initBucket } = require('@config/minio.config');
 const { setupSwagger } = require('@config/swagger.config');
 const passport = require('@config/passport.config');
@@ -51,6 +51,7 @@ const createApp = async () => {
   // Socket io
   const server = http.createServer(app);
   initSocket(server);
+  await startHoldExpirySubscriber();
   app.set('httpServer', server);
 
   const normalizeOrigin = (origin) => origin && origin.replace(/\/$/, '');
@@ -117,6 +118,7 @@ const createApp = async () => {
     hotelViewEventQueue,
     emailQueue,
     notificationQueue,
+    holdExpiryQueue,
   } = require('@queues/index');
 
   const serverAdapter = new ExpressAdapter();
@@ -130,6 +132,7 @@ const createApp = async () => {
       new BullMQAdapter(hotelViewEventQueue),
       new BullMQAdapter(emailQueue),
       new BullMQAdapter(notificationQueue),
+      new BullMQAdapter(holdExpiryQueue),
     ],
     serverAdapter,
   });

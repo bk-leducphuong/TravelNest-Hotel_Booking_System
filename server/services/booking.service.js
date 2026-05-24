@@ -19,6 +19,18 @@ class BookingService {
     this.paymentProvider = new StripePaymentAdapter();
   }
 
+  formatHotelForLegacyClients(hotel) {
+    if (!hotel) return null;
+
+    const hotelData = hotel.toJSON ? hotel.toJSON() : hotel;
+
+    return {
+      ...hotelData,
+      city: hotelData.city?.name || hotelData.city || null,
+      image_urls: hotelData.images || hotelData.image_urls || [],
+    };
+  }
+
   /**
    * Get all bookings for a user
    * Automatically updates booking status based on dates
@@ -51,7 +63,7 @@ class BookingService {
 
         return {
           ...bookingData,
-          hotel: hotel ? (hotel.toJSON ? hotel.toJSON() : hotel) : null,
+          hotel: this.formatHotelForLegacyClients(hotel),
           room: room
             ? {
                 room_id: room.id,
@@ -90,7 +102,7 @@ class BookingService {
 
     return {
       ...bookingData,
-      hotel: hotel ? (hotel.toJSON ? hotel.toJSON() : hotel) : null,
+      hotel: this.formatHotelForLegacyClients(hotel),
       room: room
         ? {
             room_id: room.id,

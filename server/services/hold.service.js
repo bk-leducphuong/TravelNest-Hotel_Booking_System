@@ -1,10 +1,9 @@
 const holdRepository = require('@repositories/hold.repository');
 const inventoryService = require('@services/inventory.service');
 const sequelize = require('@config/database.config');
+const { Transaction } = require('sequelize');
 const logger = require('@config/logger.config');
 const ApiError = require('@utils/ApiError');
-const redisClient = require('@config/redis.config');
-const { scheduleExpireHold } = require('@utils/bullmq.utils');
 const pricingService = require('@services/pricing.service');
 
 /** Default hold duration in minutes (e.g. time to complete payment) */
@@ -28,14 +27,7 @@ class HoldService {
    * @returns {Promise<Object>} { holdId, expiresAt, status, ... }
    */
   async createHold(data) {
-    const {
-      userId,
-      hotelId,
-      checkInDate,
-      checkOutDate,
-      numberOfGuests,
-      rooms,
-    } = data;
+    const { userId, hotelId, checkInDate, checkOutDate, numberOfGuests, rooms } = data;
 
     if (!rooms || !Array.isArray(rooms) || rooms.length === 0) {
       throw new ApiError(
@@ -275,13 +267,86 @@ class HoldService {
    * Release expired holds (to be called by a cron job or BullMQ worker)
    * Finds holds with status=active and expires_at <= now, releases them
    */
-  async releaseExpiredHolds() {
-    const expired = await holdRepository.findExpiredActive();
+  async expireHoldIfDue(holdId) {
+    const transaction = await sequelize.transaction();
+
+    try {
+      const hold = await holdRepository.findByIdWithRooms(holdId, {
+        transaction,
+        lock: Transaction.LOCK.UPDATE,
+      });
+
+      if (!hold || hold.status !== 'active' || new Date(hold.expires_at) > new Date()) {
+        await transaction.rollback();
+        return null;
+      }
+
+      await inventoryService.releaseHoldRooms(
+        {
+          rooms: (hold.holdRooms || []).map((hr) => ({
+            roomId: hr.room_id,
+            quantity: hr.quantity,
+          })),
+          checkInDate: hold.check_in_date,
+          checkOutDate: hold.check_out_date,
+        },
+        { transaction }
+      );
+
+      const expiredAt = new Date();
+
+      await holdRepository.updateStatus(
+        holdId,
+        {
+          status: 'expired',
+          released_at: expiredAt,
+        },
+        { transaction }
+      );
+
+      await transaction.commit();
+
+      logger.info('Hold expired', {
+        holdId: hold.id,
+        userId: hold.user_id,
+      });
+
+      return {
+        holdId: hold.id,
+        userId: hold.user_id,
+        hotelId: hold.hotel_id,
+        checkInDate: hold.check_in_date,
+        checkOutDate: hold.check_out_date,
+        expiredAt,
+      };
+    } catch (error) {
+      if (!transaction.finished) {
+        await transaction.rollback();
+      }
+      logger.error('Expire hold failed:', {
+        holdId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  async releaseExpiredHolds(options = {}) {
+    const expired = await holdRepository.findExpiredActive({
+      limit: options.limit || 100,
+      order: [['expires_at', 'ASC']],
+    });
     let released = 0;
+    const expiredHolds = [];
+
     for (const hold of expired) {
       try {
-        await this.releaseHold(hold.id, hold.user_id, 'expired');
-        released++;
+        const expiredHold = await this.expireHoldIfDue(hold.id);
+
+        if (expiredHold) {
+          expiredHolds.push(expiredHold);
+          released++;
+        }
       } catch (err) {
         logger.error('Failed to release expired hold', {
           holdId: hold.id,
@@ -289,7 +354,7 @@ class HoldService {
         });
       }
     }
-    return { processed: expired.length, released };
+    return { processed: expired.length, released, expiredHolds };
   }
 }
 

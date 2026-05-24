@@ -6,7 +6,7 @@ const {
   RolePermissions,
   HotelUsers,
 } = require('@models/index.js');
-const { logger } = require('@config/logger.config');
+const logger = require('@config/logger.config');
 const ApiError = require('@utils/ApiError');
 const { ROLES } = require('@constants/roles');
 const {
