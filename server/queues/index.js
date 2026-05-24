@@ -5,6 +5,7 @@ const hotelViewEventQueue = require('./hotelViewEvent.queue');
 const emailQueue = require('./email.queue');
 const notificationQueue = require('./notification.queue');
 const holdExpiryQueue = require('./holdExpiry.queue');
+const bookingExpiryQueue = require('./bookingExpiry.queue');
 
 module.exports = {
   imageProcessingQueue,
@@ -14,4 +15,5 @@ module.exports = {
   emailQueue,
   notificationQueue,
   holdExpiryQueue,
+  bookingExpiryQueue,
 };

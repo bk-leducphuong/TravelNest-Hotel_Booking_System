@@ -281,6 +281,41 @@ class NotificationService {
     }
   }
 
+  async sendBookingExpiredNotification(data) {
+    const { buyerId, bookingId, bookingCode, checkInDate, checkOutDate, paymentDueAt } = data;
+
+    try {
+      const notification = await notificationRepository.createFromTemplate(
+        buyerId,
+        NOTIFICATION_TYPES.BOOKING_EXPIRED,
+        {
+          bookingId,
+          bookingCode,
+          checkInDate,
+          checkOutDate,
+          paymentDueAt,
+        },
+        {
+          relatedEntityType: RELATED_ENTITY_TYPES.BOOKING,
+          relatedEntityId: bookingId,
+        }
+      );
+
+      await this.emitNotification(
+        `user_${buyerId}`,
+        'booking:expired',
+        notification.toPublicJSON()
+      );
+
+      await notificationRepository.markAsSentById(notification.id);
+
+      return notification;
+    } catch (error) {
+      logger.error('Failed to send booking expired notification:', error);
+      throw error;
+    }
+  }
+
   /**
    * Send refund notification
    * @param {Object} data - Refund data

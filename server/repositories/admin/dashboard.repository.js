@@ -135,7 +135,7 @@ class AdminDashboardRepository {
           where: {
             hotel_id: hotelId,
             status: {
-              [Op.in]: ['confirmed', 'checked in', 'completed'],
+              [Op.in]: ['confirmed', 'checked_in', 'completed'],
             },
             created_at: {
               [Op.between]: [startDate, endDate],
@@ -145,7 +145,7 @@ class AdminDashboardRepository {
                 (SELECT DISTINCT buyer_id 
                 FROM bookings 
                 WHERE hotel_id = ${hotelId}
-                AND status IN ('confirmed', 'checked in', 'completed')
+                AND status IN ('confirmed', 'checked_in', 'completed')
                 AND created_at < '${startDate}')
               `),
             },

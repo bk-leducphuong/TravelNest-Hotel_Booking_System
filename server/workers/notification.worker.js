@@ -34,6 +34,10 @@ async function processNotificationJob(job) {
       );
       break;
 
+    case 'booking_expired':
+      await notificationService.sendBookingExpiredNotification(data);
+      break;
+
     case 'refund':
       await notificationService.sendRefundNotification(data);
       break;

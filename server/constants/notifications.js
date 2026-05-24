@@ -11,6 +11,7 @@ const NOTIFICATION_TYPES = {
   BOOKING_CANCELLED: 'booking_cancelled',
   BOOKING_COMPLETED: 'booking_completed',
   BOOKING_STATUS_UPDATE: 'booking_status_update',
+  BOOKING_EXPIRED: 'booking_expired',
 
   // Payment notifications
   PAYMENT_SUCCESS: 'payment_success',
@@ -113,6 +114,16 @@ const NOTIFICATION_TEMPLATES = {
     getTitleTemplate: (data) => `Booking Status Updated - ${data.bookingCode}`,
     getMessageTemplate: (data) =>
       `Your booking status has been updated from ${data.oldStatus} to ${data.newStatus}.`,
+    getActionUrl: (data) => `/bookings/${data.bookingId}`,
+    getActionLabel: () => 'View Booking',
+  },
+
+  [NOTIFICATION_TYPES.BOOKING_EXPIRED]: {
+    category: NOTIFICATION_CATEGORIES.BOOKING,
+    priority: NOTIFICATION_PRIORITIES.HIGH,
+    getTitleTemplate: (data) => `Booking Expired - ${data.bookingCode}`,
+    getMessageTemplate: (data) =>
+      `Your booking ${data.bookingCode} expired because payment was not completed before ${data.paymentDueAt}. No charge was made.`,
     getActionUrl: (data) => `/bookings/${data.bookingId}`,
     getActionLabel: () => 'View Booking',
   },

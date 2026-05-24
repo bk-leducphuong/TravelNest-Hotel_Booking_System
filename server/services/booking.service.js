@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+const nodeCrypto = require('crypto');
 
 const bookingRepository = require('@repositories/booking.repository');
 const holdRepository = require('@repositories/hold.repository');
@@ -13,6 +13,7 @@ const pricingService = require('@services/pricing.service');
 const sequelize = require('@config/database.config');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 const { generateBookingCode } = require('@utils/booking.utils');
+const { Transaction } = require('sequelize');
 
 class BookingService {
   constructor() {
@@ -409,6 +410,165 @@ class BookingService {
     };
   }
 
+  async expireBookingIfDue(bookingId) {
+    const transaction = await sequelize.transaction();
+
+    try {
+      const booking = await bookingRepository.findExpiryContextById(bookingId, {
+        transaction,
+        lock: Transaction.LOCK.UPDATE,
+      });
+
+      if (!booking) {
+        await transaction.rollback();
+        return null;
+      }
+
+      const bookingData = booking.toJSON ? booking.toJSON() : booking;
+      const isPending = ['pending', 'pending_payment'].includes(bookingData.status);
+      const expiresAt = bookingData.expires_at ? new Date(bookingData.expires_at) : null;
+
+      if (!isPending || !expiresAt || expiresAt > new Date()) {
+        await transaction.rollback();
+        return null;
+      }
+
+      const bookingRooms =
+        bookingData.bookingRooms && bookingData.bookingRooms.length > 0
+          ? bookingData.bookingRooms.map((room) => ({
+              room_id: room.room_id,
+              roomQuantity: room.quantity,
+            }))
+          : [
+              {
+                room_id: bookingData.room_id,
+                roomQuantity: bookingData.quantity || 1,
+              },
+            ].filter((room) => room.room_id);
+
+      if (bookingRooms.length > 0) {
+        await inventoryService.releaseRooms(
+          {
+            bookedRooms: bookingRooms,
+            checkInDate: bookingData.check_in_date,
+            checkOutDate: bookingData.check_out_date,
+          },
+          { transaction }
+        );
+      }
+
+      await bookingRepository.update(
+        bookingId,
+        {
+          status: 'expired',
+          cancelled_at: new Date(),
+        },
+        { transaction }
+      );
+
+      const dbTransaction = booking.transaction;
+      if (dbTransaction && ['pending', 'processing'].includes(dbTransaction.status)) {
+        await transactionRepository.update(
+          dbTransaction.id,
+          {
+            status: 'cancelled',
+            metadata: {
+              ...(dbTransaction.metadata || {}),
+              cancellation_reason: 'booking_expired',
+              expired_at: new Date().toISOString(),
+            },
+          },
+          { transaction }
+        );
+      }
+
+      await transaction.commit();
+
+      if (dbTransaction?.stripe_payment_intent_id) {
+        await this.cancelExpiredPaymentIntent(dbTransaction.stripe_payment_intent_id, bookingId);
+      }
+
+      logger.info('Booking expired', {
+        bookingId: bookingData.id,
+        bookingCode: bookingData.booking_code,
+        buyerId: bookingData.buyer_id,
+      });
+
+      return {
+        bookingId: bookingData.id,
+        bookingCode: bookingData.booking_code,
+        buyerId: bookingData.buyer_id,
+        hotelId: bookingData.hotel_id,
+        checkInDate: bookingData.check_in_date,
+        checkOutDate: bookingData.check_out_date,
+        paymentDueAt: bookingData.payment_due_at,
+        expiredAt: new Date(),
+      };
+    } catch (error) {
+      if (!transaction.finished) {
+        await transaction.rollback();
+      }
+      logger.error('Expire booking failed:', {
+        bookingId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  async expirePendingBookings(options = {}) {
+    const expired = await bookingRepository.findExpiredPending({
+      limit: options.limit || 100,
+      order: [['expires_at', 'ASC']],
+    });
+
+    let released = 0;
+    const expiredBookings = [];
+
+    for (const booking of expired) {
+      try {
+        const expiredBooking = await this.expireBookingIfDue(booking.id);
+
+        if (expiredBooking) {
+          expiredBookings.push(expiredBooking);
+          released++;
+        }
+      } catch (err) {
+        logger.error('Failed to expire pending booking', {
+          bookingId: booking.id,
+          error: err.message,
+        });
+      }
+    }
+
+    return { processed: expired.length, released, expiredBookings };
+  }
+
+  async cancelExpiredPaymentIntent(paymentIntentId, bookingId) {
+    try {
+      const payment = await this.paymentProvider.getPayment(paymentIntentId);
+      const cancellableStatuses = ['pending', 'processing', 'requires_payment_method'];
+
+      if (!cancellableStatuses.includes(payment.status) && payment.status !== 'requires_action') {
+        logger.warn('Expired booking payment intent is not cancellable', {
+          bookingId,
+          paymentIntentId,
+          status: payment.status,
+        });
+        return null;
+      }
+
+      return await this.paymentProvider.cancelPayment(paymentIntentId);
+    } catch (error) {
+      logger.warn('Failed to cancel expired booking payment intent', {
+        bookingId,
+        paymentIntentId,
+        error: error.message,
+      });
+      return null;
+    }
+  }
+
   /**
    * Evaluate structured cancellation rule for a booking.
    * Room-specific rules override hotel-wide defaults.
@@ -722,7 +882,7 @@ class BookingService {
   }
 
   hashRequest(data) {
-    return crypto
+    return nodeCrypto
       .createHash('sha256')
       .update(this.stableStringify(data || {}))
       .digest('hex');

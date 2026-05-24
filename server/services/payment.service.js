@@ -10,6 +10,7 @@ const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 const sequelize = require('@config/database.config');
 const { generateBookingCode } = require('@utils/booking.utils');
 const ledgerService = require('@services/ledger.service');
+const { Transaction } = require('sequelize');
 
 class PaymentService {
   constructor() {
@@ -76,6 +77,8 @@ class PaymentService {
     const bookingCode = generateBookingCode();
     const holdCurrency = 'USD';
     const amount = parseFloat(holdData.total_price);
+    const paymentWindowMinutes = parseInt(process.env.BOOKING_PAYMENT_WINDOW_MINUTES || '15', 10);
+    const paymentDueAt = new Date(Date.now() + paymentWindowMinutes * 60 * 1000);
 
     if (!amount || amount <= 0) {
       throw new ApiError(400, 'INVALID_HOLD_AMOUNT', 'Hold total price is invalid.');
@@ -109,8 +112,9 @@ class PaymentService {
       );
 
       // 4. Create pending bookings linked to this hold
+      let primaryBooking = null;
       for (const room of rooms) {
-        await bookingRepository.create(
+        const booking = await bookingRepository.create(
           {
             buyer_id: userId,
             hotel_id: holdData.hotel_id,
@@ -120,13 +124,19 @@ class PaymentService {
             check_out_date: checkOutDate,
             total_price: amount,
             currency: holdCurrency,
-            status: 'pending',
+            status: 'pending_payment',
             number_of_guests: numberOfGuests,
             quantity: room.quantity,
             booking_code: bookingCode,
+            payment_due_at: paymentDueAt,
+            expires_at: paymentDueAt,
           },
           { transaction }
         );
+
+        if (!primaryBooking) {
+          primaryBooking = booking;
+        }
       }
 
       // 5. Create payment intent through adapter
@@ -139,6 +149,7 @@ class PaymentService {
           : 'http://localhost:5173/book/complete',
         metadata: {
           booking_code: bookingCode,
+          booking_id: primaryBooking.id,
           hotel_id: holdData.hotel_id.toString(),
           buyer_id: userId.toString(),
           booked_rooms: JSON.stringify(bookedRooms),
@@ -147,6 +158,25 @@ class PaymentService {
           number_of_guests: numberOfGuests.toString(),
         },
       });
+
+      await transactionRepository.create(
+        {
+          bookingId: primaryBooking.id,
+          buyerId: userId,
+          hotelId: holdData.hotel_id,
+          amount,
+          currency: holdCurrency,
+          status: 'pending',
+          transactionType: 'payment',
+          paymentIntentId: payment.id,
+          paymentMethod: 'card',
+          metadata: {
+            booking_code: bookingCode,
+            hold_id: holdData.id,
+          },
+        },
+        { transaction }
+      );
 
       await transaction.commit();
 
@@ -164,6 +194,7 @@ class PaymentService {
         paymentIntentId: payment.id,
         status: payment.status,
         bookingCode,
+        paymentDueAt,
       };
     } catch (error) {
       await transaction.rollback();
@@ -181,15 +212,8 @@ class PaymentService {
    * Idempotent - can be called multiple times safely
    */
   async handlePaymentSucceeded(context) {
-    const {
-      paymentIntentId,
-      bookingCode,
-      bookingId,
-      transactionId,
-      hotelId,
-      buyerId,
-      currency,
-    } = context;
+    const { paymentIntentId, bookingCode, bookingId, transactionId, hotelId, buyerId, currency } =
+      context;
     const amount = this.fromMinorUnits(context.amount, currency);
 
     logger.info('Processing payment succeeded', {
@@ -204,6 +228,7 @@ class PaymentService {
       const existingBookings = bookingCode
         ? await bookingRepository.findAllByBookingCode(bookingCode, {
             transaction,
+            lock: Transaction.LOCK.UPDATE,
           })
         : [];
       let primaryBooking = existingBookings[0];
@@ -225,6 +250,55 @@ class PaymentService {
         });
         await transaction.commit();
         return { success: true, alreadyProcessed: true };
+      }
+
+      if (existingBookings.some((booking) => booking.status === 'expired')) {
+        let refundResult = null;
+        try {
+          refundResult = await this.paymentProvider.refundPayment({
+            paymentId: paymentIntentId,
+            reason: 'requested_by_customer',
+          });
+        } catch (refundError) {
+          logger.error('Failed to refund payment for expired booking', {
+            paymentIntentId,
+            bookingCode,
+            error: refundError.message,
+          });
+        }
+
+        if (dbTransaction) {
+          await transactionRepository.update(
+            dbTransaction.id,
+            {
+              status: refundResult?.status === 'succeeded' ? 'refunded' : 'processing',
+              chargeId: context.chargeId,
+              completedAt: new Date(),
+              metadata: {
+                ...(dbTransaction.metadata || {}),
+                booking_code: bookingCode,
+                expired_payment_received: true,
+                refund_id: refundResult?.id,
+                refund_status: refundResult?.status,
+              },
+            },
+            { transaction }
+          );
+        }
+
+        await transaction.commit();
+
+        logger.warn('Payment succeeded after booking expired; booking was not confirmed', {
+          paymentIntentId,
+          bookingCode,
+          refunded: refundResult?.status === 'succeeded',
+        });
+
+        return {
+          success: true,
+          expiredBooking: true,
+          refunded: refundResult?.status === 'succeeded',
+        };
       }
 
       // 2. Create or update transaction
@@ -600,8 +674,7 @@ class PaymentService {
     const normalizedCurrency = String(currency || 'USD').toUpperCase();
     const parsed = parseFloat(amount || 0);
     return (
-      Math.round((parsed / (zeroDecimalCurrencies.has(normalizedCurrency) ? 1 : 100)) * 100) /
-      100
+      Math.round((parsed / (zeroDecimalCurrencies.has(normalizedCurrency) ? 1 : 100)) * 100) / 100
     );
   }
 

@@ -71,6 +71,42 @@ class BookingRepository {
     });
   }
 
+  async findExpiredPending(options = {}) {
+    const { limit = 100, order = [['expires_at', 'ASC']], ...queryOptions } = options;
+
+    return await Bookings.findAll({
+      where: {
+        status: {
+          [Op.in]: ['pending', 'pending_payment'],
+        },
+        expires_at: {
+          [Op.ne]: null,
+          [Op.lte]: new Date(),
+        },
+      },
+      limit,
+      order,
+      ...queryOptions,
+    });
+  }
+
+  async findExpiryContextById(bookingId, options = {}) {
+    return await Bookings.findOne({
+      where: { id: bookingId },
+      include: [
+        {
+          model: BookingRooms,
+          as: 'bookingRooms',
+        },
+        {
+          model: Transactions,
+          as: 'transaction',
+        },
+      ],
+      ...options,
+    });
+  }
+
   /**
    * Update all bookings with the given booking code
    */
@@ -138,7 +174,7 @@ class BookingRepository {
 
   /**
    * Update multiple bookings status based on dates
-   * Updates status to 'checked in' or 'completed' based on current date
+   * Updates status to 'checked_in' or 'completed' based on current date
    */
   async updateStatusByDates(buyerId) {
     return await Bookings.update(
@@ -153,7 +189,7 @@ class BookingRepository {
         where: {
           buyer_id: buyerId,
           status: {
-            [Op.ne]: 'cancelled',
+            [Op.in]: ['confirmed', 'checked_in'],
           },
         },
       }

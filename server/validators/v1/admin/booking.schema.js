@@ -24,6 +24,19 @@ const buyerIdSchema = Joi.string().uuid().required().messages({
   'any.required': 'buyerId is required',
 });
 
+const bookingStatuses = [
+  'pending',
+  'pending_payment',
+  'confirmed',
+  'payment_failed',
+  'expired',
+  'checked_in',
+  'completed',
+  'cancelled',
+  'no_show',
+];
+const bookingStatusMessage = `status must be one of: ${bookingStatuses.join(', ')}`;
+
 /**
  * GET /api/admin/bookings
  * Get all bookings for a specific hotel
@@ -32,9 +45,9 @@ exports.getAllBookings = {
   query: Joi.object({
     hotelId: hotelIdSchema,
     status: Joi.string()
-      .valid('pending', 'confirmed', 'checked in', 'completed', 'cancelled')
+      .valid(...bookingStatuses)
       .messages({
-        'any.only': 'status must be one of: pending, confirmed, checked in, completed, cancelled',
+        'any.only': bookingStatusMessage,
       }),
     page: Joi.number().integer().min(1).default(1).messages({
       'number.base': 'page must be a number',
@@ -82,10 +95,10 @@ exports.updateBookingStatus = {
   }).required(),
   body: Joi.object({
     status: Joi.string()
-      .valid('pending', 'confirmed', 'checked in', 'completed', 'cancelled')
+      .valid(...bookingStatuses)
       .required()
       .messages({
-        'any.only': 'status must be one of: pending, confirmed, checked in, completed, cancelled',
+        'any.only': bookingStatusMessage,
         'any.required': 'status is required',
       }),
   }).required(),

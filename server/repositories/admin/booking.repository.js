@@ -62,13 +62,13 @@ class AdminBookingRepository {
 
   /**
    * Update booking status for a specific hotel
-   * Updates status to 'checked in' or 'completed' based on current date
+   * Updates status to 'checked_in' or 'completed' based on current date
    */
   async updateStatusByDates(hotelId) {
     return await Bookings.update(
       {
         status: sequelize.literal(`CASE
-          WHEN (CURRENT_DATE() BETWEEN check_in_date AND check_out_date) THEN 'checked in'
+          WHEN (CURRENT_DATE() BETWEEN check_in_date AND check_out_date) THEN 'checked_in'
           WHEN CURRENT_DATE() > check_out_date THEN 'completed'
           ELSE status
           END`),
@@ -77,7 +77,7 @@ class AdminBookingRepository {
         where: {
           hotel_id: hotelId,
           status: {
-            [Op.ne]: 'cancelled',
+            [Op.in]: ['confirmed', 'checked_in'],
           },
         },
       }

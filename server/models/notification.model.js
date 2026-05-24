@@ -42,6 +42,7 @@ module.exports = function (sequelize, DataTypes) {
           'booking_cancelled',
           'booking_completed',
           'booking_status_update',
+          'booking_expired',
           'payment_success',
           'payment_failed',
           'payment_refund',
