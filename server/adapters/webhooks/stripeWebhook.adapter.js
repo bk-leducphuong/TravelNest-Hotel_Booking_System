@@ -51,7 +51,7 @@ class StripeWebhookAdapter {
   /**
    * Log webhook event for idempotency and audit trail
    */
-  async logEvent(eventId, eventType, payload) {
+  async logEvent(eventId, eventType, payload, status = 'processed') {
     try {
       await this.eventLogRepository.create({
         eventId,
@@ -59,6 +59,7 @@ class StripeWebhookAdapter {
         provider: 'stripe',
         payload: JSON.stringify(payload),
         processedAt: new Date(),
+        status,
       });
     } catch (error) {
       logger.error('Error logging webhook event:', error);
@@ -82,6 +83,8 @@ class StripeWebhookAdapter {
       status: paymentIntent.status,
       // Business context from metadata
       bookingCode: metadata.booking_code,
+      bookingId: metadata.booking_id,
+      transactionId: metadata.transaction_id,
       hotelId: metadata.hotel_id,
       buyerId: metadata.buyer_id,
       bookedRooms: metadata.booked_rooms ? JSON.parse(metadata.booked_rooms) : [],
@@ -112,6 +115,8 @@ class StripeWebhookAdapter {
       failureMessage: paymentIntent.last_payment_error?.message,
       // Business context
       bookingCode: metadata.booking_code,
+      bookingId: metadata.booking_id,
+      transactionId: metadata.transaction_id,
       hotelId: metadata.hotel_id,
       buyerId: metadata.buyer_id,
       paymentMethodId: paymentIntent.payment_method,

@@ -8,6 +8,7 @@ import axios from 'axios'
 import { useToast } from 'vue-toastification'
 import { mapActions, mapGetters } from 'vuex'
 import errorHandler from '@/request/errorHandler'
+import { getFirstImageUrl } from '@/utils/images'
 
 export default {
   components: {
@@ -78,7 +79,8 @@ export default {
     },
     serverHost() {
       return import.meta.env.VITE_SERVER_HOST
-    }
+    },
+    getFirstImageUrl
   },
   async mounted() {
     this.isLoading = true
@@ -122,8 +124,8 @@ export default {
                   <div class="room__photo--element">
                     <div class="room__image">
                       <img
-                        v-if="room.image_urls"
-                        :src="JSON.parse(room.image_urls)[0]"
+                        v-if="getFirstImageUrl(room.image_urls)"
+                        :src="getFirstImageUrl(room.image_urls)"
                         alt="phong"
                       />
                       <img

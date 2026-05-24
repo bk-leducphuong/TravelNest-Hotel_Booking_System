@@ -4,6 +4,7 @@ import { mapGetters } from 'vuex'
 import axios from 'axios'
 import { useToast } from 'vue-toastification'
 import errorHandler from '@/request/errorHandler';
+import { getFirstImageUrl, getImageUrl } from '@/utils/images'
 
 export default {
   components: {
@@ -61,7 +62,9 @@ export default {
     },
     editReview(bookingCode, hotelId, hotelName) {
       this.toast.info('Coming soon')
-    }
+    },
+    getFirstImageUrl,
+    getImageUrl
   },
   async mounted() {
     await this.getAllReviews()
@@ -73,7 +76,7 @@ export default {
   <div class="review-dashboard">
     <div class="left-container">
       <div class="profile-section">
-        <img v-if="getUserInformation" :src="getUserInformation.profile_picture_url" alt="Profile" class="profile-image" />
+        <img v-if="getUserInformation" :src="getImageUrl(getUserInformation.profile_picture_url)" alt="Profile" class="profile-image" />
         <div>
           <h2 class="profile-name" v-if="getUserInformation">{{ getUserInformation.username }}</h2>
           <a class="edit-profile" @click="this.$router.push('/account-settings/personal-information')">Edit your profile</a>
@@ -110,7 +113,7 @@ export default {
       <div class="review-card" v-for="(review, index) in reviews" :key="index">
         <div style="display: flex; gap: 16px; align-items: start">
           <img
-            :src="JSON.parse(review.hotel.image_urls)[0]"
+            :src="getFirstImageUrl(review.hotel.image_urls)"
             alt="Property"
             class="property-image"
           />

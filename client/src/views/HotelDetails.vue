@@ -8,11 +8,13 @@ import { useToast } from 'vue-toastification'
 import Loading from 'vue-loading-overlay'
 import 'vue-loading-overlay/dist/css/index.css'
 import { HotelService } from '@/services/hotel.service'
+import { getImagePath, getImageUrl } from '@/utils/images'
 
 // import ReviewForm from '@/components/review/ReviewForm.vue'
 import ReviewValidation from '@/components/review/ReviewValidation.vue'
 
 import errorHandler from '@/request/errorHandler'
+import { HoldService } from '@/services/hold.service'
 
 export default {
   components: {
@@ -71,6 +73,9 @@ export default {
     ...mapGetters('search', ['getSearchData']),
     guestDetails() {
       return `${this.adults} người lớn · ${this.children} trẻ em · ${this.rooms} phòng`
+    },
+    totalGuests() {
+      return this.toCount(this.adults, 1) + this.toCount(this.children, 0)
     },
     displayedThumbnails() {
       return this.hotelImages.slice(3, 3 + this.initialThumbnailCount)
@@ -135,6 +140,10 @@ export default {
         return []
       }
     },
+    toCount(value, fallback = 0) {
+      const count = parseInt(value, 10)
+      return Number.isFinite(count) ? count : fallback
+    },
     normalizeRoom(room) {
       const roomAmenities = this.toArray(room.roomAmenities)
         .map((amenity) => (typeof amenity === 'string' ? amenity : amenity.name))
@@ -158,7 +167,7 @@ export default {
       return {
         ...review,
         review_id: review.id,
-        profile_picture_url: review.user?.profilePictureUrl || '',
+        profile_picture_url: getImageUrl(review.user?.profilePictureUrl),
         username: review.user?.firstName || 'Khách',
         country: review.user?.country,
         created_at: review.createdAt,
@@ -224,7 +233,8 @@ export default {
         this.hotelImages = (details.images || [])
           .slice()
           .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
-          .map((image) => image.url)
+          .map((image) => getImageUrl(getImagePath(image)))
+          .filter(Boolean)
       } catch (error) {
         errorHandler(error)
       }
@@ -280,8 +290,8 @@ export default {
         const response = await HotelService.searchAvailableRooms(this.hotel_id, {
           checkInDate: this.checkInDate,
           checkOutDate: this.checkOutDate,
-          numberOfRooms: this.rooms,
-          numberOfGuests: this.adults + this.children
+          numberOfRooms: this.toCount(this.rooms, 1),
+          numberOfGuests: this.totalGuests
         })
 
         // update search data in store
@@ -341,23 +351,39 @@ export default {
           totalPrice: this.totalPriceSelectedRooms,
           totalRooms: this.totalSelectedRooms,
           selectedRooms: this.selectedRooms,
-          numberOfGuests: this.adults + this.children,
+          adults: this.toCount(this.adults, 1),
+          children: this.toCount(this.children, 0),
+          numberOfGuests: this.totalGuests,
           checkInDate: this.getSearchData.checkInDate,
           checkOutDate: this.getSearchData.checkOutDate,
           numberOfDays: this.getSearchData.numberOfDays
         }
 
-        this.booking(bookingInfor)
+        try {
+          const holdResponse = await HoldService.createHold({
+            hotelId: this.hotel_id,
+            checkInDate: this.getSearchData.checkInDate,
+            checkOutDate: this.getSearchData.checkOutDate,
+            numberOfGuests: this.totalGuests,
+            rooms: this.selectedRooms.map((room) => ({
+              roomId: room.room_id,
+              quantity: room.roomQuantity
+            })),
+            currency: 'USD'
+          })
 
-        //TODO: check whether this room is available or not
-        // if not available, redirect back to the room selection page
-        const isAvailable = await this.checkRoomAvailability()
-        if (!isAvailable) {
-          this.toast.error('Phòng đã được đặt hết, vui lòng chọn phòng khác!')
-          return
-        } else {
-          // continue if room is available
+          this.booking({
+            ...bookingInfor,
+            hold: holdResponse.data,
+            holdId: holdResponse.data.holdId,
+            totalPrice: holdResponse.data.totalPrice,
+            priceBreakdown: holdResponse.data.priceBreakdown,
+            cancellationPolicy: holdResponse.data.cancellationPolicy
+          })
+
           this.$router.push('/book')
+        } catch (error) {
+          errorHandler(error)
         }
       }
     },
@@ -372,9 +398,9 @@ export default {
       this.updateCheckInDate(this.checkInDate)
       this.updateCheckOutDate(this.checkOutDate)
       this.updateNumberOfDays(this.numberOfDays)
-      this.updateAdults(this.adults)
-      this.updateRooms(this.rooms)
-      this.updateChildren(this.children)
+      this.updateAdults(this.toCount(this.adults, 1))
+      this.updateRooms(this.toCount(this.rooms, 1))
+      this.updateChildren(this.toCount(this.children, 0))
     },
     calculateDistance(lat2, lon2) {
       const toRadians = (degrees) => degrees * (Math.PI / 180)
@@ -419,9 +445,9 @@ export default {
           ' ' +
           checkOutDate
       }
-      this.children = this.getSearchData.children
-      this.adults = this.getSearchData.adults
-      this.rooms = this.getSearchData.rooms
+      this.children = this.toCount(this.getSearchData.children, 0)
+      this.adults = this.toCount(this.getSearchData.adults, 1)
+      this.rooms = this.toCount(this.getSearchData.rooms, 1)
       this.numberOfDays = this.getSearchData.numberOfDays
       this.checkInDate = this.getSearchData.checkInDate
       // this.checkOutDate = this.getSearchData.checkOutDate
@@ -719,7 +745,7 @@ export default {
             </td>
             <td>
               <div class="price">
-                {{ parseInt(room.price_per_night).toLocaleString('vi-VN') }}
+                {{ parseInt(room.price_per_night).toLocaleString('en-US') }}
               </div>
               <div class="tax-info">Đã bao gồm thuế và phí</div>
             </td>
@@ -733,7 +759,7 @@ export default {
               <select @change="handleRoomSelection($event, room)">
                 <option value="0" selected>0</option>
                 <option v-for="n in room.available_rooms" :key="n" :value="n">
-                  {{ n }} (VND {{ parseInt(n * room.price_per_night).toLocaleString('vi-VN') }})
+                  {{ n }} (USD {{ parseInt(n * room.price_per_night).toLocaleString('en-US') }})
                 </option>
               </select>
             </td>
@@ -742,7 +768,7 @@ export default {
                 <div class="booking-summary-rooms-and-price">
                   {{ totalSelectedRooms }} Phòng
                   <div class="total-price" style="font-size: 20px">
-                    VND {{ totalPriceSelectedRooms.toLocaleString('vi-VN') }}
+                    USD {{ totalPriceSelectedRooms.toLocaleString('en-US') }}
                   </div>
                 </div>
                 <button @click="processBooking">Tôi sẽ đặt</button>

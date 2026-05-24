@@ -19,6 +19,7 @@ const searchRepository = require('../repositories/search.repository');
 const destinationRepository = require('../repositories/destination.repository');
 const imageRepository = require('../repositories/image.repository');
 const searchLogRepository = require('../repositories/mongodb/search_log.repository');
+const userRepository = require('../repositories/user.repository');
 const ApiError = require('../utils/ApiError');
 const logger = require('../config/logger.config');
 const redisClient = require('../config/redis.config');
@@ -220,7 +221,7 @@ class SearchService {
    * @param {Object} params - Search parameters (already validated by middleware)
    * @returns {Promise<Object>} Search results with pagination
    */
-  async searchHotels(params) {
+  async searchHotels(params, userId = null) {
     const startTime = Date.now();
 
     try {
@@ -283,6 +284,8 @@ class SearchService {
         candidateHotels.length,
         startTime
       );
+
+      await this._attachFavoriteStatus(response, userId);
 
       logger.info(
         {
@@ -562,6 +565,34 @@ class SearchService {
         },
       },
     };
+  }
+
+  /**
+   * Attach authenticated user's favorite status to the hotels returned on this page.
+   *
+   * @private
+   */
+  async _attachFavoriteStatus(response, userId) {
+    const hotels = response?.data?.hotels || [];
+
+    if (hotels.length === 0) {
+      return;
+    }
+
+    if (!userId) {
+      hotels.forEach((hotel) => {
+        hotel.is_favorite = false;
+      });
+      return;
+    }
+
+    const hotelIds = hotels.map((hotel) => hotel.hotel_id).filter(Boolean);
+    const favoriteHotelIds = await userRepository.findFavoriteHotelIds(userId, hotelIds);
+    const favoriteHotelIdSet = new Set(favoriteHotelIds.map((hotelId) => Number(hotelId)));
+
+    hotels.forEach((hotel) => {
+      hotel.is_favorite = favoriteHotelIdSet.has(Number(hotel.hotel_id));
+    });
   }
 
   /**

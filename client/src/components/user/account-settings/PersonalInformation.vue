@@ -1,6 +1,7 @@
 <script>
 import axios from 'axios';
 import { useToast } from 'vue-toastification'
+import { getImageUrl } from '@/utils/images'
 export default {
   setup() {
     const toast = useToast()
@@ -175,7 +176,8 @@ export default {
       this.isAvatarEdit = false;
       this.avatarFile = '';
       this.uploadAvatarImage = '';
-    }
+    },
+    getImageUrl
   },
   async mounted() {
     await this.getUserInfo()
@@ -195,7 +197,7 @@ export default {
       <div class="popup-body">
         <div class="avatar-circle">
           <img :src="uploadAvatarImage" v-if="uploadAvatarImage" alt="avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;"/>
-          <img v-if="!uploadAvatarImage" :src="avatar" alt="avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;"/>
+          <img v-if="!uploadAvatarImage" :src="getImageUrl(avatar)" alt="avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;"/>
         </div>
         <label for="fileInput" class="upload-btn">Chọn tập tin</label>
         <input v-on:change="handleFileUpload" type="file" id="fileInput" class="file-input" accept="image/*" />
@@ -228,7 +230,7 @@ export default {
             "
             @click="isAvatarEdit = true"
           >
-            <img :src="this.avatar" alt="avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;"/>
+            <img :src="getImageUrl(this.avatar)" alt="avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;"/>
         </div>
         </div>
         <!-- name  -->

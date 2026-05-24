@@ -1,5 +1,13 @@
 <template>
-  <LoadingPopup :isLoading="isLoading" :startTitle="startTitle" :endTitle="endTitle" :isLoaded="isLoaded" :redirectUrl="redirectUrl" :fail="fail"/>
+  <LoadingPopup
+    :isLoading="isLoading"
+    :startTitle="startTitle"
+    :endTitle="endTitle"
+    :isLoaded="isLoaded"
+    :redirectUrl="redirectUrl"
+    :fail="fail"
+    :reloadOnFail="false"
+  />
   <div class="payment-form">
     <form @submit.prevent="handleSubmit">
       <div id="card-element"></div>
@@ -19,15 +27,16 @@
 
 <script>
 import { loadStripe } from '@stripe/stripe-js'
-import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
-import { mapActions, mapGetters } from 'vuex'
+import { mapGetters } from 'vuex'
 import LoadingPopup from '../LoadingPopup.vue'
+import { BookingService } from '@/services/booking.service'
 
 export default {
   components: {
     LoadingPopup
   },
+  emits: ['booking-created'],
   props: {
     bookingInfor: {
       type: Object,
@@ -54,6 +63,8 @@ export default {
       endTitle: 'Thanh toán thành công!',
       redirectUrl: '',
       fail: false,
+      idempotencyKey: uuidv4(),
+      createdBooking: null,
     }
   },
   computed: {
@@ -79,95 +90,86 @@ export default {
     })
   },
   methods: {
-    ...mapActions('book', ['checkRoomAvailability']),
     async handleSubmit() {
       try {
-        // check whether this room is available or not
-        // if not available, redirect back to the room selection page
-        const isAvailable = await this.checkRoomAvailability()
-        if (!isAvailable) {
-          this.$toast.error('Phòng đã được đặt hết, vui lòng chọn phòng khác!')
-          this.$router.place({ path: '/hotels', params: { hotel_id: this.getBookingInfor.hotel.hotel_id } })
-          return
-        } else {
-          this.isLoading = true
-          // if available, book the room
-          this.processing = true
-          this.paymentStatus = null
+        this.isLoading = true
+        this.processing = true
+        this.fail = false
+        this.isLoaded = false
+        this.paymentStatus = null
 
-          // Create payment method
-          const { paymentMethod, error } = await this.stripe.createPaymentMethod({
-            type: 'card',
-            card: this.card,
-            billing_details: {
-              email: this.userInfor.email,
-              name: this.userInfor.fullName,
-              phone: this.userInfor.phoneNumber
-            }
-          })
+        if (!this.bookingInfor.holdId) {
+          throw new Error('Your room hold is missing. Please select the room again.')
+        }
 
-          if (error) {
-            throw new Error(error.message)
-          }
-
-          const bookingCode = uuidv4() // ⇨ '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
-
-          // Send payment method ID and email to server
-          const response = await axios.post(
-            `${import.meta.env.VITE_SERVER_HOST}/api/payment`,
+        const bookingResponse =
+          this.createdBooking ||
+          (await BookingService.createBooking(
             {
-              paymentMethodId: paymentMethod.id,
-              amount: this.bookingInfor.totalPrice, // Amount in cents
-              currency: 'vnd', // default
-              bookingDetails: {
-                bookingCode: bookingCode,
-                hotel_id: this.bookingInfor.hotel.hotel_id,
-                checkInDate: this.bookingInfor.checkInDate, 
-                checkOutDate: this.bookingInfor.checkOutDate,
-                bookedRooms: this.bookingInfor.selectedRooms,
-                numberOfGuests: this.bookingInfor.numberOfGuests
+              holdId: this.bookingInfor.holdId,
+              guestDetails: {
+                fullName: this.userInfor.fullName,
+                email: this.userInfor.email,
+                phoneNumber: this.userInfor.phoneNumber
               }
             },
-            { withCredentials: true }
+            this.idempotencyKey
+          ))
+
+        this.createdBooking = bookingResponse
+        this.$emit('booking-created', bookingResponse.data)
+        const booking = bookingResponse.data
+        const intentResponse = await BookingService.createBookingPaymentIntent(booking.bookingId)
+        const result = intentResponse.data
+
+        if (result.error) {
+          this.fail = true
+          throw new Error(result.error)
+        }
+
+        // Handle the result
+        if (result.clientSecret) {
+          // Confirm the payment with Stripe.js
+          const { error: confirmError } = await this.stripe.confirmCardPayment(
+            result.clientSecret,
+            {
+              payment_method: {
+                card: this.card,
+                billing_details: {
+                  email: this.userInfor.email,
+                  name: this.userInfor.fullName,
+                  phone: this.userInfor.phoneNumber
+                }
+              }
+            }
           )
 
-          const result = await response.data
-
-          if (result.error) {
+          if (confirmError) {
             this.fail = true
-            throw new Error(result.error)
+            throw new Error(confirmError.message)
           }
 
-          // Handle the result
-          if (result.clientSecret) {
-            // Confirm the payment with Stripe.js
-            const { error: confirmError } = await this.stripe.confirmCardPayment(
-              result.clientSecret
-            )
+          this.isLoaded = true
+          this.isLoading = false
 
-            if (confirmError) {
-              this.fail = true
-              throw new Error(confirmError.message)
-            }
+          setTimeout(() => {
+            this.$router.replace({
+              path: '/book/complete',
+              query: { bookingCode: result.bookingCode || booking.bookingCode }
+            })
+          }, 1000)
 
-            this.isLoaded = true
-            this.isLoading = false
-
-            setTimeout(() => {
-              this.$router.replace({ path: '/book/complete', query: { bookingCode: bookingCode } })
-            }, 1000)
-
-            // Reset form
-            this.email = ''
-            this.card.clear()
-          }
+          // Reset form
+          this.email = ''
+          this.card.clear()
         }
       } catch (err) {
         this.paymentStatus = {
           type: 'error',
-          message: err.message
+          message: err.response?.data?.message || err.response?.data?.error?.message || err.message
         }
         this.fail = true
+        this.isLoading = false
       } finally {
         this.processing = false
       }

@@ -17,7 +17,11 @@
               alt="hotel-image"
             />
             <!-- Fallback: background-image on .hotel-image handles empty -->
-            <SavedHotelIcon :hotel-id="hotel.hotel_id" />
+            <SavedHotelIcon
+              :hotel-id="hotel.hotel_id"
+              :initial-is-favorite="hotel.is_favorite ?? hotel.isFavorite ?? false"
+              :use-initial-favorite-status="true"
+            />
           </div>
           <div class="hotel-content">
             <div class="rating-row">
@@ -45,8 +49,8 @@
 
             <div class="price-section" v-if="hotel.min_price_for_dates ?? hotel.lowestPrice">
               <span class="current-price"
-                >VND
-                {{ (hotel.min_price_for_dates ?? hotel.lowestPrice ?? 0).toLocaleString('vi-VN') }}</span
+                >USD
+                {{ (hotel.min_price_for_dates ?? hotel.lowestPrice ?? 0).toLocaleString('en-US') }}</span
               >
               <span class="price-info">Đã bao gồm thuế và phí</span>
             </div>
@@ -73,6 +77,7 @@
 
 <script>
 import SavedHotelIcon from '@/components/SavedHotelIcon.vue'
+import { getFirstImageUrl, getImageUrl } from '@/utils/images'
 import 'leaflet/dist/leaflet.css'
 // load marker icons
 import blueMarkerIcon from "leaflet/dist/images/marker-icon.png";
@@ -127,13 +132,8 @@ export default {
   },
   methods: {
     getHotelImage(hotel) {
-      if (hotel.primary_image_url) return hotel.primary_image_url
-      try {
-        const urls = typeof hotel.image_urls === 'string' ? JSON.parse(hotel.image_urls) : hotel.image_urls
-        return Array.isArray(urls) && urls[0] ? urls[0] : null
-      } catch {
-        return null
-      }
+      if (hotel.primary_image_url) return getImageUrl(hotel.primary_image_url)
+      return getFirstImageUrl(hotel.image_urls)
     },
     closeMapPopup() {
       this.$emit('close-map-popup')

@@ -1,57 +1,14 @@
 const holdRepository = require('@repositories/hold.repository');
 const inventoryService = require('@services/inventory.service');
-const roomInventoryRepository = require('@repositories/room_inventory.repository');
 const sequelize = require('@config/database.config');
 const logger = require('@config/logger.config');
 const ApiError = require('@utils/ApiError');
 const redisClient = require('@config/redis.config');
 const { scheduleExpireHold } = require('@utils/bullmq.utils');
+const pricingService = require('@services/pricing.service');
 
 /** Default hold duration in minutes (e.g. time to complete payment) */
 const HOLD_DURATION_MINUTES = 15;
-
-/**
- * Compute total price for given rooms over date range from inventory
- * @param {Array<{roomId: string, quantity: number}>} rooms
- * @param {string} checkInDate
- * @param {string} checkOutDate
- * @returns {Promise<number>} totalPrice
- */
-async function computeTotalPrice(rooms, checkInDate, checkOutDate) {
-  const roomIds = rooms.map((r) => r.roomId);
-  const quantityByRoom = new Map(rooms.map((r) => [r.roomId, r.quantity ?? 1]));
-
-  const inventories = await roomInventoryRepository.findByRoomsAndDateRange(
-    roomIds,
-    checkInDate,
-    checkOutDate
-  );
-
-  let total = 0;
-  const priceByRoomDate = new Map();
-  for (const inv of inventories) {
-    const key = `${inv.room_id}_${(inv.date.toISOString ? inv.date.toISOString() : inv.date).split('T')[0]}`;
-    const price = parseFloat(inv.price_per_night) || 0;
-    priceByRoomDate.set(key, price);
-  }
-
-  const start = typeof checkInDate === 'string' ? new Date(checkInDate) : checkInDate;
-  const end = typeof checkOutDate === 'string' ? new Date(checkOutDate) : checkOutDate;
-  const current = new Date(start);
-
-  while (current < end) {
-    const dateStr = current.toISOString().split('T')[0];
-    for (const r of rooms) {
-      const qty = r.quantity ?? 1;
-      const key = `${r.roomId}_${dateStr}`;
-      const price = priceByRoomDate.get(key) || 0;
-      total += price * qty;
-    }
-    current.setDate(current.getDate() + 1);
-  }
-
-  return Math.round(total * 100) / 100;
-}
 
 /**
  * Hold Service
@@ -78,7 +35,6 @@ class HoldService {
       checkOutDate,
       numberOfGuests,
       rooms,
-      currency = 'USD',
     } = data;
 
     if (!rooms || !Array.isArray(rooms) || rooms.length === 0) {
@@ -117,7 +73,12 @@ class HoldService {
       );
     }
 
-    const totalPrice = await computeTotalPrice(rooms, checkInDate, checkOutDate);
+    const quote = await pricingService.quote({
+      hotelId,
+      rooms,
+      checkInDate,
+      checkOutDate,
+    });
     const expiresAt = new Date(Date.now() + HOLD_DURATION_MINUTES * 60 * 1000);
 
     const transaction = await sequelize.transaction();
@@ -133,8 +94,14 @@ class HoldService {
               ? checkOutDate
               : checkOutDate.toISOString().split('T')[0],
           numberOfGuests: numberOfGuests ?? 1,
-          totalPrice,
-          currency,
+          totalPrice: quote.totalPrice,
+          subtotal: quote.subtotal,
+          taxAmount: quote.taxAmount,
+          serviceFeeAmount: quote.serviceFeeAmount,
+          platformCommissionAmount: quote.platformCommissionAmount,
+          currency: quote.currency,
+          priceBreakdown: quote,
+          cancellationPolicySnapshot: quote.cancellationPolicy,
           expiresAt,
           rooms: rooms.map((r) => ({
             roomId: r.roomId,
@@ -174,8 +141,14 @@ class HoldService {
         checkOutDate: hold.check_out_date,
         numberOfGuests: hold.number_of_guests,
         quantity: hold.quantity,
+        subtotal: quote.subtotal,
+        taxAmount: quote.taxAmount,
+        serviceFeeAmount: quote.serviceFeeAmount,
+        platformCommissionAmount: quote.platformCommissionAmount,
         totalPrice: parseFloat(hold.total_price),
         currency: hold.currency,
+        priceBreakdown: quote,
+        cancellationPolicy: quote.cancellationPolicy,
         status: hold.status,
         expiresAt: hold.expires_at,
         rooms: holdRooms.map((hr) => ({

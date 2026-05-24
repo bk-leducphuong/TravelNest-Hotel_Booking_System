@@ -4,6 +4,7 @@ import axios from 'axios'
 import { mapGetters } from 'vuex'
 import { useToast } from 'vue-toastification'
 import LanguageSwitch from '@/components/LanguageSwitch.vue'
+import { getFirstImageUrl } from '@/utils/images'
 export default {
   components: {
     LanguageSwitch
@@ -136,7 +137,9 @@ export default {
     },
     serverHost() {
       return import.meta.env.VITE_SERVER_HOST
-    }
+    },
+    getFirstImageUrl
+    
   },
   mounted() {
     this.getNotifiactions()
@@ -154,7 +157,7 @@ export default {
           <div class="avatar">
             <img
               v-if="getCurrentManagingHotelInformation.image_urls"
-              :src="JSON.parse(getCurrentManagingHotelInformation.image_urls)[0]"
+              :src="getFirstImageUrl(getCurrentManagingHotelInformation.image_urls)"
               alt="avatar"
               style="width: 45px; height: 45px; border-radius: 10px; object-fit: cover"
             />

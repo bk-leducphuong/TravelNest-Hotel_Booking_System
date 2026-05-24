@@ -21,7 +21,7 @@
 
         <div class="detail-item">
           <label for="Currency" style="width: 20%">Currency</label>
-          <div class="value">VND</div>
+          <div class="value">USD</div>
           <button class="edit-button">Edit</button>
         </div>
       </div>

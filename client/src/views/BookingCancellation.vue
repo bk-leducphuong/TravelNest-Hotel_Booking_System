@@ -4,6 +4,7 @@ import { mapGetters } from 'vuex'
 import LoadingPopup from '@/components/LoadingPopup.vue';
 import errorHandler from '@/request/errorHandler.js'
 import axios from 'axios';
+import { getFirstImageUrl } from '@/utils/images'
 
 export default {
   components: {
@@ -58,7 +59,8 @@ export default {
         errorHandler(error)
         this.fail = true
       }   
-    }
+    },
+    getFirstImageUrl
   }
 }
 </script>
@@ -110,7 +112,7 @@ export default {
     <div class="cancel-right">
       <div class="booking-summary">
         <img
-          :src="JSON.parse(getBookingInformation.hotel.image_urls)[0]"
+          :src="getFirstImageUrl(getBookingInformation.hotel.image_urls)"
           alt="Room image"
           class="room-image"
         />
@@ -143,10 +145,10 @@ export default {
       <div class="pricing">
         <p>
           <span>Your booking:</span>
-          <span>VND {{ parseInt(getBookingInformation.totalPrice).toLocaleString('vi-VN') }}</span>
+          <span>USD {{ parseInt(getBookingInformation.totalPrice).toLocaleString('en-US') }}</span>
         </p>
-        <p><span>Cancellation fee:</span><span>VND 0</span></p>
-        <p><strong>You'll be charged:</strong><span>VND 0</span></p>
+        <p><span>Cancellation fee:</span><span>USD 0</span></p>
+        <p><strong>You'll be charged:</strong><span>USD 0</span></p>
       </div>
       <div class="cancellation-policy">
         <h3>Cancellation policy</h3>

@@ -29,11 +29,12 @@ module.exports = function (sequelize, DataTypes) {
       },
       room_id: {
         type: DataTypes.UUID,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: 'rooms',
           key: 'id',
         },
+        comment: 'Legacy primary room pointer. New bookings use booking_rooms.',
       },
       hold_id: {
         type: DataTypes.UUID,
@@ -72,6 +73,26 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
       },
+      subtotal: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0,
+      },
+      tax_amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0,
+      },
+      service_fee_amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0,
+      },
+      platform_commission_amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0,
+      },
       currency: {
         type: DataTypes.STRING(3),
         allowNull: false,
@@ -80,7 +101,10 @@ module.exports = function (sequelize, DataTypes) {
       status: {
         type: DataTypes.ENUM(
           'pending',
+          'pending_payment',
           'confirmed',
+          'payment_failed',
+          'expired',
           'checked_in',
           'completed',
           'cancelled',
@@ -91,6 +115,34 @@ module.exports = function (sequelize, DataTypes) {
       },
       special_requests: {
         type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      guest_details: {
+        type: DataTypes.JSON,
+        allowNull: true,
+      },
+      price_breakdown: {
+        type: DataTypes.JSON,
+        allowNull: true,
+      },
+      cancellation_policy_snapshot: {
+        type: DataTypes.JSON,
+        allowNull: true,
+      },
+      payment_due_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      confirmed_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      cancelled_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      expires_at: {
+        type: DataTypes.DATE,
         allowNull: true,
       },
       created_at: {
@@ -176,9 +228,25 @@ module.exports = function (sequelize, DataTypes) {
       foreignKey: 'booking_id',
       as: 'transaction',
     });
+    Booking.hasMany(models.booking_rooms, {
+      foreignKey: 'booking_id',
+      as: 'bookingRooms',
+    });
     Booking.hasOne(models.holds, {
       foreignKey: 'booking_id',
       as: 'hold',
+    });
+    Booking.hasMany(models.refunds, {
+      foreignKey: 'booking_id',
+      as: 'refunds',
+    });
+    Booking.hasMany(models.ledger_entries, {
+      foreignKey: 'booking_id',
+      as: 'ledger_entries',
+    });
+    Booking.hasOne(models.payout_items, {
+      foreignKey: 'booking_id',
+      as: 'payout_item',
     });
   };
 

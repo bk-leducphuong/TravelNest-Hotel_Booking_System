@@ -6,6 +6,7 @@ import AdminHeader from '@/components/admin/AdminHeader.vue'
 import RoomBookingChart from '@/components/admin/chart/RoomBookingChart.vue'
 import SalesRevenue from '@/components/admin/chart/SalesRevenue.vue'
 import errorHandler from '@/request/errorHandler'
+import { getImageUrl } from '@/utils/images'
 
 export default {
   components: {
@@ -123,7 +124,8 @@ export default {
       } catch (error) {
         errorHandler(error)
       }
-    }
+    },
+    getImageUrl
   },
   mounted() {
     this.calculateDate()
@@ -199,7 +201,7 @@ export default {
                   :key="customer.new_customers"
                 >
                   <div class="avatar avatar-ab">
-                    <img :src="customer.profile_picture_url" alt="profile_picture_url" />
+                    <img :src="getImageUrl(customer.profile_picture_url)" alt="profile_picture_url" />
                   </div>
                   <div class="customer-info">
                     <div class="customer-name">{{ customer.username }}</div>

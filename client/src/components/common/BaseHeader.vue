@@ -8,7 +8,7 @@
         </div>
         <div class="inner-login">
           <ul>
-            <li><strong>VND</strong></li>
+            <li><strong>USD</strong></li>
             <li @click="openLanguagePopup()">
               <img
                 v-if="getUserLanguage"
@@ -31,7 +31,7 @@
       </div>
       <div class="inner-login">
         <ul>
-          <li><strong>VND</strong></li>
+          <li><strong>USD</strong></li>
           <li @click="openLanguagePopup()">
             <img
               v-if="getUserLanguage"

@@ -325,11 +325,14 @@ class NotificationService {
    * @param {Object} data - Payout data
    */
   async sendPayoutNotification(data) {
-    const { hotelId, transactionId, status, amount } = data;
+    const { hotelId, ownerId, payoutId, transactionId, status, amount } = data;
+    const relatedPayoutId = payoutId || transactionId;
 
     try {
-      const hotel = await this.getHotelWithOwner(hotelId);
-      if (!hotel?.hotel_owner_id) {
+      const hotel = ownerId ? null : await this.getHotelWithOwner(hotelId);
+      const receiverId = ownerId || hotel?.hotel_owner_id;
+
+      if (!receiverId) {
         logger.warn(`Hotel ${hotelId} not found or has no owner`);
         return null;
       }
@@ -340,21 +343,21 @@ class NotificationService {
           : NOTIFICATION_TYPES.PAYOUT_FAILED;
 
       const notification = await notificationRepository.createFromTemplate(
-        hotel.hotel_owner_id,
+        receiverId,
         notificationType,
         {
-          payoutId: transactionId,
+          payoutId: relatedPayoutId,
           amount,
           currency: 'USD',
         },
         {
-          relatedEntityType: RELATED_ENTITY_TYPES.TRANSACTION,
-          relatedEntityId: transactionId,
+          relatedEntityType: RELATED_ENTITY_TYPES.PAYOUT,
+          relatedEntityId: relatedPayoutId,
         }
       );
 
       await this.emitNotification(
-        `owner_${hotel.hotel_owner_id}`,
+        `owner_${receiverId}`,
         'payout:update',
         notification.toPublicJSON()
       );

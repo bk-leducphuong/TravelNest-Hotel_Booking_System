@@ -53,12 +53,28 @@ const createApp = async () => {
   initSocket(server);
   app.set('httpServer', server);
 
+  const normalizeOrigin = (origin) => origin && origin.replace(/\/$/, '');
+  const allowedOrigins = [
+    process.env.CLIENT_HOST,
+    process.env.ADMIN_CLIENT_HOST,
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+  ]
+    .map(normalizeOrigin)
+    .filter(Boolean);
+
   app.use(express.static('public'));
   app.use(
     cors({
-      origin: [process.env.CLIENT_HOST, process.env.ADMIN_CLIENT_HOST],
+      origin(origin, callback) {
+        if (!origin || allowedOrigins.includes(normalizeOrigin(origin))) {
+          return callback(null, true);
+        }
+
+        return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+      },
       methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE', 'PATCH'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'Idempotency-Key'],
       credentials: true,
     })
   );

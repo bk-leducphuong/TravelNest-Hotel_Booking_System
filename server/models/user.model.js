@@ -178,6 +178,22 @@ module.exports = function (sequelize, DataTypes) {
       foreignKey: 'user_id',
       as: 'auth_accounts',
     });
+    User.hasMany(models.connected_payment_accounts, {
+      foreignKey: 'user_id',
+      as: 'connected_payment_accounts',
+    });
+    User.hasMany(models.payouts, {
+      foreignKey: 'owner_id',
+      as: 'owner_payouts',
+    });
+    User.hasMany(models.ledger_entries, {
+      foreignKey: 'buyer_id',
+      as: 'buyer_ledger_entries',
+    });
+    User.hasMany(models.ledger_entries, {
+      foreignKey: 'owner_id',
+      as: 'owner_ledger_entries',
+    });
   };
 
   return User;

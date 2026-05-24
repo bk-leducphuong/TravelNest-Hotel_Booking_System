@@ -22,7 +22,18 @@ class UserService {
     if (!user) {
       throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
     }
-    return user;
+
+    const userData = user.toJSON();
+    const roles = userData.roles?.map((userRole) => userRole.role?.name).filter(Boolean) || [];
+
+    return {
+      ...userData,
+      full_name: user.full_name,
+      username: user.full_name,
+      profile_picture_url: null,
+      user_role: roles[0] || null,
+      roles,
+    };
   }
 
   /**

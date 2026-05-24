@@ -7,6 +7,7 @@ import { useToast } from 'vue-toastification'
 import Loading from 'vue-loading-overlay'
 import 'vue-loading-overlay/dist/css/index.css'
 import errorHandler from '@/request/errorHandler'
+import { getImagePath, getImageUrl, parseImageList } from '@/utils/images'
 
 export default {
   components: {
@@ -54,8 +55,8 @@ export default {
 
         this.rooms = this.rooms.map((room) => {
           // assign index for each photo
-          room.image_urls = JSON.parse(room.image_urls.toString()).map((url, index) => ({
-            url,
+          room.image_urls = parseImageList(room.image_urls).map((image, index) => ({
+            url: getImagePath(image),
             index
           }))
           return room
@@ -238,15 +239,16 @@ export default {
       } catch (error) {
         errorHandler(error)
       }
-    }
+    },
+    getImageUrl
   },
   async mounted() {
     await this.getAllRoomPhotos()
 
-    this.hotelPhotos = JSON.parse(this.getCurrentManagingHotelInformation.image_urls)
+    this.hotelPhotos = parseImageList(this.getCurrentManagingHotelInformation.image_urls)
     // assign index for each photo
-    this.hotelPhotos = this.hotelPhotos.map((url, index) => ({
-      url,
+    this.hotelPhotos = this.hotelPhotos.map((image, index) => ({
+      url: getImagePath(image),
       index
     }))
   }
@@ -282,7 +284,7 @@ export default {
             <div class="photo-grid">
               <div class="photo-cell" v-for="hotelPhoto in hotelPhotos" :key="hotelPhoto.index">
                 <div class="photo-container">
-                  <img :src="hotelPhoto.url" alt="Photo 1" />
+                  <img :src="getImageUrl(hotelPhoto.url)" alt="Photo 1" />
                   <label class="corner-checkbox">
                     <input
                       type="checkbox"
@@ -323,7 +325,7 @@ export default {
             <div class="photo-grid">
               <div class="photo-cell" v-for="roomPhoto in room.image_urls" :key="roomPhoto.index">
                 <div class="photo-container">
-                  <img :src="roomPhoto.url" alt="Photo 1" />
+                  <img :src="getImageUrl(roomPhoto.url)" alt="Photo 1" />
                   <label class="corner-checkbox">
                     <input
                       :value="roomPhoto.index"

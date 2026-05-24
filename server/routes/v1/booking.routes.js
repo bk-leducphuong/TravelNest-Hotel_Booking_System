@@ -1,6 +1,8 @@
 const express = require('express');
 const {
   getUserBookings,
+  createBooking,
+  createBookingPaymentIntent,
   getBookingById,
   getBookingByCode,
   cancelBooking,
@@ -14,6 +16,12 @@ const router = express.Router();
 router.use(authenticate);
 
 /**
+ * POST /api/bookings
+ * Create a pending-payment booking from an active hold.
+ */
+router.post('/', validate(bookingSchema.createBooking), createBooking);
+
+/**
  * GET /api/bookings
  * Get all bookings for authenticated user
  */
@@ -24,6 +32,16 @@ router.get('/', validate(bookingSchema.getUserBookings), getUserBookings);
  * Get booking by booking code
  */
 router.get('/code/:bookingCode', validate(bookingSchema.getBookingByCode), getBookingByCode);
+
+/**
+ * POST /api/bookings/:bookingId/payment-intent
+ * Create a Stripe PaymentIntent for a pending-payment booking.
+ */
+router.post(
+  '/:bookingId/payment-intent',
+  validate(bookingSchema.createBookingPaymentIntent),
+  createBookingPaymentIntent
+);
 
 /**
  * GET /api/bookings/:bookingId

@@ -1,7 +1,8 @@
 <script>
-import axios from 'axios'
 import { mapGetters } from 'vuex'
 import { useToast } from 'vue-toastification'
+import { UserService } from '@/services/user.service'
+
 export default {
   setup() {
     const toast = useToast()
@@ -11,60 +12,57 @@ export default {
     hotelId: {
       type: Number,
       required: true
+    },
+    initialIsFavorite: {
+      type: Boolean,
+      default: false
+    },
+    useInitialFavoriteStatus: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
     return {
-      isFavorite: false
+      isFavorite: this.initialIsFavorite
     }
   },
   computed: {
     ...mapGetters('auth', ['isUserAuthenticated'])
+  },
+  watch: {
+    initialIsFavorite(value) {
+      if (this.useInitialFavoriteStatus) {
+        this.isFavorite = value
+      }
+    }
   },
   methods: {
     async saveFavoriteHotel() {
       try {
         if (this.isUserAuthenticated) {
           if (this.isFavorite) {
-            this.deleteFavoriteHotel()
+            await this.deleteFavoriteHotel()
           } else {
-            const response = await axios.post(
-              `${import.meta.env.VITE_SERVER_HOST}/api/user/favorite-hotels/set-favorite-hotel`,
-              {
-                hotelId: this.hotelId
-              },
-              {
-                withCredentials: true
-              }
-            )
-            if (response.data.success) {
-              this.isFavorite = true
-            }
+            await UserService.addFavoriteHotel(this.hotelId)
+            this.isFavorite = true
           }
         }else {
           this.toast.error('Vui lòng đăng nhập để thêm vào danh sách yêu thích')
         }
       } catch (error) {
+        if (error?.response?.status === 409) {
+          this.isFavorite = true
+          return
+        }
         console.error(error)
       }
     },
     async checkFavoriteHotel() {
       if (this.isUserAuthenticated) {
         try {
-          const response = await axios.post(
-            `${import.meta.env.VITE_SERVER_HOST}/api/user/favorite-hotels/check-favorite-hotel`,
-            {
-              hotelId: this.hotelId
-            },
-            {
-              withCredentials: true
-            }
-          )
-          if (response.data.isFavorite) {
-            this.isFavorite = true
-          } else {
-            this.isFavorite = false
-          }
+          const response = await UserService.isFavoriteHotel(this.hotelId)
+          this.isFavorite = response?.data?.isFavorite ?? false
         } catch (error) {
           console.error(error)
         }
@@ -72,25 +70,17 @@ export default {
     },
     async deleteFavoriteHotel() {
       try {
-        const response = await axios.post(
-          `${import.meta.env.VITE_SERVER_HOST}/api/user/favorite-hotels/delete-favorite-hotel`,
-          {
-            hotelId: this.hotelId
-          },
-          {
-            withCredentials: true
-          }
-        )
-        if (response.data.success) {
-          this.isFavorite = false
-        }
+        await UserService.removeFavoriteHotel(this.hotelId)
+        this.isFavorite = false
       } catch (error) {
         console.error(error)
       }
     }
   },
   mounted() {
-    this.checkFavoriteHotel()
+    if (!this.useInitialFavoriteStatus) {
+      this.checkFavoriteHotel()
+    }
   }
 }
 </script>

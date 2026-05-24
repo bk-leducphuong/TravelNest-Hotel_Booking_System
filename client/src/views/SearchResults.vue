@@ -325,8 +325,8 @@
                 </div>
                 <div class="budget-range">
                   <p>
-                    <span id="min-value">VND 100.000</span> -
-                    <span id="max-value">VND 3.000.000+</span>
+                    <span id="min-value">USD 100.000</span> -
+                    <span id="max-value">USD 3.000.000+</span>
                   </p>
                   <div class="range-slider">
                     <input
@@ -490,7 +490,11 @@
                 @click="redirectToHotelDetails(hotel.hotel_id)"
               >
                 <div class="inner-img">
-                  <SavedHotelIcon :hotel-id="hotel.hotel_id" />
+                  <SavedHotelIcon
+                    :hotel-id="hotel.hotel_id"
+                    :initial-is-favorite="hotel.is_favorite ?? hotel.isFavorite ?? false"
+                    :use-initial-favorite-status="true"
+                  />
                   <img
                     v-if="hotel.primary_image_url"
                     :src="getImageUrl(hotel.primary_image_url)"
@@ -562,8 +566,8 @@
                       >
                       <br />
                       <span class="newPrice">
-                        VND
-                        {{ (hotel.min_price_for_dates ?? 0).toLocaleString('vi-VN') }}
+                        USD
+                        {{ (hotel.min_price_for_dates ?? 0).toLocaleString('en-US') }}
                       </span>
                       <br />
                       <span class="desc">Đã bao gồm thuế và phí</span>

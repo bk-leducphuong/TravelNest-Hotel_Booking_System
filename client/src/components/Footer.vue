@@ -60,7 +60,7 @@
     </div>
     <div class="language-selector">
       <span>
-        <button>VND</button>
+        <button>USD</button>
       </span>
     </div>
     <div class="footer-bottom">

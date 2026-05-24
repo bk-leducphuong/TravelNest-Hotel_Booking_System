@@ -62,6 +62,10 @@ export default {
     fail: {
       type: Boolean,
       required: false
+    },
+    reloadOnFail: {
+      type: Boolean,
+      default: true
     }
   },
   data() {
@@ -91,7 +95,9 @@ export default {
       if (newValue == true) {
         setTimeout(() => {
           this.openLoadingPopup = false
-          this.$router.go() // reload page
+          if (this.reloadOnFail) {
+            this.$router.go() // reload page
+          }
         }, 2000)
         // this.openLoadingPopup = false
       }

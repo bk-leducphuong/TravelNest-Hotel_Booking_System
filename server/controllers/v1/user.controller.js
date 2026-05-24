@@ -40,8 +40,6 @@ const updateCurrentUser = asyncHandler(async (req, res) => {
 
   // Map request fields to database fields
   const fieldMapping = {
-    name: 'full_name',
-    displayName: 'username',
     email: 'email',
     phoneNumber: 'phone_number',
     dateOfBirth: 'date_of_birth',
@@ -53,6 +51,12 @@ const updateCurrentUser = asyncHandler(async (req, res) => {
 
   // Build update object with mapped fields
   const mappedUpdateData = {};
+  if (typeof updateData.name === 'string') {
+    const [firstName, ...lastNameParts] = updateData.name.trim().split(/\s+/);
+    mappedUpdateData.first_name = firstName;
+    mappedUpdateData.last_name = lastNameParts.join(' ') || firstName;
+  }
+
   for (const [key, value] of Object.entries(updateData)) {
     if (fieldMapping[key]) {
       mappedUpdateData[fieldMapping[key]] = value;

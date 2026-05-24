@@ -11,6 +11,7 @@ const { seedAmenities } = require('./amenity.seed');
 const { seedHotels } = require('./hotel.seed');
 const { seedHotelAmenities } = require('./hotel_amenity.seed');
 const { seedHotelPolicies } = require('./hotel_policy.seed');
+const { seedHotelCancellationRules } = require('./hotel_cancellation_rule.seed');
 const { seedNearbyPlaces } = require('./nearby_place.seed');
 const { seedRooms } = require('./room.seed');
 const { seedRoomAmenities } = require('./room_amenity.seed');
@@ -178,7 +179,14 @@ async function seedAll() {
       })
     );
 
-    // 7. Seed Nearby Places (depends on hotels)
+    // 7. Seed Hotel Cancellation Rules (depends on hotels)
+    results.push(
+      await executeSeed('Hotel Cancellation Rules', seedHotelCancellationRules, {
+        clearExisting: options.clearExisting,
+      })
+    );
+
+    // 8. Seed Nearby Places (depends on hotels)
     results.push(
       await executeSeed('Nearby Places', seedNearbyPlaces, {
         minPlacesPerHotel: 3,
@@ -187,7 +195,7 @@ async function seedAll() {
       })
     );
 
-    // 8. Seed Rooms (depends on hotels)
+    // 9. Seed Rooms (depends on hotels)
     results.push(
       await executeSeed('Rooms', seedRooms, {
         roomsPerHotel: options.quick ? { min: 3, max: 5 } : { min: 3, max: 8 },
@@ -195,7 +203,7 @@ async function seedAll() {
       })
     );
 
-    // 9. Seed Room Amenities (depends on rooms + amenities)
+    // 10. Seed Room Amenities (depends on rooms + amenities)
     results.push(
       await executeSeed('Room Amenities', seedRoomAmenities, {
         minAmenitiesPerRoom: 3,
@@ -204,7 +212,7 @@ async function seedAll() {
       })
     );
 
-    // 10. Seed Room Inventory (depends on rooms)
+    // 11. Seed Room Inventory (depends on rooms)
     results.push(
       await executeSeed('Room Inventory', seedRoomInventory, {
         daysAhead: options.quick ? 30 : 90,
@@ -215,7 +223,7 @@ async function seedAll() {
       })
     );
 
-    // 11. Seed Bookings (depends on hotels, rooms, users)
+    // 12. Seed Bookings (depends on hotels, rooms, users)
     // results.push(
     //   await executeSeed('Bookings', seedBookings, {
     //     bookingsPerHotel: options.quick ? { min: 10, max: 20 } : { min: 20, max: 50 },
@@ -223,7 +231,7 @@ async function seedAll() {
     //   })
     // );
 
-    // 12. Seed Reviews (depends on hotels, users, optionally bookings)
+    // 13. Seed Reviews (depends on hotels, users, optionally bookings)
     results.push(
       await executeSeed('Reviews', seedReviews, {
         reviewsPerHotel: options.quick ? { min: 5, max: 15 } : { min: 10, max: 30 },
@@ -232,7 +240,7 @@ async function seedAll() {
       })
     );
 
-    // 13. Seed Images (depends on hotels, rooms - requires API server)
+    // 14. Seed Images (depends on hotels, rooms - requires API server)
     if (!options.skipImages) {
       console.log(
         '\n⚠️  Image seeding requires the API server to be running and image files to be present.'
@@ -242,7 +250,7 @@ async function seedAll() {
       results.push({ name: 'Images', success: true, duration: 0, skipped: true });
     }
 
-    // 14. Seed Notifications (depends on users)
+    // 15. Seed Notifications (depends on users)
     results.push(
       await executeSeed('Notifications', seedNotifications, {
         notificationsPerUser: options.quick ? { min: 2, max: 5 } : { min: 3, max: 10 },

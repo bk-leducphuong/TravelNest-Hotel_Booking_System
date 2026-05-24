@@ -63,7 +63,7 @@ export default {
       <!-- Bank Account Information -->
       <div class="info-section">
         <p><strong>Bank Account:</strong> **** **** **** 1234</p>
-        <p><strong>Total Amount:</strong> {{ withdrawAmount }} VND</p>
+        <p><strong>Total Amount:</strong> {{ withdrawAmount }} USD</p>
         <p><strong>Transaction ID:</strong> {{ withdrawTransactionId }}</p>
       </div>
 

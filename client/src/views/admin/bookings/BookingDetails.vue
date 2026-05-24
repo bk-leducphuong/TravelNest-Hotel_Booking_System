@@ -174,8 +174,8 @@ export default {
               <div class="info-item">
                 <label>Commission:</label>
                 <span
-                  >VND
-                  {{ parseInt(getBookingInformation.totalPrice).toLocaleString('vi-VN') }}</span
+                  >USD
+                  {{ parseInt(getBookingInformation.totalPrice).toLocaleString('en-US') }}</span
                 >
               </div>
               <div class="info-item">
@@ -200,7 +200,7 @@ export default {
             <div class="info-item" style="margin-top: 20px">
               <label>Total price:</label>
               <span class="price"
-                >VND {{ parseInt(getBookingInformation.totalPrice).toLocaleString('vi-VN') }}</span
+                >USD {{ parseInt(getBookingInformation.totalPrice).toLocaleString('en-US') }}</span
               >
             </div>
           </div>

@@ -9,6 +9,7 @@ const logger = require('@config/logger.config');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 const sequelize = require('@config/database.config');
 const { generateBookingCode } = require('@utils/booking.utils');
+const ledgerService = require('@services/ledger.service');
 
 class PaymentService {
   constructor() {
@@ -34,7 +35,7 @@ class PaymentService {
    *   - Create payment intent using hold total price and booking details
    */
   async createPaymentIntent(userId, paymentData) {
-    const { paymentMethodId, currency } = paymentData;
+    const { paymentMethodId } = paymentData;
 
     if (!paymentMethodId) {
       throw new ApiError(400, 'MISSING_REQUIRED_FIELDS', 'paymentMethodId is required');
@@ -73,7 +74,7 @@ class PaymentService {
     }
 
     const bookingCode = generateBookingCode();
-    const holdCurrency = (holdData.currency || currency || 'USD').toUpperCase();
+    const holdCurrency = 'USD';
     const amount = parseFloat(holdData.total_price);
 
     if (!amount || amount <= 0) {
@@ -130,7 +131,7 @@ class PaymentService {
 
       // 5. Create payment intent through adapter
       const payment = await this.paymentProvider.createPayment({
-        amount,
+        amount: this.toMinorUnits(amount, holdCurrency),
         currency: holdCurrency,
         paymentMethodId,
         returnUrl: process.env.CLIENT_HOST
@@ -180,7 +181,16 @@ class PaymentService {
    * Idempotent - can be called multiple times safely
    */
   async handlePaymentSucceeded(context) {
-    const { paymentIntentId, bookingCode, hotelId, buyerId, amount, currency } = context;
+    const {
+      paymentIntentId,
+      bookingCode,
+      bookingId,
+      transactionId,
+      hotelId,
+      buyerId,
+      currency,
+    } = context;
+    const amount = this.fromMinorUnits(context.amount, currency);
 
     logger.info('Processing payment succeeded', {
       paymentIntentId,
@@ -191,10 +201,23 @@ class PaymentService {
     const transaction = await sequelize.transaction();
 
     try {
+      const existingBookings = bookingCode
+        ? await bookingRepository.findAllByBookingCode(bookingCode, {
+            transaction,
+          })
+        : [];
+      let primaryBooking = existingBookings[0];
+
       // 1. Check if transaction already exists (idempotency)
-      let dbTransaction = await transactionRepository.findByPaymentIntentId(paymentIntentId, {
-        transaction,
-      });
+      let dbTransaction = transactionId
+        ? await transactionRepository.findById(transactionId, { transaction })
+        : null;
+
+      if (!dbTransaction) {
+        dbTransaction = await transactionRepository.findByPaymentIntentId(paymentIntentId, {
+          transaction,
+        });
+      }
 
       if (dbTransaction && dbTransaction.status === 'completed') {
         logger.info('Payment already processed (idempotent)', {
@@ -208,15 +231,18 @@ class PaymentService {
       if (!dbTransaction) {
         dbTransaction = await transactionRepository.create(
           {
-            buyer_id: buyerId,
-            hotel_id: hotelId,
+            bookingId: bookingId || primaryBooking?.id,
+            buyerId,
+            hotelId,
             amount,
             currency: currency.toUpperCase(),
             status: 'completed',
-            transaction_type: 'booking_payment',
-            payment_intent_id: paymentIntentId,
-            charge_id: context.chargeId,
-            booking_code: bookingCode,
+            transactionType: 'payment',
+            paymentIntentId,
+            chargeId: context.chargeId,
+            metadata: {
+              booking_code: bookingCode,
+            },
           },
           { transaction }
         );
@@ -226,11 +252,22 @@ class PaymentService {
           dbTransaction.id,
           {
             status: 'completed',
-            charge_id: context.chargeId,
-            booking_code: bookingCode,
+            chargeId: context.chargeId,
+            completedAt: new Date(),
+            metadata: {
+              ...(dbTransaction.metadata || {}),
+              booking_code: bookingCode,
+            },
           },
           { transaction }
         );
+        dbTransaction = {
+          ...(dbTransaction.toJSON ? dbTransaction.toJSON() : dbTransaction),
+          status: 'completed',
+          stripe_charge_id: context.chargeId,
+          stripe_payment_intent_id: paymentIntentId,
+          completed_at: new Date(),
+        };
       }
 
       // 3. Create or update payment record
@@ -238,8 +275,10 @@ class PaymentService {
         transaction,
       });
 
+      let ledgerPayment = existingPayment;
+
       if (!existingPayment) {
-        await paymentRepository.create(
+        ledgerPayment = await paymentRepository.create(
           {
             transaction_id: dbTransaction.id,
             amount,
@@ -274,39 +313,56 @@ class PaymentService {
         );
       }
 
-      // 4. Create bookings (if not already created) and reserve room inventory in same transaction
-      const existingBookings = await bookingRepository.findAllByBookingCode(bookingCode, {
-        transaction,
-      });
-
+      // 4. Confirm bookings. New flow creates pending-payment bookings before payment.
       if (existingBookings.length === 0) {
         const { bookedRooms, checkInDate, checkOutDate, numberOfGuests } = context;
 
-        for (const room of bookedRooms) {
-          await bookingRepository.create(
-            {
-              buyer_id: buyerId,
-              hotel_id: hotelId,
-              room_id: room.room_id,
-              check_in_date: checkInDate,
-              check_out_date: checkOutDate,
-              total_price: amount,
-              status: 'confirmed',
-              number_of_guests: numberOfGuests,
-              quantity: room.roomQuantity,
-              booking_code: bookingCode,
-            },
-            { transaction }
-          );
+        if (bookedRooms && bookedRooms.length > 0 && bookingCode) {
+          for (const room of bookedRooms) {
+            const createdBooking = await bookingRepository.create(
+              {
+                buyer_id: buyerId,
+                hotel_id: hotelId,
+                room_id: room.room_id,
+                check_in_date: checkInDate,
+                check_out_date: checkOutDate,
+                total_price: amount,
+                status: 'confirmed',
+                number_of_guests: numberOfGuests,
+                quantity: room.roomQuantity,
+                booking_code: bookingCode,
+                confirmed_at: new Date(),
+              },
+              { transaction }
+            );
+
+            if (!primaryBooking) {
+              primaryBooking = createdBooking;
+            }
+          }
         }
       } else {
         // Update existing pending bookings to confirmed
         await bookingRepository.updateByBookingCode(
           bookingCode,
-          { status: 'confirmed' },
+          { status: 'confirmed', confirmed_at: new Date() },
           { transaction }
         );
+        primaryBooking = {
+          ...(primaryBooking.toJSON ? primaryBooking.toJSON() : primaryBooking),
+          status: 'confirmed',
+          confirmed_at: new Date(),
+        };
       }
+
+      await ledgerService.recordPaymentSucceeded(
+        {
+          transaction: dbTransaction,
+          payment: ledgerPayment,
+          booking: primaryBooking,
+        },
+        { transaction }
+      );
 
       // 5. Create invoice (will be done separately or here)
       // ... invoice creation logic
@@ -335,14 +391,27 @@ class PaymentService {
    * Idempotent
    */
   async handlePaymentFailed(context) {
-    const { paymentIntentId, buyerId, hotelId, amount, currency, failureCode, failureMessage } =
-      context;
+    const {
+      paymentIntentId,
+      transactionId,
+      bookingCode,
+      buyerId,
+      hotelId,
+      currency,
+      failureCode,
+      failureMessage,
+    } = context;
+    const amount = this.fromMinorUnits(context.amount, currency);
 
     logger.info('Processing payment failed', { paymentIntentId });
 
     try {
       // Check if already recorded
-      const existing = await transactionRepository.findByPaymentIntentId(paymentIntentId);
+      let existing = transactionId ? await transactionRepository.findById(transactionId) : null;
+
+      if (!existing) {
+        existing = await transactionRepository.findByPaymentIntentId(paymentIntentId);
+      }
 
       if (existing && existing.status === 'failed') {
         logger.info('Payment failure already recorded (idempotent)', {
@@ -359,8 +428,8 @@ class PaymentService {
           amount,
           currency: currency.toUpperCase(),
           status: 'failed',
-          transaction_type: 'booking_payment',
-          payment_intent_id: paymentIntentId,
+          transactionType: 'payment',
+          paymentIntentId,
         });
 
         // Create failed payment record
@@ -378,6 +447,14 @@ class PaymentService {
         // Update existing to failed
         await transactionRepository.update(existing.id, {
           status: 'failed',
+          failureCode,
+          failureMessage,
+        });
+      }
+
+      if (bookingCode) {
+        await bookingRepository.updateByBookingCode(bookingCode, {
+          status: 'payment_failed',
         });
       }
 
@@ -500,6 +577,38 @@ class PaymentService {
       limit: validatedLimit,
       total: result.count,
     };
+  }
+
+  fromMinorUnits(amount, currency) {
+    const zeroDecimalCurrencies = new Set([
+      'BIF',
+      'CLP',
+      'DJF',
+      'GNF',
+      'JPY',
+      'KMF',
+      'KRW',
+      'MGA',
+      'PYG',
+      'RWF',
+      'UGX',
+      'VUV',
+      'XAF',
+      'XOF',
+      'XPF',
+    ]);
+    const normalizedCurrency = String(currency || 'USD').toUpperCase();
+    const parsed = parseFloat(amount || 0);
+    return (
+      Math.round((parsed / (zeroDecimalCurrencies.has(normalizedCurrency) ? 1 : 100)) * 100) /
+      100
+    );
+  }
+
+  toMinorUnits(amount, currency) {
+    const normalizedCurrency = String(currency || 'USD').toUpperCase();
+    const parsed = parseFloat(amount || 0);
+    return Math.round(parsed * (normalizedCurrency === 'USD' ? 100 : 1));
   }
 }
 

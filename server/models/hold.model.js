@@ -35,10 +35,38 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
       },
+      subtotal: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0,
+      },
+      tax_amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0,
+      },
+      service_fee_amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0,
+      },
+      platform_commission_amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0,
+      },
       currency: {
         type: DataTypes.STRING(3),
         allowNull: false,
         defaultValue: 'USD',
+      },
+      price_breakdown: {
+        type: DataTypes.JSON,
+        allowNull: true,
+      },
+      cancellation_policy_snapshot: {
+        type: DataTypes.JSON,
+        allowNull: true,
       },
       user_id: {
         type: DataTypes.UUID,

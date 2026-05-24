@@ -62,6 +62,7 @@ const RELATED_ENTITY_TYPES = {
   ROOM: 'room',
   USER: 'user',
   REFUND: 'refund',
+  PAYOUT: 'payout',
 };
 
 // Notification Templates

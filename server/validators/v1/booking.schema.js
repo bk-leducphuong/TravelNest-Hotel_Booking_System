@@ -19,6 +19,34 @@ const bookingCodeSchema = Joi.string().min(1).max(100).required().messages({
   'any.required': 'bookingCode is required',
 });
 
+exports.createBooking = {
+  body: Joi.object({
+    holdId: Joi.string().uuid().required().messages({
+      'string.guid': 'holdId must be a valid UUID',
+      'any.required': 'holdId is required',
+    }),
+    guestDetails: Joi.object({
+      fullName: Joi.string().allow('', null),
+      email: Joi.string().email().allow('', null),
+      phoneNumber: Joi.string().allow('', null),
+      country: Joi.string().allow('', null),
+      bookingFor: Joi.string().allow('', null),
+      travellingForWork: Joi.boolean().optional(),
+    }).optional(),
+    specialRequests: Joi.string().allow('', null).max(5000).optional(),
+  }).required(),
+};
+
+exports.createBookingPaymentIntent = {
+  params: Joi.object({
+    bookingId: bookingIdSchema,
+  }).required(),
+  body: Joi.object({
+    paymentMethodId: Joi.string().allow('', null).optional(),
+    paymentMethod: Joi.string().allow('', null).optional(),
+  }).required(),
+};
+
 /**
  * GET /api/bookings
  * Get all bookings for authenticated user

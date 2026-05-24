@@ -22,18 +22,23 @@ class StripePaymentAdapter extends PaymentProviderInterface {
     const { amount, currency, paymentMethodId, metadata, returnUrl } = params;
 
     try {
-      const paymentIntent = await this.stripe.paymentIntents.create({
+      const intentParams = {
         amount: Math.round(amount), // Ensure integer
         currency: currency.toLowerCase(),
-        payment_method: paymentMethodId,
-        confirm: true,
-        return_url: returnUrl,
         metadata: metadata || {},
         automatic_payment_methods: {
           enabled: true,
           allow_redirects: 'never',
         },
-      });
+      };
+
+      if (paymentMethodId) {
+        intentParams.payment_method = paymentMethodId;
+        intentParams.confirm = true;
+        intentParams.return_url = returnUrl;
+      }
+
+      const paymentIntent = await this.stripe.paymentIntents.create(intentParams);
 
       return {
         id: paymentIntent.id,

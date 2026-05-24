@@ -413,10 +413,10 @@ export default {
                   left to sell
                 </div>
                 <div class="room-price" v-if="day && currentRoom">
-                  VND
+                  USD
                   {{
                     parseInt(roomInventoryMap[weekIndex][dayIndex].price_per_night).toLocaleString(
-                      'vi-VN'
+                      'en-US'
                     )
                   }}
                 </div>
@@ -461,14 +461,14 @@ export default {
                 class="price-input"
                 v-model="numberOfLeftRoom"
               />
-              <div class="currency">Total price (VND)</div>
+              <div class="currency">Total price (USD)</div>
               <input
                 disabled
                 type="text"
                 class="price-input"
-                :value="price.toLocaleString('vi-VN')"
+                :value="price.toLocaleString('en-US')"
               />
-              <div class="currency">Price for one days (VND)</div>
+              <div class="currency">Price for one days (USD)</div>
               <input :disabled="!enableEdit" type="text" class="price-input" v-model="newPrice" />
               <div class="action-button-container">
                 <button

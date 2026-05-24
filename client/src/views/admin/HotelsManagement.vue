@@ -2,6 +2,7 @@
 import axios from 'axios'
 import { mapActions, mapGetters } from 'vuex'
 import LoginHeader from '@/components/LoginHeader.vue'
+import { getFirstImageUrl } from '@/utils/images'
 
 export default {
   components: {
@@ -21,7 +22,8 @@ export default {
     },
     serverHost() {
       return import.meta.env.VITE_SERVER_HOST
-    }
+    },
+    getFirstImageUrl
   },
   async mounted() {
     await this.getAllManagingHotels()
@@ -77,7 +79,7 @@ export default {
       <!-- Hotel Card 1 -->
 
       <div class="hotel-card" v-for="hotel in getManagingHotels" :key="hotel.hotel_id">
-        <img v-if="JSON.parse(hotel.image_urls)" :src="JSON.parse(hotel.image_urls)[0]" alt="hotel-image" class="hotel-image" />
+        <img v-if="getFirstImageUrl(hotel.image_urls)" :src="getFirstImageUrl(hotel.image_urls)" alt="hotel-image" class="hotel-image" />
         <img :src="serverHost() + '/uploads/hotels/no-image.png'" class="hotel-image" alt="no image" v-else>
         <div class="hotel-info">
           <h2 class="hotel-name">{{ hotel.name }}</h2>

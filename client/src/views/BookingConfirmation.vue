@@ -88,7 +88,7 @@ export default {
         </div>
         <div class="inner-login">
           <ul>
-            <li><strong>VND</strong></li>
+            <li><strong>USD</strong></li>
             <li><img src="" alt="" /></li>
             <li><i class="fa-regular fa-circle-question"></i></li>
             <li class="login">Trợ giúp</li>
@@ -148,15 +148,15 @@ export default {
           <div class="price-summary">
             <div class="price-row">
               <span>Room Rate (3 nights)</span>
-              <span>VND {{ parseInt(bookingInformation.totalPrice).toLocaleString('vi-VN') }}</span>
+              <span>USD {{ parseInt(bookingInformation.totalPrice).toLocaleString('en-US') }}</span>
             </div>
             <div class="price-row">
               <span>Taxes & Fees</span>
-              <span>VND 0</span>
+              <span>USD 0</span>
             </div>
             <div class="price-row total-row">
               <span>Total Amount Paid</span>
-              <span>VND {{ parseInt(bookingInformation.totalPrice).toLocaleString('vi-VN') }}</span>
+              <span>USD {{ parseInt(bookingInformation.totalPrice).toLocaleString('en-US') }}</span>
             </div>
           </div>
         </div>

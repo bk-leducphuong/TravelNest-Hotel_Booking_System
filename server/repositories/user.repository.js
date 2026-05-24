@@ -1,4 +1,5 @@
-const { Users, SavedHotels, Hotels, AuthAccounts } = require('../models/index.js');
+const { Users, SavedHotels, Hotels, AuthAccounts, UserRoles, Roles } = require('../models/index.js');
+const { Op } = require('sequelize');
 
 /**
  * User Repository - Contains all database operations for users
@@ -14,17 +15,29 @@ class UserRepository {
       where: { id: userId },
       attributes: [
         'id',
-        'user_role',
-        'username',
         'email',
-        'full_name',
+        'first_name',
+        'last_name',
         'phone_number',
         'address',
         'nationality',
         'country',
-        'profile_picture_url',
         'date_of_birth',
         'gender',
+      ],
+      include: [
+        {
+          model: UserRoles,
+          as: 'roles',
+          attributes: ['role_id'],
+          include: [
+            {
+              model: Roles,
+              as: 'role',
+              attributes: ['id', 'name', 'description'],
+            },
+          ],
+        },
       ],
     });
   }
@@ -77,6 +90,28 @@ class UserRepository {
       where: { user_id: userId },
       attributes: ['hotel_id'],
     });
+  }
+
+  /**
+   * Find saved hotel IDs for a user within a known hotel ID list
+   */
+  async findFavoriteHotelIds(userId, hotelIds) {
+    if (!userId || !Array.isArray(hotelIds) || hotelIds.length === 0) {
+      return [];
+    }
+
+    const savedHotels = await SavedHotels.findAll({
+      where: {
+        user_id: userId,
+        hotel_id: {
+          [Op.in]: hotelIds,
+        },
+      },
+      attributes: ['hotel_id'],
+      raw: true,
+    });
+
+    return savedHotels.map((hotel) => hotel.hotel_id);
   }
 
   /**

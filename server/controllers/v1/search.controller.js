@@ -48,10 +48,10 @@ const searchHotels = asyncHandler(async (req, res) => {
     limit: req.query.limit ? parseInt(req.query.limit, 10) : 20,
   };
 
-  const { destination, searchResults } = await searchService.searchHotels(searchParams);
+  const userId = req.session?.user?.id || null;
+  const { destination, searchResults } = await searchService.searchHotels(searchParams, userId);
 
   // Save search log asynchronously via BullMQ (don't wait)
-  const userId = req.session?.user?.id || null;
   const analyticsData = {
     ...searchParams,
     destinationId: destination?.id,

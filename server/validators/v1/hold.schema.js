@@ -56,7 +56,7 @@ exports.createHold = {
       'array.min': 'At least one room is required',
       'any.required': 'rooms is required',
     }),
-    currency: Joi.string().length(3).uppercase().default('USD'),
+    currency: Joi.string().valid('USD').default('USD'),
   })
     .required()
     .custom((value, helpers) => {

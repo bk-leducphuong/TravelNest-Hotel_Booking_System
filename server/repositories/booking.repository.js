@@ -1,6 +1,14 @@
 const { Op } = require('sequelize');
 
-const { Bookings, Hotels, Rooms, Transactions, Refunds } = require('../models/index.js');
+const {
+  Bookings,
+  BookingRooms,
+  Hotels,
+  Rooms,
+  Transactions,
+  Refunds,
+  HotelCancellationRules,
+} = require('../models/index.js');
 const sequelize = require('../config/database.config');
 
 /**
@@ -46,6 +54,7 @@ class BookingRepository {
   async findByBookingCode(bookingCode, options = {}) {
     return await Bookings.findOne({
       where: { booking_code: bookingCode },
+      include: options.include || [],
       ...options,
     });
   }
@@ -80,6 +89,36 @@ class BookingRepository {
         id: bookingId,
         buyer_id: buyerId,
       },
+      include: [
+        {
+          model: BookingRooms,
+          as: 'bookingRooms',
+          include: [{ model: Rooms, as: 'room', attributes: ['id', 'room_name'] }],
+        },
+        {
+          model: Transactions,
+          as: 'transaction',
+        },
+      ],
+    });
+  }
+
+  /**
+   * Find booking with hotel timing fields needed for cancellation policy evaluation
+   */
+  async findCancellationContextByIdAndBuyerId(bookingId, buyerId) {
+    return await Bookings.findOne({
+      where: {
+        id: bookingId,
+        buyer_id: buyerId,
+      },
+      include: [
+        {
+          model: Hotels,
+          as: 'hotel',
+          attributes: ['id', 'timezone', 'check_in_time'],
+        },
+      ],
     });
   }
 
@@ -103,7 +142,7 @@ class BookingRepository {
     return await Bookings.update(
       {
         status: sequelize.literal(`CASE
-          WHEN (CURRENT_DATE() BETWEEN check_in_date AND check_out_date) THEN 'checked in'
+          WHEN (CURRENT_DATE() BETWEEN check_in_date AND check_out_date) THEN 'checked_in'
           WHEN CURRENT_DATE() > check_out_date THEN 'completed'
           ELSE status
           END`),
@@ -139,26 +178,129 @@ class BookingRepository {
     });
   }
 
+  async createBookingRoom(roomData, options = {}) {
+    return await BookingRooms.create(
+      {
+        booking_id: roomData.bookingId || roomData.booking_id,
+        room_id: roomData.roomId || roomData.room_id,
+        quantity: roomData.quantity || 1,
+        nightly_price_snapshot: roomData.nightlyPriceSnapshot || roomData.nightly_price_snapshot,
+        subtotal: roomData.subtotal || 0,
+        total_price: roomData.totalPrice || roomData.total_price || roomData.subtotal || 0,
+      },
+      options
+    );
+  }
+
+  async bulkCreateBookingRooms(rooms, options = {}) {
+    return await BookingRooms.bulkCreate(
+      rooms.map((room) => ({
+        booking_id: room.bookingId || room.booking_id,
+        room_id: room.roomId || room.room_id,
+        quantity: room.quantity || 1,
+        nightly_price_snapshot: room.nightlyPriceSnapshot || room.nightly_price_snapshot,
+        subtotal: room.subtotal || 0,
+        total_price: room.totalPrice || room.total_price || room.subtotal || 0,
+      })),
+      options
+    );
+  }
+
   /**
-   * Find transaction by booking code
+   * Find transaction by booking ID
    */
-  async findTransactionByBookingCode(bookingCode) {
+  async findTransactionByBookingId(bookingId) {
     return await Transactions.findOne({
-      where: { booking_code: bookingCode },
-      attributes: ['charge_id', 'amount', 'transaction_id'],
+      where: { booking_id: bookingId },
+      attributes: [
+        'id',
+        'amount',
+        'currency',
+        'status',
+        'stripe_charge_id',
+        'stripe_payment_intent_id',
+      ],
+    });
+  }
+
+  /**
+   * Find the most specific active cancellation rule for a hotel/room.
+   * Room-specific rule wins over hotel-wide default.
+   */
+  async findCancellationRule(hotelId, roomId) {
+    return await HotelCancellationRules.findOne({
+      where: {
+        hotel_id: hotelId,
+        is_active: true,
+        [Op.or]: [{ room_id: roomId }, { room_id: null }],
+      },
+      order: [
+        [sequelize.literal(`CASE WHEN room_id IS NULL THEN 1 ELSE 0 END`), 'ASC'],
+        ['updated_at', 'DESC'],
+      ],
     });
   }
 
   /**
    * Create refund record
    */
-  async createRefund(refundData) {
-    return await Refunds.create({
-      transaction_id: refundData.transactionId,
-      buyer_id: refundData.buyerId,
-      hotel_id: refundData.hotelId,
-      amount: refundData.amount,
-      status: refundData.status || 'pending',
+  async createRefund(refundData, options = {}) {
+    return await Refunds.create(
+      {
+        booking_id: refundData.bookingId,
+        transaction_id: refundData.transactionId,
+        buyer_id: refundData.buyerId,
+        hotel_id: refundData.hotelId,
+        provider: refundData.provider || 'stripe',
+        provider_refund_id: refundData.providerRefundId,
+        amount: refundData.amount,
+        currency: refundData.currency || 'USD',
+        status: refundData.status || 'pending',
+        reason: refundData.reason || 'customer_request',
+        eligibility: refundData.eligibility || 'manual_review',
+        free_cancellation_deadline: refundData.freeCancellationDeadline,
+        requested_at: refundData.requestedAt,
+        processed_at: refundData.processedAt,
+        failure_code: refundData.failureCode,
+        failure_message: refundData.failureMessage,
+        metadata: refundData.metadata,
+      },
+      options
+    );
+  }
+
+  /**
+   * Update refund record
+   */
+  async updateRefund(refundId, updateData, options = {}) {
+    const mappedData = {};
+    if (updateData.providerRefundId !== undefined)
+      mappedData.provider_refund_id = updateData.providerRefundId;
+    if (updateData.status !== undefined) mappedData.status = updateData.status;
+    if (updateData.processedAt !== undefined) mappedData.processed_at = updateData.processedAt;
+    if (updateData.failureCode !== undefined) mappedData.failure_code = updateData.failureCode;
+    if (updateData.failureMessage !== undefined)
+      mappedData.failure_message = updateData.failureMessage;
+    if (updateData.metadata !== undefined) mappedData.metadata = updateData.metadata;
+
+    return await Refunds.update(mappedData, {
+      where: { id: refundId },
+      ...options,
+    });
+  }
+
+  /**
+   * Update transaction refund state
+   */
+  async updateTransactionRefundState(transactionId, updateData, options = {}) {
+    const mappedData = {};
+    if (updateData.status !== undefined) mappedData.status = updateData.status;
+    if (updateData.refundId !== undefined) mappedData.stripe_refund_id = updateData.refundId;
+    if (updateData.completedAt !== undefined) mappedData.completed_at = updateData.completedAt;
+
+    return await Transactions.update(mappedData, {
+      where: { id: transactionId },
+      ...options,
     });
   }
 
@@ -188,6 +330,59 @@ class BookingRepository {
    */
   async create(bookingData, options = {}) {
     return await Bookings.create(bookingData, options);
+  }
+
+  async update(bookingId, updateData, options = {}) {
+    return await Bookings.update(updateData, {
+      where: { id: bookingId },
+      ...options,
+    });
+  }
+
+  async findPaymentContextByIdAndBuyerId(bookingId, buyerId, options = {}) {
+    return await Bookings.findOne({
+      where: {
+        id: bookingId,
+        buyer_id: buyerId,
+      },
+      include: [
+        {
+          model: BookingRooms,
+          as: 'bookingRooms',
+        },
+        {
+          model: Transactions,
+          as: 'transaction',
+        },
+      ],
+      ...options,
+    });
+  }
+
+  async findDetailedByBookingCodeAndBuyerId(bookingCode, buyerId, options = {}) {
+    return await Bookings.findOne({
+      where: {
+        booking_code: bookingCode,
+        buyer_id: buyerId,
+      },
+      include: [
+        {
+          model: BookingRooms,
+          as: 'bookingRooms',
+          include: [{ model: Rooms, as: 'room', attributes: ['id', 'room_name'] }],
+        },
+        {
+          model: Hotels,
+          as: 'hotel',
+          attributes: ['id', 'name', 'city_id', 'address'],
+        },
+        {
+          model: Transactions,
+          as: 'transaction',
+        },
+      ],
+      ...options,
+    });
   }
 }
 

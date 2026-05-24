@@ -1,5 +1,6 @@
 <script>
 import ImageSlider from './ImageSlider.vue'
+import { getFirstImageUrl, getImagePath, getImageUrl, parseImageList } from '@/utils/images'
 
 export default {
   components: {
@@ -35,7 +36,9 @@ export default {
         return
       }
       this.currentSelectedRoomId = room.room_id
-      this.currentImages = JSON.parse(room.room_image_urls)
+      this.currentImages = parseImageList(room.room_image_urls)
+        .map((image) => getImageUrl(getImagePath(image)))
+        .filter(Boolean)
     },
     // close image gallery popup
     closePopup() {
@@ -97,7 +100,7 @@ export default {
           :class="{ selected: currentSelectedRoomId === room.room_id }"
         >
           <img
-            :src="JSON.parse(room.room_image_urls)[0]"
+            :src="getFirstImageUrl(room.room_image_urls)"
             :alt="room.room_name"
             class="room-image"
             referrerpolicy="no-referrer"

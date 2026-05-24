@@ -159,7 +159,7 @@ export default {
                         <p>{{ new Date(invoice.updated_at).toDateString() }}</p>
                       </td>
                       <td class="usd">
-                        {{ parseInt(invoice.amount).toLocaleString('vi-VN') }} VND
+                        {{ parseInt(invoice.amount).toLocaleString('en-US') }} USD
                       </td>
                       <td class="status">
                         <ul>

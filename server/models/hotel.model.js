@@ -254,9 +254,25 @@ module.exports = function (sequelize, DataTypes) {
       foreignKey: 'hotel_id',
       as: 'policies',
     });
+    Hotel.hasMany(models.hotel_cancellation_rules, {
+      foreignKey: 'hotel_id',
+      as: 'cancellation_rules',
+    });
     Hotel.hasMany(models.nearby_places, {
       foreignKey: 'hotel_id',
       as: 'nearby_places',
+    });
+    Hotel.hasMany(models.connected_payment_accounts, {
+      foreignKey: 'hotel_id',
+      as: 'connected_payment_accounts',
+    });
+    Hotel.hasMany(models.payouts, {
+      foreignKey: 'hotel_id',
+      as: 'payouts',
+    });
+    Hotel.hasMany(models.ledger_entries, {
+      foreignKey: 'hotel_id',
+      as: 'ledger_entries',
     });
   };
 

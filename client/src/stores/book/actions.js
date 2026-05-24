@@ -18,8 +18,8 @@ export default {
       const params = {
         checkIn: bookingInfor.checkInDate,
         checkOut: bookingInfor.checkOutDate,
-        adults: bookingInfor.numberOfGuests,
-        children: 0,
+        adults: parseInt(bookingInfor.adults ?? bookingInfor.numberOfGuests, 10) || 1,
+        children: parseInt(bookingInfor.children, 10) || 0,
         rooms: Math.max(...bookingInfor.selectedRooms.map((room) => Number(room.roomQuantity)))
       }
 

@@ -135,6 +135,10 @@ module.exports = function (sequelize, DataTypes) {
       foreignKey: 'transaction_id',
       as: 'transaction',
     });
+    Payment.hasMany(models.ledger_entries, {
+      foreignKey: 'payment_id',
+      as: 'ledger_entries',
+    });
   };
 
   return Payment;

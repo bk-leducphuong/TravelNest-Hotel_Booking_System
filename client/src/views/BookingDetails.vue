@@ -2,6 +2,7 @@
 import Footer from '@/components/Footer.vue';
 import Header from '@/components/Header.vue'
 import { mapGetters } from 'vuex';
+import { getFirstImageUrl } from '@/utils/images'
 export default {
   components: {
     Header,
@@ -16,6 +17,9 @@ export default {
     ...mapGetters('booking', ['getBookingInformation']),
     ...mapGetters('user', ['getUserInformation'])
   },
+  methods: {
+    getFirstImageUrl
+  }
 }
 </script>
 <template>
@@ -63,7 +67,7 @@ export default {
     <div class="details-left">
       <div class="property-details">
         <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-          <img :src="JSON.parse(getBookingInformation.hotel.image_urls)[0]" alt="Hotel Image" class="property-image" />
+          <img :src="getFirstImageUrl(getBookingInformation.hotel.image_urls)" alt="Hotel Image" class="property-image" />
           <div>
             <h2 class="property-name">{{ getBookingInformation.hotel.name }}</h2>
             <span class="rating">★★★★★</span>

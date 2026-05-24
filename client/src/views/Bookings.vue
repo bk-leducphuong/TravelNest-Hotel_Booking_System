@@ -6,6 +6,7 @@ import Loading from 'vue-loading-overlay'
 import 'vue-loading-overlay/dist/css/index.css'
 import { mapActions } from 'vuex'
 import router from '@/router/index.js'
+import { getFirstImageUrl } from '@/utils/images'
 
 export default {
   components: {
@@ -129,7 +130,8 @@ export default {
         default:
           this.arrangedBookings = this.bookings
       }
-    }
+    },
+    getFirstImageUrl
   },
   async mounted() {
     await this.getAllBookings()
@@ -167,7 +169,7 @@ export default {
       <div class="booking-content-container">
         <div class="section">
           <div class="hotel-image-container">
-            <img :src="JSON.parse(booking.hotel.image_urls)[0]" alt="hotel-image" />
+            <img :src="getFirstImageUrl(booking.hotel.image_urls)" alt="hotel-image" />
           </div>
           <div style="flex: 1; display: flex; justify-content: space-between">
             <div class="content">
@@ -187,7 +189,7 @@ export default {
               </p>
             </div>
             <div class="content price-container">
-              <h2>VND {{ parseInt(booking.totalPrice).toLocaleString('vi-VN') }}</h2>
+              <h2>USD {{ parseInt(booking.totalPrice).toLocaleString('en-US') }}</h2>
               <i class="fa-solid fa-ellipsis-vertical fa-lg"></i>
             </div>
           </div>

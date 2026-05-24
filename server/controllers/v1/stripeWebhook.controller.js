@@ -30,10 +30,12 @@ const handleStripeWebhook = async (req, res) => {
     }
 
     // 3. Log event for audit trail
-    await webhookAdapter.logEvent(event.id, event.type, event.raw);
+    await webhookAdapter.logEvent(event.id, event.type, event.raw, 'processing');
 
     // 4. Route to appropriate handler
     await routeWebhookEvent(event);
+
+    await webhookEventLogRepository.updateStatus(event.id, 'processed');
 
     // 5. Return success response
     res.status(200).json({ received: true });
@@ -43,6 +45,10 @@ const handleStripeWebhook = async (req, res) => {
     // Return appropriate HTTP status
     if (error.message.includes('signature')) {
       return res.status(400).json({ error: 'Invalid signature' });
+    }
+
+    if (error.eventId) {
+      await webhookEventLogRepository.updateStatus(event.eventId, 'failed', error.message);
     }
 
     res.status(500).json({ error: 'Webhook processing failed' });

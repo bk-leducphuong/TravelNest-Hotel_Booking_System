@@ -13,7 +13,7 @@ module.exports = function (sequelize, DataTypes) {
       },
       booking_id: {
         type: DataTypes.UUID,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: 'bookings',
           key: 'id',
@@ -178,6 +178,18 @@ module.exports = function (sequelize, DataTypes) {
     Transaction.hasMany(models.payments, {
       foreignKey: 'transaction_id',
       as: 'payments',
+    });
+    Transaction.hasMany(models.refunds, {
+      foreignKey: 'transaction_id',
+      as: 'refunds',
+    });
+    Transaction.hasMany(models.payouts, {
+      foreignKey: 'transaction_id',
+      as: 'payouts',
+    });
+    Transaction.hasMany(models.ledger_entries, {
+      foreignKey: 'transaction_id',
+      as: 'ledger_entries',
     });
   };
 

@@ -34,9 +34,9 @@ const amountSchema = Joi.number().positive().required().messages({
   'any.required': 'amount is required',
 });
 
-const currencySchema = Joi.string().length(3).uppercase().required().messages({
+const currencySchema = Joi.string().valid('USD').required().messages({
   'string.base': 'currency must be a string',
-  'string.length': 'currency must be a 3-letter code (e.g., USD)',
+  'any.only': 'currency must be USD',
   'any.required': 'currency is required',
 });
 

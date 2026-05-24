@@ -4,6 +4,7 @@ import TheHeader from '@/components/Header.vue'
 import TheFooter from '@/components/Footer.vue'
 import { mapGetters } from 'vuex'
 import errorHandler from '@/request/errorHandler';
+import { getFirstImageUrl } from '@/utils/images'
 export default {
   components: {
     TheHeader,
@@ -83,6 +84,7 @@ export default {
       const slider = event.target
       this.sliderPosition = slider.scrollLeft
     },
+    getFirstImageUrl
   },
   async mounted() {
     await this.getSavedHotels()
@@ -121,7 +123,7 @@ export default {
       <div class="hotel-card" v-for="hotel in hotels" :key="hotel.hotel_id">
         <div>
           <img
-            :src="JSON.parse(hotel.hotelInformation.image_urls)[0]"
+            :src="getFirstImageUrl(hotel.hotelInformation.image_urls)"
             alt="BlackPink HomeStay"
             class="hotel-image"
           />

@@ -117,6 +117,14 @@ module.exports = function (sequelize, DataTypes) {
       foreignKey: 'room_id',
       as: 'bookings',
     });
+    Room.hasMany(models.booking_rooms, {
+      foreignKey: 'room_id',
+      as: 'bookingRooms',
+    });
+    Room.hasMany(models.hotel_cancellation_rules, {
+      foreignKey: 'room_id',
+      as: 'cancellation_rules',
+    });
     Room.hasMany(models.room_inventory, {
       foreignKey: 'room_id',
       as: 'inventory',

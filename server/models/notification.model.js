@@ -104,7 +104,8 @@ module.exports = function (sequelize, DataTypes) {
           'hotel',
           'room',
           'user',
-          'refund'
+          'refund',
+          'payout'
         ),
         allowNull: true,
         comment: 'Type of related entity',
