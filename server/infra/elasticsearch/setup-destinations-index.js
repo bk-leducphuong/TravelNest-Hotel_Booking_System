@@ -5,6 +5,50 @@ const logger = require('../../config/logger.config');
 const elasticsearchClient = require('../../config/elasticsearch.config');
 
 const INDEX_NAME = 'destinations';
+const SERVERLESS_UNSUPPORTED_INDEX_SETTINGS = ['number_of_shards', 'number_of_replicas'];
+
+function isServerlessUnsupportedSettingsError(error) {
+  const reason = error?.meta?.body?.error?.reason || error?.message || '';
+
+  return SERVERLESS_UNSUPPORTED_INDEX_SETTINGS.every((setting) => reason.includes(setting));
+}
+
+function removeServerlessUnsupportedSettings(mapping) {
+  const serverlessMapping = {
+    ...mapping,
+    settings: {
+      ...mapping.settings,
+    },
+  };
+
+  for (const setting of SERVERLESS_UNSUPPORTED_INDEX_SETTINGS) {
+    delete serverlessMapping.settings[setting];
+  }
+
+  return serverlessMapping;
+}
+
+async function createDestinationsIndex(mapping) {
+  try {
+    await elasticsearchClient.indices.create({
+      index: INDEX_NAME,
+      body: mapping,
+    });
+  } catch (error) {
+    if (!isServerlessUnsupportedSettingsError(error)) {
+      throw error;
+    }
+
+    console.log(
+      'Elasticsearch serverless does not allow shard/replica settings. Retrying without those settings...'
+    );
+
+    await elasticsearchClient.indices.create({
+      index: INDEX_NAME,
+      body: removeServerlessUnsupportedSettings(mapping),
+    });
+  }
+}
 
 async function setupDestinationsIndex({ force = false } = {}) {
   try {
@@ -29,10 +73,7 @@ async function setupDestinationsIndex({ force = false } = {}) {
     const mapping = JSON.parse(fs.readFileSync(mappingFile, 'utf8'));
 
     console.log(`Creating index '${INDEX_NAME}'...`);
-    await elasticsearchClient.indices.create({
-      index: INDEX_NAME,
-      body: mapping,
-    });
+    await createDestinationsIndex(mapping);
 
     console.log(`Index '${INDEX_NAME}' created successfully!`);
 
@@ -70,4 +111,3 @@ if (require.main === module) {
 module.exports = {
   setupDestinationsIndex,
 };
-

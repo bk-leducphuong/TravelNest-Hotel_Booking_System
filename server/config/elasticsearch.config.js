@@ -5,7 +5,7 @@ require('dotenv').config({
 
 const createUnavailableClient = () => {
   const unavailableError = () =>
-    new Error('Elasticsearch is not configured. Set ELASTICSEARCH_HOSTS to enable it.');
+    new Error('Elasticsearch is not configured. Set ELASTICSEARCH_ENDPOINT to enable it.');
 
   const proxyTarget = () => {};
 
@@ -29,19 +29,36 @@ const createUnavailableClient = () => {
   return proxy;
 };
 
-const elasticsearchHosts = process.env.ELASTICSEARCH_HOSTS;
+const elasticsearchEndpoint = process.env.ELASTICSEARCH_ENDPOINT || process.env.ELASTICSEARCH_HOSTS;
+const elasticsearchApiKey = process.env.ELASTICSEARCH_API_KEY;
+const elasticsearchUsername = process.env.ELASTICSEARCH_USERNAME;
+const elasticsearchPassword = process.env.ELASTICSEARCH_PASSWORD;
 
-const elasticsearchClient = elasticsearchHosts
+const getElasticsearchAuth = () => {
+  if (elasticsearchApiKey) {
+    return { apiKey: elasticsearchApiKey };
+  }
+
+  if (elasticsearchUsername && elasticsearchPassword) {
+    return {
+      username: elasticsearchUsername,
+      password: elasticsearchPassword,
+    };
+  }
+
+  return undefined;
+};
+
+const elasticsearchAuth = getElasticsearchAuth();
+
+const elasticsearchClient = elasticsearchEndpoint
   ? new Client({
-      node: elasticsearchHosts,
-      auth: {
-        username: process.env.ELASTICSEARCH_USERNAME,
-        password: process.env.ELASTICSEARCH_PASSWORD,
-      },
+      node: elasticsearchEndpoint,
+      ...(elasticsearchAuth ? { auth: elasticsearchAuth } : {}),
       log: 'error',
       requestTimeout: 30000,
       tls: {
-        rejectUnauthorized: false,
+        rejectUnauthorized: process.env.ELASTICSEARCH_TLS_REJECT_UNAUTHORIZED !== 'false',
       },
       maxRetries: 5,
       retryOnStatusCode: (statusCode) => statusCode >= 500,

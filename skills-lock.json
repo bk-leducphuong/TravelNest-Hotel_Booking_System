@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "elasticsearch-onboarding": {
+      "source": "elastic/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/elasticsearch/elasticsearch-onboarding/SKILL.md",
+      "computedHash": "1916a17589199e29c30b859de284676d8be36cdd7efad47c33c2b14d2dfabb28"
+    }
+  }
+}
