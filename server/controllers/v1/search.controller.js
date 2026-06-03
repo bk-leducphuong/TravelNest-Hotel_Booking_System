@@ -55,6 +55,7 @@ const searchHotels = asyncHandler(async (req, res) => {
   const analyticsData = {
     ...searchParams,
     destinationId: destination?.id,
+    destinationType: destination?.type,
     destination_type: destination?.type,
   };
   if (userId) {

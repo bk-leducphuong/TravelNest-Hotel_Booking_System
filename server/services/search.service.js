@@ -9,8 +9,10 @@
  * Phase 6: Format and paginate response
  */
 
+const natsPublisher = require('@events/nats.publisher');
 const { searchLogQueue } = require('@queues/index');
 const { addJob } = require('@utils/bullmq.utils');
+const { v4: uuidv4 } = require('uuid');
 
 const { getPresignedUrl, bucketName } = require('@utils/minio.utils');
 const elasticsearchHelper = require('../helpers/elasticsearch.helper');
@@ -765,6 +767,24 @@ class SearchService {
    */
   async saveSearchLog(searchData, userId = null, metadata = {}) {
     try {
+      const eventId = uuidv4();
+      const occurredAt = new Date();
+
+      await natsPublisher.publish(
+        'analytics.search.performed.v1',
+        {
+          userId,
+          destinationId: searchData.destinationId || null,
+          destinationType: searchData.destinationType || searchData.destination_type || '',
+          checkInDate: searchData.checkIn,
+          checkOutDate: searchData.checkOut,
+          adults: searchData.adults,
+          children: searchData.children || 0,
+          rooms: searchData.rooms || 1,
+        },
+        { eventId, occurredAt, correlationId: metadata.correlationId }
+      );
+
       const job = await addJob(
         searchLogQueue,
         'save-search-log',

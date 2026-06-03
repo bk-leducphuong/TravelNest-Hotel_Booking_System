@@ -3,6 +3,7 @@ const redisClient = require('@config/redis.config');
 const { hotelViewEventQueue } = require('@queues/index');
 const { addJob } = require('@utils/bullmq.utils');
 const { v4: uuidv4 } = require('uuid');
+const natsPublisher = require('@events/nats.publisher');
 
 const DEFAULT_DEDUP_WINDOW_SECONDS = parseInt(
   process.env.HOTEL_VIEW_DEDUP_WINDOW_SECONDS || '600',
@@ -55,6 +56,18 @@ class HotelViewEventService {
         ipAddress,
         userAgent,
       };
+
+      await natsPublisher.publish(
+        'analytics.hotel.viewed.v1',
+        {
+          hotelId,
+          userId,
+          sessionId,
+          ipAddress,
+          userAgent,
+        },
+        { eventId: event.eventId, occurredAt: viewedAt }
+      );
 
       const job = await addJob(
         hotelViewEventQueue,
