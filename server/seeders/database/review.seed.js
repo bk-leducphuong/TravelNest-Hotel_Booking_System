@@ -10,9 +10,9 @@ async function loadFaker() {
   }
 }
 
-const db = require('../../../models');
-const sequelize = require('../../../config/database.config');
-const { REVIEW_STATUSES } = require('../../../constants/reviews');
+const db = require('../../models');
+const sequelize = require('../../config/database.config');
+const { REVIEW_STATUSES } = require('../../constants/reviews');
 const { reviews, hotels, users, bookings, user_roles, roles } = db;
 
 // Review title templates based on rating (1-10 scale)

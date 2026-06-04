@@ -1,4 +1,4 @@
-require('../../../register-aliases');
+require('../../register-aliases');
 const fs = require('fs');
 const path = require('path');
 
@@ -6,9 +6,9 @@ const NodeFormData = require('form-data');
 const axios = require('axios');
 const { Op } = require('sequelize');
 
-const db = require('../../../models');
-const logger = require('../../../config/logger.config');
-const { deleteObjects } = require('../../../utils/minio.utils');
+const db = require('../../models');
+const logger = require('../../config/logger.config');
+const { deleteObjects } = require('../../utils/minio.utils');
 require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });

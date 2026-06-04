@@ -10,9 +10,9 @@ async function loadFaker() {
   }
 }
 
-const db = require('../../../models');
-const sequelize = require('../../../config/database.config');
-const { ROOM_TYPES } = require('../../../constants/rooms');
+const db = require('../../models');
+const sequelize = require('../../config/database.config');
+const { ROOM_TYPES } = require('../../constants/rooms');
 const { rooms: Rooms, hotels: Hotels } = db;
 
 /**

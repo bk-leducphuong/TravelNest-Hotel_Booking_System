@@ -4,7 +4,7 @@
  * Syncs destinations from MySQL to Elasticsearch destinations index.
  *
  * Usage:
- *   - Run directly: node infra/elasticsearch/seeders/destinations_index.seed.js
+ *   - Run directly: node seeders/elasticsearch/destinations_index.seed.js
  *   - npm script: npm run es:seed-destinations
  *
  * Options:
@@ -16,10 +16,10 @@ require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });
 
-require('../../../register-aliases');
+require('../../register-aliases');
 
-const elasticsearchClient = require('../../../config/elasticsearch.config');
-const db = require('../../../models');
+const elasticsearchClient = require('../../config/elasticsearch.config');
+const db = require('../../models');
 
 const { destinations: Destinations } = db;
 

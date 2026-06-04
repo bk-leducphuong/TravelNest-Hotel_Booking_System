@@ -5,9 +5,10 @@
     "**/infra/minio-data-test/**",
     "**/api/elasticsearch/**",
     "**/infra/database/migrations/**",
-    "**/infra/database/seeders/**",
+    "**/seeders/database/**",
     "**/infra/elasticsearch/data/**",
-    "**/infra/elasticsearch/seeders/**",
+    "**/seeders/elasticsearch/**",
+    "**/seeders/mongodb/**",
     "**/docs/**"
   ]
 }

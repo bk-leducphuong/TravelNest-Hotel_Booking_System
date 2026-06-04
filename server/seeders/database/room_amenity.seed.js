@@ -11,8 +11,8 @@ async function loadFaker() {
 }
 const { Op } = require('sequelize');
 
-const db = require('../../../models');
-const sequelize = require('../../../config/database.config');
+const db = require('../../models');
+const sequelize = require('../../config/database.config');
 
 const { rooms: Rooms, amenities: Amenities, room_amenities: RoomAmenities } = db;
 

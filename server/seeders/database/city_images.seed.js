@@ -2,21 +2,21 @@ require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });
 
-require('../../../register-aliases');
+require('../../register-aliases');
 
 const fs = require('fs');
 const path = require('path');
 
-const db = require('../../../models');
-const sequelize = require('../../../config/database.config');
-const logger = require('../../../config/logger.config');
+const db = require('../../models');
+const sequelize = require('../../config/database.config');
+const logger = require('../../config/logger.config');
 
 const { uploadImage } = require('./images.seed');
 
 const { countries: Countries, cities: Cities } = db;
 
 // Folder containing Vietnamese city images
-// Expected path: infra/database/seeders/images/city/vietnam
+// Expected path: seeders/database/images/city/vietnam
 const VIETNAM_CITY_IMAGES_DIR = path.join(__dirname, 'images/city/vietnam');
 
 /**

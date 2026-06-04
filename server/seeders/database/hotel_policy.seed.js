@@ -5,8 +5,8 @@
  * Requires existing hotels in the database.
  *
  * Usage:
- *   - Run directly: node infra/database/seeders/hotel_policy.seed.js
- *   - Import and use: const { seedHotelPolicies } = require('./infra/database/seeders/hotel_policy.seed');
+ *   - Run directly: node seeders/database/hotel_policy.seed.js
+ *   - Import and use: const { seedHotelPolicies } = require('./seeders/database/hotel_policy.seed');
  *
  * Options:
  *   - clearExisting: Whether to clear existing policies before seeding (default: false)
@@ -27,9 +27,9 @@ async function loadFaker() {
   }
 }
 
-const db = require('../../../models');
-const sequelize = require('../../../config/database.config');
-const { POLICY_TYPES } = require('../../../constants/hotels');
+const db = require('../../models');
+const sequelize = require('../../config/database.config');
+const { POLICY_TYPES } = require('../../constants/hotels');
 const { hotels, hotel_policies } = db;
 
 // Policy templates by type

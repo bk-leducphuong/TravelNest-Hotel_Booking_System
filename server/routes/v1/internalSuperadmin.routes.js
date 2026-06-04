@@ -1,0 +1,529 @@
+const express = require('express');
+
+const asyncHandler = require('@utils/asyncHandler');
+const controller = require('@controllers/v1/internalSuperadmin.controller');
+const { requireInternalSuperadmin } = require('@middlewares/internal-superadmin.middleware');
+
+const router = express.Router();
+
+// router.use(requireInternalSuperadmin);
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     InternalTaskResult:
+ *       type: object
+ *       properties:
+ *         task:
+ *           type: string
+ *           example: database:seed:all
+ *         script:
+ *           type: string
+ *           example: seeders/database/seed-all.js
+ *         args:
+ *           type: array
+ *           items:
+ *             type: string
+ *           example: ["--quick", "--skip-images"]
+ *         exitCode:
+ *           type: integer
+ *           nullable: true
+ *           example: 0
+ *         signal:
+ *           type: string
+ *           nullable: true
+ *           example: null
+ *         startedAt:
+ *           type: string
+ *           format: date-time
+ *         finishedAt:
+ *           type: string
+ *           format: date-time
+ *         durationMs:
+ *           type: integer
+ *           example: 12400
+ *         stdout:
+ *           type: string
+ *           description: Last 20,000 characters of task stdout.
+ *         stderr:
+ *           type: string
+ *           description: Last 20,000 characters of task stderr.
+ *     InternalTaskOptions:
+ *       type: object
+ *       properties:
+ *         timeoutMs:
+ *           type: integer
+ *           minimum: 1
+ *           example: 1800000
+ *           description: Optional task timeout in milliseconds. Defaults to 30 minutes.
+ *     DatabaseSeederOptions:
+ *       allOf:
+ *         - $ref: '#/components/schemas/InternalTaskOptions'
+ *         - type: object
+ *           properties:
+ *             clear:
+ *               type: boolean
+ *               example: false
+ *               description: Passes --clear to supported seeders.
+ *             clearExisting:
+ *               type: boolean
+ *               example: false
+ *               description: Alias for clear.
+ *             quick:
+ *               type: boolean
+ *               example: true
+ *               description: Only applies to the all seeder.
+ *             skipImages:
+ *               type: boolean
+ *               example: true
+ *               description: Only applies to the all seeder.
+ *             skipSnapshots:
+ *               type: boolean
+ *               example: false
+ *               description: Only applies to the all seeder.
+ *             rebuild:
+ *               type: boolean
+ *               example: true
+ *               description: Only applies to hotel_search_snapshot.
+ *     ElasticsearchSetupOptions:
+ *       allOf:
+ *         - $ref: '#/components/schemas/InternalTaskOptions'
+ *         - type: object
+ *           properties:
+ *             force:
+ *               type: boolean
+ *               example: true
+ *               description: Recreates existing index/template when supported.
+ *             createIndex:
+ *               type: boolean
+ *               example: true
+ *               description: Only applies to logs setup.
+ *     ElasticsearchSeederOptions:
+ *       allOf:
+ *         - $ref: '#/components/schemas/InternalTaskOptions'
+ *         - type: object
+ *           properties:
+ *             clear:
+ *               type: boolean
+ *               example: false
+ *               description: Clears existing Elasticsearch documents before seeding.
+ *             clearExisting:
+ *               type: boolean
+ *               example: false
+ *               description: Alias for clear.
+ *             batchSize:
+ *               type: integer
+ *               minimum: 1
+ *               example: 100
+ *             hotelIds:
+ *               oneOf:
+ *                 - type: array
+ *                   items:
+ *                     type: string
+ *                     format: uuid
+ *                 - type: string
+ *               example: ["018f5f6c-8c1a-7b9a-9c7a-a3b2f3d5e6f7"]
+ *               description: Only applies to hotels seeding.
+ *             status:
+ *               type: string
+ *               enum: [active, inactive, suspended]
+ *               example: active
+ *               description: Only applies to hotels seeding.
+ *     MongodbSeederOptions:
+ *       allOf:
+ *         - $ref: '#/components/schemas/InternalTaskOptions'
+ *         - type: object
+ *           properties:
+ *             clear:
+ *               type: boolean
+ *               example: false
+ *             clearExisting:
+ *               type: boolean
+ *               example: false
+ *               description: Alias for clear.
+ *             days:
+ *               type: integer
+ *               minimum: 1
+ *               example: 90
+ *             batch:
+ *               type: integer
+ *               minimum: 1
+ *               example: 1000
+ *             rows:
+ *               type: integer
+ *               minimum: 1
+ *               example: 50000
+ *               description: Only applies to search_logs.
+ *             avgPerHotel:
+ *               type: integer
+ *               minimum: 1
+ *               example: 50
+ *               description: Only applies to hotel_views.
+ */
+
+/**
+ * @swagger
+ * /internal/superadmin/tasks:
+ *   get:
+ *     summary: List available internal setup and seeding tasks
+ *     tags:
+ *       - Internal Superadmin
+ *     security:
+ *       - internalSuperadminToken: []
+ *       - sessionAuth: []
+ *     responses:
+ *       200:
+ *         description: Available internal task names.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     databaseSeeders:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                         enum: [all, user, amenity, hotel, hotel_amenity, room_inventory, room_amenity, permission, hotel_search_snapshot, images, review, room, booking, policy, cancellation_rule, nearby_place, notification, city, city_images, country, destination]
+ *                     elasticsearchSetup:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                         enum: [hotels, logs, destinations]
+ *                     elasticsearchSeeders:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                         enum: [hotels, destinations]
+ *                     mongodbSeeders:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                         enum: [search_logs, hotel_views]
+ *                     runningTasks:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *       401:
+ *         description: Superadmin authentication required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Superadmin access required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/tasks', asyncHandler(controller.listTasks));
+
+/**
+ * @swagger
+ * /internal/superadmin/database/init:
+ *   post:
+ *     summary: Initialize database tables
+ *     description: Runs server/infra/database/init.js in a child process.
+ *     tags:
+ *       - Internal Superadmin
+ *     security:
+ *       - internalSuperadminToken: []
+ *       - sessionAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/InternalTaskOptions'
+ *     responses:
+ *       200:
+ *         description: Database init completed.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/InternalTaskResult'
+ *       409:
+ *         description: The init task is already running.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Database init failed.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/database/init', asyncHandler(controller.initDatabase));
+
+/**
+ * @swagger
+ * /internal/superadmin/database/seeders/{seeder}:
+ *   post:
+ *     summary: Run a database seeder
+ *     description: Runs one of the seeders located in server/seeders/database.
+ *     tags:
+ *       - Internal Superadmin
+ *     security:
+ *       - internalSuperadminToken: []
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: seeder
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [all, user, amenity, hotel, hotel_amenity, room_inventory, room_amenity, permission, hotel_search_snapshot, images, review, room, booking, policy, cancellation_rule, nearby_place, notification, city, city_images, country, destination]
+ *         example: all
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/DatabaseSeederOptions'
+ *           examples:
+ *             quickAll:
+ *               summary: Quick all-database seed
+ *               value:
+ *                 quick: true
+ *                 skipImages: true
+ *             clearSeeder:
+ *               summary: Clear and run one seeder
+ *               value:
+ *                 clear: true
+ *     responses:
+ *       200:
+ *         description: Seeder completed.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/InternalTaskResult'
+ *       404:
+ *         description: Unknown seeder.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: Seeder is already running.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/database/seeders/:seeder', asyncHandler(controller.runDatabaseSeeder));
+
+/**
+ * @swagger
+ * /internal/superadmin/elasticsearch/setup/{target}:
+ *   post:
+ *     summary: Run Elasticsearch setup
+ *     description: Runs setup scripts from server/infra/elasticsearch.
+ *     tags:
+ *       - Internal Superadmin
+ *     security:
+ *       - internalSuperadminToken: []
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: target
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [hotels, logs, destinations]
+ *         example: hotels
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ElasticsearchSetupOptions'
+ *           examples:
+ *             recreateHotels:
+ *               summary: Recreate hotels index
+ *               value:
+ *                 force: true
+ *             setupLogsAndCreateIndex:
+ *               summary: Recreate logs template and initial index
+ *               value:
+ *                 force: true
+ *                 createIndex: true
+ *     responses:
+ *       200:
+ *         description: Elasticsearch setup completed.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/InternalTaskResult'
+ *       404:
+ *         description: Unknown Elasticsearch setup target.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: Setup task is already running.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/elasticsearch/setup/:target', asyncHandler(controller.setupElasticsearch));
+
+/**
+ * @swagger
+ * /internal/superadmin/elasticsearch/seeders/{target}:
+ *   post:
+ *     summary: Run an Elasticsearch seeder
+ *     description: Runs one of the seeders located in server/seeders/elasticsearch.
+ *     tags:
+ *       - Internal Superadmin
+ *     security:
+ *       - internalSuperadminToken: []
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: target
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [hotels, destinations]
+ *         example: hotels
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ElasticsearchSeederOptions'
+ *           examples:
+ *             activeHotels:
+ *               summary: Seed active hotels
+ *               value:
+ *                 status: active
+ *                 batchSize: 100
+ *             clearDestinations:
+ *               summary: Clear and seed destinations
+ *               value:
+ *                 clear: true
+ *                 batchSize: 200
+ *     responses:
+ *       200:
+ *         description: Elasticsearch seeder completed.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/InternalTaskResult'
+ *       404:
+ *         description: Unknown Elasticsearch seeder target.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: Seeder is already running.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/elasticsearch/seeders/:target', asyncHandler(controller.runElasticsearchSeeder));
+
+/**
+ * @swagger
+ * /internal/superadmin/mongodb/seeders/{target}:
+ *   post:
+ *     summary: Run a MongoDB seeder
+ *     description: Runs one of the seeders located in server/seeders/mongodb.
+ *     tags:
+ *       - Internal Superadmin
+ *     security:
+ *       - internalSuperadminToken: []
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: target
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [search_logs, hotel_views]
+ *         example: search_logs
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/MongodbSeederOptions'
+ *           examples:
+ *             searchLogs:
+ *               summary: Seed search logs
+ *               value:
+ *                 rows: 50000
+ *                 days: 90
+ *                 batch: 2000
+ *             hotelViews:
+ *               summary: Seed hotel views
+ *               value:
+ *                 days: 30
+ *                 avgPerHotel: 50
+ *                 batch: 1000
+ *     responses:
+ *       200:
+ *         description: MongoDB seeder completed.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/InternalTaskResult'
+ *       404:
+ *         description: Unknown MongoDB seeder target.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: Seeder is already running.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/mongodb/seeders/:target', asyncHandler(controller.runMongodbSeeder));
+
+module.exports = router;

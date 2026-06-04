@@ -10,8 +10,8 @@ async function loadFaker() {
   }
 }
 
-const db = require('../../../models');
-const sequelize = require('../../../config/database.config');
+const db = require('../../models');
+const sequelize = require('../../config/database.config');
 const { bookings, hotels, rooms, users, room_inventory } = db;
 
 // Booking status distribution (weighted)

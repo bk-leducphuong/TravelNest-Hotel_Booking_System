@@ -60,6 +60,7 @@ const createApp = async () => {
     process.env.ADMIN_CLIENT_HOST,
     'http://localhost:5173',
     'http://127.0.0.1:5173',
+    'http://localhost:3000',
   ]
     .map(normalizeOrigin)
     .filter(Boolean);

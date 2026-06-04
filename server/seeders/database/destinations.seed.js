@@ -2,10 +2,10 @@ require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });
 
-require('../../../register-aliases');
+require('../../register-aliases');
 
-const db = require('../../../models');
-const sequelize = require('../../../config/database.config');
+const db = require('../../models');
+const sequelize = require('../../config/database.config');
 
 const { destinations: Destinations, cities: Cities, countries: Countries } = db;
 

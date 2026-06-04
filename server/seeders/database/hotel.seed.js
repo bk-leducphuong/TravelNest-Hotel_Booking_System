@@ -8,13 +8,13 @@ async function loadFaker() {
     faker = mod.faker ?? mod.default ?? mod;
   }
 }
-const db = require('../../../models');
-const sequelize = require('../../../config/database.config');
+const db = require('../../models');
+const sequelize = require('../../config/database.config');
 const {
   IANA_TIMEZONES,
   HOTEL_CHECK_IN_POLICIES,
   HOTEL_CHECK_OUT_POLICIES,
-} = require('../../../constants/hotels');
+} = require('../../constants/hotels');
 const { hotels: Hotels, cities: Cities, countries: Countries } = db;
 
 const DEFAULT_HOTELS_PER_CITY = 200;

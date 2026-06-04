@@ -5,7 +5,7 @@
  * This enables fast full-text search, geospatial queries, and complex filtering.
  *
  * Usage:
- *   - Run directly: node infra/elasticsearch/seeders/hotels_index.seed.js
+ *   - Run directly: node seeders/elasticsearch/hotels_index.seed.js
  *   - npm script: npm run es:seed-hotels
  *
  * Options:
@@ -15,9 +15,9 @@
  *   - --status=active: Filter by status (active, inactive, suspended)
  *
  * Examples:
- *   node infra/elasticsearch/seeders/hotels_index.seed.js --clear
- *   node infra/elasticsearch/seeders/hotels_index.seed.js --hotel-ids=123,456
- *   node infra/elasticsearch/seeders/hotels_index.seed.js --status=active --batch-size=50
+ *   node seeders/elasticsearch/hotels_index.seed.js --clear
+ *   node seeders/elasticsearch/hotels_index.seed.js --hotel-ids=123,456
+ *   node seeders/elasticsearch/hotels_index.seed.js --status=active --batch-size=50
  */
 
 require('dotenv').config({
@@ -25,12 +25,12 @@ require('dotenv').config({
 });
 
 // Add module alias support
-require('../../../register-aliases');
+require('../../register-aliases');
 
 const { Op } = require('sequelize');
 
-const elasticsearchClient = require('../../../config/elasticsearch.config');
-const db = require('../../../models');
+const elasticsearchClient = require('../../config/elasticsearch.config');
+const db = require('../../models');
 
 const { hotel_search_snapshots: HotelSearchSnapshots } = db;
 

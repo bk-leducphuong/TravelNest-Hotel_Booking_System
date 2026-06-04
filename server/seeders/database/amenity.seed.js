@@ -2,9 +2,9 @@ require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });
 
-const db = require('../../../models');
-const sequelize = require('../../../config/database.config');
-const { AMENITY_CODES } = require('../../../constants/amenities');
+const db = require('../../models');
+const sequelize = require('../../config/database.config');
+const { AMENITY_CODES } = require('../../constants/amenities');
 
 const { amenities: Amenities } = db;
 

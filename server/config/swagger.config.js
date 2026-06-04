@@ -30,6 +30,13 @@ const options = {
           name: 'connect.sid',
           description: 'Session-based authentication',
         },
+        internalSuperadminToken: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'x-internal-superadmin-token',
+          description:
+            'Internal superadmin token. Alternatively, use an active admin session cookie.',
+        },
       },
       schemas: {
         Error: {
@@ -77,6 +84,11 @@ const options = {
       { name: 'Reviews', description: 'Review operations' },
       { name: 'Search', description: 'Search operations' },
       { name: 'Images', description: 'Image upload and management' },
+      {
+        name: 'Internal Superadmin',
+        description:
+          'Internal operational endpoints for database, Elasticsearch, and MongoDB setup and seeding',
+      },
     ],
   },
   apis: ['./routes/v1/*.js', './routes/v1/**/*.js', './routes/health.routes.js'],
