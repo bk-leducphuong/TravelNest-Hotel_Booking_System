@@ -53,3 +53,6 @@ server/infra/.env
 
 server/secrets/*
 
+# Services
+services/*/.env
+
