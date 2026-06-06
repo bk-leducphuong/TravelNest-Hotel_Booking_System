@@ -86,6 +86,65 @@ const router = express.Router();
  *               type: boolean
  *               example: true
  *               description: Only applies to hotel_search_snapshot.
+ *     ImageSeederOptions:
+ *       allOf:
+ *         - $ref: '#/components/schemas/InternalTaskOptions'
+ *         - type: object
+ *           properties:
+ *             skipChecks:
+ *               type: boolean
+ *               example: false
+ *               description: Passes --skip-checks to skip image directory, API health, and database prerequisite checks.
+ *             skipPrerequisites:
+ *               type: boolean
+ *               example: false
+ *               description: Alias for skipChecks.
+ *             hotelsOnly:
+ *               type: boolean
+ *               example: true
+ *               description: Passes --hotels-only to seed hotel images only.
+ *             roomsOnly:
+ *               type: boolean
+ *               example: false
+ *               description: Passes --rooms-only to seed room images only.
+ *             limit:
+ *               type: integer
+ *               minimum: 1
+ *               example: 10
+ *               description: Passes --limit=N to limit entities processed per type.
+ *             apiBaseUrl:
+ *               type: string
+ *               format: uri
+ *               example: http://localhost:3000/api/v1
+ *               description: Overrides API_BASE_URL for the image seeder child process.
+ *             healthCheckUrl:
+ *               type: string
+ *               format: uri
+ *               example: http://localhost:3000/health/live
+ *               description: Overrides HEALTH_CHECK_URL for the image seeder child process.
+ *     CityImageSeederOptions:
+ *       allOf:
+ *         - $ref: '#/components/schemas/InternalTaskOptions'
+ *         - type: object
+ *           properties:
+ *             primaryOnly:
+ *               type: boolean
+ *               example: true
+ *               description: Upload one primary image per city. Defaults to true.
+ *             allImages:
+ *               type: boolean
+ *               example: false
+ *               description: Passes --all-images to upload every city image for each city. Equivalent to primaryOnly=false.
+ *             limit:
+ *               type: integer
+ *               minimum: 1
+ *               example: 10
+ *               description: Passes --limit=N to limit the number of cities processed.
+ *             apiBaseUrl:
+ *               type: string
+ *               format: uri
+ *               example: http://localhost:3000/api/v1
+ *               description: Overrides API_BASE_URL for the city image seeder child process.
  *     ElasticsearchSetupOptions:
  *       allOf:
  *         - $ref: '#/components/schemas/InternalTaskOptions'
@@ -332,6 +391,140 @@ router.post('/database/init', asyncHandler(controller.initDatabase));
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/database/seeders/:seeder', asyncHandler(controller.runDatabaseSeeder));
+
+/**
+ * @swagger
+ * /internal/superadmin/images/seed:
+ *   post:
+ *     summary: Run the image seeder
+ *     description: Runs server/seeders/database/images.seed.js to upload hotel and room images through the API image pipeline.
+ *     tags:
+ *       - Internal Superadmin
+ *     security:
+ *       - internalSuperadminToken: []
+ *       - sessionAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ImageSeederOptions'
+ *           examples:
+ *             seedAllImages:
+ *               summary: Seed all hotel and room images
+ *               value:
+ *                 apiBaseUrl: http://localhost:3000/api/v1
+ *             seedHotelsOnly:
+ *               summary: Seed first 10 hotels only
+ *               value:
+ *                 hotelsOnly: true
+ *                 limit: 10
+ *                 apiBaseUrl: http://localhost:3000/api/v1
+ *             skipPrerequisiteChecks:
+ *               summary: Skip prerequisite checks
+ *               value:
+ *                 skipChecks: true
+ *                 roomsOnly: true
+ *     responses:
+ *       200:
+ *         description: Image seeder completed.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/InternalTaskResult'
+ *       400:
+ *         description: Invalid image seeder option.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: Image seeder is already running.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Image seeder failed.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/images/seed', asyncHandler(controller.runImageSeeder));
+
+/**
+ * @swagger
+ * /internal/superadmin/city-images/seed:
+ *   post:
+ *     summary: Run the city image seeder
+ *     description: Runs server/seeders/database/city_images.seed.js to upload Vietnamese city images through the API image pipeline.
+ *     tags:
+ *       - Internal Superadmin
+ *     security:
+ *       - internalSuperadminToken: []
+ *       - sessionAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CityImageSeederOptions'
+ *           examples:
+ *             seedPrimaryCityImages:
+ *               summary: Seed one primary image per city
+ *               value:
+ *                 primaryOnly: true
+ *                 apiBaseUrl: http://localhost:3000/api/v1
+ *             seedLimitedCities:
+ *               summary: Seed first 10 cities
+ *               value:
+ *                 limit: 10
+ *                 apiBaseUrl: http://localhost:3000/api/v1
+ *             seedAllImagesPerCity:
+ *               summary: Upload all city images to each city
+ *               value:
+ *                 allImages: true
+ *                 limit: 3
+ *     responses:
+ *       200:
+ *         description: City image seeder completed.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/InternalTaskResult'
+ *       400:
+ *         description: Invalid city image seeder option.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: City image seeder is already running.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: City image seeder failed.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/city-images/seed', asyncHandler(controller.runCityImageSeeder));
 
 /**
  * @swagger

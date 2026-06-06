@@ -35,6 +35,16 @@ const stats = {
   errors: [],
 };
 
+function resetStats() {
+  stats.totalHotels = 0;
+  stats.totalRooms = 0;
+  stats.imagesUploaded = 0;
+  stats.imagesFailed = 0;
+  stats.startTime = null;
+  stats.endTime = null;
+  stats.errors = [];
+}
+
 /**
  * Load image "albums" from a base directory.
  *
@@ -51,7 +61,7 @@ function loadImageAlbums(baseDir) {
     return albums;
   }
 
-  const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+  const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif']);
   const entries = fs.readdirSync(baseDir, { withFileTypes: true });
 
   // Images directly under baseDir → one album
@@ -435,54 +445,65 @@ async function checkPrerequisites() {
   return true;
 }
 
+async function seedImages(options = {}) {
+  resetStats();
+  printBanner();
+
+  const flags = {
+    skipPrerequisites: options.skipPrerequisites === true,
+    hotelsOnly: options.hotelsOnly === true,
+    roomsOnly: options.roomsOnly === true,
+    limit: options.limit || null,
+  };
+
+  if (flags.limit) {
+    console.log(`📊 Limiting to ${flags.limit} entities per type\n`);
+  }
+
+  if (!flags.skipPrerequisites) {
+    const prereqsPassed = await checkPrerequisites();
+    if (!prereqsPassed) {
+      throw new Error('Image seeder prerequisite checks failed');
+    }
+  }
+
+  stats.startTime = Date.now();
+
+  if (!flags.roomsOnly) {
+    await processHotels(flags.limit);
+  }
+
+  if (!flags.hotelsOnly) {
+    await processRooms(flags.limit);
+  }
+
+  stats.endTime = Date.now();
+
+  printStats();
+
+  console.log('✨ Image seeding completed!\n');
+
+  if (stats.imagesFailed > 0) {
+    throw new Error(`Image seeding failed for ${stats.imagesFailed} image(s)`);
+  }
+
+  return { ...stats };
+}
+
 async function main() {
   try {
-    printBanner();
-
     const args = process.argv.slice(2);
-    const flags = {
+    const limitArg = args.find((arg) => arg.startsWith('--limit='));
+    const limit = limitArg ? parseInt(limitArg.split('=')[1], 10) : null;
+
+    await seedImages({
       skipPrerequisites: args.includes('--skip-checks'),
       hotelsOnly: args.includes('--hotels-only'),
       roomsOnly: args.includes('--rooms-only'),
-      limit: null,
-    };
+      limit,
+    });
 
-    const limitIndex = args.findIndex((arg) => arg.startsWith('--limit='));
-    if (limitIndex !== -1) {
-      flags.limit = parseInt(args[limitIndex].split('=')[1], 10);
-      console.log(`📊 Limiting to ${flags.limit} entities per type\n`);
-    }
-
-    if (!flags.skipPrerequisites) {
-      const prereqsPassed = await checkPrerequisites();
-      if (!prereqsPassed) {
-        process.exit(1);
-      }
-    }
-
-    stats.startTime = Date.now();
-
-    if (!flags.roomsOnly) {
-      await processHotels(flags.limit);
-    }
-
-    if (!flags.hotelsOnly) {
-      await processRooms(flags.limit);
-    }
-
-    stats.endTime = Date.now();
-
-    printStats();
-
-    console.log('✨ Image processing test completed!\n');
-    console.log('💡 To monitor job processing, check the BullMQ dashboard or worker logs.\n');
-    console.log('📝 Next steps:');
-    console.log('   1. Check worker logs: npm run dev:bullmq-worker');
-    console.log('   2. Verify images in MinIO');
-    console.log('   3. Query database for image records');
-    console.log('   4. Test GET /api/v1/images/:entityType/:entityId\n');
-
-    process.exit(stats.imagesFailed > 0 ? 1 : 0);
+    process.exit(0);
   } catch (error) {
     console.error('\n❌ Fatal error:', error);
     logger.error('Fatal error in test script:', error);
@@ -494,4 +515,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { uploadImage, processEntity };
+module.exports = { uploadImage, processEntity, seedImages };

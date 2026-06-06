@@ -178,6 +178,21 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
+  
+  nats-ui:
+    image: ghcr.io/nats-nui/nui:latest
+    container_name: nats-ui
+    restart: unless-stopped
+    ports:
+      - '31311:31311'
+    command: ['--db-path', '/db', '--nats-cli-contexts', '/nats-cli-contexts']
+    volumes:
+      - nats_ui_data:/db
+      - ./nats-ui/clicontexts:/nats-cli-contexts:ro
+    networks:
+      - travelnest-net
+    depends_on:
+      - nats
 
 networks:
   travelnest-net:
@@ -189,3 +204,4 @@ volumes:
   redis-insight-data:
   mongodb_data:
   nats_data:
+  nats_ui_data:

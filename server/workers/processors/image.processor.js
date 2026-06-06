@@ -7,10 +7,10 @@ const sharp = require('sharp');
 const { uuidv7 } = require('uuidv7');
 
 const IMAGE_VARIANTS = {
-  thumbnail: { width: 150, height: 150, quality: 85 },
-  small: { width: 400, height: 400, quality: 85 },
+  // thumbnail: { width: 150, height: 150, quality: 85 },
+  // small: { width: 400, height: 400, quality: 85 },
   medium: { width: 800, height: 800, quality: 90 },
-  large: { width: 1920, height: 1920, quality: 95 },
+  // large: { width: 1920, height: 1920, quality: 95 },
 };
 
 async function resizeImage(imageBuffer, config, format) {
@@ -115,29 +115,29 @@ module.exports = async (job) => {
   const progressStep = 60 / (Object.keys(IMAGE_VARIANTS).length * 2);
 
   for (const [variantName, config] of Object.entries(IMAGE_VARIANTS)) {
-    const jpegKey = objectKey.replace(/\.[^.]+$/, `_${variantName}.jpg`);
-    const jpegBuffer = await resizeImage(imageBuffer, config, 'jpeg');
+    // const jpegKey = objectKey.replace(/\.[^.]+$/, `_${variantName}.jpg`);
+    // const jpegBuffer = await resizeImage(imageBuffer, config, 'jpeg');
 
-    await uploadObject(minioClient, bucket, jpegKey, jpegBuffer, {
-      'Content-Type': 'image/jpeg',
-    });
+    // await uploadObject(minioClient, bucket, jpegKey, jpegBuffer, {
+    //   'Content-Type': 'image/jpeg',
+    // });
 
-    const jpegMetadata = await sharp(jpegBuffer).metadata();
-    const jpegVariantId = uuidv7();
+    // const jpegMetadata = await sharp(jpegBuffer).metadata();
+    // const jpegVariantId = uuidv7();
 
-    await ImageVariant.create({
-      id: jpegVariantId,
-      image_id: imageId,
-      variant_type: variantName,
-      bucket_name: bucket,
-      object_key: jpegKey,
-      file_size: jpegBuffer.length,
-      width: jpegMetadata.width,
-      height: jpegMetadata.height,
-    });
+    // await ImageVariant.create({
+    //   id: jpegVariantId,
+    //   image_id: imageId,
+    //   variant_type: variantName,
+    //   bucket_name: bucket,
+    //   object_key: jpegKey,
+    //   file_size: jpegBuffer.length,
+    //   width: jpegMetadata.width,
+    //   height: jpegMetadata.height,
+    // });
 
-    progress += progressStep;
-    await job.updateProgress(Math.round(progress));
+    // progress += progressStep;
+    // await job.updateProgress(Math.round(progress));
 
     const webpKey = objectKey.replace(/\.[^.]+$/, `_${variantName}.webp`);
     const webpBuffer = await resizeImage(imageBuffer, config, 'webp');

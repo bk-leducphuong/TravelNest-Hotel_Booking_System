@@ -24,6 +24,7 @@ const { rebuildAllSnapshots } = require('./hotel_search_snapshot.seed');
 const { seedCountries } = require('./country.seed');
 const { seedCities } = require('./city.seed');
 const { seedDestinations } = require('./destinations.seed');
+const { seedImages } = require('./images.seed');
 
 // Parse command-line arguments
 function parseArgs() {
@@ -242,11 +243,9 @@ async function seedAll() {
 
     // 14. Seed Images (depends on hotels, rooms - requires API server)
     if (!options.skipImages) {
-      console.log(
-        '\n⚠️  Image seeding requires the API server to be running and image files to be present.'
-      );
-      console.log('    To seed images, run separately: npm run seed:images');
-      console.log('    Skipping image seeding for now...');
+      results.push(await executeSeed('Images', seedImages));
+    } else {
+      console.log('\n⚠️  Skipping Images as per --skip-images flag');
       results.push({ name: 'Images', success: true, duration: 0, skipped: true });
     }
 
