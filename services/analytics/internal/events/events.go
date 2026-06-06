@@ -56,12 +56,26 @@ func (d *DateOnly) UnmarshalJSON(data []byte) error {
 	if value == "" {
 		return nil
 	}
-	parsed, err := time.Parse("2006-01-02", value)
+
+	parsed, err := parseDateOnly(value)
 	if err != nil {
 		return err
 	}
 	d.Time = parsed
 	return nil
+}
+
+func parseDateOnly(value string) (time.Time, error) {
+	if parsed, err := time.Parse("2006-01-02", value); err == nil {
+		return parsed, nil
+	}
+
+	parsed, err := time.Parse(time.RFC3339Nano, value)
+	if err != nil {
+		return time.Time{}, err
+	}
+	year, month, day := parsed.Date()
+	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC), nil
 }
 
 func DecodeSearch(data []byte) (SearchPerformed, error) {

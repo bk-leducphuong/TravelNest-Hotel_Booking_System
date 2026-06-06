@@ -66,10 +66,10 @@ class HotelService {
         const images = Array.isArray(h.images) ? h.images : [];
         const primary =
           images.find((img) => img.is_primary) ||
-          images.sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))[0] ||
+          [...images].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))[0] ||
           null;
 
-        const primaryImageUrl = primary.object_key;
+        const primaryImageUrl = primary?.object_key ?? null;
         // primary && primary.object_key
         //   ? await getPresignedUrl(primary.bucket_name || bucketName, primary.object_key, 3600)
         //   : null;

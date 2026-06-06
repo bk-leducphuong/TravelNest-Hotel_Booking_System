@@ -43,6 +43,42 @@ func TestDecodeSearchEnvelopeAndMapNights(t *testing.T) {
 	}
 }
 
+func TestDecodeSearchAcceptsISODateTimesForDateOnlyFields(t *testing.T) {
+	data := []byte(`{
+		"eventId":"dbc361eb-fdd0-4962-b742-9a5c761e9e7e",
+		"eventType":"analytics.search.performed.v1",
+		"version":1,
+		"occurredAt":"2026-06-06T04:56:25.880Z",
+		"producer":"travelnest-api",
+		"payload":{
+			"userId":null,
+			"destinationId":"019e92d7-e6aa-7474-b26b-b03fab24c901",
+			"destinationType":"city",
+			"checkInDate":"2026-06-07T00:00:00.000Z",
+			"checkOutDate":"2026-06-08T00:00:00.000Z",
+			"adults":2,
+			"children":0,
+			"rooms":1
+		}
+	}`)
+
+	event, err := DecodeSearch(data)
+	if err != nil {
+		t.Fatalf("DecodeSearch() error = %v", err)
+	}
+
+	doc := searchLogFromEvent(event)
+	if doc.CheckInDate == nil || doc.CheckInDate.Format("2006-01-02") != "2026-06-07" {
+		t.Fatalf("CheckInDate = %v, want 2026-06-07", doc.CheckInDate)
+	}
+	if doc.CheckOutDate == nil || doc.CheckOutDate.Format("2006-01-02") != "2026-06-08" {
+		t.Fatalf("CheckOutDate = %v, want 2026-06-08", doc.CheckOutDate)
+	}
+	if doc.Nights != 1 {
+		t.Fatalf("Nights = %d, want 1", doc.Nights)
+	}
+}
+
 func TestDecodeSearchRejectsUnsupportedVersion(t *testing.T) {
 	data := []byte(`{
 		"eventId":"evt-1",
