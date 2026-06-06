@@ -274,7 +274,17 @@ class SearchRepository {
    * @returns {Promise<Array>} Hotels
    */
   async searchHotelsFromDatabase(params) {
-    const { city, country, minPrice, maxPrice, minRating, hotelClass, limit = 200 } = params;
+    const {
+      city,
+      country,
+      minPrice,
+      maxPrice,
+      minRating,
+      hotelClass,
+      amenities,
+      freeCancellation,
+      limit = 200,
+    } = params;
 
     const where = {
       status: 'active',
@@ -304,15 +314,40 @@ class SearchRepository {
       where.hotel_class = { [Op.in]: hotelClass };
     }
 
-    return await hotel_search_snapshots.findAll({
+    if (freeCancellation === true || freeCancellation === 'true') {
+      where.has_free_cancellation = true;
+    }
+
+    const rows = await hotel_search_snapshots.findAll({
       where,
-      limit,
+      limit: amenities && amenities.length > 0 ? Math.max(limit, 500) : limit,
       order: [
         ['avg_rating', 'DESC'],
         ['review_count', 'DESC'],
       ],
       raw: true,
     });
+
+    if (!amenities || amenities.length === 0) {
+      return rows;
+    }
+
+    return rows
+      .filter((hotel) => {
+        let amenityCodes = [];
+        if (Array.isArray(hotel.amenity_codes)) {
+          amenityCodes = hotel.amenity_codes;
+        } else {
+          try {
+            amenityCodes = JSON.parse(hotel.amenity_codes || '[]');
+          } catch {
+            amenityCodes = [];
+          }
+        }
+
+        return amenities.every((code) => amenityCodes.includes(code));
+      })
+      .slice(0, limit);
   }
 }
 

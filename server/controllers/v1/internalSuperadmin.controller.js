@@ -25,6 +25,24 @@ async function runDatabaseSeeder(req, res) {
   });
 }
 
+async function runImageSeeder(req, res) {
+  const result = await internalSuperadminService.runImageSeeder(req.body);
+
+  res.status(200).json({
+    success: true,
+    data: result,
+  });
+}
+
+async function runCityImageSeeder(req, res) {
+  const result = await internalSuperadminService.runCityImageSeeder(req.body);
+
+  res.status(200).json({
+    success: true,
+    data: result,
+  });
+}
+
 async function setupElasticsearch(req, res) {
   const result = await internalSuperadminService.setupElasticsearch(req.params.target, req.body);
 
@@ -59,6 +77,8 @@ module.exports = {
   listTasks,
   initDatabase,
   runDatabaseSeeder,
+  runImageSeeder,
+  runCityImageSeeder,
   setupElasticsearch,
   runElasticsearchSeeder,
   runMongodbSeeder,

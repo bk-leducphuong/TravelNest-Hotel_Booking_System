@@ -2,6 +2,34 @@ const searchService = require('@services/search.service');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 
+function parseNumber(value) {
+  if (value === undefined || value === null || value === '') return undefined;
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseInteger(value) {
+  if (value === undefined || value === null || value === '') return undefined;
+  const parsed = parseInt(value, 10);
+  return Number.isInteger(parsed) ? parsed : undefined;
+}
+
+function parseList(value, mapper = (item) => item) {
+  if (value === undefined || value === null || value === '') return undefined;
+  const rawValues = Array.isArray(value) ? value : String(value).split(',');
+  const values = rawValues
+    .map((item) => mapper(String(item).trim()))
+    .filter((item) => item !== '' && item !== null && item !== undefined);
+
+  return values.length > 0 ? values : undefined;
+}
+
+function parseBoolean(value) {
+  if (value === true || value === 'true') return true;
+  if (value === false || value === 'false') return false;
+  return undefined;
+}
+
 /**
  * GET /api/v1/search/hotels
  * Search hotels with hybrid ES + DB architecture
@@ -19,42 +47,43 @@ const searchHotels = asyncHandler(async (req, res) => {
     // Location
     city: req.query.city,
     country: req.query.country,
-    latitude: req.query.latitude ? parseFloat(req.query.latitude) : undefined,
-    longitude: req.query.longitude ? parseFloat(req.query.longitude) : undefined,
-    radius: req.query.radius ? parseFloat(req.query.radius) : undefined,
+    latitude: parseNumber(req.query.latitude),
+    longitude: parseNumber(req.query.longitude),
+    radius: parseNumber(req.query.radius),
 
     // Dates (required)
     checkIn: req.query.checkIn || req.query.checkInDate,
     checkOut: req.query.checkOut || req.query.checkOutDate,
 
     // Guests (required)
-    adults: req.query.adults ? parseInt(req.query.adults, 10) : undefined,
-    children: req.query.children ? parseInt(req.query.children, 10) : undefined,
-    rooms: req.query.rooms ? parseInt(req.query.rooms, 10) : undefined,
+    adults: parseInteger(req.query.adults),
+    children: parseInteger(req.query.children),
+    rooms: parseInteger(req.query.rooms),
 
     // Filters
-    minPrice: req.query.minPrice ? parseFloat(req.query.minPrice) : undefined,
-    maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice) : undefined,
-    minRating: req.query.minRating ? parseFloat(req.query.minRating) : undefined,
-    hotelClass: req.query.hotelClass,
-    amenities: req.query.amenities,
-    freeCancellation: req.query.freeCancellation,
+    minPrice: parseNumber(req.query.minPrice),
+    maxPrice: parseNumber(req.query.maxPrice),
+    minRating: parseNumber(req.query.minRating),
+    hotelClass: parseList(req.query.hotelClass, (item) => parseInteger(item)),
+    amenities: parseList(req.query.amenities, (item) => item.toUpperCase()),
+    freeCancellation: parseBoolean(req.query.freeCancellation),
 
     // Sorting
     sortBy: req.query.sortBy || 'relevance',
 
     // Pagination
-    page: req.query.page ? parseInt(req.query.page, 10) : 1,
-    limit: req.query.limit ? parseInt(req.query.limit, 10) : 20,
+    page: parseInteger(req.query.page) || 1,
+    limit: parseInteger(req.query.limit) || 20,
   };
 
   const userId = req.session?.user?.id || null;
   const { destination, searchResults } = await searchService.searchHotels(searchParams, userId);
 
-  // Save search log asynchronously via BullMQ (don't wait)
+  // Publish search analytics asynchronously (don't wait)
   const analyticsData = {
     ...searchParams,
     destinationId: destination?.id,
+    destinationType: destination?.type,
     destination_type: destination?.type,
   };
   if (userId) {
@@ -63,14 +92,14 @@ const searchHotels = asyncHandler(async (req, res) => {
       .recordRecentSearch(userId, searchParams)
       .catch((err) => logger.error({ err: err.message }, 'Failed to store recent search in Redis'));
 
-    // 2) Queue analytics log via BullMQ
+    // 2) Publish analytics log
     searchService
       .saveSearchLog(analyticsData, userId, {
         resultCount: searchResults?.data?.pagination?.total || 0,
         searchTimeMs: searchResults?.data?.search_metadata?.search_time_ms || 0,
       })
       .catch((err) => {
-        logger.error('Failed to queue search log:', err);
+        logger.error('Failed to publish search log:', err);
       });
   } else {
     // Anonymous users: analytics only, no per-user history
@@ -80,7 +109,7 @@ const searchHotels = asyncHandler(async (req, res) => {
         searchTimeMs: searchResults?.data?.search_metadata?.search_time_ms || 0,
       })
       .catch((err) => {
-        logger.error('Failed to queue search log:', err);
+        logger.error('Failed to publish search log:', err);
       });
   }
 
@@ -156,8 +185,8 @@ const saveSearchInformation = asyncHandler(async (req, res) => {
   res.status(201).json({
     success: true,
     data: {
-      message: 'Search log queued for processing',
-      jobId: result?.jobId,
+      message: 'Search log published for analytics',
+      eventId: result?.eventId,
     },
   });
 });

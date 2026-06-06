@@ -123,12 +123,17 @@ services:
       NODE_ENV: development
       MONGODB_URI: mongodb://mongodb:27017/${MONGODB_DATABASE:-travelnest_analytics}
       MONGODB_DATABASE: ${MONGODB_DATABASE:-travelnest_analytics}
+      NATS_URL: ${NATS_URL:-nats://nats:4222}
+      NATS_STREAM: ${NATS_STREAM:-TRAVELNEST_ANALYTICS}
+      NATS_CLIENT_NAME: ${NATS_CLIENT_NAME:-travelnest-api}
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
       mongodb:
+        condition: service_healthy
+      nats:
         condition: service_healthy
     ports:
       - '3000:3000'
@@ -147,6 +152,9 @@ services:
       NODE_ENV: development
       MONGODB_URI: mongodb://mongodb:27017/${MONGODB_DATABASE:-travelnest_analytics}
       MONGODB_DATABASE: ${MONGODB_DATABASE:-travelnest_analytics}
+      NATS_URL: ${NATS_URL:-nats://nats:4222}
+      NATS_STREAM: ${NATS_STREAM:-TRAVELNEST_ANALYTICS}
+      NATS_CLIENT_NAME: ${NATS_CLIENT_NAME:-travelnest-api}
     depends_on:
       redis:
         condition: service_healthy
@@ -154,9 +162,32 @@ services:
         condition: service_healthy
       mongodb:
         condition: service_healthy
+      nats:
+        condition: service_healthy
     command: ['npm', 'run', 'dev:bullmq-worker']
     networks:
       - travelnest-net-test
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: travelnest-nats-test
+    restart: unless-stopped
+    command: ['-js', '-sd', '/data', '-m', '8222']
+    ports:
+      - '4222:4222'
+      - '8222:8222'
+    volumes:
+      - nats_data_test:/data
+    networks:
+      - travelnest-net-test
+    env_file:
+      - ../.env.development
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:8222/healthz']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
 networks:
   travelnest-net-test:
@@ -167,3 +198,4 @@ volumes:
   redis_data_test:
   # redis-insight-data:
   mongodb_data_test:
+  nats_data_test:

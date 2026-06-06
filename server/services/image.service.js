@@ -65,7 +65,7 @@ class ImageService {
         fileSize: file.size,
         mimeType: file.mimetype,
         isPrimary,
-        status: 'processing',
+        status: 'active',
       });
 
       // If this is marked as primary, update other images
@@ -73,22 +73,22 @@ class ImageService {
         await imageRepository.setPrimaryImage(entityType, entityId, imageId);
       }
 
-      await addJob(
-        imageProcessingQueue,
-        'process-image',
-        {
-          imageId,
-          bucket,
-          objectKey,
-          entityType,
-          entityId,
-          mimeType: file.mimetype,
-        },
-        {
-          priority: isPrimary ? 10 : 5,
-          jobId: imageId,
-        }
-      );
+      // await addJob(
+      //   imageProcessingQueue,
+      //   'process-image',
+      //   {
+      //     imageId,
+      //     bucket,
+      //     objectKey,
+      //     entityType,
+      //     entityId,
+      //     mimeType: file.mimetype,
+      //   },
+      //   {
+      //     priority: isPrimary ? 10 : 5,
+      //     jobId: imageId,
+      //   }
+      // );
 
       logger.info(`Image uploaded successfully: ${imageId}`, {
         entityType,
@@ -104,8 +104,8 @@ class ImageService {
         fileSize: file.size,
         mimeType: file.mimetype,
         isPrimary,
-        status: 'processing',
-        message: 'Image uploaded and queued for processing',
+        status: 'active',
+        message: 'Image uploaded successfully',
       };
     } catch (error) {
       logger.error('Error uploading image:', error);

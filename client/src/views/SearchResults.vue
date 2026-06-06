@@ -2,6 +2,7 @@
   import TheHeader from '@/components/Header.vue';
   import MapComponent from '@/components/map/MapComponent.vue';
   import TheFooter from '@/components/Footer.vue';
+  import HotelFilterSidebar from '@/components/search/HotelFilterSidebar.vue';
   import { mapActions, mapGetters } from 'vuex';
   import { useToast } from 'vue-toastification';
   import SavedHotelIcon from '@/components/SavedHotelIcon.vue';
@@ -16,6 +17,7 @@
       TheHeader,
       MapComponent,
       TheFooter,
+      HotelFilterSidebar,
       SavedHotelIcon,
       Loading,
     },
@@ -37,6 +39,17 @@
         isLoading: false,
         pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
         lastSavedSearchKey: '',
+        filters: {
+          minPrice: null,
+          maxPrice: null,
+          amenities: [],
+          mealPlans: [],
+          freeCancellation: false,
+          hotelClass: [],
+          minRating: null,
+          radius: null,
+        },
+        filterOptions: {},
       };
     },
     computed: {
@@ -87,6 +100,9 @@
         };
         return map[this.sortCriteria] || 'relevance';
       },
+      hasCoordinates() {
+        return Boolean(this.$route.query.latitude && this.$route.query.longitude);
+      },
     },
     watch: {
       '$route.query': {
@@ -94,6 +110,7 @@
           if (this.isSearchUrlValid()) {
             this.isLoading = true;
             this.syncPaginationFromRoute();
+            this.syncFiltersFromRoute();
             this.updateSearchDataInStore();
             await this.saveSearchInformationOnce();
             await this.searchHotels();
@@ -140,6 +157,18 @@
         'updateChildren',
         'saveSearchInformation',
       ]),
+      getDefaultFilters() {
+        return {
+          minPrice: null,
+          maxPrice: null,
+          amenities: [],
+          mealPlans: [],
+          freeCancellation: false,
+          hotelClass: [],
+          minRating: null,
+          radius: null,
+        };
+      },
       isSearchUrlValid() {
         return this.$route.query.location &&
           this.$route.query.checkInDate &&
@@ -185,6 +214,89 @@
         const page = parseInt(this.$route.query.page, 10);
         this.pagination.page = Number.isInteger(page) && page > 0 ? page : 1;
       },
+      parseNumber(value) {
+        const numberValue = Number(value);
+        return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : null;
+      },
+      parseArrayParam(value, mapper = (item) => item) {
+        const rawValues = Array.isArray(value) ? value : String(value || '').split(',');
+        return rawValues
+          .map((item) => mapper(String(item).trim()))
+          .filter((item) => item !== '' && item !== null && item !== undefined);
+      },
+      syncFiltersFromRoute() {
+        const query = this.$route.query;
+        this.filters = {
+          ...this.getDefaultFilters(),
+          minPrice: this.parseNumber(query.minPrice),
+          maxPrice: this.parseNumber(query.maxPrice),
+          amenities: this.parseArrayParam(query.amenities),
+          mealPlans: this.parseArrayParam(query.mealPlans),
+          freeCancellation: query.freeCancellation === true || query.freeCancellation === 'true',
+          hotelClass: this.parseArrayParam(query.hotelClass, (item) => {
+            const star = parseInt(item, 10);
+            return Number.isInteger(star) && star >= 1 && star <= 5 ? star : null;
+          }),
+          minRating: this.parseNumber(query.minRating),
+          radius: this.parseNumber(query.radius),
+        };
+      },
+      getMergedAmenities(filters = this.filters) {
+        return Array.from(new Set([...(filters.amenities || []), ...(filters.mealPlans || [])]));
+      },
+      buildFilterParams() {
+        const params = {};
+        const amenities = this.getMergedAmenities();
+
+        if (this.filters.minPrice) params.minPrice = this.filters.minPrice;
+        if (this.filters.maxPrice) params.maxPrice = this.filters.maxPrice;
+        if (this.filters.minRating) params.minRating = this.filters.minRating;
+        if (this.filters.freeCancellation) params.freeCancellation = true;
+        if (this.filters.hotelClass.length) params.hotelClass = this.filters.hotelClass.join(',');
+        if (amenities.length) params.amenities = amenities.join(',');
+        if (this.filters.radius && this.hasCoordinates) params.radius = this.filters.radius;
+
+        return params;
+      },
+      serializeFiltersToQuery(filters) {
+        const nextQuery = { ...this.$route.query };
+        const filterKeys = [
+          'minPrice',
+          'maxPrice',
+          'amenities',
+          'mealPlans',
+          'freeCancellation',
+          'hotelClass',
+          'minRating',
+          'radius',
+        ];
+
+        filterKeys.forEach((key) => {
+          delete nextQuery[key];
+        });
+
+        if (filters.minPrice) nextQuery.minPrice = String(filters.minPrice);
+        if (filters.maxPrice) nextQuery.maxPrice = String(filters.maxPrice);
+        if (filters.amenities?.length) nextQuery.amenities = filters.amenities.join(',');
+        if (filters.mealPlans?.length) nextQuery.mealPlans = filters.mealPlans.join(',');
+        if (filters.freeCancellation) nextQuery.freeCancellation = 'true';
+        if (filters.hotelClass?.length) nextQuery.hotelClass = filters.hotelClass.join(',');
+        if (filters.minRating) nextQuery.minRating = String(filters.minRating);
+        if (filters.radius && this.hasCoordinates) nextQuery.radius = String(filters.radius);
+
+        nextQuery.page = 1;
+        return nextQuery;
+      },
+      handleFilterChange(nextFilters) {
+        this.$router.push({
+          query: this.serializeFiltersToQuery(nextFilters),
+        });
+      },
+      clearFilters() {
+        this.$router.push({
+          query: this.serializeFiltersToQuery(this.getDefaultFilters()),
+        });
+      },
       async searchHotels() {
         try {
           const data = this.getSearchData;
@@ -198,7 +310,13 @@
             sortBy: this.sortByParam,
             page: this.pagination.page,
             limit: this.pagination.limit,
+            ...this.buildFilterParams(),
           };
+
+          if (this.$route.query.latitude && this.$route.query.longitude) {
+            params.latitude = this.$route.query.latitude;
+            params.longitude = this.$route.query.longitude;
+          }
 
           const response = await SearchService.searchHotels(params);
           const result = response?.data ?? response;
@@ -206,6 +324,7 @@
           const pag = result?.pagination ?? {};
 
           this.hotels = list;
+          this.filterOptions = result?.filter_options ?? result?.facets ?? {};
           this.pagination = {
             page: pag.page ?? 1,
             limit: pag.limit ?? 20,
@@ -311,134 +430,14 @@
                 Hiển thị trên bản đồ
               </button>
             </div>
-            <div class="search-select">
-              <div class="budget-container">
-                <div class="toggle-buttons">
-                  <div class="row">
-                    <div class="col-md-6 col-12">
-                      <button id="per-night-btn" class="active">Mỗi đêm</button>
-                    </div>
-                    <div class="col-md-6 col-12">
-                      <button id="whole-trip-btn">Cả chuyến</button>
-                    </div>
-                  </div>
-                </div>
-                <div class="budget-range">
-                  <p>
-                    <span id="min-value">USD 100.000</span> -
-                    <span id="max-value">USD 3.000.000+</span>
-                  </p>
-                  <div class="range-slider">
-                    <input
-                      type="range"
-                      id="slider-min"
-                      min="100000"
-                      max="3000000"
-                      step="10000"
-                      value="100000"
-                    />
-                    <input
-                      type="range"
-                      id="slider-max"
-                      min="100000"
-                      max="3000000"
-                      step="10000"
-                      value="3000000"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div class="popular-select">
-                <strong>Các bộ lọc phổ biến</strong>
-                <br />
-                <div class="checkbox">
-                  <div class="box-information">
-                    <input type="checkbox" />
-                    <span>Đặt phòng không cần thẻ tín dụng</span>
-                  </div>
-                  <div class="amount">1546</div>
-                </div>
-                <div class="checkbox">
-                  <div class="box-information">
-                    <input type="checkbox" />
-                    <span>Khu phố cổ</span>
-                  </div>
-                  <div class="amount">463</div>
-                </div>
-                <div class="checkbox">
-                  <div class="box-information">
-                    <input type="checkbox" />
-                    <span>Hồ bơi riêng</span>
-                  </div>
-                  <div class="amount">222</div>
-                </div>
-                <div class="checkbox">
-                  <div class="box-information">
-                    <input type="checkbox" />
-                    <span>Bồn tắm</span>
-                  </div>
-                  <div class="amount">678</div>
-                </div>
-                <div class="checkbox">
-                  <div class="box-information">
-                    <input type="checkbox" />
-                    <span>Khách sạn</span>
-                  </div>
-                  <div class="amount">826</div>
-                </div>
-                <div class="checkbox">
-                  <div class="box-information">
-                    <input type="checkbox" />
-                    <span>Ban công</span>
-                  </div>
-                  <div class="amount">1276</div>
-                </div>
-                <div class="checkbox">
-                  <div class="box-information">
-                    <input type="checkbox" />
-                    <span>Tuyệt hảo: 9 điểm trở lên</span>
-                  </div>
-                  <div class="amount">619</div>
-                </div>
-                <div class="checkbox">
-                  <div class="box-information">
-                    <input type="checkbox" />
-                    <span>4 sao</span>
-                  </div>
-                  <div class="amount">543</div>
-                </div>
-                <hr />
-                <strong>Bữa ăn</strong>
-                <div class="checkbox">
-                  <div class="box-information">
-                    <input type="checkbox" />
-                    <span>Tự nấu</span>
-                  </div>
-                  <div class="amount">1146</div>
-                </div>
-                <div class="checkbox">
-                  <div class="box-information">
-                    <input type="checkbox" />
-                    <span>Bao gồm bữa sáng</span>
-                  </div>
-                  <div class="amount">417</div>
-                </div>
-                <div class="checkbox">
-                  <div class="box-information">
-                    <input type="checkbox" />
-                    <span>Bao bữa sáng & bữa trưa</span>
-                  </div>
-                  <div class="amount">1</div>
-                </div>
-                <div class="checkbox">
-                  <div class="box-information">
-                    <input type="checkbox" />
-                    <span>Bao bữa sáng & bữa tối</span>
-                  </div>
-                  <div class="amount">4</div>
-                </div>
-              </div>
-            </div>
+            <HotelFilterSidebar
+              :filters="filters"
+              :filter-options="filterOptions"
+              :is-loading="isLoading"
+              :has-coordinates="hasCoordinates"
+              @update:filters="handleFilterChange"
+              @clear-filters="clearFilters"
+            />
           </div>
           <hr />
 

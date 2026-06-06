@@ -9,8 +9,8 @@
  * Phase 6: Format and paginate response
  */
 
-const { searchLogQueue } = require('@queues/index');
-const { addJob } = require('@utils/bullmq.utils');
+const natsPublisher = require('@events/nats.publisher');
+const { v4: uuidv4 } = require('uuid');
 
 const { getPresignedUrl, bucketName } = require('@utils/minio.utils');
 const elasticsearchHelper = require('../helpers/elasticsearch.helper');
@@ -274,8 +274,11 @@ class SearchService {
       // Phase 4: Merge ES data with DB data
       const enrichedHotels = await this._phase4_mergeData(candidateHotels, hotelsWithRooms);
 
+      // Apply filters that depend on date-specific room pricing.
+      const filteredHotels = this._applyDateSpecificFilters(enrichedHotels, validated);
+
       // Phase 5: Re-rank and sort
-      const rankedHotels = this._phase5_rankAndSort(enrichedHotels, validated.sortBy);
+      const rankedHotels = this._phase5_rankAndSort(filteredHotels, validated.sortBy);
 
       // Phase 6: Format and paginate response
       const response = this._phase6_formatResponse(
@@ -425,7 +428,7 @@ class SearchService {
         avg_rating: esData.avg_rating,
         review_count: esData.review_count,
         hotel_class: esData.hotel_class,
-        amenity_codes: esData.amenity_codes || [],
+        amenity_codes: this._normalizeList(esData.amenity_codes),
         has_free_cancellation: esData.has_free_cancellation,
         primary_image_url: esData.primary_image_url,
         total_bookings: esData.total_bookings,
@@ -433,12 +436,118 @@ class SearchService {
 
         // From Database (calculated for specific dates)
         min_price_for_dates: dbData.min_price_for_dates,
+        min_price_per_night: dbData.available_rooms[0]?.price_per_night || null,
         available_rooms: dbData.available_rooms,
         total_available_rooms: dbData.total_available_rooms,
       });
     }
 
     return enrichedHotels;
+  }
+
+  _normalizeList(value) {
+    if (Array.isArray(value)) return value;
+    if (!value) return [];
+
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Apply filters that need exact room prices for the requested dates.
+   *
+   * @private
+   */
+  _applyDateSpecificFilters(hotels, params) {
+    const { minPrice, maxPrice } = params;
+
+    if (minPrice === undefined && maxPrice === undefined) {
+      return hotels;
+    }
+
+    return hotels.filter((hotel) => {
+      const perNight = parseFloat(
+        hotel.min_price_per_night ?? hotel.available_rooms?.[0]?.price_per_night
+      );
+
+      if (!Number.isFinite(perNight)) {
+        return false;
+      }
+
+      if (minPrice !== undefined && perNight < parseFloat(minPrice)) {
+        return false;
+      }
+
+      if (maxPrice !== undefined && perNight > parseFloat(maxPrice)) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  /**
+   * Build lightweight filter counts for the current available result set.
+   *
+   * @private
+   */
+  _buildFilterOptions(hotels) {
+    const amenityCounts = {};
+    const hotelClassCounts = {};
+    const reviewScores = {
+      4.5: 0,
+      4: 0,
+      3.5: 0,
+      3: 0,
+    };
+    const popular = {
+      freeCancellation: 0,
+    };
+    const prices = [];
+
+    hotels.forEach((hotel) => {
+      const price = parseFloat(hotel.min_price_per_night);
+      if (Number.isFinite(price)) {
+        prices.push(price);
+      }
+
+      if (hotel.has_free_cancellation) {
+        popular.freeCancellation += 1;
+      }
+
+      if (hotel.hotel_class) {
+        const key = String(hotel.hotel_class);
+        hotelClassCounts[key] = (hotelClassCounts[key] || 0) + 1;
+      }
+
+      const rating = parseFloat(hotel.avg_rating);
+      if (Number.isFinite(rating)) {
+        Object.keys(reviewScores).forEach((threshold) => {
+          if (rating >= parseFloat(threshold)) {
+            reviewScores[threshold] += 1;
+          }
+        });
+      }
+
+      (hotel.amenity_codes || []).forEach((code) => {
+        amenityCounts[code] = (amenityCounts[code] || 0) + 1;
+      });
+    });
+
+    return {
+      budget: {
+        min: prices.length ? Math.min(...prices) : null,
+        max: prices.length ? Math.max(...prices) : null,
+      },
+      amenities: amenityCounts,
+      hotelClass: hotelClassCounts,
+      reviewScores,
+      popular,
+    };
   }
 
   /**
@@ -557,6 +666,7 @@ class SearchService {
           freeCancellation: params.freeCancellation,
           sortBy: params.sortBy,
         },
+        filter_options: this._buildFilterOptions(hotels),
         search_metadata: {
           es_candidates: totalCandidates,
           available_hotels: total,
@@ -630,6 +740,7 @@ class SearchService {
           search_time_ms: Date.now() - startTime,
           timestamp: new Date().toISOString(),
         },
+        filter_options: this._buildFilterOptions([]),
         suggestions: {
           message: 'No hotels found matching your criteria',
           alternatives: [
@@ -756,56 +867,36 @@ class SearchService {
   }
 
   /**
-   * Save search log for analytics (async via BullMQ)
+   * Publish search log for analytics.
    *
    * @param {Object} searchData - Search data
    * @param {string} userId - User ID (optional)
    * @param {Object} metadata - Additional metadata (resultCount, searchTimeMs, etc.)
-   * @returns {Promise<Object>} Job info
+   * @returns {Promise<{ eventId: string } | null>} Event info
    */
   async saveSearchLog(searchData, userId = null, metadata = {}) {
     try {
-      const job = await addJob(
-        searchLogQueue,
-        'save-search-log',
+      const eventId = uuidv4();
+      const occurredAt = new Date();
+
+      await natsPublisher.publish(
+        'analytics.search.performed.v1',
         {
-          searchData: {
-            destinationId: searchData.destinationId,
-            destinationType: searchData.destinationType,
-            cityId: searchData.cityId,
-            countryId: searchData.countryId,
-            city: searchData.city,
-            country: searchData.country,
-            checkIn: searchData.checkIn,
-            checkOut: searchData.checkOut,
-            adults: searchData.adults,
-            children: searchData.children,
-            rooms: searchData.rooms,
-          },
           userId,
-          metadata: {
-            filters: {
-              minPrice: searchData.minPrice,
-              maxPrice: searchData.maxPrice,
-              minRating: searchData.minRating,
-              hotelClass: searchData.hotelClass,
-              amenities: searchData.amenities,
-              freeCancellation: searchData.freeCancellation,
-              sortBy: searchData.sortBy,
-            },
-            resultCount: metadata.resultCount || 0,
-            searchTimeMs: metadata.searchTimeMs || 0,
-          },
+          destinationId: searchData.destinationId || null,
+          destinationType: searchData.destinationType || searchData.destination_type || '',
+          checkInDate: searchData.checkIn,
+          checkOutDate: searchData.checkOut,
+          adults: searchData.adults,
+          children: searchData.children || 0,
+          rooms: searchData.rooms || 1,
         },
-        {
-          priority: 3,
-          jobId: `search-log-${userId || 'guest'}-${Date.now()}`,
-        }
+        { eventId, occurredAt, correlationId: metadata.correlationId }
       );
 
-      return { jobId: job.id };
+      return { eventId };
     } catch (error) {
-      logger.error(error, 'Failed to queue search log:');
+      logger.error(error, 'Failed to publish search log:');
       return null;
     }
   }

@@ -17,6 +17,7 @@ const { startHoldExpirySubscriber } = require('@events/holdExpiry.subscriber');
 const { initBucket } = require('@config/minio.config');
 const { setupSwagger } = require('@config/swagger.config');
 const passport = require('@config/passport.config');
+const natsPublisher = require('@events/nats.publisher');
 
 /** ********************* Middlewares ************************ */
 const errorMiddleware = require('@middlewares/error.middleware.js');
@@ -39,6 +40,8 @@ const createApp = async () => {
 
   await mongoDb.connect();
   logger.info('MongoDB connected successfully');
+
+  await natsPublisher.connect();
 
   const app = express();
 
@@ -115,8 +118,6 @@ const createApp = async () => {
   const {
     imageProcessingQueue,
     hotelSnapshotQueue,
-    searchLogQueue,
-    hotelViewEventQueue,
     emailQueue,
     notificationQueue,
     holdExpiryQueue,
@@ -129,8 +130,6 @@ const createApp = async () => {
     queues: [
       new BullMQAdapter(imageProcessingQueue),
       new BullMQAdapter(hotelSnapshotQueue),
-      new BullMQAdapter(searchLogQueue),
-      new BullMQAdapter(hotelViewEventQueue),
       new BullMQAdapter(emailQueue),
       new BullMQAdapter(notificationQueue),
       new BullMQAdapter(holdExpiryQueue),

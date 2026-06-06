@@ -127,6 +127,7 @@ function runScript(taskKey, scriptPath, args = [], options = {}) {
       cwd: SERVER_ROOT,
       env: {
         ...process.env,
+        ...(options.env || {}),
         NODE_ENV: process.env.NODE_ENV || 'development',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -203,6 +204,14 @@ function buildDatabaseSeedArgs(seederName, body = {}) {
 
   booleanFlag(args, body.clear === true || body.clearExisting === true, '--clear');
 
+  if (seederName === 'images') {
+    return buildImageSeedArgs(body);
+  }
+
+  if (seederName === 'city_images') {
+    return buildCityImageSeedArgs(body);
+  }
+
   if (seederName === 'all') {
     booleanFlag(args, body.quick === true, '--quick');
     booleanFlag(args, body.skipImages === true, '--skip-images');
@@ -212,6 +221,62 @@ function buildDatabaseSeedArgs(seederName, body = {}) {
   if (seederName === 'hotel_search_snapshot') {
     booleanFlag(args, body.rebuild === true, '--rebuild');
   }
+
+  return args;
+}
+
+function buildImageSeedArgs(body = {}) {
+  const args = [];
+
+  if (body.hotelsOnly === true && body.roomsOnly === true) {
+    throw new ApiError(
+      400,
+      'INVALID_INTERNAL_TASK_OPTION',
+      'hotelsOnly and roomsOnly cannot both be true'
+    );
+  }
+
+  booleanFlag(args, body.skipChecks === true || body.skipPrerequisites === true, '--skip-checks');
+  booleanFlag(args, body.hotelsOnly === true, '--hotels-only');
+  booleanFlag(args, body.roomsOnly === true, '--rooms-only');
+  positiveIntegerArg(args, body.limit, '--limit');
+
+  return args;
+}
+
+function buildImageSeedEnv(body = {}) {
+  const env = {};
+
+  if (body.apiBaseUrl) {
+    if (typeof body.apiBaseUrl !== 'string') {
+      throw new ApiError(400, 'INVALID_INTERNAL_TASK_OPTION', 'apiBaseUrl must be a string');
+    }
+    env.API_BASE_URL = body.apiBaseUrl;
+  }
+
+  if (body.healthCheckUrl) {
+    if (typeof body.healthCheckUrl !== 'string') {
+      throw new ApiError(400, 'INVALID_INTERNAL_TASK_OPTION', 'healthCheckUrl must be a string');
+    }
+    env.HEALTH_CHECK_URL = body.healthCheckUrl;
+  }
+
+  return env;
+}
+
+function buildCityImageSeedArgs(body = {}) {
+  const args = [];
+
+  if (body.primaryOnly === true && body.allImages === true) {
+    throw new ApiError(
+      400,
+      'INVALID_INTERNAL_TASK_OPTION',
+      'primaryOnly and allImages cannot both be true'
+    );
+  }
+
+  booleanFlag(args, body.allImages === true || body.primaryOnly === false, '--all-images');
+  positiveIntegerArg(args, body.limit, '--limit');
 
   return args;
 }
@@ -271,9 +336,29 @@ async function initDatabase(body = {}) {
 async function runDatabaseSeeder(seederName, body = {}) {
   const script = assertKnownTask(DATABASE_SEEDERS, seederName, 'database seeder');
   const args = buildDatabaseSeedArgs(seederName, body);
+  const imageSeederNames = new Set(['images', 'city_images']);
 
   return runScript(`database:seed:${seederName}`, script, args, {
     timeoutMs: body.timeoutMs,
+    env: imageSeederNames.has(seederName) ? buildImageSeedEnv(body) : undefined,
+  });
+}
+
+async function runImageSeeder(body = {}) {
+  const args = buildImageSeedArgs(body);
+
+  return runScript('database:seed:images', DATABASE_SEEDERS.images, args, {
+    timeoutMs: body.timeoutMs,
+    env: buildImageSeedEnv(body),
+  });
+}
+
+async function runCityImageSeeder(body = {}) {
+  const args = buildCityImageSeedArgs(body);
+
+  return runScript('database:seed:city_images', DATABASE_SEEDERS.city_images, args, {
+    timeoutMs: body.timeoutMs,
+    env: buildImageSeedEnv(body),
   });
 }
 
@@ -317,6 +402,8 @@ function listTasks() {
 module.exports = {
   initDatabase,
   runDatabaseSeeder,
+  runImageSeeder,
+  runCityImageSeeder,
   setupElasticsearch,
   runElasticsearchSeeder,
   runMongodbSeeder,

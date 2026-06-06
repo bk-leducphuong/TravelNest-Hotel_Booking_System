@@ -14,6 +14,8 @@
     "dev:server": "yarn workspace @travelnest/server dev",
     "dev:admin": "yarn workspace @travelnest/admin-client dev",
     "dev:bullmq-worker": "yarn workspace @travelnest/server dev:bullmq-worker",
+    "dev:analytics": "cd services/analytics && go run ./cmd/api",
+    "build:analytics": "cd services/analytics && go build -o analytics/analytics ./cmd/api/main.go",
     "build:client": "yarn workspace @travelnest/client build",
     "build:server": "yarn workspace @travelnest/server build",
     "build:admin": "yarn workspace @travelnest/admin-client build",

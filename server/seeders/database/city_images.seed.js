@@ -19,6 +19,22 @@ const { countries: Countries, cities: Cities } = db;
 // Expected path: seeders/database/images/city/vietnam
 const VIETNAM_CITY_IMAGES_DIR = path.join(__dirname, 'images/city/vietnam');
 
+function getArg(name, fallback = null) {
+  const match = process.argv.find((arg) => arg.startsWith(`--${name}=`));
+  if (!match) return fallback;
+  return match.split('=')[1];
+}
+
+function parseCliOptions() {
+  const limitArg = getArg('limit');
+  const limit = limitArg ? Math.max(1, parseInt(limitArg, 10)) : null;
+
+  return {
+    primaryOnly: !process.argv.includes('--all-images'),
+    limit: Number.isNaN(limit) ? null : limit,
+  };
+}
+
 /**
  * Load all image filenames from the Vietnam city images directory.
  */
@@ -29,7 +45,7 @@ function loadVietnamCityImageFiles() {
 
   const files = fs
     .readdirSync(VIETNAM_CITY_IMAGES_DIR)
-    .filter((file) => /\.(jpe?g|png|webp)$/i.test(file));
+    .filter((file) => /\.(jpe?g|png|webp|avif)$/i.test(file));
 
   if (files.length === 0) {
     throw new Error(`No image files found in: ${VIETNAM_CITY_IMAGES_DIR}`);
@@ -94,12 +110,12 @@ async function seedCityImages(options = {}) {
 
     for (let i = 0; i < vietnamCities.length; i++) {
       const city = vietnamCities[i];
-      console.log(`\n📦 Processing city ${i + 1}/${vietnamCities.length}: ${city.name} (${city.id})`);
+      console.log(
+        `\n📦 Processing city ${i + 1}/${vietnamCities.length}: ${city.name} (${city.id})`
+      );
 
       // Choose images in round-robin fashion so all files get used
-      const imagesForCity = primaryOnly
-        ? [imageFiles[i % imageFiles.length]]
-        : imageFiles;
+      const imagesForCity = primaryOnly ? [imageFiles[i % imageFiles.length]] : imageFiles;
 
       for (let j = 0; j < imagesForCity.length; j++) {
         const filename = imagesForCity[j];
@@ -150,10 +166,7 @@ if (require.main === module) {
       await sequelize.authenticate();
       console.log('✅ Database connection established');
 
-      await seedCityImages({
-        primaryOnly: true,
-        limit: null,
-      });
+      await seedCityImages(parseCliOptions());
 
       await db.sequelize.close();
       console.log('✅ Database connection closed');
