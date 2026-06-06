@@ -2,9 +2,9 @@ require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });
 
-const db = require('../../../models');
-const sequelize = require('../../../config/database.config');
-const snapshotRepo = require('../../../repositories/hotel_search_snapshot.repository');
+const db = require('../../models');
+const sequelize = require('../../config/database.config');
+const snapshotRepo = require('../../repositories/hotel_search_snapshot.repository');
 
 const {
   hotels: Hotels,

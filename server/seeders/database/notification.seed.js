@@ -10,8 +10,8 @@ async function loadFaker() {
   }
 }
 
-const db = require('../../../models');
-const sequelize = require('../../../config/database.config');
+const db = require('../../models');
+const sequelize = require('../../config/database.config');
 const { notifications, hotels, users, bookings } = db;
 
 // Legacy notification type aliases (used for seeding convenience)

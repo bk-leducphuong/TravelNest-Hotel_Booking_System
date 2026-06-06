@@ -11,8 +11,8 @@ async function loadFaker() {
   }
 }
 
-const db = require('../../../models');
-const sequelize = require('../../../config/database.config');
+const db = require('../../models');
+const sequelize = require('../../config/database.config');
 const { users: Users, roles: Roles, user_roles: UserRoles, auth_accounts: AuthAccounts } = db;
 
 /**

@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
 const path = require('path');
-require('../../../register-aliases');
+require('../../register-aliases');
 
-const serverRoot = path.resolve(__dirname, '../../..');
+const serverRoot = path.resolve(__dirname, '../..');
 
 require('dotenv').config({
   path: path.join(serverRoot, `.env.${process.env.NODE_ENV || 'development'}`),

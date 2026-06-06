@@ -10,9 +10,9 @@ async function loadFaker() {
   }
 }
 
-const db = require('../../../models');
-const sequelize = require('../../../config/database.config');
-const { PLACE_CATEGORIES } = require('../../../constants/hotels');
+const db = require('../../models');
+const sequelize = require('../../config/database.config');
+const { PLACE_CATEGORIES } = require('../../constants/hotels');
 const { hotels, nearby_places } = db;
 
 // Place name templates by category

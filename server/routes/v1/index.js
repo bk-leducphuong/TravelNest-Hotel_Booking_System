@@ -18,6 +18,7 @@ const paymentRoutes = require('./payment.routes');
 const reviewRoutes = require('./review.routes');
 const searchRoutes = require('./search.routes');
 const userRoutes = require('./user.routes');
+const internalSuperadminRoutes = require('./internalSuperadmin.routes');
 // const adminRoutes = require('./admin/index');
 
 // Mount all routes
@@ -32,6 +33,7 @@ router.use('/reviews', reviewRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('/hold', holdRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/internal/superadmin', internalSuperadminRoutes);
 // router.use('/admin', adminRoutes);
 
 module.exports = router;

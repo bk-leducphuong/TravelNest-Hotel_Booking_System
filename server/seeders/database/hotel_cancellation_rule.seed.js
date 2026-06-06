@@ -16,8 +16,8 @@ async function loadFaker() {
   }
 }
 
-const db = require('../../../models');
-const sequelize = require('../../../config/database.config');
+const db = require('../../models');
+const sequelize = require('../../config/database.config');
 const { hotels, hotel_cancellation_rules } = db;
 
 const RULE_TEMPLATES = [

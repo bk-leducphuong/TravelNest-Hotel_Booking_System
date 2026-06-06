@@ -2,8 +2,8 @@ require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
 });
 
-const db = require('../../../models');
-const sequelize = require('../../../config/database.config');
+const db = require('../../models');
+const sequelize = require('../../config/database.config');
 
 // Import all seed functions
 const { seedUsers } = require('./user.seed');
