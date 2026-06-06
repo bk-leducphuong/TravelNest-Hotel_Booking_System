@@ -74,7 +74,7 @@ func (c *Consumer) consume(ctx context.Context, subject, durable string, handler
 		default:
 		}
 
-		messages, err := sub.Fetch(10, nats.Context(ctx), nats.MaxWait(2*time.Second))
+		messages, err := sub.Fetch(10, nats.MaxWait(2*time.Second))
 		if err != nil {
 			if err == nats.ErrTimeout || ctx.Err() != nil {
 				continue

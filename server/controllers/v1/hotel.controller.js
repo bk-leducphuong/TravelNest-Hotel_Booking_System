@@ -35,8 +35,8 @@ const getHotelDetails = asyncHandler(async (req, res) => {
   const userAgent = req.get('user-agent') || '';
 
   hotelViewEventService
-    .queueHotelViewEvent({ hotelId, userId, sessionId, ipAddress, userAgent })
-    .catch((err) => logger.error({ err: err.message }, 'Failed to queue hotel view event'));
+    .publishHotelViewEvent({ hotelId, userId, sessionId, ipAddress, userAgent })
+    .catch((err) => logger.error({ err: err.message }, 'Failed to publish hotel view event'));
 
   // Track "recently viewed" for authenticated users (Redis)
   if (userId) {

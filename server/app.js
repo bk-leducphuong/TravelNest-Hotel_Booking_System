@@ -117,8 +117,6 @@ const createApp = async () => {
   const {
     imageProcessingQueue,
     hotelSnapshotQueue,
-    searchLogQueue,
-    hotelViewEventQueue,
     emailQueue,
     notificationQueue,
     holdExpiryQueue,
@@ -131,8 +129,6 @@ const createApp = async () => {
     queues: [
       new BullMQAdapter(imageProcessingQueue),
       new BullMQAdapter(hotelSnapshotQueue),
-      new BullMQAdapter(searchLogQueue),
-      new BullMQAdapter(hotelViewEventQueue),
       new BullMQAdapter(emailQueue),
       new BullMQAdapter(notificationQueue),
       new BullMQAdapter(holdExpiryQueue),

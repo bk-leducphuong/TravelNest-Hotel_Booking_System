@@ -51,7 +51,7 @@ const searchHotels = asyncHandler(async (req, res) => {
   const userId = req.session?.user?.id || null;
   const { destination, searchResults } = await searchService.searchHotels(searchParams, userId);
 
-  // Save search log asynchronously via BullMQ (don't wait)
+  // Publish search analytics asynchronously (don't wait)
   const analyticsData = {
     ...searchParams,
     destinationId: destination?.id,
@@ -64,14 +64,14 @@ const searchHotels = asyncHandler(async (req, res) => {
       .recordRecentSearch(userId, searchParams)
       .catch((err) => logger.error({ err: err.message }, 'Failed to store recent search in Redis'));
 
-    // 2) Queue analytics log via BullMQ
+    // 2) Publish analytics log
     searchService
       .saveSearchLog(analyticsData, userId, {
         resultCount: searchResults?.data?.pagination?.total || 0,
         searchTimeMs: searchResults?.data?.search_metadata?.search_time_ms || 0,
       })
       .catch((err) => {
-        logger.error('Failed to queue search log:', err);
+        logger.error('Failed to publish search log:', err);
       });
   } else {
     // Anonymous users: analytics only, no per-user history
@@ -81,7 +81,7 @@ const searchHotels = asyncHandler(async (req, res) => {
         searchTimeMs: searchResults?.data?.search_metadata?.search_time_ms || 0,
       })
       .catch((err) => {
-        logger.error('Failed to queue search log:', err);
+        logger.error('Failed to publish search log:', err);
       });
   }
 
@@ -157,8 +157,8 @@ const saveSearchInformation = asyncHandler(async (req, res) => {
   res.status(201).json({
     success: true,
     data: {
-      message: 'Search log queued for processing',
-      jobId: result?.jobId,
+      message: 'Search log published for analytics',
+      eventId: result?.eventId,
     },
   });
 });

@@ -8,8 +8,6 @@ const { scheduleBookingExpiryScanner } = require('@queues/bookingExpiry.queue');
 
 const imageWorker = require('./image.worker');
 const hotelSnapshotWorker = require('./hotelSnapshot.worker');
-const searchLogWorker = require('./searchLog.worker');
-const hotelViewEventWorker = require('./hotelViewEvent.worker');
 const emailWorker = require('./email.worker');
 const notificationWorker = require('./notification.worker');
 const holdExpiryWorker = require('./holdExpiry.worker');
@@ -18,8 +16,6 @@ const bookingExpiryWorker = require('./bookingExpiry.worker');
 const workers = [
   imageWorker,
   hotelSnapshotWorker,
-  searchLogWorker,
-  hotelViewEventWorker,
   emailWorker,
   notificationWorker,
   holdExpiryWorker,

@@ -58,13 +58,5 @@ module.exports = {
         concurrency: parseInt(process.env.BULLMQ_HOTEL_CONCURRENCY || '10', 10),
       },
     },
-    hotelViewEvent: {
-      name: 'hotelViewEvent',
-      options: defaultJobOptions,
-      workerOptions: {
-        ...workerOptions,
-        concurrency: parseInt(process.env.BULLMQ_HOTEL_VIEW_CONCURRENCY || '20', 10),
-      },
-    },
   },
 };

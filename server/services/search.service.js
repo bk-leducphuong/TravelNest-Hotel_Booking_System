@@ -10,8 +10,6 @@
  */
 
 const natsPublisher = require('@events/nats.publisher');
-const { searchLogQueue } = require('@queues/index');
-const { addJob } = require('@utils/bullmq.utils');
 const { v4: uuidv4 } = require('uuid');
 
 const { getPresignedUrl, bucketName } = require('@utils/minio.utils');
@@ -758,12 +756,12 @@ class SearchService {
   }
 
   /**
-   * Save search log for analytics (async via BullMQ)
+   * Publish search log for analytics.
    *
    * @param {Object} searchData - Search data
    * @param {string} userId - User ID (optional)
    * @param {Object} metadata - Additional metadata (resultCount, searchTimeMs, etc.)
-   * @returns {Promise<Object>} Job info
+   * @returns {Promise<{ eventId: string } | null>} Event info
    */
   async saveSearchLog(searchData, userId = null, metadata = {}) {
     try {
@@ -785,47 +783,9 @@ class SearchService {
         { eventId, occurredAt, correlationId: metadata.correlationId }
       );
 
-      const job = await addJob(
-        searchLogQueue,
-        'save-search-log',
-        {
-          searchData: {
-            destinationId: searchData.destinationId,
-            destinationType: searchData.destinationType,
-            cityId: searchData.cityId,
-            countryId: searchData.countryId,
-            city: searchData.city,
-            country: searchData.country,
-            checkIn: searchData.checkIn,
-            checkOut: searchData.checkOut,
-            adults: searchData.adults,
-            children: searchData.children,
-            rooms: searchData.rooms,
-          },
-          userId,
-          metadata: {
-            filters: {
-              minPrice: searchData.minPrice,
-              maxPrice: searchData.maxPrice,
-              minRating: searchData.minRating,
-              hotelClass: searchData.hotelClass,
-              amenities: searchData.amenities,
-              freeCancellation: searchData.freeCancellation,
-              sortBy: searchData.sortBy,
-            },
-            resultCount: metadata.resultCount || 0,
-            searchTimeMs: metadata.searchTimeMs || 0,
-          },
-        },
-        {
-          priority: 3,
-          jobId: `search-log-${userId || 'guest'}-${Date.now()}`,
-        }
-      );
-
-      return { jobId: job.id };
+      return { eventId };
     } catch (error) {
-      logger.error(error, 'Failed to queue search log:');
+      logger.error(error, 'Failed to publish search log:');
       return null;
     }
   }

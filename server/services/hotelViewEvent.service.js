@@ -1,7 +1,5 @@
 const logger = require('@config/logger.config');
 const redisClient = require('@config/redis.config');
-const { hotelViewEventQueue } = require('@queues/index');
-const { addJob } = require('@utils/bullmq.utils');
 const { v4: uuidv4 } = require('uuid');
 const natsPublisher = require('@events/nats.publisher');
 
@@ -29,10 +27,10 @@ class HotelViewEventService {
   }
 
   /**
-   * Queue hotel view events for MongoDB insertion.
-   * @returns {Promise<{ jobId: string } | null>}
+   * Publish hotel view events for analytics.
+   * @returns {Promise<{ eventId: string } | null>}
    */
-  async queueHotelViewEvent({
+  async publishHotelViewEvent({
     hotelId,
     userId = null,
     sessionId = '',
@@ -69,20 +67,11 @@ class HotelViewEventService {
         { eventId: event.eventId, occurredAt: viewedAt }
       );
 
-      const job = await addJob(
-        hotelViewEventQueue,
-        'insert-hotel-view-events',
-        { events: [event] },
-        {
-          priority: 5,
-        }
-      );
-
-      return { jobId: job.id };
+      return { eventId: event.eventId };
     } catch (error) {
       logger.error(
         { error: error.message, stack: error.stack, hotelId, userId, sessionId },
-        'Failed to queue hotel view event'
+        'Failed to publish hotel view event'
       );
       return null;
     }
