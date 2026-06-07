@@ -126,19 +126,54 @@ services:
       NATS_URL: ${NATS_URL:-nats://nats:4222}
       NATS_STREAM: ${NATS_STREAM:-TRAVELNEST_ANALYTICS}
       NATS_CLIENT_NAME: ${NATS_CLIENT_NAME:-travelnest-api}
+      ANALYTICS_SERVICE_URL: http://analytics:8081
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
-      mongodb:
-        condition: service_healthy
       nats:
+        condition: service_healthy
+      analytics:
         condition: service_healthy
     ports:
       - '3000:3000'
     networks:
       - travelnest-net-test
+
+  analytics:
+    build:
+      context: ../../services/analytics
+      dockerfile: Dockerfile
+    container_name: travelnest-analytics-dev
+    restart: unless-stopped
+    environment:
+      HTTP_ADDR: :8081
+      MONGODB_URI: mongodb://mongodb:27017
+      MONGODB_DATABASE: ${MONGODB_DATABASE:-travelnest_analytics}
+      REDIS_URL: redis://redis:6379/${REDIS_DB:-1}
+      TRENDING_HOTELS_CACHE_TTL: ${TRENDING_HOTELS_CACHE_TTL:-2m}
+      TRENDING_DESTINATIONS_CACHE_TTL: ${TRENDING_DESTINATIONS_CACHE_TTL:-5m}
+      NATS_URL: ${NATS_URL:-nats://nats:4222}
+      NATS_STREAM: ${NATS_STREAM:-TRAVELNEST_ANALYTICS}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    expose:
+      - '8081'
+    networks:
+      - travelnest-net-test
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:8081/healthz']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   bullmq-worker:
     build:
@@ -159,8 +194,6 @@ services:
       redis:
         condition: service_healthy
       mysql:
-        condition: service_healthy
-      mongodb:
         condition: service_healthy
       nats:
         condition: service_healthy

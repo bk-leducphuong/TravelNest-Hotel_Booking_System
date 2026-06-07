@@ -2,7 +2,6 @@ require('../register-aliases');
 
 const http = require('http');
 const logger = require('@config/logger.config');
-const mongoDb = require('@config/mongodb.config');
 const { scheduleHoldExpiryScanner } = require('@queues/holdExpiry.queue');
 const { scheduleBookingExpiryScanner } = require('@queues/bookingExpiry.queue');
 
@@ -52,8 +51,6 @@ function startHealthServer() {
 
 async function startWorkers() {
   try {
-    await mongoDb.connect();
-
     await scheduleHoldExpiryScanner();
     await scheduleBookingExpiryScanner();
     await Promise.all(workers.map((worker) => worker.run()));
@@ -85,8 +82,6 @@ async function shutdownWorkers() {
       await new Promise((resolve) => healthServer.close(resolve));
       logger.info('BullMQ worker health server closed');
     }
-
-    await mongoDb.close();
 
     logger.info('All workers shut down successfully');
   } catch (error) {

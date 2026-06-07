@@ -8,6 +8,7 @@ const router = express.Router();
 
 // Import all route modules
 const authRoutes = require('./auth.routes');
+const analyticsRoutes = require('./analytics.routes');
 const bookingRoutes = require('./booking.routes');
 const holdRoutes = require('./hold.routes');
 const hotelRoutes = require('./hotel.routes');
@@ -24,6 +25,7 @@ const internalSuperadminRoutes = require('./internalSuperadmin.routes');
 // Mount all routes
 router.use('/search', searchRoutes);
 router.use('/hotels', hotelRoutes);
+router.use('/analytics', analyticsRoutes);
 router.use('/images', imageRoutes);
 router.use('/auth', authRoutes);
 router.use('/join', joinRoutes);
