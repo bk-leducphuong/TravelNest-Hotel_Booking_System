@@ -39,6 +39,8 @@ const createApp = async () => {
 
   await natsPublisher.connect();
 
+  await natsPublisher.connect();
+
   const app = express();
 
   // Initialize s3 bucket
