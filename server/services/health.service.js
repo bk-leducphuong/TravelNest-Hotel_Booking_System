@@ -2,8 +2,8 @@ const sequelize = require('@config/database.config');
 const redisClient = require('@config/redis.config');
 const { minioClient, bucketName } = require('@config/minio.config');
 const elasticsearchClient = require('@config/elasticsearch.config');
-const mongoDb = require('@config/mongodb.config');
 const logger = require('@config/logger.config');
+const analyticsService = require('@services/analytics.service');
 
 /**
  * Health Check Service
@@ -25,10 +25,10 @@ class HealthService {
       this.checkRedisConnection(),
       this.checkMinIOConnection(),
       this.checkElasticsearchConnection(),
-      this.checkMongoDBConnection(),
+      this.checkAnalyticsService(),
     ]);
 
-    const [nodeCheck, mysqlCheck, redisCheck, minioCheck, elasticsearchCheck, mongoDbCheck] =
+    const [nodeCheck, mysqlCheck, redisCheck, minioCheck, elasticsearchCheck, analyticsCheck] =
       checks;
 
     const services = {
@@ -37,7 +37,7 @@ class HealthService {
       redis: this._formatCheckResult(redisCheck),
       minio: this._formatCheckResult(minioCheck),
       elasticsearch: this._formatCheckResult(elasticsearchCheck),
-      mongodb: this._formatCheckResult(mongoDbCheck),
+      analytics: this._formatCheckResult(analyticsCheck),
     };
 
     // Determine overall status
@@ -310,35 +310,34 @@ class HealthService {
   }
 
   /**
-   * Check MongoDB connection health
+   * Check analytics service health
    * @returns {Promise<Object>}
    */
-  async checkMongoDBConnection() {
+  async checkAnalyticsService() {
     const startTime = Date.now();
     try {
-      const isHealthy = await mongoDb.ping();
+      const result = await analyticsService.healthz();
 
-      if (!isHealthy) {
-        throw new Error('MongoDB ping failed');
+      if (result?.status !== 'ok') {
+        throw new Error('Analytics service health check failed');
       }
 
       const responseTime = Date.now() - startTime;
 
       return {
         status: 'healthy',
-        message: 'MongoDB connection is active',
+        message: 'Analytics service is healthy',
         details: {
-          host: process.env.MONGODB_HOST || 'localhost',
-          database: process.env.MONGODB_DATABASE || 'travelnest_analytics',
+          url: process.env.ANALYTICS_SERVICE_URL || 'http://localhost:8081',
         },
         responseTime,
       };
     } catch (error) {
-      logger.error('MongoDB health check failed:', error);
+      logger.error('Analytics service health check failed:', error);
       const responseTime = Date.now() - startTime;
       return {
         status: 'unhealthy',
-        message: 'MongoDB connection failed',
+        message: 'Analytics service connection failed',
         error: error.message,
         responseTime,
       };

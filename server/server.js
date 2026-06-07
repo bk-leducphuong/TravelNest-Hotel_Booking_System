@@ -3,7 +3,6 @@ require('dotenv').config({
 });
 const logger = require('./config/logger.config');
 const createApp = require('./app');
-const mongoDb = require('./config/mongodb.config');
 const natsPublisher = require('./events/nats.publisher');
 const PORT = process.env.PORT || 3000;
 
@@ -31,7 +30,6 @@ async function shutdown(signal) {
   }
 
   await natsPublisher.close();
-  await mongoDb.close();
   process.exit(0);
 }
 

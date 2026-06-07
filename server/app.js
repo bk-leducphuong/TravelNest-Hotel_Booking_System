@@ -11,7 +11,6 @@ const cookieParser = require('cookie-parser');
 /** ********************* Config ************************ */
 const logger = require('@config/logger.config');
 const db = require('@models');
-const mongoDb = require('@config/mongodb.config');
 const { initSocket } = require('@socket/index');
 const { startHoldExpirySubscriber } = require('@events/holdExpiry.subscriber');
 const { initBucket } = require('@config/minio.config');
@@ -38,8 +37,7 @@ const createApp = async () => {
   require('@models/index.js');
   logger.info('Database connected successfully');
 
-  await mongoDb.connect();
-  logger.info('MongoDB connected successfully');
+  await natsPublisher.connect();
 
   await natsPublisher.connect();
 

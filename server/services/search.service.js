@@ -18,11 +18,11 @@ const destinationElasticsearchHelper = require('../helpers/destination_elasticse
 const searchRepository = require('../repositories/search.repository');
 const destinationRepository = require('../repositories/destination.repository');
 const imageRepository = require('../repositories/image.repository');
-const searchLogRepository = require('../repositories/mongodb/search_log.repository');
 const userRepository = require('../repositories/user.repository');
 const ApiError = require('../utils/ApiError');
 const logger = require('../config/logger.config');
 const redisClient = require('../config/redis.config');
+const analyticsService = require('./analytics.service');
 
 class SearchService {
   _recentSearchKey(userId) {
@@ -98,31 +98,23 @@ class SearchService {
   }
 
   /**
-   * Get top popular/trending destinations from MongoDB analytics, cached in Redis.
+   * Get top popular/trending destinations from analytics service.
    * Includes city images (primary image + variants) when available.
    */
   async getTrendingDestinations({ limit = 5, days = 30 } = {}) {
     const safeLimit = Math.max(1, Math.min(20, parseInt(limit, 10) || 5));
     const safeDays = Math.max(1, Math.min(365, parseInt(days, 10) || 30));
 
-    const cacheKey = `trending_destinations:limit:${safeLimit}:days:${safeDays}`;
-
-    const cached = await redisClient.get(cacheKey);
-    if (cached) {
-      try {
-        return JSON.parse(cached);
-      } catch {
-        // fall through to fetch fresh
-      }
-    }
-
-    const rows = await searchLogRepository.findPopularPlaces(safeLimit, safeDays);
+    const rows = await analyticsService.getTrendingDestinations({
+      limit: safeLimit,
+      days: safeDays,
+    });
 
     const destinations = [];
     const cityIdsForImages = new Set();
 
     for (const row of rows) {
-      const destination = (await destinationRepository.findActiveById(row.destination_id)) || null;
+      const destination = (await destinationRepository.findActiveById(row.destinationId)) || null;
 
       if (!destination) {
         continue;
@@ -139,8 +131,8 @@ class SearchService {
         countryId: destination.country_id,
         displayName: destination.display_name,
         countryName: destination.country_name,
-        searchCount: Number(row.search_count) || 0,
-        uniqueUsers: Number(row.unique_users) || 0,
+        searchCount: Number(row.searchCount) || 0,
+        uniqueUsers: Number(row.uniqueUsers) || 0,
         images: null,
       });
     }
@@ -207,10 +199,6 @@ class SearchService {
       //     }
       //   }
     }
-
-    await redisClient.set(cacheKey, JSON.stringify(destinations), {
-      EX: 60 * 60, // 1 hour TTL
-    });
 
     return destinations;
   }

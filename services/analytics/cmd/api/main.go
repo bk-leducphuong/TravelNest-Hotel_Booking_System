@@ -12,6 +12,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"
+	analyticsCache "github.com/travelnest/services/analytics/internal/cache"
 	"github.com/travelnest/services/analytics/internal/config"
 	analyticsEvents "github.com/travelnest/services/analytics/internal/events"
 	analyticsHTTP "github.com/travelnest/services/analytics/internal/http"
@@ -42,6 +43,25 @@ func main() {
 		os.Exit(1)
 	}
 
+	redisClient, err := analyticsCache.NewRedisClient(cfg.RedisURL)
+	if err != nil {
+		logger.Warn("failed to configure Redis cache; analytics cache disabled", "error", err)
+	}
+	var redisCache *analyticsCache.RedisCache
+	if redisClient != nil {
+		redisCache = analyticsCache.NewRedisCache(redisClient)
+		defer redisCache.Close()
+		if err := redisCache.Ping(ctx); err != nil {
+			logger.Warn("failed to connect to Redis cache; analytics cache will retry per request", "error", err)
+		} else {
+			logger.Info(
+				"connected to Redis cache",
+				"trendingHotelsTTL", cfg.TrendingHotelsCacheTTL.String(),
+				"trendingDestinationsTTL", cfg.TrendingDestinationsTTL.String(),
+			)
+		}
+	}
+
 	nc, err := nats.Connect(cfg.NATSURL)
 	if err != nil {
 		logger.Error("failed to connect to NATS", "error", err)
@@ -65,7 +85,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           analyticsHTTP.NewServer(repo),
+		Handler:           analyticsHTTP.NewServer(repo, redisCache, cfg.TrendingHotelsCacheTTL, cfg.TrendingDestinationsTTL, logger),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

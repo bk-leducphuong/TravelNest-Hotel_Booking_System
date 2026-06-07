@@ -665,8 +665,8 @@ router.get('/recent', authenticate, validate(searchSchema.getRecentSearches), ge
  *   get:
  *     summary: Get trending destinations
  *     description: |
- *       Returns a list of popular/trending destinations (cities) based on MongoDB analytics data.
- *       Results are cached in Redis for performance.
+ *       Returns a list of popular/trending destinations (cities) based on analytics data.
+ *       Analytics rankings are served by the analytics service and enriched by the API gateway.
  *     tags:
  *       - Search
  *     parameters:

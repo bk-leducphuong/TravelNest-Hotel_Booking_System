@@ -5,8 +5,8 @@ const logger = require('@config/logger.config');
 const hotelRepository = require('../repositories/hotel.repository');
 const roomRepository = require('../repositories/room.repository');
 const redisClient = require('../config/redis.config');
-const hotelDailyViewsRepository = require('../repositories/mongodb/hotel_daily_views.repository');
 const ApiError = require('../utils/ApiError');
+const analyticsService = require('./analytics.service');
 
 /**
  * Hotel Service - Contains main business logic
@@ -107,14 +107,14 @@ class HotelService {
   }
 
   /**
-   * Get trending hotels from MongoDB view events, enrich from MySQL.
+   * Get trending hotel IDs from analytics service, enrich from MySQL.
    */
   async getTrendingHotels({ limit = 10, days = 2 } = {}) {
-    const rows = await hotelDailyViewsRepository.findTrendingHotelIds({ limit, days });
-    const hotelIds = rows.map((r) => r.hotel_id);
+    const rows = await analyticsService.getTrendingHotels({ limit, days });
+    const hotelIds = rows.map((r) => r.hotelId).filter(Boolean);
     const cards = await this._enrichHotelCardsByIds(hotelIds);
 
-    const viewsById = new Map(rows.map((r) => [String(r.hotel_id), r.views]));
+    const viewsById = new Map(rows.map((r) => [String(r.hotelId), r.views]));
     return cards.map((c) => ({ ...c, views: viewsById.get(String(c.id)) || 0 }));
   }
 

@@ -122,7 +122,7 @@ const getRecentlyViewedHotels = asyncHandler(async (req, res) => {
 
 /**
  * GET /api/v1/hotels/trending
- * Get trending hotels (public, from MongoDB analytics)
+ * Get trending hotels (public, from analytics service)
  */
 const getTrendingHotels = asyncHandler(async (req, res) => {
   const { limit, days } = req.query;
