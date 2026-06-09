@@ -114,7 +114,6 @@ const createApp = async () => {
   const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
   const { ExpressAdapter } = require('@bull-board/express');
   const {
-    imageProcessingQueue,
     hotelSnapshotQueue,
     emailQueue,
     notificationQueue,
@@ -126,7 +125,6 @@ const createApp = async () => {
 
   createBullBoard({
     queues: [
-      new BullMQAdapter(imageProcessingQueue),
       new BullMQAdapter(hotelSnapshotQueue),
       new BullMQAdapter(emailQueue),
       new BullMQAdapter(notificationQueue),

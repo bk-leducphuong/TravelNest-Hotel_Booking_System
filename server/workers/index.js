@@ -5,7 +5,6 @@ const logger = require('@config/logger.config');
 const { scheduleHoldExpiryScanner } = require('@queues/holdExpiry.queue');
 const { scheduleBookingExpiryScanner } = require('@queues/bookingExpiry.queue');
 
-const imageWorker = require('./image.worker');
 const hotelSnapshotWorker = require('./hotelSnapshot.worker');
 const emailWorker = require('./email.worker');
 const notificationWorker = require('./notification.worker');
@@ -13,7 +12,6 @@ const holdExpiryWorker = require('./holdExpiry.worker');
 const bookingExpiryWorker = require('./bookingExpiry.worker');
 
 const workers = [
-  imageWorker,
   hotelSnapshotWorker,
   emailWorker,
   notificationWorker,

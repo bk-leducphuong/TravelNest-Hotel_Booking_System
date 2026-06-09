@@ -42,14 +42,6 @@ module.exports = {
   defaultJobOptions,
   workerOptions,
   queues: {
-    imageProcessing: {
-      name: 'imageProcessing',
-      options: defaultJobOptions,
-      workerOptions: {
-        ...workerOptions,
-        concurrency: parseInt(process.env.BULLMQ_IMAGE_CONCURRENCY || '2', 10),
-      },
-    },
     hotelSnapshot: {
       name: 'hotelSnapshot',
       options: defaultJobOptions,
