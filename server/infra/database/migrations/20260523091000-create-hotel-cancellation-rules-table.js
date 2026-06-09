@@ -1,8 +1,13 @@
 'use strict';
 
+const {
+  addIndexIfMissing,
+  createTableIfMissing,
+} = require('../migration-utils/schema');
+
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('hotel_cancellation_rules', {
+    await createTableIfMissing(queryInterface, 'hotel_cancellation_rules', {
       id: {
         type: Sequelize.UUID,
         allowNull: false,
@@ -75,17 +80,17 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex('hotel_cancellation_rules', ['hotel_id'], {
+    await addIndexIfMissing(queryInterface, 'hotel_cancellation_rules', ['hotel_id'], {
       name: 'idx_hotel_cancellation_rules_hotel_id',
     });
-    await queryInterface.addIndex('hotel_cancellation_rules', ['room_id'], {
+    await addIndexIfMissing(queryInterface, 'hotel_cancellation_rules', ['room_id'], {
       name: 'idx_hotel_cancellation_rules_room_id',
     });
-    await queryInterface.addIndex('hotel_cancellation_rules', ['hotel_id', 'room_id'], {
+    await addIndexIfMissing(queryInterface, 'hotel_cancellation_rules', ['hotel_id', 'room_id'], {
       name: 'idx_hotel_cancellation_rules_scope_unique',
       unique: true,
     });
-    await queryInterface.addIndex('hotel_cancellation_rules', ['hotel_id', 'is_active'], {
+    await addIndexIfMissing(queryInterface, 'hotel_cancellation_rules', ['hotel_id', 'is_active'], {
       name: 'idx_hotel_cancellation_rules_active',
     });
   },

@@ -1,8 +1,13 @@
 'use strict';
 
+const {
+  addIndexIfMissing,
+  createTableIfMissing,
+} = require('../migration-utils/schema');
+
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('ledger_entries', {
+    await createTableIfMissing(queryInterface, 'ledger_entries', {
       id: {
         type: Sequelize.UUID,
         allowNull: false,
@@ -170,29 +175,29 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex('ledger_entries', ['ledger_account_id'], {
+    await addIndexIfMissing(queryInterface, 'ledger_entries', ['ledger_account_id'], {
       name: 'idx_ledger_entries_account_id',
     });
-    await queryInterface.addIndex('ledger_entries', ['entry_group_id'], {
+    await addIndexIfMissing(queryInterface, 'ledger_entries', ['entry_group_id'], {
       name: 'idx_ledger_entries_group_id',
     });
-    await queryInterface.addIndex('ledger_entries', ['entry_group_key'], {
+    await addIndexIfMissing(queryInterface, 'ledger_entries', ['entry_group_key'], {
       name: 'idx_ledger_entries_group_key',
     });
-    await queryInterface.addIndex('ledger_entries', ['idempotency_key'], {
+    await addIndexIfMissing(queryInterface, 'ledger_entries', ['idempotency_key'], {
       name: 'idx_ledger_entries_idempotency_key',
       unique: true,
     });
-    await queryInterface.addIndex('ledger_entries', ['booking_id', 'transaction_id'], {
+    await addIndexIfMissing(queryInterface, 'ledger_entries', ['booking_id', 'transaction_id'], {
       name: 'idx_ledger_entries_refs',
     });
-    await queryInterface.addIndex('ledger_entries', ['refund_id'], {
+    await addIndexIfMissing(queryInterface, 'ledger_entries', ['refund_id'], {
       name: 'idx_ledger_entries_refund_id',
     });
-    await queryInterface.addIndex('ledger_entries', ['payout_id'], {
+    await addIndexIfMissing(queryInterface, 'ledger_entries', ['payout_id'], {
       name: 'idx_ledger_entries_payout_id',
     });
-    await queryInterface.addIndex('ledger_entries', ['hotel_id', 'posted_at'], {
+    await addIndexIfMissing(queryInterface, 'ledger_entries', ['hotel_id', 'posted_at'], {
       name: 'idx_ledger_entries_hotel_posted',
     });
   },

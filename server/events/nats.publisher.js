@@ -5,6 +5,10 @@ const logger = require('@config/logger.config');
 const sc = StringCodec();
 const DEFAULT_STREAM = process.env.NATS_STREAM || 'TRAVELNEST_ANALYTICS';
 const ANALYTICS_SUBJECTS = ['analytics.>'];
+const STREAM_SUBJECTS = {
+  TRAVELNEST_ANALYTICS: ANALYTICS_SUBJECTS,
+  TRAVELNEST_MEDIA: ['media.>'],
+};
 
 class NatsPublisher {
   constructor() {
@@ -32,7 +36,7 @@ class NatsPublisher {
         name: process.env.NATS_CLIENT_NAME || 'travelnest-api',
       });
       this.jetstream = this.connection.jetstream();
-      await this.ensureAnalyticsStream();
+      await this.ensureStreams();
 
       this.connection
         .closed()
@@ -56,16 +60,27 @@ class NatsPublisher {
     }
   }
 
-  async ensureAnalyticsStream() {
+  async ensureStream(streamName, subjects) {
     const manager = await this.connection.jetstreamManager();
     try {
-      await manager.streams.info(DEFAULT_STREAM);
+      await manager.streams.info(streamName);
     } catch (error) {
       await manager.streams.add({
-        name: DEFAULT_STREAM,
-        subjects: ANALYTICS_SUBJECTS,
+        name: streamName,
+        subjects,
         storage: 'file',
       });
+    }
+  }
+
+  async ensureStreams() {
+    const streams = new Map(Object.entries(STREAM_SUBJECTS));
+    if (!streams.has(DEFAULT_STREAM)) {
+      streams.set(DEFAULT_STREAM, ANALYTICS_SUBJECTS);
+    }
+
+    for (const [streamName, subjects] of streams.entries()) {
+      await this.ensureStream(streamName, subjects);
     }
   }
 

@@ -1,8 +1,13 @@
 'use strict';
 
+const {
+  addIndexIfMissing,
+  createTableIfMissing,
+} = require('../migration-utils/schema');
+
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('payouts', {
+    await createTableIfMissing(queryInterface, 'payouts', {
       id: {
         type: Sequelize.UUID,
         allowNull: false,
@@ -123,30 +128,30 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex('payouts', ['hotel_id'], {
+    await addIndexIfMissing(queryInterface, 'payouts', ['hotel_id'], {
       name: 'idx_payouts_hotel_id',
     });
-    await queryInterface.addIndex('payouts', ['owner_id'], {
+    await addIndexIfMissing(queryInterface, 'payouts', ['owner_id'], {
       name: 'idx_payouts_owner_id',
     });
-    await queryInterface.addIndex('payouts', ['connected_payment_account_id'], {
+    await addIndexIfMissing(queryInterface, 'payouts', ['connected_payment_account_id'], {
       name: 'idx_payouts_connected_payment_account_id',
     });
-    await queryInterface.addIndex('payouts', ['transaction_id'], {
+    await addIndexIfMissing(queryInterface, 'payouts', ['transaction_id'], {
       name: 'idx_payouts_transaction_id',
     });
-    await queryInterface.addIndex('payouts', ['provider_payout_id'], {
+    await addIndexIfMissing(queryInterface, 'payouts', ['provider_payout_id'], {
       name: 'idx_payouts_provider_payout_id',
       unique: true,
     });
-    await queryInterface.addIndex('payouts', ['provider_transfer_id'], {
+    await addIndexIfMissing(queryInterface, 'payouts', ['provider_transfer_id'], {
       name: 'idx_payouts_provider_transfer_id',
       unique: true,
     });
-    await queryInterface.addIndex('payouts', ['status'], {
+    await addIndexIfMissing(queryInterface, 'payouts', ['status'], {
       name: 'idx_payouts_status',
     });
-    await queryInterface.addIndex('payouts', ['period_start', 'period_end'], {
+    await addIndexIfMissing(queryInterface, 'payouts', ['period_start', 'period_end'], {
       name: 'idx_payouts_period',
     });
   },

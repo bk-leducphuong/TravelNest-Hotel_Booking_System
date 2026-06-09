@@ -1,7 +1,6 @@
 const bcrypt = require('bcryptjs');
-const sharp = require('sharp');
 
-const { minioClient, bucketName, getObjectUrl } = require('../config/minio.config');
+const mediaProxyService = require('@services/mediaProxy.service');
 const userRepository = require('../repositories/user.repository');
 const { AuthAccounts } = require('../models');
 const ApiError = require('../utils/ApiError');
@@ -30,7 +29,7 @@ class UserService {
       ...userData,
       full_name: user.full_name,
       username: user.full_name,
-      profile_picture_url: null,
+      profile_picture_url: userData.profile_picture_url || null,
       user_role: roles[0] || null,
       roles,
     };
@@ -63,29 +62,17 @@ class UserService {
   /**
    * Update user avatar
    * @param {number} userId - User ID
-   * @param {Buffer} fileBuffer - Image file buffer
+   * @param {object} file - Uploaded file from multer
    * @returns {Promise<string>} Profile picture URL
    */
-  async updateAvatar(userId, fileBuffer) {
-    // Compress image to AVIF using sharp
-    const avifBuffer = await sharp(fileBuffer).avif({ quality: 50 }).toBuffer();
-
-    // Upload the AVIF image buffer to MinIO
+  async updateAvatar(userId, file) {
     try {
-      const objectName = `users/avatars/${userId}.avif`;
-
-      await minioClient.putObject(bucketName, objectName, avifBuffer, {
-        'Content-Type': 'image/avif',
-      });
-
-      const profilePictureUrl = getObjectUrl(objectName);
-
-      await userRepository.updateById(userId, {
-        profile_picture_url: profilePictureUrl,
-      });
-
-      return profilePictureUrl;
+      const result = await mediaProxyService.updateAvatar(userId, file);
+      return result.profilePictureUrl;
     } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
       throw new ApiError(500, 'UPLOAD_FAILED', 'Failed to upload image to storage');
     }
   }

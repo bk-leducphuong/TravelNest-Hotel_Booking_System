@@ -1,8 +1,13 @@
 'use strict';
 
+const {
+  addIndexIfMissing,
+  createTableIfMissing,
+} = require('../migration-utils/schema');
+
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('refunds', {
+    await createTableIfMissing(queryInterface, 'refunds', {
       id: {
         type: Sequelize.UUID,
         allowNull: false,
@@ -127,23 +132,23 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex('refunds', ['booking_id'], {
+    await addIndexIfMissing(queryInterface, 'refunds', ['booking_id'], {
       name: 'idx_refunds_booking_id',
     });
-    await queryInterface.addIndex('refunds', ['transaction_id'], {
+    await addIndexIfMissing(queryInterface, 'refunds', ['transaction_id'], {
       name: 'idx_refunds_transaction_id',
     });
-    await queryInterface.addIndex('refunds', ['buyer_id'], {
+    await addIndexIfMissing(queryInterface, 'refunds', ['buyer_id'], {
       name: 'idx_refunds_buyer_id',
     });
-    await queryInterface.addIndex('refunds', ['hotel_id'], {
+    await addIndexIfMissing(queryInterface, 'refunds', ['hotel_id'], {
       name: 'idx_refunds_hotel_id',
     });
-    await queryInterface.addIndex('refunds', ['provider_refund_id'], {
+    await addIndexIfMissing(queryInterface, 'refunds', ['provider_refund_id'], {
       name: 'idx_refunds_provider_refund_id',
       unique: true,
     });
-    await queryInterface.addIndex('refunds', ['status'], {
+    await addIndexIfMissing(queryInterface, 'refunds', ['status'], {
       name: 'idx_refunds_status',
     });
   },

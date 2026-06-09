@@ -18,6 +18,7 @@ class UserRepository {
         'email',
         'first_name',
         'last_name',
+        'profile_picture_url',
         'phone_number',
         'address',
         'nationality',

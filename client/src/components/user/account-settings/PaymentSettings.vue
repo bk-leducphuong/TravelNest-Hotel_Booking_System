@@ -1,98 +1,87 @@
 <template>
-  <!-- Main Content Container -->
-  <!-- Normal mode-->
-  <div class="section1" style="width: 70%">
-    <div class="personal-details-container">
-      <!-- Personal Details-->
-      <div class="details-section" style="margin-top: 0px !important">
-        <div style="display: flex; justify-content: space-between">
-        </div>
-        <!--Payment methods -->
-        <div class="details-section">
-          <h1>Payment methods</h1>
-          <p>Securely add or remove payment methods to make it easier when you book.</p>
-        </div>
+  <section class="settings-panel">
+    <header class="panel-header">
+      <h1>Payment methods</h1>
+      <p>
+        Card and wallet management remain visible here, but payment-method editing is not connected
+        to a current user settings API.
+      </p>
+    </header>
 
-        <div class="detail-item">
-          <label for="PaymentCard" style="width: 20%">Payment cards</label>
-          <div class="value">Pay with new card</div>
-          <button class="edit-button">Add card</button>
+    <article class="detail-card muted-card">
+      <div class="detail-row">
+        <div>
+          <h2>Saved payment methods</h2>
+          <p>Add, remove, and reorder payment methods once the backend support is available.</p>
         </div>
+        <button type="button" class="disabled-button" disabled>Coming soon</button>
       </div>
-    </div>
-  </div>
+    </article>
+  </section>
 </template>
+
 <style scoped>
-.content h2 {
-  font-size: 20px;
-  margin-bottom: 10px;
-}
-.content p {
-  color: #666;
-  margin-bottom: 10px;
-}
-.manage-link {
-  color: #4285f4;
-  text-decoration: none;
-  margin-bottom: 10px;
-  padding-bottom: 10px;
-}
-.manage-link:hover {
-  text-decoration: underline;
-  margin-bottom: 10px;
-}
-.personal-details-container {
+.settings-panel {
   display: flex;
-  max-width: 1000px;
-  margin: 0 auto;
-  padding-left: 40px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  flex-direction: column;
+  gap: 16px;
 }
-.user-image-container img {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
+
+.panel-header,
+.detail-card {
+  padding: 24px 28px;
+  border: 1px solid #dbe3f0;
+  border-radius: 8px;
+  background: #fff;
 }
-.details-section {
-  flex-grow: 1;
+
+.panel-header h1,
+.detail-card h2 {
+  margin: 0 0 8px;
+  color: #0f172a;
 }
-.details-section h1 {
+
+.panel-header h1 {
   font-size: 30px;
-  margin-bottom: 16px;
 }
-.details-section p {
-  color: #666;
-  margin-bottom: 24px;
+
+.panel-header p,
+.detail-card p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.6;
 }
-.detail-item {
+
+.detail-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: 16px 0;
-  border-bottom: 1px solid #e6e6e6;
+  gap: 16px;
 }
-.detail-item label {
-  font-weight: bold;
-  margin-right: 16px;
+
+.muted-card {
+  background: #f8fafc;
 }
-.detail-item .value {
-  flex-grow: 1;
-  color: #666;
+
+.disabled-button {
+  padding: 11px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 600;
 }
-.detail-item .verified {
-  background-color: #4caf50;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  margin-left: 8px;
-}
-.edit-button {
-  background-color: #4285f4;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
+
+@media (max-width: 768px) {
+  .panel-header,
+  .detail-card {
+    padding: 20px;
+  }
+
+  .detail-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 </style>

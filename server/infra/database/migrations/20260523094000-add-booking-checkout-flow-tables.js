@@ -1,5 +1,10 @@
 'use strict';
 
+const {
+  addIndexIfMissing,
+  createTableIfMissing,
+} = require('../migration-utils/schema');
+
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     const table = await queryInterface.describeTable('bookings');
@@ -125,7 +130,7 @@ module.exports = {
       }
     }
 
-    await queryInterface.createTable('booking_rooms', {
+    await createTableIfMissing(queryInterface, 'booking_rooms', {
       id: {
         type: Sequelize.UUID,
         allowNull: false,
@@ -182,14 +187,14 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex('booking_rooms', ['booking_id'], {
+    await addIndexIfMissing(queryInterface, 'booking_rooms', ['booking_id'], {
       name: 'idx_booking_rooms_booking_id',
     });
-    await queryInterface.addIndex('booking_rooms', ['room_id'], {
+    await addIndexIfMissing(queryInterface, 'booking_rooms', ['room_id'], {
       name: 'idx_booking_rooms_room_id',
     });
 
-    await queryInterface.createTable('idempotency_keys', {
+    await createTableIfMissing(queryInterface, 'idempotency_keys', {
       id: {
         type: Sequelize.UUID,
         allowNull: false,
@@ -246,7 +251,7 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex('idempotency_keys', ['user_id', 'idempotency_key'], {
+    await addIndexIfMissing(queryInterface, 'idempotency_keys', ['user_id', 'idempotency_key'], {
       name: 'idx_idempotency_keys_user_key',
       unique: true,
     });

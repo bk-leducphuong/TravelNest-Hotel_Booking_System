@@ -110,7 +110,7 @@ const updateAvatar = asyncHandler(async (req, res) => {
   const userId = req.session.user.id.toString();
 
   try {
-    const profilePictureUrl = await userService.updateAvatar(userId, req.file.buffer);
+    const profilePictureUrl = await userService.updateAvatar(userId, req.file);
     res.status(200).json({
       data: {
         profilePictureUrl,
