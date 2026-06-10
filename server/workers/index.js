@@ -6,18 +6,10 @@ const { scheduleHoldExpiryScanner } = require('@queues/holdExpiry.queue');
 const { scheduleBookingExpiryScanner } = require('@queues/bookingExpiry.queue');
 
 const hotelSnapshotWorker = require('./hotelSnapshot.worker');
-const emailWorker = require('./email.worker');
-const notificationWorker = require('./notification.worker');
 const holdExpiryWorker = require('./holdExpiry.worker');
 const bookingExpiryWorker = require('./bookingExpiry.worker');
 
-const workers = [
-  hotelSnapshotWorker,
-  emailWorker,
-  notificationWorker,
-  holdExpiryWorker,
-  bookingExpiryWorker,
-];
+const workers = [hotelSnapshotWorker, holdExpiryWorker, bookingExpiryWorker];
 
 let healthServer;
 

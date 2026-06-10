@@ -5,9 +5,11 @@ const logger = require('@config/logger.config');
 const sc = StringCodec();
 const DEFAULT_STREAM = process.env.NATS_STREAM || 'TRAVELNEST_ANALYTICS';
 const ANALYTICS_SUBJECTS = ['analytics.>'];
+const DOMAIN_SUBJECTS = ['booking.>', 'payment.>', 'notification.>'];
 const STREAM_SUBJECTS = {
   TRAVELNEST_ANALYTICS: ANALYTICS_SUBJECTS,
   TRAVELNEST_MEDIA: ['media.>'],
+  TRAVELNEST_EVENTS: DOMAIN_SUBJECTS,
 };
 
 class NatsPublisher {

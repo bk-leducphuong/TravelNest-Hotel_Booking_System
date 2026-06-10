@@ -207,6 +207,16 @@ services:
     networks:
       - travelnest-net
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: travelnest-mailpit
+    restart: unless-stopped
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    networks:
+      - travelnest-net
+
   bullmq-worker:
     build:
       context: ..

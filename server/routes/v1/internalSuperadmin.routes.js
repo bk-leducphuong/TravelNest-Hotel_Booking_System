@@ -10,6 +10,221 @@ const router = express.Router();
 
 /**
  * @swagger
+ * /internal/superadmin/notifications/test/targets:
+ *   get:
+ *     summary: Preview notification test recipients
+ *     description: Resolves a filtered set of active users that would receive a test notification or email, without publishing any events.
+ *     tags:
+ *       - Internal Superadmin
+ *     security:
+ *       - internalSuperadminToken: []
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: userIds
+ *         required: false
+ *         schema:
+ *           oneOf:
+ *             - type: array
+ *               items:
+ *                 type: string
+ *                 format: uuid
+ *             - type: string
+ *         description: One or more user IDs to target.
+ *       - in: query
+ *         name: role
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [guest, user, admin, support_agent, owner, manager, staff]
+ *         description: Restrict recipients to users with the specified role.
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: Maximum number of users to preview.
+ *       - in: query
+ *         name: requireEmail
+ *         required: false
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: Only include users with a non-empty email address.
+ *     responses:
+ *       200:
+ *         description: Matching recipients previewed successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/NotificationTestTargetPreview'
+ *       400:
+ *         description: No valid target selector was provided.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Superadmin authentication required.
+ *       403:
+ *         description: Superadmin access required.
+ */
+router.get(
+  '/notifications/test/targets',
+  // requireInternalSuperadmin,
+  asyncHandler(controller.previewNotificationTargets)
+);
+/**
+ * @swagger
+ * /internal/superadmin/notifications/test/inapp:
+ *   post:
+ *     summary: Queue a bulk test in-app notification
+ *     description: Publishes a test notification event to the Go notification service for a filtered set of active users.
+ *     tags:
+ *       - Internal Superadmin
+ *     security:
+ *       - internalSuperadminToken: []
+ *       - sessionAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/InAppNotificationTestRequest'
+ *           examples:
+ *             byRole:
+ *               summary: Send to recent active users with the user role
+ *               value:
+ *                 role: user
+ *                 limit: 10
+ *                 title: Notification workflow test
+ *                 message: This is a test in-app notification from the internal admin API.
+ *                 category: system
+ *                 priority: normal
+ *             byUsers:
+ *               summary: Send to specific users
+ *               value:
+ *                 userIds:
+ *                   - 018f5f6c-8c1a-7b9a-9c7a-a3b2f3d5e6f7
+ *                   - 018f5f6c-8c1a-7b9a-9c7a-a3b2f3d5e6f8
+ *                 title: Notification workflow test
+ *                 message: This is a targeted test.
+ *                 actionUrl: /notifications
+ *                 actionLabel: Open notifications
+ *     responses:
+ *       200:
+ *         description: Test notification event queued successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/NotificationTestDispatchResult'
+ *       400:
+ *         description: Invalid payload or target selector.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Superadmin authentication required.
+ *       403:
+ *         description: Superadmin access required.
+ *       503:
+ *         description: NATS publish failed.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post(
+  '/notifications/test/inapp',
+  // requireInternalSuperadmin,
+  asyncHandler(controller.sendTestNotification)
+);
+/**
+ * @swagger
+ * /internal/superadmin/notifications/test/email:
+ *   post:
+ *     summary: Queue bulk test emails
+ *     description: Publishes one test email event per matched active user with an email address.
+ *     tags:
+ *       - Internal Superadmin
+ *     security:
+ *       - internalSuperadminToken: []
+ *       - sessionAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/EmailNotificationTestRequest'
+ *           examples:
+ *             byRole:
+ *               summary: Send to owners
+ *               value:
+ *                 role: owner
+ *                 limit: 5
+ *                 subject: Email workflow test
+ *                 message: This is a test email from the internal admin API.
+ *             byUsers:
+ *               summary: Send to specific users
+ *               value:
+ *                 userIds:
+ *                   - 018f5f6c-8c1a-7b9a-9c7a-a3b2f3d5e6f7
+ *                 subject: Email workflow test
+ *                 message: Please ignore this message. It was sent for pipeline verification.
+ *     responses:
+ *       200:
+ *         description: Test email events queued successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/EmailNotificationTestDispatchResult'
+ *       400:
+ *         description: Invalid payload or target selector.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Superadmin authentication required.
+ *       403:
+ *         description: Superadmin access required.
+ *       503:
+ *         description: NATS publish failed for all targets.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post(
+  '/notifications/test/email',
+  // requireInternalSuperadmin,
+  asyncHandler(controller.sendTestEmail)
+);
+
+/**
+ * @swagger
  * components:
  *   schemas:
  *     InternalTaskResult:
@@ -219,6 +434,129 @@ const router = express.Router();
  *               minimum: 1
  *               example: 50
  *               description: Only applies to hotel_views.
+ *     NotificationTestRecipient:
+ *       type: object
+ *       properties:
+ *         userId:
+ *           type: string
+ *           format: uuid
+ *         email:
+ *           type: string
+ *           format: email
+ *         name:
+ *           type: string
+ *           example: Jane Doe
+ *     NotificationTestTargetPreview:
+ *       type: object
+ *       properties:
+ *         matchedUsers:
+ *           type: integer
+ *           example: 10
+ *         sampleRecipients:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/NotificationTestRecipient'
+ *     NotificationTestFilters:
+ *       type: object
+ *       properties:
+ *         userIds:
+ *           type: array
+ *           items:
+ *             type: string
+ *             format: uuid
+ *         role:
+ *           type: string
+ *           enum: [guest, user, admin, support_agent, owner, manager, staff]
+ *         limit:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *     InAppNotificationTestRequest:
+ *       allOf:
+ *         - $ref: '#/components/schemas/NotificationTestFilters'
+ *         - type: object
+ *           required: [title, message]
+ *           properties:
+ *             title:
+ *               type: string
+ *               example: Notification workflow test
+ *             message:
+ *               type: string
+ *               example: This is a test in-app notification from the internal admin API.
+ *             category:
+ *               type: string
+ *               example: system
+ *             priority:
+ *               type: string
+ *               enum: [low, normal, high, urgent]
+ *               example: normal
+ *             actionUrl:
+ *               type: string
+ *               example: /notifications
+ *             actionLabel:
+ *               type: string
+ *               example: Open notifications
+ *             metadata:
+ *               type: object
+ *               additionalProperties: true
+ *     NotificationTestDispatchResult:
+ *       type: object
+ *       properties:
+ *         eventId:
+ *           type: string
+ *           example: 4e8b9f7d-8d55-4d9f-9124-c5f1dbed6f2f
+ *         matchedUsers:
+ *           type: integer
+ *           example: 10
+ *         queuedEvents:
+ *           type: integer
+ *           example: 1
+ *         sampleRecipients:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/NotificationTestRecipient'
+ *     EmailNotificationTestRequest:
+ *       allOf:
+ *         - $ref: '#/components/schemas/NotificationTestFilters'
+ *         - type: object
+ *           required: [subject, message]
+ *           properties:
+ *             subject:
+ *               type: string
+ *               example: Email workflow test
+ *             message:
+ *               type: string
+ *               example: This is a test email from the internal admin API.
+ *             metadata:
+ *               type: object
+ *               additionalProperties: true
+ *     NotificationTestSkippedUser:
+ *       type: object
+ *       properties:
+ *         userId:
+ *           type: string
+ *           format: uuid
+ *         reason:
+ *           type: string
+ *           enum: [missing_email, publish_failed]
+ *     EmailNotificationTestDispatchResult:
+ *       type: object
+ *       properties:
+ *         matchedUsers:
+ *           type: integer
+ *           example: 5
+ *         queuedEvents:
+ *           type: integer
+ *           example: 5
+ *         skippedUsers:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/NotificationTestSkippedUser'
+ *         sampleRecipients:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/NotificationTestRecipient'
  */
 
 /**

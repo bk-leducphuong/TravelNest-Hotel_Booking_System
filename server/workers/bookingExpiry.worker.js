@@ -3,7 +3,7 @@ const { Worker } = require('bullmq');
 const config = require('@config/bullmq.config');
 const logger = require('@config/logger.config');
 const bookingService = require('@services/booking.service');
-const { addNotificationJob } = require('@queues/notification.queue');
+const notificationPublisher = require('@events/notification.publisher');
 
 const queueName = 'bookingExpiry';
 
@@ -16,24 +16,7 @@ async function processBookingExpiryJob(job) {
   const result = await bookingService.expirePendingBookings({ limit });
 
   await Promise.all(
-    result.expiredBookings.map((booking) =>
-      addNotificationJob(
-        'booking_expired',
-        {
-          buyerId: booking.buyerId,
-          hotelId: booking.hotelId,
-          bookingId: booking.bookingId,
-          bookingCode: booking.bookingCode,
-          checkInDate: booking.checkInDate,
-          checkOutDate: booking.checkOutDate,
-          paymentDueAt: booking.paymentDueAt,
-        },
-        {
-          priority: 6,
-          jobId: `notif-booking-expired-${booking.bookingCode}`,
-        }
-      )
-    )
+    result.expiredBookings.map((booking) => notificationPublisher.publishBookingExpired(booking))
   );
 
   return result;

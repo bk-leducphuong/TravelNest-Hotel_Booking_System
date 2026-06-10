@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 
 services:
   mysql:
@@ -11,7 +11,7 @@ services:
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
-      - '3307:3306'
+      - "3307:3306"
     volumes:
       - mysql_data_test:/var/lib/mysql
     command: --default-authentication-plugin=mysql_native_password
@@ -20,7 +20,11 @@ services:
     env_file:
       - ../.env.development
     healthcheck:
-      test: ['CMD-SHELL', 'mysqladmin ping -h localhost -u ${DB_USER} -p${DB_PASSWORD}']
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h localhost -u ${DB_USER} -p${DB_PASSWORD}",
+        ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -30,16 +34,16 @@ services:
     container_name: travelnest-redis-test
     restart: unless-stopped
     ports:
-      - '6379:6379'
+      - "6379:6379"
     volumes:
       - redis_data_test:/data
-    command: ['redis-server', '--appendonly', 'yes']
+    command: ["redis-server", "--appendonly", "yes"]
     networks:
       - travelnest-net-test
     env_file:
       - ../.env.development
     healthcheck:
-      test: ['CMD-SHELL', 'redis-cli ping']
+      test: ["CMD-SHELL", "redis-cli ping"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -62,8 +66,8 @@ services:
     container_name: minio-test
     command: server /data --console-address ":9001"
     ports:
-      - '9000:9000' # API
-      - '9001:9001' # Web console
+      - "9000:9000" # API
+      - "9001:9001" # Web console
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
@@ -79,7 +83,7 @@ services:
     container_name: travelnest-mongodb-test
     restart: unless-stopped
     ports:
-      - '27017:27017'
+      - "27017:27017"
     environment:
       MONGO_INITDB_DATABASE: ${MONGODB_DATABASE:-travelnest_analytics}
     volumes:
@@ -89,7 +93,8 @@ services:
     env_file:
       - ../.env.development
     healthcheck:
-      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok']
+      test:
+        ["CMD", "mongosh", "--quiet", "--eval", 'db.adminCommand("ping").ok']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -100,7 +105,7 @@ services:
     container_name: travelnest-mongo-express-test
     restart: unless-stopped
     ports:
-      - '${MONGO_EXPRESS_PORT:-8081}:8081'
+      - "${MONGO_EXPRESS_PORT:-8081}:8081"
     environment:
       ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017/
       ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USERNAME:-admin}
@@ -140,7 +145,7 @@ services:
       media:
         condition: service_healthy
     ports:
-      - '3000:3000'
+      - "3000:3000"
     networks:
       - travelnest-net-test
 
@@ -168,11 +173,11 @@ services:
       nats:
         condition: service_healthy
     expose:
-      - '8081'
+      - "8081"
     networks:
       - travelnest-net-test
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:8081/healthz']
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/healthz"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -191,7 +196,7 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET: ${MINIO_BUCKET:-uploads}
-      MINIO_USE_SSL: 'false'
+      MINIO_USE_SSL: "false"
       PUBLIC_OBJECT_BASE_URL: ${PUBLIC_OBJECT_BASE_URL:-http://localhost:9000/uploads}
       NATS_URL: ${NATS_URL:-nats://nats:4222}
       NATS_STREAM: ${MEDIA_NATS_STREAM:-TRAVELNEST_MEDIA}
@@ -205,15 +210,25 @@ services:
       minio:
         condition: service_started
     expose:
-      - '8082'
+      - "8082"
     networks:
       - travelnest-net-test
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:8082/healthz']
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8082/healthz"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: travelnest-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - travelnest-net
 
   bullmq-worker:
     build:
@@ -237,7 +252,7 @@ services:
         condition: service_healthy
       nats:
         condition: service_healthy
-    command: ['npm', 'run', 'dev:bullmq-worker']
+    command: ["npm", "run", "dev:bullmq-worker"]
     networks:
       - travelnest-net-test
 
@@ -245,10 +260,10 @@ services:
     image: nats:2.10-alpine
     container_name: travelnest-nats-test
     restart: unless-stopped
-    command: ['-js', '-sd', '/data', '-m', '8222']
+    command: ["-js", "-sd", "/data", "-m", "8222"]
     ports:
-      - '4222:4222'
-      - '8222:8222'
+      - "4222:4222"
+      - "8222:8222"
     volumes:
       - nats_data_test:/data
     networks:
@@ -256,7 +271,7 @@ services:
     env_file:
       - ../.env.development
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:8222/healthz']
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -14,6 +14,25 @@ export function getUserSocket() {
       withCredentials: true,
       transports: ['websocket', 'polling']
     })
+
+    userSocket.on('connect', () => {
+      console.log('[userSocket] connected', {
+        id: userSocket.id,
+        namespace: '/user'
+      })
+    })
+
+    userSocket.on('disconnect', (reason) => {
+      console.log('[userSocket] disconnected', { reason })
+    })
+
+    userSocket.on('connect_error', (error) => {
+      console.error('[userSocket] connection failed:', error.message)
+    })
+
+    userSocket.on('connected', (payload) => {
+      console.log('[userSocket] namespace handshake received', payload)
+    })
   }
 
   return userSocket
