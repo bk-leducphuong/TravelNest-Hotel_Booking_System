@@ -1,0 +1,84 @@
+name: Notification Service Image CI
+
+on:
+  push:
+    branches: [master, develop, staging]
+    paths:
+      - "services/notification/**"
+      - ".github/workflows/notification-service.yml"
+  pull_request:
+    branches: [master, develop, staging]
+    paths:
+      - "services/notification/**"
+      - ".github/workflows/notification-service.yml"
+  release:
+    types: [published]
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-notification
+
+jobs:
+  test:
+    name: Test Notification Service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./services/notification
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: services/notification/go.mod
+
+      - name: Run tests
+        run: go test ./...
+
+  build-and-push:
+    name: Build and Push Notification Image
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push notification image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/notification
+          file: ./services/notification/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
+          platforms: linux/amd64
