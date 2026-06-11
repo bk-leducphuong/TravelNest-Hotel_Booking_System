@@ -1,4 +1,4 @@
-name: Frontend CI/CD (User Client)
+name: Frontend Image CI
 
 on:
   push:
@@ -14,38 +14,21 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-    inputs:
-      environment:
-        description: "Target environment"
-        required: true
-        default: "development"
-        type: choice
-        options:
-          - development
-          - staging
-          - production
 
 env:
-  REGISTRY: docker.io
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-frontend
 
 jobs:
-  #############################################################################
-  # Job 1: Lint and Build
-  #############################################################################
   lint-and-build:
     name: Lint and Build Frontend
     runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
         node-version: [22.x, 24.x]
-
     defaults:
       run:
         working-directory: ./client
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -54,7 +37,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
+          cache: npm
           cache-dependency-path: client/package-lock.json
 
       - name: Install dependencies
@@ -62,13 +45,11 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint
-        continue-on-error: true
 
-      - name: Check code formatting
+      - name: Check formatting
         run: npx prettier --check "src/**/*.{js,vue,json,css,scss}"
-        continue-on-error: true
 
-      - name: Build application
+      - name: Build app
         run: npm run build
         env:
           NODE_ENV: production
@@ -82,28 +63,12 @@ jobs:
           path: client/dist/
           retention-days: 7
 
-      - name: Analyze bundle size
-        if: matrix.node-version == '24.x'
-        run: |
-          echo "## 📦 Bundle Size Analysis" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Total size:**" >> $GITHUB_STEP_SUMMARY
-          du -sh dist/ >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Breakdown:**" >> $GITHUB_STEP_SUMMARY
-          du -sh dist/**/* >> $GITHUB_STEP_SUMMARY || true
-
-  #############################################################################
-  # Job 2: Preview Validation
-  #############################################################################
   preview-validation:
     name: Validate Preview Build
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: ./client
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -111,14 +76,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "24.x"
-          cache: "npm"
+          node-version: 24.x
+          cache: npm
           cache-dependency-path: client/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build for preview
+      - name: Build preview
         run: npm run build
         env:
           VITE_API_URL: https://api.deployserver.work
@@ -127,24 +92,17 @@ jobs:
         run: |
           npm run preview &
           sleep 5
-          curl -f http://localhost:4173 || exit 1
+          curl -f http://localhost:4173
           pkill -f "vite preview"
 
-  #############################################################################
-  # Job 3: Build Nginx Docker Image with Static Files
-  #############################################################################
   build-and-push:
-    name: Build and Push Nginx Image
+    name: Build and Push Frontend Image
     runs-on: ubuntu-latest
     needs: [lint-and-build, preview-validation]
-    if: github.event_name != 'pull_request' && always()
+    if: github.event_name != 'pull_request'
     permissions:
       contents: read
       packages: write
-
-    outputs:
-      image-tag: ${{ steps.meta.outputs.tags }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -177,7 +135,7 @@ jobs:
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push Frontend image
+      - name: Build and push frontend image
         uses: docker/build-push-action@v5
         with:
           context: ./client
@@ -189,203 +147,9 @@ jobs:
           cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
           platforms: linux/amd64
 
-      - name: Generate build summary
+      - name: Build summary
         run: |
-          echo "## 🐳 Docker Image Built Successfully" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Image:** ${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Tags:** ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-
-  #############################################################################
-  # Job 4: Deploy to Production
-  #############################################################################
-  deploy-production:
-    name: Deploy to Production
-    runs-on: self-hosted
-    needs: [build-and-push]
-    if: >
-      (github.ref == 'refs/heads/master' && github.event_name == 'push') || 
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
-
-    environment:
-      name: production
-      url: https://deployserver.work
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Deploy static files to VPS
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-        run: |
-          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
-            set -e
-            
-            echo "🚀 Starting frontend deployment..."
-            
-            # Navigate to application directory
-            cd /opt/travelnest
-            
-            # Create timestamped release directory
-            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-            RELEASE_DIR="releases/user-client/${TIMESTAMP}"
-            mkdir -p "$RELEASE_DIR"
-            
-            echo "📦 Pulling latest frontend image..."
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-frontend:latest
-            
-            # Extract static files from Docker image
-            echo "📂 Extracting static files..."
-            CONTAINER_ID=$(docker create ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-frontend:latest)
-            docker cp "$CONTAINER_ID:/usr/share/nginx/html/." "$RELEASE_DIR/"
-            docker rm "$CONTAINER_ID"
-            
-            # Backup current version
-            if [ -L nginx/html/user/current ]; then
-              CURRENT_TARGET=$(readlink nginx/html/user/current)
-              echo "📦 Current version: $CURRENT_TARGET"
-            fi
-            
-            # Create symlink to new release
-            echo "🔗 Switching to new version..."
-            rm -f nginx/html/user/current
-            ln -sf "/opt/travelnest/$RELEASE_DIR" nginx/html/user/current
-            
-            # Update nginx to serve from new location
-            # Note: If nginx.conf already points to nginx/html/user, this will work
-            # Otherwise, ensure nginx.conf has: root /usr/share/nginx/html/user/current;
-            
-            # Test nginx configuration
-            echo "✅ Testing nginx configuration..."
-            docker exec travelnest-nginx nginx -t
-            
-            # Reload nginx (graceful reload without downtime)
-            echo "🔄 Reloading nginx..."
-            docker exec travelnest-nginx nginx -s reload
-            
-            # Cleanup old releases (keep last 5)
-            echo "🧹 Cleaning up old releases..."
-            cd releases/user-client
-            ls -t | tail -n +6 | xargs -r rm -rf
-            
-            echo "✅ Frontend deployment completed successfully!"
-            echo "📊 Active version: $RELEASE_DIR"
-          EOF
-
-      - name: Verify deployment
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-        run: |
-          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
-            # Test if index.html exists
-            if [ -f /opt/travelnest/nginx/html/user/current/index.html ]; then
-              echo "✅ Static files deployed successfully"
-              ls -lh /opt/travelnest/nginx/html/user/current/
-            else
-              echo "❌ Deployment verification failed"
-              exit 1
-            fi
-            
-            # Test nginx is serving the files
-            curl -f http://localhost/ > /dev/null 2>&1 && echo "✅ Nginx is serving content" || echo "⚠️  Nginx test failed"
-          EOF
-
-      - name: Deployment summary
-        run: |
-          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY
-          echo "**Client:** User Client (Vue3 SPA)" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Deployed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "**URL:** https://deployserver.work" >> $GITHUB_STEP_SUMMARY
-
-      - name: Notify Discord of deployment status
-        if: always()
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          JOB_STATUS: ${{ job.status }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_WORKFLOW: ${{ github.workflow }}
-          GITHUB_RUN_NUMBER: ${{ github.run_number }}
-          GITHUB_REF_NAME: ${{ github.ref_name }}
-        run: |
-          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
-            echo "DISCORD_WEBHOOK_URL is not set. Skipping Discord notification."
-            exit 0
-          fi
-
-          if [ "$JOB_STATUS" = "success" ]; then
-            STATUS_EMOJI="✅"
-            STATUS_TEXT="succeeded"
-            COLOR=3066993
-          else
-            STATUS_EMOJI="❌"
-            STATUS_TEXT="failed"
-            COLOR=15158332
-          fi
-
-          payload=$(cat <<EOF
-          {
-            "embeds": [{
-              "title": "$STATUS_EMOJI Frontend deployment $STATUS_TEXT",
-              "description": "Environment: production\nBranch: $GITHUB_REF_NAME\nBy: $GITHUB_ACTOR\nWorkflow: $GITHUB_WORKFLOW #$GITHUB_RUN_NUMBER\nRepository: $GITHUB_REPOSITORY",
-              "color": $COLOR
-            }]
-          }
-          EOF
-          )
-
-          curl -X POST -H "Content-Type: application/json" -d "$payload" "$DISCORD_WEBHOOK_URL"
-
-  # #############################################################################
-  # # Job 5: Post-Deployment Tests
-  # #############################################################################
-  # post-deployment-tests:
-  #   name: Post-Deployment Smoke Tests
-  #   runs-on: ubuntu-latest
-  #   needs: [deploy-production]
-  #   if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-
-  #   steps:
-  #     - name: Test static file serving
-  #       env:
-  #         SSH_HOST: ${{ secrets.SSH_HOST }}
-  #         SSH_USER: ${{ secrets.SSH_USER }}
-  #         SSH_PORT: ${{ secrets.SSH_PORT }}
-  #       run: |
-  #         ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
-  #           # Test index.html loads
-  #           curl -f http://localhost/ > /dev/null 2>&1
-  #           echo "✅ Index page loads successfully"
-
-  #           # Test assets directory exists
-  #           if [ -d /opt/travelnest/nginx/html/user/current/assets ]; then
-  #             echo "✅ Assets directory exists"
-  #           fi
-  #         EOF
-
-  #     - name: Verify nginx status
-  #       env:
-  #         SSH_HOST: ${{ secrets.SSH_HOST }}
-  #         SSH_USER: ${{ secrets.SSH_USER }}
-  #         SSH_PORT: ${{ secrets.SSH_PORT }}
-  #       run: |
-  #         ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
-  #           docker exec travelnest-nginx nginx -t
-  #           echo "✅ Nginx configuration is valid"
-  #         EOF
+          echo "## Frontend image published" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Image: \`${{ env.IMAGE_NAME }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- GitOps deploy: update the image tag under \`deploy/k8s\`" >> "$GITHUB_STEP_SUMMARY"

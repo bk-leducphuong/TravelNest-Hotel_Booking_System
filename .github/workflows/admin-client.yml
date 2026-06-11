@@ -1,4 +1,4 @@
-name: Admin Client CI/CD
+name: Admin Client Image CI
 
 on:
   push:
@@ -12,38 +12,23 @@ on:
       - "admin-client/**"
       - ".github/workflows/admin-client.yml"
   workflow_dispatch:
-    inputs:
-      environment:
-        description: "Target environment"
-        required: true
-        default: "development"
-        type: choice
-        options:
-          - development
-          - staging
-          - production
+  release:
+    types: [published]
 
 env:
-  REGISTRY: docker.io
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-admin
 
 jobs:
-  #############################################################################
-  # Job 1: Lint and Build
-  #############################################################################
   lint-and-build:
     name: Lint and Build Admin Client
     runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
         node-version: [22.x, 24.x]
-
     defaults:
       run:
         working-directory: ./admin-client
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -52,26 +37,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
+          cache: npm
           cache-dependency-path: admin-client/package-lock.json
 
       - name: Install dependencies
-        working-directory: admin-client
         run: npm ci
 
       - name: Run ESLint
         run: npm run lint
-        continue-on-error: true
 
       - name: Type check
         run: npm run typecheck
-        continue-on-error: true
 
-      - name: Check code formatting
-        run: npx prettier --check . || true
-        continue-on-error: true
+      - name: Check formatting
+        run: npx prettier --check .
 
-      - name: Build application (SSG -> .output/public)
+      - name: Build static site
         run: npm run generate
         env:
           NODE_ENV: production
@@ -85,26 +66,14 @@ jobs:
           path: admin-client/.output/public/
           retention-days: 7
 
-      - name: Analyze bundle size
-        if: matrix.node-version == '24.x'
-        run: |
-          echo "## 📦 Admin Client Bundle Size" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Total size:**" >> $GITHUB_STEP_SUMMARY
-          du -sh .output/ >> $GITHUB_STEP_SUMMARY || true
-
-  #############################################################################
-  # Job 2: Build and Push Docker Image
-  #############################################################################
   build-and-push:
-    name: Build and Push Docker Image
+    name: Build and Push Admin Image
     runs-on: ubuntu-latest
     needs: [lint-and-build]
-    if: github.event_name != 'pull_request' && always()
+    if: github.event_name != 'pull_request'
     permissions:
       contents: read
       packages: write
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -113,7 +82,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: admin-dist
-          path: admin-client/.output
+          path: admin-client/.output/public
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -137,7 +106,7 @@ jobs:
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push Admin image
+      - name: Build and push admin image
         uses: docker/build-push-action@v5
         with:
           context: ./admin-client
@@ -149,121 +118,9 @@ jobs:
           cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
           platforms: linux/amd64
 
-  #############################################################################
-  # Job 3: Deploy to Production
-  #############################################################################
-  deploy-production:
-    name: Deploy to Production
-    runs-on: self-hosted
-    needs: [build-and-push]
-    if: >
-      (github.ref == 'refs/heads/master' && github.event_name == 'push') || 
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
-    environment:
-      name: production
-      url: https://admin.deployserver.work
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup SSH
+      - name: Build summary
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Deploy admin client to VPS
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-        run: |
-          ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} << 'EOF'
-            set -e
-            
-            echo "🚀 Starting admin client deployment..."
-            
-            cd /opt/travelnest
-            
-            # Create timestamped release directory
-            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-            RELEASE_DIR="releases/admin-client/${TIMESTAMP}"
-            mkdir -p "$RELEASE_DIR"
-            
-            echo "📦 Pulling latest admin image..."
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-admin:latest
-            
-            # Extract static files from Docker image
-            echo "📂 Extracting files..."
-            CONTAINER_ID=$(docker create ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-admin:latest)
-            docker cp "$CONTAINER_ID:/usr/share/nginx/html/." "$RELEASE_DIR/"
-            docker rm "$CONTAINER_ID"
-            
-            # Create symlink to new release
-            echo "🔗 Switching to new version..."
-            rm -f nginx/html/admin/current
-            ln -sf "/opt/travelnest/$RELEASE_DIR" nginx/html/admin/current
-            
-            # Test nginx configuration
-            docker exec travelnest-nginx nginx -t
-            
-            # Reload nginx
-            echo "🔄 Reloading nginx..."
-            docker exec travelnest-nginx nginx -s reload
-            
-            # Cleanup old releases (keep last 5)
-            echo "🧹 Cleaning up old releases..."
-            cd releases/admin-client
-            ls -t | tail -n +6 | xargs -r rm -rf
-            
-            echo "✅ Admin client deployment completed!"
-          EOF
-
-      - name: Deployment summary
-        run: |
-          echo "## 🚀 Admin Client Deployed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY
-          echo "**Client:** Admin Client (Nuxt4)" >> $GITHUB_STEP_SUMMARY
-          echo "**URL:** https://admin.deployserver.work" >> $GITHUB_STEP_SUMMARY
-
-      - name: Notify Discord of deployment status
-        if: always()
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          JOB_STATUS: ${{ job.status }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_WORKFLOW: ${{ github.workflow }}
-          GITHUB_RUN_NUMBER: ${{ github.run_number }}
-          GITHUB_REF_NAME: ${{ github.ref_name }}
-        run: |
-          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
-            echo "DISCORD_WEBHOOK_URL is not set. Skipping Discord notification."
-            exit 0
-          fi
-
-          if [ "$JOB_STATUS" = "success" ]; then
-            STATUS_EMOJI="✅"
-            STATUS_TEXT="succeeded"
-            COLOR=3066993
-          else
-            STATUS_EMOJI="❌"
-            STATUS_TEXT="failed"
-            COLOR=15158332
-          fi
-
-          payload=$(cat <<EOF
-          {
-            "embeds": [{
-              "title": "$STATUS_EMOJI Admin client deployment $STATUS_TEXT",
-              "description": "Environment: production\nBranch: $GITHUB_REF_NAME\nBy: $GITHUB_ACTOR\nWorkflow: $GITHUB_WORKFLOW #$GITHUB_RUN_NUMBER\nRepository: $GITHUB_REPOSITORY",
-              "color": $COLOR
-            }]
-          }
-          EOF
-          )
-
-          curl -X POST -H "Content-Type: application/json" -d "$payload" "$DISCORD_WEBHOOK_URL"
+          echo "## Admin image published" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Image: \`${{ env.IMAGE_NAME }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- GitOps deploy: update the image tag under \`deploy/k8s\`" >> "$GITHUB_STEP_SUMMARY"
