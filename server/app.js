@@ -13,6 +13,7 @@ const logger = require('@config/logger.config');
 const db = require('@models');
 const { initSocket } = require('@socket/index');
 const { startHoldExpirySubscriber } = require('@events/holdExpiry.subscriber');
+const { startNotificationRealtimeSubscriber } = require('@events/notificationRealtime.subscriber');
 const { initBucket } = require('@config/minio.config');
 const { setupSwagger } = require('@config/swagger.config');
 const passport = require('@config/passport.config');
@@ -53,6 +54,7 @@ const createApp = async () => {
   const server = http.createServer(app);
   initSocket(server);
   await startHoldExpirySubscriber();
+  await startNotificationRealtimeSubscriber();
   app.set('httpServer', server);
 
   const normalizeOrigin = (origin) => origin && origin.replace(/\/$/, '');
@@ -113,25 +115,13 @@ const createApp = async () => {
   const { createBullBoard } = require('@bull-board/api');
   const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
   const { ExpressAdapter } = require('@bull-board/express');
-  const {
-    imageProcessingQueue,
-    hotelSnapshotQueue,
-    emailQueue,
-    notificationQueue,
-    holdExpiryQueue,
-  } = require('@queues/index');
+  const { hotelSnapshotQueue, holdExpiryQueue } = require('@queues/index');
 
   const serverAdapter = new ExpressAdapter();
   serverAdapter.setBasePath('/admin/queues');
 
   createBullBoard({
-    queues: [
-      new BullMQAdapter(imageProcessingQueue),
-      new BullMQAdapter(hotelSnapshotQueue),
-      new BullMQAdapter(emailQueue),
-      new BullMQAdapter(notificationQueue),
-      new BullMQAdapter(holdExpiryQueue),
-    ],
+    queues: [new BullMQAdapter(hotelSnapshotQueue), new BullMQAdapter(holdExpiryQueue)],
     serverAdapter,
   });
 

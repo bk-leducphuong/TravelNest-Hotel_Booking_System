@@ -1,8 +1,13 @@
 'use strict';
 
+const {
+  addIndexIfMissing,
+  createTableIfMissing,
+} = require('../migration-utils/schema');
+
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('ledger_accounts', {
+    await createTableIfMissing(queryInterface, 'ledger_accounts', {
       id: {
         type: Sequelize.UUID,
         allowNull: false,
@@ -59,14 +64,14 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex('ledger_accounts', ['account_key'], {
+    await addIndexIfMissing(queryInterface, 'ledger_accounts', ['account_key'], {
       name: 'idx_ledger_accounts_account_key',
       unique: true,
     });
-    await queryInterface.addIndex('ledger_accounts', ['owner_type', 'owner_id'], {
+    await addIndexIfMissing(queryInterface, 'ledger_accounts', ['owner_type', 'owner_id'], {
       name: 'idx_ledger_accounts_owner',
     });
-    await queryInterface.addIndex('ledger_accounts', ['account_type', 'currency'], {
+    await addIndexIfMissing(queryInterface, 'ledger_accounts', ['account_type', 'currency'], {
       name: 'idx_ledger_accounts_type_currency',
     });
   },

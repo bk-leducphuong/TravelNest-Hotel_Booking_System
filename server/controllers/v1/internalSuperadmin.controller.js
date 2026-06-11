@@ -1,4 +1,5 @@
 const internalSuperadminService = require('@services/internalSuperadmin.service');
+const notificationTestService = require('@services/notificationTest.service');
 
 async function listTasks(req, res) {
   res.status(200).json({
@@ -73,6 +74,41 @@ async function runMongodbSeeder(req, res) {
   });
 }
 
+async function previewNotificationTargets(req, res) {
+  const result = await notificationTestService.previewTargets(req.query, {
+    requireEmail: req.query.requireEmail === 'true',
+  });
+
+  res.status(200).json({
+    success: true,
+    data: result,
+  });
+}
+
+async function sendTestNotification(req, res) {
+  const result = await notificationTestService.sendTestInAppNotification(req.body, req.body, {
+    userId: req.user?.id || req.session?.user?.id || null,
+    requestId: req.id,
+  });
+
+  res.status(200).json({
+    success: true,
+    data: result,
+  });
+}
+
+async function sendTestEmail(req, res) {
+  const result = await notificationTestService.sendTestEmail(req.body, req.body, {
+    userId: req.user?.id || req.session?.user?.id || null,
+    requestId: req.id,
+  });
+
+  res.status(200).json({
+    success: true,
+    data: result,
+  });
+}
+
 module.exports = {
   listTasks,
   initDatabase,
@@ -82,4 +118,7 @@ module.exports = {
   setupElasticsearch,
   runElasticsearchSeeder,
   runMongodbSeeder,
+  previewNotificationTargets,
+  sendTestNotification,
+  sendTestEmail,
 };

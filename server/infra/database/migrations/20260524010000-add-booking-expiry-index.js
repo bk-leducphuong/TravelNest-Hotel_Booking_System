@@ -1,8 +1,10 @@
 'use strict';
 
+const { addIndexIfMissing } = require('../migration-utils/schema');
+
 module.exports = {
   up: async (queryInterface) => {
-    await queryInterface.addIndex('bookings', ['status', 'expires_at'], {
+    await addIndexIfMissing(queryInterface, 'bookings', ['status', 'expires_at'], {
       name: 'idx_bookings_status_expires_at',
     });
   },

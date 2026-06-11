@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 
 services:
   api:
@@ -17,6 +17,7 @@ services:
       NATS_STREAM: ${NATS_STREAM:-TRAVELNEST_ANALYTICS}
       NATS_CLIENT_NAME: ${NATS_CLIENT_NAME:-travelnest-api}
       ANALYTICS_SERVICE_URL: http://analytics:8081
+      MEDIA_SERVICE_URL: http://media:8082
     depends_on:
       mysql:
         condition: service_healthy
@@ -26,8 +27,10 @@ services:
         condition: service_healthy
       analytics:
         condition: service_healthy
+      media:
+        condition: service_healthy
     ports:
-      - '3000:3000'
+      - "3000:3000"
     networks:
       - travelnest-net
 
@@ -55,11 +58,48 @@ services:
       nats:
         condition: service_healthy
     expose:
-      - '8081'
+      - "8081"
     networks:
       - travelnest-net
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:8081/healthz']
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  media:
+    build:
+      context: ../../services/media
+      dockerfile: Dockerfile
+    container_name: travelnest-media
+    restart: unless-stopped
+    environment:
+      HTTP_ADDR: :8082
+      MYSQL_DSN: ${DB_USER}:${DB_PASSWORD}@tcp(mysql:3306)/${DB_NAME}?parseTime=true
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET:-uploads}
+      MINIO_USE_SSL: "false"
+      PUBLIC_OBJECT_BASE_URL: ${PUBLIC_OBJECT_BASE_URL:-http://localhost:9000/uploads}
+      NATS_URL: ${NATS_URL:-nats://nats:4222}
+      NATS_STREAM: ${MEDIA_NATS_STREAM:-TRAVELNEST_MEDIA}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-5242880}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    expose:
+      - "8082"
+    networks:
+      - travelnest-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8082/healthz"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -75,14 +115,18 @@ services:
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
-      - '3306:3306'
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     command: --default-authentication-plugin=mysql_native_password
     networks:
       - travelnest-net
     healthcheck:
-      test: ['CMD-SHELL', 'mysqladmin ping -h localhost -u ${DB_USER} -p${DB_PASSWORD}']
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h localhost -u ${DB_USER} -p${DB_PASSWORD}",
+        ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -92,14 +136,14 @@ services:
     container_name: travelnest-redis
     restart: unless-stopped
     ports:
-      - '6379:6379'
+      - "6379:6379"
     volumes:
       - redis_data:/data
-    command: ['redis-server', '--appendonly', 'yes']
+    command: ["redis-server", "--appendonly", "yes"]
     networks:
       - travelnest-net
     healthcheck:
-      test: ['CMD-SHELL', 'redis-cli ping']
+      test: ["CMD-SHELL", "redis-cli ping"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -109,7 +153,7 @@ services:
     container_name: redis-insight
     restart: unless-stopped
     ports:
-      - '5540:5540'
+      - "5540:5540"
     volumes:
       - redis-insight-data:/data
     networks:
@@ -122,8 +166,8 @@ services:
     container_name: minio
     command: server /data --console-address ":9001"
     ports:
-      - '9000:9000' # API
-      - '9001:9001' # Web console
+      - "9000:9000" # API
+      - "9001:9001" # Web console
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
@@ -137,7 +181,7 @@ services:
     container_name: travelnest-mongodb
     restart: unless-stopped
     ports:
-      - '27017:27017'
+      - "27017:27017"
     environment:
       MONGO_INITDB_DATABASE: ${MONGODB_DATABASE:-travelnest_analytics}
     volumes:
@@ -145,7 +189,8 @@ services:
     networks:
       - travelnest-net
     healthcheck:
-      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok']
+      test:
+        ["CMD", "mongosh", "--quiet", "--eval", 'db.adminCommand("ping").ok']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -156,7 +201,7 @@ services:
     container_name: travelnest-mongo-express
     restart: unless-stopped
     ports:
-      - '${MONGO_EXPRESS_PORT:-8081}:8081'
+      - "${MONGO_EXPRESS_PORT:-8081}:8081"
     environment:
       ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017/
       ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USERNAME:-admin}
@@ -164,6 +209,16 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
+    networks:
+      - travelnest-net
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: travelnest-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
     networks:
       - travelnest-net
 
@@ -189,7 +244,7 @@ services:
         condition: service_healthy
       nats:
         condition: service_healthy
-    command: ['npm', 'run', 'dev:bullmq-worker']
+    command: ["npm", "run", "dev:bullmq-worker"]
     networks:
       - travelnest-net
 
@@ -197,28 +252,28 @@ services:
     image: nats:2.10-alpine
     container_name: travelnest-nats
     restart: unless-stopped
-    command: ['-js', '-sd', '/data', '-m', '8222']
+    command: ["-js", "-sd", "/data", "-m", "8222"]
     ports:
-      - '4222:4222'
-      - '8222:8222'
+      - "4222:4222"
+      - "8222:8222"
     volumes:
       - nats_data:/data
     networks:
       - travelnest-net
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:8222/healthz']
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 5s
-  
+
   nats-ui:
     image: ghcr.io/nats-nui/nui:latest
     container_name: nats-ui
     restart: unless-stopped
     ports:
-      - '31311:31311'
-    command: ['--db-path', '/db', '--nats-cli-contexts', '/nats-cli-contexts']
+      - "31311:31311"
+    command: ["--db-path", "/db", "--nats-cli-contexts", "/nats-cli-contexts"]
     volumes:
       - nats_ui_data:/db
       - ./nats-ui/clicontexts:/nats-cli-contexts:ro

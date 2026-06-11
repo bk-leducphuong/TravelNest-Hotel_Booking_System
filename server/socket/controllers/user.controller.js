@@ -15,10 +15,13 @@ const notificationService = require('@services/notification.service');
 exports.handleConnection = (namespace, socket) => {
   const userId = socket.user.id;
 
-  logger.info(`User connected to /user namespace`, {
-    userId,
-    socketId: socket.id,
-  });
+  logger.info(
+    {
+      userId,
+      socketId: socket.id,
+    },
+    `User connected to /user namespace`
+  );
 
   // Join user's personal room for targeted notifications
   const userRoom = `user_${userId}`;
@@ -214,11 +217,14 @@ exports.handleConnection = (namespace, socket) => {
 
   // ==================== Event: Disconnect ====================
   socket.on('disconnect', (reason) => {
-    logger.info(`User disconnected from /user namespace`, {
-      userId,
-      socketId: socket.id,
-      reason,
-    });
+    logger.info(
+      {
+        userId,
+        socketId: socket.id,
+        reason,
+      },
+      `User disconnected from /user namespace`
+    );
   });
 
   // ==================== Error Handling ====================

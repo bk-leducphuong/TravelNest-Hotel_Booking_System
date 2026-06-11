@@ -1,7 +1,5 @@
-const sharp = require('sharp');
-
+const mediaProxyService = require('@services/mediaProxy.service');
 const joinRepository = require('../repositories/join.repository');
-const { minioClient, bucketName, getObjectUrl } = require('../config/minio.config');
 const ApiError = require('../utils/ApiError');
 
 /**
@@ -136,52 +134,15 @@ class JoinService {
    * Upload and process hotel/room photos
    * @param {number} hotelId - Hotel ID
    * @param {number} roomId - Room ID
-   * @param {Array<Buffer>} imageBuffers - Array of image file buffers
+   * @param {Array<object>} files - Array of multer files
    * @returns {Promise<Array>} Array of uploaded image URLs
    */
-  async uploadPhotos(hotelId, roomId, imageBuffers) {
-    if (!imageBuffers || imageBuffers.length === 0) {
+  async uploadPhotos(hotelId, roomId, files) {
+    if (!files || files.length === 0) {
       throw new ApiError(400, 'NO_FILES_UPLOADED', 'No files uploaded');
     }
-
-    // Validate hotel and room exist and belong together
-    const room = await joinRepository.findRoomByIdAndHotelId(roomId, hotelId);
-    if (!room) {
-      throw new ApiError(
-        404,
-        'ROOM_NOT_FOUND',
-        'Room not found or does not belong to the specified hotel'
-      );
-    }
-
-    // Process and upload images to MinIO
-    const uploadPromises = imageBuffers.map(async (buffer, index) => {
-      try {
-        // Compress image to AVIF using sharp
-        const avifBuffer = await sharp(buffer).avif({ quality: 50 }).toBuffer();
-
-        const objectName = `hotels/${hotelId}/rooms/${roomId}/${Date.now()}_${index}.avif`;
-
-        await minioClient.putObject(bucketName, objectName, avifBuffer, {
-          'Content-Type': 'image/avif',
-        });
-
-        return getObjectUrl(objectName);
-      } catch (error) {
-        throw new ApiError(
-          500,
-          'IMAGE_PROCESSING_FAILED',
-          `Failed to process image ${index + 1}: ${error.message}`
-        );
-      }
-    });
-
-    const imageUrls = await Promise.all(uploadPromises);
-
-    // Update room with image URLs
-    await joinRepository.updateRoomImages(roomId, JSON.stringify(imageUrls));
-
-    return imageUrls;
+    const result = await mediaProxyService.uploadJoinPhotos(hotelId, roomId, files);
+    return result.imageUrls;
   }
 }
 

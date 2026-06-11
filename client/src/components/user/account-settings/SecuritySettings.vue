@@ -1,122 +1,280 @@
+<script>
+import { useToast } from 'vue-toastification'
+import { UserService } from '@/services/user.service'
+
+const emptyPasswordForm = () => ({
+  oldPassword: '',
+  newPassword: '',
+  confirmNewPassword: '',
+})
+
+export default {
+  setup() {
+    const toast = useToast()
+    return { toast }
+  },
+  data() {
+    return {
+      isEditingPassword: false,
+      isSavingPassword: false,
+      passwordForm: emptyPasswordForm(),
+      unsupportedActions: [
+        {
+          title: 'Two-factor authentication',
+          description: 'Additional sign-in factors are not exposed by the current account API.',
+        },
+        {
+          title: 'Active sessions',
+          description: 'Remote session management is still being moved onto the new backend surface.',
+        },
+        {
+          title: 'Delete account',
+          description: 'Account deletion is not wired to a supported self-service endpoint yet.',
+        },
+      ],
+    }
+  },
+  methods: {
+    resetPasswordForm() {
+      this.passwordForm = emptyPasswordForm()
+    },
+    openPasswordEditor() {
+      this.isEditingPassword = true
+      this.resetPasswordForm()
+    },
+    closePasswordEditor() {
+      this.isEditingPassword = false
+      this.resetPasswordForm()
+    },
+    getErrorMessage(error, fallbackMessage) {
+      const apiError = error?.response?.data?.error
+      const fieldMessages = apiError?.fields ? Object.values(apiError.fields) : []
+      return fieldMessages[0] || apiError?.message || fallbackMessage
+    },
+    async savePassword() {
+      if (this.passwordForm.newPassword !== this.passwordForm.confirmNewPassword) {
+        this.toast.error('New password confirmation does not match')
+        return
+      }
+
+      this.isSavingPassword = true
+      try {
+        await UserService.updatePassword(this.passwordForm)
+        this.closePasswordEditor()
+        this.toast.success('Password updated')
+      } catch (error) {
+        this.toast.error(this.getErrorMessage(error, 'Unable to update password'))
+      } finally {
+        this.isSavingPassword = false
+      }
+    },
+  },
+}
+</script>
+
 <template>
-  <!-- Main Content Container -->
-  <!-- Normal mode-->
-  <div class="section1" style="width: 70%">
-    <div class="personal-details-container">
-      <!-- Personal Details-->
-      <div class="details-section" style="margin-top: 0px !important">
-        <div style="display: flex; justify-content: space-between"></div>
-        <!--Security settings-->
-        <div class="details-section">
-          <h1>Security settings</h1>
-          <p>Change your security settings, set up secure authentication or delete your account.</p>
-        </div>
+  <section class="settings-panel">
+    <header class="panel-header">
+      <h1>Security settings</h1>
+      <p>Use the supported password endpoint now. Other security controls remain visible but unavailable.</p>
+    </header>
 
-        <div class="detail-item">
-          <label for="Password" style="width: 20%">Password</label>
-          <div class="value">Reset your password regularly to keep your account secure</div>
-          <button class="edit-button">Reset</button>
+    <article class="detail-card">
+      <div class="detail-header">
+        <div>
+          <h2>Password</h2>
+          <p>Change your password using <code>PATCH /api/v1/user/password</code>.</p>
         </div>
+        <button
+          v-if="!isEditingPassword"
+          type="button"
+          class="secondary-button"
+          @click="openPasswordEditor"
+        >
+          Change password
+        </button>
+      </div>
 
-        <div class="detail-item">
-          <label for="Two-factor authentication" style="width: 23%"
-            >Two-factor authentication</label
+      <div v-if="isEditingPassword" class="editor-grid">
+        <label class="field">
+          <span>Current password</span>
+          <input v-model="passwordForm.oldPassword" type="password" autocomplete="current-password" />
+        </label>
+        <label class="field">
+          <span>New password</span>
+          <input v-model="passwordForm.newPassword" type="password" autocomplete="new-password" />
+        </label>
+        <label class="field">
+          <span>Confirm new password</span>
+          <input
+            v-model="passwordForm.confirmNewPassword"
+            type="password"
+            autocomplete="new-password"
+          />
+        </label>
+        <div class="editor-actions">
+          <button type="button" class="secondary-button" @click="closePasswordEditor">Cancel</button>
+          <button
+            type="button"
+            class="primary-button"
+            :disabled="
+              isSavingPassword ||
+              !passwordForm.oldPassword ||
+              !passwordForm.newPassword ||
+              !passwordForm.confirmNewPassword
+            "
+            @click="savePassword"
           >
-          <div class="value">
-            Increase the security of your account by setting up two-factor authentication.
-          </div>
-          <button class="edit-button">Set up</button>
-        </div>
-
-        <div class="detail-item">
-          <label for="Active sessions" style="width: 32%">Active sessions</label>
-          <div class="value">
-            Selecting ‘Sign out’ will sign you out from all devices except this one. The process can
-            take up to 10 minutes.
-          </div>
-          <button class="edit-button">Sign out</button>
-        </div>
-
-        <div class="detail-item">
-          <label for="Delete account" style="width: 20%">Delete account</label>
-          <div class="value">Permanently delete your Booking.com account</div>
-          <button class="edit-button">Delete account</button>
+            {{ isSavingPassword ? 'Saving...' : 'Save password' }}
+          </button>
         </div>
       </div>
-    </div>
-  </div>
+
+      <div v-else class="value-row">
+        Reset your password regularly to keep your account secure.
+      </div>
+    </article>
+
+    <article v-for="action in unsupportedActions" :key="action.title" class="detail-card muted-card">
+      <div class="detail-header">
+        <div>
+          <h2>{{ action.title }}</h2>
+          <p>{{ action.description }}</p>
+        </div>
+        <button type="button" class="disabled-button" disabled>Unavailable</button>
+      </div>
+    </article>
+  </section>
 </template>
+
 <style scoped>
-.content h2 {
-  font-size: 20px;
-  margin-bottom: 10px;
-}
-.content p {
-  color: #666;
-  margin-bottom: 10px;
-}
-.manage-link {
-  color: #4285f4;
-  text-decoration: none;
-  margin-bottom: 10px;
-  padding-bottom: 10px;
-}
-.manage-link:hover {
-  text-decoration: underline;
-  margin-bottom: 10px;
-}
-.personal-details-container {
+.settings-panel {
   display: flex;
-  max-width: 1000px;
-  margin: 0 auto;
-  padding-left: 40px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  flex-direction: column;
+  gap: 16px;
 }
-.user-image-container img {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
+
+.panel-header,
+.detail-card {
+  padding: 24px 28px;
+  border: 1px solid #dbe3f0;
+  border-radius: 8px;
+  background: #fff;
 }
-.details-section {
-  flex-grow: 1;
+
+.panel-header h1,
+.detail-card h2 {
+  margin: 0 0 8px;
+  color: #0f172a;
 }
-.details-section h1 {
+
+.panel-header h1 {
   font-size: 30px;
-  margin-bottom: 16px;
 }
-.details-section p {
-  color: #666;
-  margin-bottom: 24px;
+
+.panel-header p,
+.detail-card p,
+.value-row {
+  margin: 0;
+  color: #475569;
+  line-height: 1.6;
 }
-.detail-item {
+
+.detail-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: 16px 0;
-  border-bottom: 1px solid #e6e6e6;
+  gap: 16px;
 }
-.detail-item label {
-  font-weight: bold;
-  margin-right: 16px;
+
+.editor-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
 }
-.detail-item .value {
-  flex-grow: 1;
-  color: #666;
+
+.field {
+  display: grid;
+  gap: 8px;
 }
-.detail-item .verified {
-  background-color: #4caf50;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  margin-left: 8px;
+
+.field span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
 }
-.edit-button {
-  background-color: #4285f4;
-  color: white;
+
+.field input {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.primary-button,
+.secondary-button,
+.disabled-button {
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.primary-button {
+  padding: 11px 16px;
   border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
+  background: #2563eb;
+  color: #fff;
   cursor: pointer;
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.secondary-button {
+  padding: 11px 16px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.disabled-button {
+  padding: 11px 16px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #94a3b8;
+}
+
+.muted-card {
+  background: #f8fafc;
+}
+
+code {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+@media (max-width: 768px) {
+  .panel-header,
+  .detail-card {
+    padding: 20px;
+  }
+
+  .detail-header,
+  .editor-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 </style>

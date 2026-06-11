@@ -1,6 +1,7 @@
 const notificationRepository = require('../repositories/notification.repository');
 const ApiError = require('../utils/ApiError');
 const logger = require('../config/logger.config');
+const notificationProxyService = require('./notificationProxy.service');
 const {
   NOTIFICATION_TYPES,
   NOTIFICATION_CATEGORIES,
@@ -20,36 +21,7 @@ class NotificationService {
    * @returns {Promise<Object>} Notifications with pagination metadata
    */
   async getNotifications(userId, options = {}) {
-    const {
-      page = 1,
-      limit = 20,
-      unreadOnly = false,
-      category = null,
-      type = null,
-      priority = null,
-    } = options;
-
-    // Validate limit
-    const validatedLimit = Math.min(limit, 100);
-    const offset = (page - 1) * validatedLimit;
-
-    const result = await notificationRepository.findByUserId(userId, {
-      limit: validatedLimit,
-      offset,
-      unreadOnly,
-      category,
-      type,
-      priority,
-    });
-
-    return {
-      notifications: result.rows.map((notification) =>
-        notification.toPublicJSON ? notification.toPublicJSON() : notification.toJSON()
-      ),
-      page,
-      limit: validatedLimit,
-      total: result.count,
-    };
+    return notificationProxyService.getNotifications(userId, options);
   }
 
   /**
@@ -59,23 +31,7 @@ class NotificationService {
    * @returns {Promise<void>}
    */
   async markNotificationAsRead(notificationId, userId) {
-    // Verify notification exists and belongs to user
-    const notification = await notificationRepository.findById(notificationId, false);
-
-    if (!notification) {
-      throw new ApiError(404, 'NOTIFICATION_NOT_FOUND', 'Notification not found');
-    }
-
-    if (notification.receiver_id !== userId) {
-      throw new ApiError(
-        403,
-        'FORBIDDEN',
-        'You do not have permission to mark this notification as read'
-      );
-    }
-
-    // Mark as read using model method
-    await notificationRepository.markAsReadById(notificationId);
+    await notificationProxyService.markNotificationAsRead(notificationId, userId);
   }
 
   /**
@@ -84,8 +40,8 @@ class NotificationService {
    * @returns {Promise<number>} Number of notifications marked as read
    */
   async markAllNotificationsAsRead(userId) {
-    const [updatedCount] = await notificationRepository.markAllAsReadByUserId(userId);
-    return updatedCount;
+    const result = await notificationProxyService.markAllNotificationsAsRead(userId);
+    return result.updatedCount;
   }
 
   /**
@@ -96,6 +52,11 @@ class NotificationService {
    */
   async getUnreadCount(userId, options = {}) {
     const { byCategory = false } = options;
+
+    if (!byCategory) {
+      const result = await notificationProxyService.getUnreadCount(userId);
+      return result.unreadCount;
+    }
 
     if (byCategory) {
       return await notificationRepository.countByCategory(userId);

@@ -71,7 +71,7 @@
 
 <script>
   import { mapGetters } from 'vuex';
-  import socket from '@/services/socket';
+  import { getUserSocket } from '@/services/userSocket';
   import { NotificationService } from '@/services/notification.service';
   import { useToast } from 'vue-toastification';
   import { Bell } from '@element-plus/icons-vue';
@@ -91,6 +91,7 @@
         isNotificationPopupVisible: false,
         notifications: [],
         numberOfNewNotifications: 0,
+        userSocket: null,
       };
     },
     computed: {
@@ -105,23 +106,28 @@
       },
     },
     methods: {
-      joinRoom() {
-        if (this.isUserAuthenticated) {
-          // Tham gia vào room của admin
-          socket.emit('joinUserRoom', this.getUserId);
-          // Nhận thông báo mới
-          socket.on('newUserNotification', (data) => {
-            this.notifications.unshift(data);
-            this.calculateNumerOfNewNotifications();
-            // Auto show popover when new notification arrives
-            this.isNotificationPopupVisible = true;
-            // Auto hide after 5 seconds
-            setTimeout(() => {
-              this.isNotificationPopupVisible = false;
-            }, 5000);
-          });
-        } else {
-          console.log('User not logged in');
+      connectNotificationSocket() {
+        if (!this.isUserAuthenticated) {
+          console.log('[Notification] user not authenticated, skip /user socket connection');
+          return;
+        }
+
+        this.userSocket = getUserSocket();
+        this.userSocket.on('notification:new', this.handleNotificationReceived);
+        this.userSocket.on('notifications:unreadCountUpdate', this.handleUnreadCountUpdate);
+      },
+      handleNotificationReceived(data) {
+        this.notifications.unshift(data);
+        this.calculateNumerOfNewNotifications();
+        this.isNotificationPopupVisible = true;
+
+        setTimeout(() => {
+          this.isNotificationPopupVisible = false;
+        }, 5000);
+      },
+      handleUnreadCountUpdate(payload) {
+        if (typeof payload?.count === 'number') {
+          this.numberOfNewNotifications = payload.count;
         }
       },
       async getNotifiactions() {
@@ -179,7 +185,13 @@
     async mounted() {
       if (this.isUserAuthenticated) {
         await this.getNotifiactions();
-        this.joinRoom();
+        this.connectNotificationSocket();
+      }
+    },
+    beforeUnmount() {
+      if (this.userSocket) {
+        this.userSocket.off('notification:new', this.handleNotificationReceived);
+        this.userSocket.off('notifications:unreadCountUpdate', this.handleUnreadCountUpdate);
       }
     },
   };
