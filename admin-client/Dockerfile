@@ -1,34 +1,36 @@
-# Build stage
 FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci
+
+# Fall back to npm install when no lockfile is present in the repo.
+RUN if [ -f package-lock.json ]; then \
+      npm ci; \
+    else \
+      npm install; \
+    fi && \
+    npm cache clean --force
 
 COPY . .
-# Nuxt outputs to .output/public when using generate (static site for nginx)
-RUN npm run generate
 
-# Production stage
-FROM nginx:alpine
+RUN npm run build
 
-# Copy built assets from builder (Nuxt generate puts static files in .output/public)
-COPY --from=builder /app/.output/public /usr/share/nginx/html
+FROM node:22-alpine
 
-# Copy custom nginx configuration
-COPY nginx/nginx.conf /etc/nginx/conf.d/default.conf
+ENV NODE_ENV=production
+ENV NITRO_HOST=0.0.0.0
+ENV NITRO_PORT=3000
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nginx_custom && \
-    adduser -S nginx_custom -u 1001
+WORKDIR /app
 
-# Expose port
-EXPOSE 80
+COPY --from=builder /app/.output ./.output
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:80/ || exit 1
+USER node
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost:3000/ || exit 1
+
+CMD ["node", ".output/server/index.mjs"]
