@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: admin-client
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: admin.travelnest.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-client
+                port:
+                  number: 80

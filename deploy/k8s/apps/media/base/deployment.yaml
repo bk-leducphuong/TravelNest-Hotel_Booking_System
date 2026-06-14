@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: media
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: media
+    spec:
+      containers:
+        - name: media
+          image: travelnest-media:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: media-config
+            - secretRef:
+                name: media-secret
+          ports:
+            - containerPort: 8082
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

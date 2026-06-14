@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notification-config
+data:
+  HTTP_ADDR: :8083
+  DB_USER: travelnest
+  DB_NAME: travelnest
+  NATS_URL: nats://nats:4222
+  NATS_STREAM: TRAVELNEST_EVENTS
+  SMTP_PORT: "587"
+  SMTP_SECURE: "false"
+  SMTP_SKIP_VERIFY: "false"
+  DEFAULT_FROM_EMAIL: notifications@deployserver.work
+  CLIENT_HOST: https://deployserver.work
+  LOG_LEVEL: info
