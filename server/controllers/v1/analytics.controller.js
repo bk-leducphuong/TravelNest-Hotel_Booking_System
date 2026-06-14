@@ -18,7 +18,7 @@ const getSearchDemand = asyncHandler(async (req, res) => {
 });
 
 const getMySearchSummary = asyncHandler(async (req, res) => {
-  const userId = req.session.user.id;
+  const userId = req.user.id;
   const summary = await analyticsService.getUserSearchSummary(userId);
 
   res.status(200).json({
@@ -30,7 +30,7 @@ const getMySearchSummary = asyncHandler(async (req, res) => {
 });
 
 const getMySearches = asyncHandler(async (req, res) => {
-  const userId = req.session.user.id;
+  const userId = req.user.id;
   const { limit } = req.query;
 
   const searches = await analyticsService.getUserSearches(userId, {

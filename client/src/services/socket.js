@@ -1,5 +1,6 @@
 // src/services/socket.js
 import { io } from 'socket.io-client'
+import { getAccessToken } from './keycloak.service'
 
 const API_PREFIX = '/api/v1'
 const configuredHost = (import.meta.env.VITE_SERVER_HOST || '').replace(/\/$/, '')
@@ -8,9 +9,30 @@ const socketHost = configuredHost.endsWith(API_PREFIX) // socketHost: http://loc
   : configuredHost
 
 const socket = io(socketHost, {
-  withCredentials: true,
+  autoConnect: false,
+  withCredentials: false,
   transports: ['websocket', 'polling']
 })
+
+export async function connectSocket() {
+  const token = await getAccessToken().catch(() => null)
+  socket.auth = {
+    ...(socket.auth || {}),
+    token
+  }
+
+  if (!socket.connected) {
+    socket.connect()
+  }
+
+  return socket
+}
+
+export function disconnectSocket() {
+  if (socket.connected) {
+    socket.disconnect()
+  }
+}
 
 export default socket
 

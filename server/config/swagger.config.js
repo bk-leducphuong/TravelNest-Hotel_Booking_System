@@ -24,18 +24,24 @@ const options = {
     ],
     components: {
       securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Keycloak access token',
+        },
         sessionAuth: {
-          type: 'apiKey',
-          in: 'cookie',
-          name: 'connect.sid',
-          description: 'Session-based authentication',
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Deprecated name retained for existing docs; use a Keycloak access token.',
         },
         internalSuperadminToken: {
           type: 'apiKey',
           in: 'header',
           name: 'x-internal-superadmin-token',
           description:
-            'Internal superadmin token. Alternatively, use an active admin session cookie.',
+            'Internal superadmin token. Alternatively, use an admin bearer token issued by Keycloak.',
         },
       },
       schemas: {

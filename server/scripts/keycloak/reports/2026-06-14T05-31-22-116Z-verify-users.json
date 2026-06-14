@@ -1,0 +1,18 @@
+{
+  "command": "verify-users",
+  "batchId": "2026-06-14T05-31-22-116Z",
+  "dryRun": false,
+  "filters": {
+    "email": null,
+    "limit": null,
+    "resume": false
+  },
+  "summary": {
+    "ok": true,
+    "total": 33,
+    "active": 27,
+    "disabled": 6,
+    "failures": 0
+  },
+  "failures": []
+}

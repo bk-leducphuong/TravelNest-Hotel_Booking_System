@@ -8,7 +8,7 @@ const {
   getRecentSearches,
   getTrendingDestinations,
 } = require('@controllers/v1/search.controller.js');
-const { authenticate } = require('@middlewares/auth.middleware');
+const { authenticate, optionalAuthenticate } = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
 const searchSchema = require('@validators/v1/search.schema');
 const router = express.Router();
@@ -305,7 +305,7 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
-router.get('/hotels', validate(searchSchema.searchHotels), searchHotels);
+router.get('/hotels', optionalAuthenticate, validate(searchSchema.searchHotels), searchHotels);
 
 /**
  * @swagger
@@ -579,7 +579,12 @@ router.get(
  *       400:
  *         description: Validation error
  */
-router.post('/log', validate(searchSchema.saveSearchInformation), saveSearchInformation);
+router.post(
+  '/log',
+  optionalAuthenticate,
+  validate(searchSchema.saveSearchInformation),
+  saveSearchInformation
+);
 
 /**
  * @swagger

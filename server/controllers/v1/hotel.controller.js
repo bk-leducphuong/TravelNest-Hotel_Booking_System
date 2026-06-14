@@ -3,6 +3,10 @@ const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 const { computeNumberOfNights } = require('@helpers/hotel.helpers');
 const hotelViewEventService = require('@services/hotelViewEvent.service');
+const {
+  getAuthenticatedUserId,
+  getTrackingSessionId,
+} = require('@helpers/auth-context.helper');
 
 /**
  * GET /api/hotels/:hotelId
@@ -25,8 +29,8 @@ const getHotelDetails = asyncHandler(async (req, res) => {
   const result = await hotelService.getHotelDetails(hotelId, options);
 
   // Emit view event asynchronously (deduped via Redis)
-  const userId = req.session?.user?.id || null;
-  const sessionId = req.sessionID || req.cookies?.['connect.sid'] || '';
+  const userId = getAuthenticatedUserId(req);
+  const sessionId = getTrackingSessionId(req) || '';
   const ipAddress =
     (req.headers['x-forwarded-for'] || '').toString().split(',')[0].trim() ||
     req.ip ||
@@ -109,7 +113,7 @@ const getNearbyPlaces = asyncHandler(async (req, res) => {
  * Get recently viewed hotels (authenticated, from Redis)
  */
 const getRecentlyViewedHotels = asyncHandler(async (req, res) => {
-  const userId = req.session.user.id;
+  const userId = req.user.id;
   const { limit } = req.query;
 
   const hotels = await hotelService.getRecentlyViewedHotels(

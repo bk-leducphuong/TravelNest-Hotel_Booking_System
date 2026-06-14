@@ -106,13 +106,13 @@
       },
     },
     methods: {
-      connectNotificationSocket() {
+      async connectNotificationSocket() {
         if (!this.isUserAuthenticated) {
           console.log('[Notification] user not authenticated, skip /user socket connection');
           return;
         }
 
-        this.userSocket = getUserSocket();
+        this.userSocket = await getUserSocket();
         this.userSocket.on('notification:new', this.handleNotificationReceived);
         this.userSocket.on('notifications:unreadCountUpdate', this.handleUnreadCountUpdate);
       },
@@ -185,7 +185,7 @@
     async mounted() {
       if (this.isUserAuthenticated) {
         await this.getNotifiactions();
-        this.connectNotificationSocket();
+        await this.connectNotificationSocket();
       }
     },
     beforeUnmount() {

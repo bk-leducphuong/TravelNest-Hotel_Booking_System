@@ -1,29 +1,39 @@
 export default {
+  getSubject(state) {
+    return state.subject
+  },
   getUserId(state) {
     return state.userId
   },
   getEmail(state) {
     return state.email
   },
+  getTokenRoles(state) {
+    return state.tokenRoles
+  },
+  getHotelContext(state) {
+    return state.hotelContext
+  },
+  isAuthLoaded(state) {
+    return state.authLoaded
+  },
   isAdminAuthenticated(state) {
-    if (state.isAuthenticated && state.role == 'partner') {
-      return true
-    } else {
-      return false
-    }
+    return state.isAuthenticated && state.role === 'partner'
   },
 
   isUserAuthenticated(state) {
-    if (state.isAuthenticated && state.role == 'customer') {
-      return true
-    } else {
-      return false
-    }
+    return state.isAuthenticated && state.role === 'customer'
   },
   getUserRole(state) {
     return state.role
   },
   isLoginFail(state) {
     return state.loginFailure
+  },
+  isVerificationRequired(state) {
+    return state.verificationRequired
+  },
+  getAuthErrorCode(state) {
+    return state.authErrorCode
   }
 }

@@ -1,217 +1,139 @@
-<!-- src/views/Login.vue -->
 <template>
-  <ForgotPassword
-    :email="email"
-    :userRole="userRole"
-    @close="closeForgotPassword"
-    v-if="isForgotPassword"
-  />
   <LoginHeader :isAdminLogin="false" />
-  <div class="container" v-if="step === 1">
-    <h1>{{ $t('loginHeader') }}</h1>
-    <p>
-      Bạn có thể đăng nhập tài khoản Booking.com của mình để truy cập các dịch vụ của chúng tôi.
-    </p>
-    <form @submit.prevent="checkEmail">
-      <label for="email">Địa chỉ email</label>
-      <input
-        type="email"
-        id="email"
-        name="email"
-        v-model="email"
-        placeholder="Nhập địa chỉ email của bạn"
-        required
-      />
-      <button type="submit" class="btn">Tiếp tục với email</button>
-    </form>
-    <p>hoặc sử dụng một trong các lựa chọn này</p>
-    <div class="social-login">
-      <button @click="socialLogin('facebook')" class="social-btn">
-        <img src="../assets/icons/facebook.png" alt="Facebook" />
-      </button>
-      <button @click="socialLogin('google')" class="social-btn">
-        <img src="../assets/icons/search.png" alt="Google" />
-      </button>
-      <button @click="socialLogin('twitter')" class="social-btn">
-        <img src="../assets/icons/twitter.png" alt="Twitter" />
-      </button>
-    </div>
-  </div>
+  <div class="container">
+    <h1>{{ heading }}</h1>
+    <p>{{ description }}</p>
 
-  <div class="container" v-if="step === 2">
-    <div>
-      <h1>{{ isNewUser ? 'Tạo mật khẩu' : 'Nhập mật khẩu của bạn' }}</h1>
+    <div v-if="isVerificationRequired" class="verification-card">
+      <h2>Xác minh email để tiếp tục</h2>
       <p>
-        {{
-          isNewUser
-            ? 'Dùng ít nhất 8 ký tự, trong đó có chữ hoa, chữ thường, số'
-            : 'Vui lòng nhập mật khẩu Booking.com của bạn cho'
-        }}
+        Tài khoản Keycloak của bạn đã đăng nhập nhưng email vẫn chưa được xác minh. Hãy mở email
+        xác minh, hoàn tất bước xác nhận, rồi thử lại.
       </p>
+      <div class="actions">
+        <button type="button" class="btn" @click="retryBootstrap">Tôi đã xác minh email</button>
+        <button type="button" class="btn btn-secondary" @click="startAuthFlow">
+          Tiếp tục với Keycloak
+        </button>
+      </div>
     </div>
-    <form @submit.prevent="registerOrLogin">
-      <div>
-        <label for="password">Mật khẩu</label>
-        <input
-          type="password"
-          id="password"
-          name="password"
-          placeholder="Nhập mật khẩu"
-          v-model="password"
-          required
-        />
-      </div>
-      <div class="forgot-password" @click="isForgotPassword = true" v-if="!isNewUser">
-        Forgot password?
-      </div>
 
-      <div v-if="isNewUser">
-        <label for="confirm password">Xác nhận mật khẩu</label>
-        <input
-          type="password"
-          id="confirm password"
-          name="confirm password"
-          v-model="confirmPassword"
-          placeholder="Nhập mật khẩu"
-          required
-        />
-        <p v-if="passwordMismatch" style="color: red" class="error">Mật khẩu không khớp!</p>
-      </div>
+    <div v-else class="actions">
+      <button type="button" class="btn" @click="startAuthFlow">Tiếp tục với Keycloak</button>
+      <button type="button" class="btn btn-secondary" @click="startResetPassword">
+        Quên mật khẩu?
+      </button>
+    </div>
 
-      <button type="submit" class="btn">{{ isNewUser ? 'Tạo tài khoản' : 'Đăng nhập' }}</button>
-    </form>
-  </div>
-
-  <div class="footer">
-    <p>
-      Qua việc đăng nhập hoặc tạo tài khoản, bạn đồng ý với các
-      <a>Điều khoản và Điều kiện</a> cũng như <a>Chính sách An toàn và Bảo mật</a> của chúng tôi
+    <p class="hint">
+      Nếu trình duyệt không tự chuyển trang, hãy dùng nút phía trên để mở trang xác thực của
+      Keycloak.
     </p>
-    <p>Bảo lưu mọi quyền.<br />Bản quyền (2006 - 2024) - TravelNest™</p>
   </div>
 </template>
 
 <script>
   import { mapActions, mapGetters } from 'vuex';
   import { useToast } from 'vue-toastification';
-  import ForgotPassword from '@/components/ForgotPassword.vue';
-  import checkPasswordStrength from '@/utils/checkPasswordStrength';
   import LoginHeader from '@/components/LoginHeader.vue';
-  import errorHandler from '@/request/errorHandler';
-  import { AuthService } from '@/services/auth.service';
 
   export default {
     components: {
-      ForgotPassword,
       LoginHeader,
     },
     setup() {
-      // Get toast interface
       const toast = useToast();
-      // Make it available inside methods
       return { toast };
     },
     data() {
       return {
-        step: 1, // Step 1: Email, Step 2: Password
-        email: '',
-        password: '',
-        confirmPassword: '',
-        isNewUser: false,
-        isForgotPassword: false,
-        userRole: 'user',
-        isLoading: false,
+        authStarted: false,
       };
     },
     computed: {
-      ...mapGetters('auth', ['isLoginFail']),
-      passwordMismatch() {
-        return this.isNewUser && this.password !== this.confirmPassword;
+      ...mapGetters('auth', [
+        'isUserAuthenticated',
+        'isAdminAuthenticated',
+        'isVerificationRequired',
+      ]),
+      requestedAction() {
+        return this.$route.query.action === 'register' ? 'register' : 'login';
+      },
+      heading() {
+        return this.requestedAction === 'register'
+          ? 'Đang chuyển bạn tới trang đăng ký'
+          : 'Đang chuyển bạn tới trang đăng nhập';
+      },
+      description() {
+        return this.requestedAction === 'register'
+          ? 'TravelNest sẽ mở trang đăng ký được lưu trữ trên Keycloak.'
+          : 'TravelNest sẽ mở trang đăng nhập được lưu trữ trên Keycloak.';
       },
     },
     methods: {
-      ...mapActions('auth', ['login', 'register']), // Map the login and register actions
-
-      async checkEmail() {
-        try {
-          const response = await AuthService.checkEmail({
-            email: this.email,
-            userRole: this.userRole,
-          });
-
-          // Check if response has data property (from http interceptor) or is the data itself
-          const data = response.data || response;
-
-          if (data.exists) {
-            // Email exists, proceed to login
-            this.isNewUser = false;
-          } else {
-            // Email doesn't exist, register new user
-            this.isNewUser = true;
-          }
-          this.step = 2;
-        } catch (error) {
-          if (error.response && error.response.status === 400) {
-            this.toast.error(error.response.data?.message || 'Invalid email');
-          } else {
-            this.toast.error('Unexpected error occurred. Please try again.');
-          }
-        }
-      },
-      async registerOrLogin() {
-        if (this.passwordMismatch) {
-          return; // Prevent proceeding if passwords do not match
-        }
-
-        if (this.isNewUser) {
-          const strength = checkPasswordStrength(this.password);
-          if (strength < 4) {
-            this.toast.error('Password is too weak. Please use a stronger password.');
-            return;
-          }
-        }
-
-        const payload = {
-          email: this.email,
-          password: this.password,
-          userRole: this.userRole,
-        };
-
-        const redirectRoute = this.$route.query.redirect || '/';
-
-        try {
-          if (this.isNewUser) {
-            await this.register({ payload, redirectRoute });
-          } else {
-            await this.login({ payload, redirectRoute });
-          }
-
-          if (this.isLoginFail) {
-            this.toast.error('Mật khẩu sai!');
-            this.password = '';
-          }
-        } catch (error) {
-          this.toast.error('Đăng nhập/Đăng ký thất bại. Vui lòng thử lại.');
-          this.password = '';
-        }
-      },
-      socialLogin(provider) {
-        const allowedProviders = ['facebook', 'google', 'twitter'];
-        if (!allowedProviders.includes(provider)) {
-          console.error('Invalid provider');
+      ...mapActions('auth', ['login', 'register', 'resetPassword', 'checkAuth']),
+      redirectAuthenticatedUser() {
+        if (this.isAdminAuthenticated) {
+          this.$router.replace(this.$route.query.redirect || '/admin/hotels-management');
           return;
         }
 
-        if (provider === 'google') {
-          AuthService.loginWithGoogle();
-        } else if (provider === 'facebook') {
-          AuthService.loginWithFacebook();
-        } else if (provider === 'twitter') {
-          AuthService.loginWithTwitter();
+        if (this.isUserAuthenticated) {
+          this.$router.replace(this.$route.query.redirect || '/');
         }
       },
-      closeForgotPassword() {
-        this.isForgotPassword = false;
+      async startAuthFlow() {
+        if (this.authStarted) {
+          return;
+        }
+
+        this.authStarted = true;
+
+        try {
+          if (this.requestedAction === 'register') {
+            await this.register({ redirectRoute: this.$route.query.redirect || '/' });
+            return;
+          }
+
+          await this.login({ redirectRoute: this.$route.query.redirect || '/' });
+        } catch (error) {
+          this.authStarted = false;
+          this.toast.error(error.message || 'Không thể chuyển tới Keycloak.');
+        }
+      },
+      async startResetPassword() {
+        try {
+          await this.resetPassword({ redirectRoute: this.$route.query.redirect || '/' });
+        } catch (error) {
+          this.toast.error(error.message || 'Không thể bắt đầu quy trình đặt lại mật khẩu.');
+        }
+      },
+      async retryBootstrap() {
+        try {
+          await this.checkAuth();
+          this.redirectAuthenticatedUser();
+        } catch (error) {
+          this.toast.error(error.message || 'Email của bạn vẫn chưa được xác minh.');
+        }
+      },
+    },
+    mounted() {
+      this.redirectAuthenticatedUser();
+
+      if (!this.isUserAuthenticated && !this.isAdminAuthenticated && !this.isVerificationRequired) {
+        this.startAuthFlow();
+      }
+    },
+    watch: {
+      isUserAuthenticated() {
+        this.redirectAuthenticatedUser();
+      },
+      isAdminAuthenticated() {
+        this.redirectAuthenticatedUser();
+      },
+      '$route.query.action'() {
+        this.authStarted = false;
+        this.startAuthFlow();
       },
     },
   };
@@ -221,16 +143,17 @@
   @import '@/assets/styles/index.scss';
 
   .container {
-    max-width: $container-max-width;
+    max-width: 560px;
     margin: $spacing-xxl auto;
-    padding: $spacing-lg;
+    padding: $spacing-xl;
     background-color: $white;
     border-radius: $border-radius-sm;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
   }
 
   h1 {
     color: $text-primary;
-    margin-bottom: $spacing-lg;
+    margin-bottom: $spacing-md;
   }
 
   p {
@@ -238,68 +161,38 @@
     line-height: 1.5;
   }
 
-  input {
-    @include input-base;
+  .actions {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    margin: $spacing-lg 0;
   }
 
   .btn {
     @include button-primary;
   }
 
-  .social-login {
-    @include flex-between;
-    margin-top: $spacing-lg;
-  }
-
-  .social-btn {
-    width: 30%;
-    height: $spacing-xxl;
+  .btn-secondary {
+    color: $text-primary;
+    background-color: transparent;
     border: 1px solid $border-color;
+  }
+
+  .verification-card {
+    margin: $spacing-lg 0;
+    padding: $spacing-lg;
+    background: rgba($primary-color, 0.06);
+    border: 1px solid rgba($primary-color, 0.2);
     border-radius: $border-radius-sm;
-    @include flex-center;
-    cursor: pointer;
-    transition: border-color 0.2s ease;
-
-    &:hover {
-      border-color: $primary-color-light;
-    }
-
-    img {
-      width: $spacing-lg;
-      height: $spacing-lg;
-    }
   }
 
-  .footer {
-    text-align: center;
-    margin-top: $spacing-lg;
-    font-size: $font-size-xs;
-    color: $text-secondary;
-
-    a {
-      color: $primary-color-light;
-      text-decoration: none;
-
-      &:hover {
-        text-decoration: underline;
-      }
-    }
+  .verification-card h2 {
+    margin-bottom: $spacing-sm;
+    color: $text-primary;
+    font-size: 20px;
   }
 
-  .forgot-password {
-    font-size: $font-size-base;
-    color: $primary-color-light;
-    margin-bottom: $spacing-md;
-    cursor: pointer;
-    text-align: right;
-    transition: color 0.2s ease;
-
-    &:hover {
-      color: $primary-color-hover;
-    }
+  .hint {
+    font-size: 14px;
   }
-
-  .error {
-    color: $error-color;
-  }
-</style>
+ </style>

@@ -24,6 +24,7 @@
     "chart.js": "^4.4.6",
     "element-plus": "^2.13.1",
     "flatpickr": "^4.6.13",
+    "keycloak-js": "^26.2.4",
     "leaflet": "^1.9.4",
     "socket.io-client": "^4.8.1",
     "uuid": "^11.0.3",

@@ -59,5 +59,6 @@ function buildSession(sessionId, userData) {
 }
 
 module.exports = {
+  mapRoleToUserType,
   buildSession,
 };

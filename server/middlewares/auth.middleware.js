@@ -1,110 +1,109 @@
-const {
-  Users,
-  UserRoles,
-  Roles,
-  Permissions,
-  RolePermissions,
-  HotelUsers,
-} = require('@models/index.js');
-const { Op } = require('sequelize');
 const logger = require('@config/logger.config');
+const identityService = require('@services/identity.service');
+const keycloakUserInfoService = require('@services/keycloak-userinfo.service');
+const ApiError = require('@utils/ApiError');
+const { verifyJwt } = require('@utils/jwt.util');
+const { ROLES } = require('@constants/roles');
 
-/**
- * Middleware: Authenticate user
- * Checks if user is authenticated and loads user data with roles and permissions
- */
+function getBearerToken(req) {
+  const authorization = req.get('authorization');
+  if (!authorization || !authorization.startsWith('Bearer ')) {
+    return null;
+  }
+
+  const token = authorization.slice('Bearer '.length).trim();
+  return token || null;
+}
+
+async function authenticateRequest(req) {
+  const token = getBearerToken(req);
+  if (!token) {
+    const error = new Error('Authentication required.');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  let verifiedToken;
+
+  try {
+    verifiedToken = verifyJwt(token);
+  } catch (error) {
+    throw new ApiError(401, 'INVALID_TOKEN', error.message || 'Bearer token is invalid');
+  }
+
+  const enrichedToken = await enrichTokenClaims(verifiedToken, token);
+  const user = await identityService.resolveAuthenticatedUser(enrichedToken);
+
+  req.auth = {
+    provider: 'keycloak',
+    subject: enrichedToken.subject,
+    email: enrichedToken.email,
+    roles: enrichedToken.roles,
+    token: enrichedToken.payload,
+  };
+  req.user = user;
+}
+
+async function enrichTokenClaims(verifiedToken, accessToken) {
+  if (verifiedToken?.subject && verifiedToken?.email) {
+    return verifiedToken;
+  }
+
+  const userInfo = await keycloakUserInfoService.getUserInfo(accessToken);
+  const subject = verifiedToken?.subject || userInfo.sub || null;
+  const email =
+    verifiedToken?.email || (userInfo.email ? String(userInfo.email).toLowerCase() : null);
+
+  return {
+    ...verifiedToken,
+    subject,
+    email,
+    payload: {
+      ...(verifiedToken?.payload || {}),
+      ...userInfo,
+      sub: subject,
+      email,
+    },
+  };
+}
+
 async function authenticate(req, res, next) {
   try {
-    // Check if session exists and has user data
-    if (!req.session?.user?.id) {
-      return res.status(401).json({
-        success: false,
-        message: 'Unauthorized access. Please log in.',
-      });
-    }
-
-    // Load user with roles and hotel context
-    const user = await Users.findByPk(req.session.user.id, {
-      include: [
-        {
-          model: UserRoles,
-          as: 'roles',
-          include: [
-            {
-              model: Roles,
-              as: 'role',
-              attributes: ['id', 'name', 'description'],
-              include: [
-                {
-                  model: Permissions,
-                  as: 'permissions',
-                  through: {
-                    model: RolePermissions,
-                    attributes: [],
-                  },
-                  attributes: ['id', 'name', 'description'],
-                },
-              ],
-            },
-          ],
-        },
-        {
-          model: HotelUsers,
-          as: 'hotel_roles',
-          attributes: ['hotel_id', 'role_id', 'is_primary_owner'],
-          include: [
-            {
-              model: Roles,
-              as: 'role',
-              attributes: ['id', 'name', 'description'],
-            },
-          ],
-        },
-      ],
-    });
-
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'User not found.',
-      });
-    }
-
-    // Check user status
-    if (user.status !== 'active') {
-      return res.status(403).json({
-        success: false,
-        message: `Account is ${user.status}. Please contact support.`,
-      });
-    }
-
-    // Attach user to request
-    req.session.user = user;
+    await authenticateRequest(req);
     return next();
   } catch (error) {
-    logger.error({ error }, 'Authentication error');
-    return res.status(500).json({
+    logger.warn({ error: error }, 'Authentication failed');
+    return res.status(error.statusCode || 401).json({
       success: false,
-      message: 'Authentication error.',
+      message: error.message || 'Unauthorized access. Please log in.',
     });
   }
 }
 
-/**
- * Middleware: Require permission
- * Checks if user has the required permission (via global roles or hotel context)
- * @param {string|string[]} permissionName - Permission name(s) to check (e.g., 'hotel.read', 'hotel.manage_staff')
- * @param {Object} options - Options for permission check
- * @param {boolean} options.requireHotelContext - If true, requires hotel context from session
- * @param {string} options.hotelRole - Required hotel role if hotel context is needed (OWNER, MANAGER, STAFF)
- * @returns {Function} Express middleware function
- */
+async function optionalAuthenticate(req, res, next) {
+  try {
+    const token = getBearerToken(req);
+    if (!token) {
+      return next();
+    }
+
+    await authenticateRequest(req);
+    return next();
+  } catch (error) {
+    logger.warn({ error: error.message }, 'Optional authentication failed');
+    if (error.statusCode === 401) {
+      return next();
+    }
+
+    return next(error);
+  }
+}
+
 function requirePermission(permissionName, options = {}) {
   const { requireHotelContext = false, hotelRole = null } = options;
 
   return async (req, res, next) => {
     try {
-      // Ensure user is authenticated first
       if (!req.user) {
         return res.status(401).json({
           success: false,
@@ -113,94 +112,69 @@ function requirePermission(permissionName, options = {}) {
       }
 
       const permissionNames = Array.isArray(permissionName) ? permissionName : [permissionName];
-
-      // Get user's global roles and their permissions
-      const userRoleIds = req.user.roles?.map((ur) => ur.role.id) || [];
       const userPermissions = new Set();
+      const tokenRoles = new Set(req.auth?.roles || []);
 
-      // Collect all permissions from user's global roles
       req.user.roles?.forEach((userRole) => {
         userRole.role.permissions?.forEach((permission) => {
           userPermissions.add(permission.name);
         });
       });
 
-      // Check if user has any of the required permissions via global roles
-      const hasGlobalPermission = permissionNames.some((perm) => userPermissions.has(perm));
+      const hasGlobalPermission =
+        tokenRoles.has(ROLES.ADMIN) ||
+        permissionNames.some((permission) => userPermissions.has(permission));
 
-      // If hotel context is required, check hotel-specific permissions
-      if (requireHotelContext) {
-        const sessionContext = req.session?.context;
-        const hotelId = sessionContext?.hotelId || req.params?.hotelId || req.body?.hotelId;
-
-        if (!hotelId) {
-          return res.status(400).json({
-            success: false,
-            message: 'Hotel context is required for this operation.',
-          });
-        }
-
-        // Check if user has a role at this hotel
-        const hotelUser = req.user.hotel_roles?.find((hr) => hr.hotel_id === hotelId);
-
-        if (!hotelUser) {
-          return res.status(403).json({
-            success: false,
-            message: 'You do not have access to this hotel.',
-          });
-        }
-
-        // If specific hotel role is required, check it
-        const hotelRoleName = hotelUser.role?.name?.toLowerCase();
-        const requiredRoleName = hotelRole?.toLowerCase();
-
-        if (hotelRole && hotelRoleName !== requiredRoleName) {
-          return res.status(403).json({
-            success: false,
-            message: `This operation requires ${hotelRole} role at the hotel.`,
-          });
-        }
-
-        // For hotel-specific operations, we might want to check additional permissions
-        // For now, having the hotel role is sufficient, but you can extend this
-        // to check hotel-specific permissions if needed
-
-        // If user has hotel context AND global permission, allow access
+      if (!requireHotelContext) {
         if (hasGlobalPermission) {
-          req.hotelContext = {
-            hotelId: hotelId,
-            role: hotelUser.role?.name || null,
-            roleId: hotelUser.role_id,
-            isPrimaryOwner: hotelUser.is_primary_owner,
-          };
-          return next();
-        }
-
-        // Owner role grants all permissions for their hotel
-        if (hotelRoleName === 'owner') {
-          req.hotelContext = {
-            hotelId: hotelId,
-            role: hotelUser.role?.name || null,
-            roleId: hotelUser.role_id,
-            isPrimaryOwner: hotelUser.is_primary_owner,
-          };
           return next();
         }
 
         return res.status(403).json({
           success: false,
-          message: 'Insufficient permissions for this operation.',
+          message: 'Insufficient permissions.',
         });
       }
 
-      // If no hotel context required, just check global permissions
-      if (hasGlobalPermission) {
+      const hotelId = req.params?.hotelId || req.body?.hotelId || req.query?.hotelId;
+      if (!hotelId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Hotel context is required for this operation.',
+        });
+      }
+
+      const hotelUser = req.user.hotel_roles?.find((item) => item.hotel_id === hotelId);
+      if (!hotelUser) {
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have access to this hotel.',
+        });
+      }
+
+      const hotelRoleName = hotelUser.role?.name?.toLowerCase();
+      const requiredRoleName = hotelRole?.toLowerCase();
+
+      if (hotelRole && hotelRoleName !== requiredRoleName) {
+        return res.status(403).json({
+          success: false,
+          message: `This operation requires ${hotelRole} role at the hotel.`,
+        });
+      }
+
+      if (hasGlobalPermission || hotelRoleName === ROLES.OWNER) {
+        req.hotelContext = {
+          hotelId,
+          role: hotelUser.role?.name || null,
+          roleId: hotelUser.role_id,
+          isPrimaryOwner: hotelUser.is_primary_owner,
+        };
         return next();
       }
 
       return res.status(403).json({
         success: false,
-        message: 'Insufficient permissions.',
+        message: 'Insufficient permissions for this operation.',
       });
     } catch (error) {
       logger.error({ error }, 'Permission check error');
@@ -214,5 +188,7 @@ function requirePermission(permissionName, options = {}) {
 
 module.exports = {
   authenticate,
+  authenticateRequest,
+  optionalAuthenticate,
   requirePermission,
 };

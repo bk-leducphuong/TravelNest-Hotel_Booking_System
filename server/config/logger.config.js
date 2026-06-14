@@ -137,7 +137,7 @@ logger.withRequest = (req) => {
   return logger.child({
     requestId: req.id,
     userId: req.user?.id,
-    sessionId: req.sessionID,
+    authSubject: req.auth?.subject,
     method: req.method,
     url: req.originalUrl,
     path: req.path,

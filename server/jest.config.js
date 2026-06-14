@@ -47,6 +47,7 @@ module.exports = {
     '^@interfaces(.*)$': '<rootDir>/interfaces$1',
     '^@queues(.*)$': '<rootDir>/queues$1',
     '^@workers(.*)$': '<rootDir>/workers$1',
+    '^@events(.*)$': '<rootDir>/events$1',
     '^@socket/(.*)$': '<rootDir>/socket/$1',
     '^@routes(.*)$': '<rootDir>/routes$1',
     '^@email-templates(.*)$': '<rootDir>/email-templates$1',
