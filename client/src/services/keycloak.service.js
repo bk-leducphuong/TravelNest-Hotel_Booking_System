@@ -2,7 +2,7 @@ import Keycloak from 'keycloak-js'
 
 const DEFAULT_MIN_VALIDITY_SECONDS = 30
 const REDIRECT_STORAGE_KEY = 'travelnest.auth.redirect'
-const DEFAULT_SCOPE = 'openid profile email'
+const DEFAULT_SCOPE = 'openid'
 
 let keycloak
 let initPromise
@@ -31,6 +31,18 @@ function ensureClient() {
 
 function currentUrl() {
   return `${window.location.origin}${window.location.pathname}${window.location.search}`
+}
+
+function absoluteRedirectUri(path) {
+  if (!path) {
+    return `${window.location.origin}/`
+  }
+
+  if (/^https?:\/\//.test(path)) {
+    return path
+  }
+
+  return `${window.location.origin}${path.startsWith('/') ? path : `/${path}`}`
 }
 
 function silentRedirectUri() {
@@ -132,7 +144,7 @@ export function getClaims() {
 export async function login({ redirectPath, idpHint } = {}) {
   storeRedirectPath(redirectPath)
   return ensureClient().login({
-    redirectUri: currentUrl(),
+    redirectUri: absoluteRedirectUri(redirectPath || currentUrl()),
     scope: DEFAULT_SCOPE,
     idpHint,
   })
@@ -141,7 +153,7 @@ export async function login({ redirectPath, idpHint } = {}) {
 export async function register({ redirectPath } = {}) {
   storeRedirectPath(redirectPath)
   return ensureClient().register({
-    redirectUri: currentUrl(),
+    redirectUri: absoluteRedirectUri(redirectPath || currentUrl()),
     scope: DEFAULT_SCOPE,
   })
 }
@@ -159,7 +171,7 @@ export async function openAccountManagement() {
 export async function resetPassword({ redirectPath } = {}) {
   storeRedirectPath(redirectPath)
   return ensureClient().login({
-    redirectUri: currentUrl(),
+    redirectUri: absoluteRedirectUri(redirectPath || currentUrl()),
     scope: DEFAULT_SCOPE,
   })
 }

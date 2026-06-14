@@ -29,5 +29,11 @@ export default {
   },
   isLoginFail(state) {
     return state.loginFailure
+  },
+  isVerificationRequired(state) {
+    return state.verificationRequired
+  },
+  getAuthErrorCode(state) {
+    return state.authErrorCode
   }
 }

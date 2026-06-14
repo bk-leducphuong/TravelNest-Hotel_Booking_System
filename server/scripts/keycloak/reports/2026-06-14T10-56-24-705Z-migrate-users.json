@@ -1,0 +1,291 @@
+{
+  "command": "migrate-users",
+  "batchId": "2026-06-14T10-56-24-705Z",
+  "dryRun": false,
+  "filters": {
+    "email": null,
+    "limit": null,
+    "resume": false
+  },
+  "summary": {
+    "created": 33,
+    "bound_existing": 0,
+    "skipped": 1,
+    "failed": 0,
+    "password_reset_required": 0
+  },
+  "results": [
+    {
+      "userId": "019e92d7-eda0-7e42-b9c2-83ed5ed70fcd",
+      "email": "kristi_kutch@ordinary-making.name",
+      "status": "created",
+      "keycloakUserId": "b9ab6fd5-6677-4771-958c-877ccfd06d53",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-efdf-715f-a191-0682f07ca0de",
+      "email": "kamryn_oconnell97@linear-farmer.org",
+      "status": "created",
+      "keycloakUserId": "c536714a-41fd-40f6-94f6-a3b760af7ebc",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-efcd-716b-af13-b332125660ab",
+      "email": "giovanny_rutherford@well-made-platypus.com",
+      "status": "created",
+      "keycloakUserId": "9bede30d-0aa9-4649-8c96-0b7872c78c9a",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-efc3-776e-95eb-17b3d2b3debd",
+      "email": "angelita_swaniawski@incomparable-sauerkraut.biz",
+      "status": "created",
+      "keycloakUserId": "176b3519-803d-4e9a-8f4e-0671324bf677",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-efb7-7bf9-b51d-e3b05e2d81b6",
+      "email": "brad_ritchie64@definite-pocket-watch.com",
+      "status": "created",
+      "keycloakUserId": "ef3c503a-5626-4927-a2d3-d91313d91324",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-efaa-769e-af4d-aa0d4cde7dc7",
+      "email": "jessie.tillman@growing-cycle.info",
+      "status": "created",
+      "keycloakUserId": "cdbb8896-7439-4669-999e-f4fcf8f6ad1d",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-ee5f-7883-8775-73cd8f135d9d",
+      "email": "marcus.cummerata41@physical-stock.org",
+      "status": "created",
+      "keycloakUserId": "c619664c-8d2c-4369-89e9-8dabb164aed3",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-ee54-7c27-b542-fed3e006cfb4",
+      "email": "tommie_huels@extra-large-louse.name",
+      "status": "created",
+      "keycloakUserId": "76b7c6e9-abe0-4a44-88b0-26624caf4ed1",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-ee49-74bc-9178-6319af7b1fe1",
+      "email": "jamey_rippin@little-fraudster.com",
+      "status": "created",
+      "keycloakUserId": "6c901394-d19b-4dc3-9b6e-0bea935b9c92",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-ee3e-7e1f-a52b-8985bb4a9c56",
+      "email": "alicia_jones56@unlawful-license.info",
+      "status": "created",
+      "keycloakUserId": "aa5e7fd8-7da1-4a02-9b3d-82828f7ca711",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-ee34-7d10-86b2-6ee52dac0ae0",
+      "email": "federico.abbott57@sunny-bakeware.info",
+      "status": "created",
+      "keycloakUserId": "34c23c81-2e0d-4909-bcd0-41153dc26123",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-ee28-7937-b997-17a017cd3f3a",
+      "email": "josie_grimes37@passionate-repeat.com",
+      "status": "created",
+      "keycloakUserId": "1a88889e-26d8-4d62-be17-d241e94f528b",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-ee12-713c-8538-f57fa831ec81",
+      "email": "xzavier.shields49@worst-adviser.info",
+      "status": "created",
+      "keycloakUserId": "b662c776-71c9-43f7-b469-1a7ca0a33177",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-ee06-76e6-a3a2-f5390cd13356",
+      "email": "june.goldner10@outrageous-earth.info",
+      "status": "created",
+      "keycloakUserId": "4fad4c6e-9927-4494-a6dc-97ce32743fe2",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-edfa-7b98-b3b7-3c7939087bec",
+      "email": "jerald.kuhn@equatorial-numeric.biz",
+      "status": "created",
+      "keycloakUserId": "ea13f58d-15f6-4f7b-9ea5-d58c8efaa87d",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-edef-7a70-ae4c-cd4e7f28b7f2",
+      "email": "katharina.king43@pushy-jump.name",
+      "status": "created",
+      "keycloakUserId": "bbad0be7-2050-45de-8b95-77034746f49a",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-ede0-756a-b589-f230f6cba401",
+      "email": "marsha.wiegand49@decent-taxicab.org",
+      "status": "created",
+      "keycloakUserId": "33f57f42-2b0e-4d28-b594-56c6af002947",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-edd6-7d06-b831-38d6e95d3823",
+      "email": "leo.schaefer78@cute-pantyhose.name",
+      "status": "created",
+      "keycloakUserId": "883f6ac4-eb27-4c5e-81e1-a6f50104708a",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-edc9-751c-892d-c678dc67a8b8",
+      "email": "damion_daniel62@frail-pocket-watch.biz",
+      "status": "created",
+      "keycloakUserId": "8d62ba41-19cf-48cb-848f-7595cc709b7f",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-edb9-7d85-ad03-05b7c3be1b74",
+      "email": "noble.barton65@fussy-agreement.info",
+      "status": "created",
+      "keycloakUserId": "307a5534-6d49-4f8e-a979-0a5e3004e6eb",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-edad-705a-ad96-60714a62fa5b",
+      "email": "baylee_morissette@forceful-hovel.name",
+      "status": "created",
+      "keycloakUserId": "774ea3a4-bde9-4e8a-80e5-9371eab49084",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-ed8c-717b-b26c-7eaecb4c9115",
+      "email": "test@gmail.com",
+      "status": "created",
+      "keycloakUserId": "0b0923f1-30d6-4ad7-bf39-8a776adf25b1",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-ee1d-745f-b91d-4208d21f1c23",
+      "email": "carlton_metz@dearest-schedule.com",
+      "status": "created",
+      "keycloakUserId": "3443749f-1388-490b-837c-e5aae948dbca",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-f266-74b0-8a44-3f338a5c47e4",
+      "email": "alexane.gibson-douglas19@well-groomed-coin.com",
+      "status": "created",
+      "keycloakUserId": "13045531-f180-4ab7-9b37-78ccfc5df813",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-f2c6-7de9-bc21-93b17126168e",
+      "email": "keagan.koch59@spirited-safe.net",
+      "status": "created",
+      "keycloakUserId": "d2ae5166-a700-4da9-bb16-f30d86ded5c7",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-f2bd-74d2-b5ec-4f734f2627cc",
+      "email": "lynne_wintheiser48@deserted-godfather.org",
+      "status": "created",
+      "keycloakUserId": "94b1266d-87f6-49e1-be33-d0cded767843",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-f2b3-7d72-b4bb-84ec7faaffae",
+      "email": "tara_roob95@french-slide.org",
+      "status": "created",
+      "keycloakUserId": "c66f6a3b-dcb3-43bc-a9ee-5afd67c8d41e",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-f2a9-7ce3-93f7-688ac19cc7a8",
+      "email": "bob.lynch@hard-to-find-configuration.org",
+      "status": "created",
+      "keycloakUserId": "f61c9146-7007-4367-9888-b71e34ddcd8b",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-f29f-7ff7-85dd-984091d1b573",
+      "email": "mikel_boehm73@kooky-intent.net",
+      "status": "created",
+      "keycloakUserId": "8f7bc7cb-eccf-4e7b-a45f-e5c16daf4929",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-f294-76f9-bb2e-e7a9aff677c6",
+      "email": "daisha.gulgowski35@sticky-ocelot.info",
+      "status": "created",
+      "keycloakUserId": "a7dba2b0-0cf6-49be-bda6-6b383fb3226d",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-f28b-75e9-a86a-91036ecf4052",
+      "email": "jeremy_heidenreich@mean-programme.net",
+      "status": "created",
+      "keycloakUserId": "af8a149a-8eec-4d5f-8c05-8fe777b78cc9",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-f281-7692-9edd-3fb9af9588ef",
+      "email": "evan.krajcik58@uniform-jogging.info",
+      "status": "created",
+      "keycloakUserId": "43d66e4d-8298-43c1-80c7-4c7f2ce34634",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019e92d7-f275-7a9d-883f-7d58bf1ee431",
+      "email": "joey_flatley90@late-toaster.net",
+      "status": "created",
+      "keycloakUserId": "4b34a16d-87a9-4ce6-b624-fae5789bb5f3",
+      "reason": "Created Keycloak user and bound local account",
+      "passwordResetRequired": false
+    },
+    {
+      "userId": "019ec5b2-9d0e-7bdb-9627-b7526f2998cd",
+      "email": "phuong@gmail.com",
+      "status": "skipped",
+      "keycloakUserId": "322a6fcb-dfd8-4e38-9d9d-2f3e2bfac89a",
+      "reason": "Already bound to an existing Keycloak user",
+      "passwordResetRequired": false
+    }
+  ]
+}

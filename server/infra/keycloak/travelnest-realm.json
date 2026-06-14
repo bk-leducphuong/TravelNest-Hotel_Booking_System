@@ -12,6 +12,18 @@
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": true,
   "editUsernameAllowed": false,
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "no-reply@travelnest.local",
+    "fromDisplayName": "TravelNest",
+    "replyTo": "support@travelnest.local",
+    "replyToDisplayName": "TravelNest Support",
+    "envelopeFrom": "no-reply@travelnest.local",
+    "auth": "false",
+    "ssl": "false",
+    "starttls": "false"
+  },
   "bruteForceProtected": true,
   "roles": {
     "realm": [
@@ -87,7 +99,7 @@
       "protocol": "openid-connect",
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:5173/*\nhttp://travelnest.local/*"
+        "post.logout.redirect.uris": "http://localhost:5173/*"
       },
       "fullScopeAllowed": true,
       "defaultClientScopes": [
@@ -130,6 +142,20 @@
         "display.on.consent.screen": "false"
       },
       "protocolMappers": [
+        {
+          "name": "travelnest-subject",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "id",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "sub",
+            "jsonType.label": "String"
+          }
+        },
         {
           "name": "travelnest-email",
           "protocol": "openid-connect",

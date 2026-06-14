@@ -8,5 +8,7 @@ export default {
   hotelContext: null,
   authProvider: 'keycloak',
   authLoaded: false,
-  loginFailure: false
+  loginFailure: false,
+  verificationRequired: false,
+  authErrorCode: ''
 }

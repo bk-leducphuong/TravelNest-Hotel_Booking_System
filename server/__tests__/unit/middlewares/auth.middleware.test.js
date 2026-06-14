@@ -25,6 +25,7 @@ jest.mock('@config/logger.config', () => ({
 const identityService = require('@services/identity.service');
 const keycloakUserInfoService = require('@services/keycloak-userinfo.service');
 const { verifyJwt } = require('@utils/jwt.util');
+const ApiError = require('@utils/ApiError');
 
 describe('Auth Middleware', () => {
   let req;
@@ -115,6 +116,22 @@ describe('Auth Middleware', () => {
       });
       expect(req.user).toBe(resolvedUser);
     });
+
+    it('normalizes invalid JWT errors into INVALID_TOKEN api errors', async () => {
+      req.get = jest.fn((header) =>
+        header.toLowerCase() === 'authorization' ? 'Bearer signed.jwt.token' : undefined
+      );
+
+      verifyJwt.mockImplementation(() => {
+        throw new Error('jwt malformed');
+      });
+
+      await expect(authenticateRequest(req)).rejects.toMatchObject({
+        statusCode: 401,
+        code: 'INVALID_TOKEN',
+        message: 'jwt malformed',
+      });
+    });
   });
 
   describe('authenticate', () => {
@@ -159,6 +176,49 @@ describe('Auth Middleware', () => {
 
       expect(next).toHaveBeenCalled();
       expect(verifyJwt).not.toHaveBeenCalled();
+    });
+
+    it('swallows invalid-token failures and continues anonymously', async () => {
+      req.get = jest.fn((header) =>
+        header.toLowerCase() === 'authorization' ? 'Bearer signed.jwt.token' : undefined
+      );
+
+      verifyJwt.mockImplementation(() => {
+        throw new ApiError(401, 'INVALID_TOKEN', 'jwt malformed');
+      });
+
+      await optionalAuthenticate(req, res, next);
+
+      expect(next).toHaveBeenCalledWith();
+    });
+
+    it('surfaces provisioning failures when a valid bearer token is present', async () => {
+      req.get = jest.fn((header) =>
+        header.toLowerCase() === 'authorization' ? 'Bearer signed.jwt.token' : undefined
+      );
+
+      verifyJwt.mockReturnValue({
+        subject: 'kc-user-1',
+        email: 'user@example.com',
+        roles: ['user'],
+        payload: { sub: 'kc-user-1', email_verified: false },
+      });
+      identityService.resolveAuthenticatedUser.mockRejectedValue(
+        new ApiError(
+          403,
+          'EMAIL_VERIFICATION_REQUIRED',
+          'Verify your email address in Keycloak before accessing TravelNest.'
+        )
+      );
+
+      await optionalAuthenticate(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 403,
+          code: 'EMAIL_VERIFICATION_REQUIRED',
+        })
+      );
     });
   });
 

@@ -1,6 +1,7 @@
 const logger = require('@config/logger.config');
 const identityService = require('@services/identity.service');
 const keycloakUserInfoService = require('@services/keycloak-userinfo.service');
+const ApiError = require('@utils/ApiError');
 const { verifyJwt } = require('@utils/jwt.util');
 const { ROLES } = require('@constants/roles');
 
@@ -22,15 +23,23 @@ async function authenticateRequest(req) {
     throw error;
   }
 
-  const verifiedToken = await enrichTokenClaims(verifyJwt(token), token);
-  const user = await identityService.resolveAuthenticatedUser(verifiedToken);
+  let verifiedToken;
+
+  try {
+    verifiedToken = verifyJwt(token);
+  } catch (error) {
+    throw new ApiError(401, 'INVALID_TOKEN', error.message || 'Bearer token is invalid');
+  }
+
+  const enrichedToken = await enrichTokenClaims(verifiedToken, token);
+  const user = await identityService.resolveAuthenticatedUser(enrichedToken);
 
   req.auth = {
     provider: 'keycloak',
-    subject: verifiedToken.subject,
-    email: verifiedToken.email,
-    roles: verifiedToken.roles,
-    token: verifiedToken.payload,
+    subject: enrichedToken.subject,
+    email: enrichedToken.email,
+    roles: enrichedToken.roles,
+    token: enrichedToken.payload,
   };
   req.user = user;
 }
@@ -63,7 +72,7 @@ async function authenticate(req, res, next) {
     await authenticateRequest(req);
     return next();
   } catch (error) {
-    logger.warn({ error: error.message }, 'Authentication failed');
+    logger.warn({ error: error }, 'Authentication failed');
     return res.status(error.statusCode || 401).json({
       success: false,
       message: error.message || 'Unauthorized access. Please log in.',
@@ -82,7 +91,11 @@ async function optionalAuthenticate(req, res, next) {
     return next();
   } catch (error) {
     logger.warn({ error: error.message }, 'Optional authentication failed');
-    return next();
+    if (error.statusCode === 401) {
+      return next();
+    }
+
+    return next(error);
   }
 }
 

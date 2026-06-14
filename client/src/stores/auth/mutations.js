@@ -27,6 +27,12 @@ export default {
   setLoginFailure(state, status) {
     state.loginFailure = status
   },
+  setVerificationRequired(state, status) {
+    state.verificationRequired = Boolean(status)
+  },
+  setAuthErrorCode(state, code) {
+    state.authErrorCode = code || ''
+  },
   resetAuthState(state) {
     state.email = ''
     state.subject = ''
@@ -37,5 +43,7 @@ export default {
     state.hotelContext = null
     state.authProvider = 'keycloak'
     state.loginFailure = false
+    state.verificationRequired = false
+    state.authErrorCode = ''
   }
 }

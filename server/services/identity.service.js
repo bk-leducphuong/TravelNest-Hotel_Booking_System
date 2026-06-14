@@ -50,9 +50,17 @@ class IdentityService {
       throw new ApiError(401, 'INVALID_TOKEN', 'Bearer token is missing the subject claim');
     }
 
-    const email = claims.email;
+    const email = claims.email ? String(claims.email).trim().toLowerCase() : '';
     if (!email) {
       throw new ApiError(401, 'INVALID_TOKEN', 'Bearer token is missing the email claim');
+    }
+
+    if (claims?.payload?.email_verified !== true) {
+      throw new ApiError(
+        403,
+        'EMAIL_VERIFICATION_REQUIRED',
+        'Verify your email address in Keycloak before accessing TravelNest.'
+      );
     }
 
     let user = await authRepository.findByKeycloakUserId(claims.subject);
@@ -78,7 +86,7 @@ class IdentityService {
           first_name: firstName,
           last_name: lastName,
           status: 'active',
-          email_verified_at: claims.payload.email_verified ? new Date() : null,
+          email_verified_at: new Date(),
         });
       }
     }

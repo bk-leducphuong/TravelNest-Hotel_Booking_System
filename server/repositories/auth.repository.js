@@ -6,6 +6,7 @@ const {
   AuthAccounts,
   Permissions,
   RolePermissions,
+  sequelize,
 } = require('@models/index.js');
 const { Op } = require('sequelize');
 
@@ -208,25 +209,52 @@ class AuthRepository {
       return;
     }
 
-    await UserRoles.destroy({
-      where: {
-        user_id: userId,
-        role_id: {
-          [Op.in]: managedRoleIds,
+    await sequelize.transaction(async (transaction) => {
+      const currentAssignments = await UserRoles.findAll({
+        where: {
+          user_id: userId,
+          role_id: {
+            [Op.in]: managedRoleIds,
+          },
         },
-      },
+        attributes: ['role_id'],
+        transaction,
+      });
+
+      const currentRoleIds = new Set(currentAssignments.map((assignment) => assignment.role_id));
+      const desiredRoleIds = new Set(Array.isArray(nextRoleIds) ? nextRoleIds : []);
+
+      const roleIdsToDelete = managedRoleIds.filter(
+        (roleId) => currentRoleIds.has(roleId) && !desiredRoleIds.has(roleId)
+      );
+
+      const roleIdsToCreate = [...desiredRoleIds].filter((roleId) => !currentRoleIds.has(roleId));
+
+      if (roleIdsToDelete.length > 0) {
+        await UserRoles.destroy({
+          where: {
+            user_id: userId,
+            role_id: {
+              [Op.in]: roleIdsToDelete,
+            },
+          },
+          transaction,
+        });
+      }
+
+      if (roleIdsToCreate.length > 0) {
+        await UserRoles.bulkCreate(
+          roleIdsToCreate.map((roleId) => ({
+            user_id: userId,
+            role_id: roleId,
+          })),
+          {
+            ignoreDuplicates: true,
+            transaction,
+          }
+        );
+      }
     });
-
-    if (!Array.isArray(nextRoleIds) || nextRoleIds.length === 0) {
-      return;
-    }
-
-    await UserRoles.bulkCreate(
-      nextRoleIds.map((roleId) => ({
-        user_id: userId,
-        role_id: roleId,
-      }))
-    );
   }
 
   /**

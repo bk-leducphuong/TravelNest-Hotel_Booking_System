@@ -11,6 +11,7 @@ const { authenticate, optionalAuthenticate } = require('@middlewares/auth.middle
 const validate = require('@middlewares/validate.middleware');
 const hotelSchema = require('@validators/v1/hotel.schema');
 const router = express.Router();
+const HOTEL_ID_ROUTE_PARAM = ':hotelId([0-9a-fA-F-]{36})';
 
 // root route: /api/v1/hotels
 
@@ -353,7 +354,12 @@ router.get('/trending', validate(hotelSchema.getTrendingHotels), getTrendingHote
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:hotelId', optionalAuthenticate, validate(hotelSchema.getHotelDetails), getHotelDetails);
+router.get(
+  `/${HOTEL_ID_ROUTE_PARAM}`,
+  optionalAuthenticate,
+  validate(hotelSchema.getHotelDetails),
+  getHotelDetails
+);
 
 /**
  * @swagger
@@ -397,7 +403,7 @@ router.get('/:hotelId', optionalAuthenticate, validate(hotelSchema.getHotelDetai
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:hotelId/policies', validate(hotelSchema.getHotelPolicies), getHotelPolicies);
+router.get(`/${HOTEL_ID_ROUTE_PARAM}/policies`, validate(hotelSchema.getHotelPolicies), getHotelPolicies);
 
 /**
  * @swagger
@@ -489,7 +495,11 @@ router.get('/:hotelId/policies', validate(hotelSchema.getHotelPolicies), getHote
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:hotelId/nearby-places', validate(hotelSchema.getNearbyPlaces), getNearbyPlaces);
+router.get(
+  `/${HOTEL_ID_ROUTE_PARAM}/nearby-places`,
+  validate(hotelSchema.getNearbyPlaces),
+  getNearbyPlaces
+);
 
 /**
  * @swagger
@@ -590,6 +600,6 @@ router.get('/:hotelId/nearby-places', validate(hotelSchema.getNearbyPlaces), get
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:hotelId/rooms', validate(hotelSchema.searchRooms), searchRooms);
+router.get(`/${HOTEL_ID_ROUTE_PARAM}/rooms`, validate(hotelSchema.searchRooms), searchRooms);
 
 module.exports = router;

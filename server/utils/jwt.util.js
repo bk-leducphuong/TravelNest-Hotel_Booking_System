@@ -1,6 +1,15 @@
-const crypto = require('crypto');
+const nodeCrypto = require('crypto');
+const logger = require('../config/logger.config');
+const ApiError = require('./ApiError');
 
 const DEFAULT_CLOCK_SKEW_SECONDS = 60;
+
+function throwJwtError(message, details = {}, options = {}) {
+  const { statusCode = 401, code = 'INVALID_TOKEN', level = 'warn' } = options;
+
+  logger[level]({ ...details, code, statusCode }, message);
+  throw new ApiError(statusCode, code, message, details);
+}
 
 function base64UrlToBuffer(value) {
   const normalized = String(value).replace(/-/g, '+').replace(/_/g, '/');
@@ -14,7 +23,15 @@ function base64UrlToJson(value) {
 
 function normalizePublicKey(publicKey) {
   if (!publicKey) {
-    throw new Error('KEYCLOAK_PUBLIC_KEY is required to verify bearer tokens');
+    throwJwtError(
+      'KEYCLOAK_PUBLIC_KEY is required to verify bearer tokens',
+      {},
+      {
+        statusCode: 500,
+        code: 'JWT_CONFIG_ERROR',
+        level: 'error',
+      }
+    );
   }
 
   const normalized = String(publicKey).trim().replace(/\\n/g, '\n');
@@ -57,12 +74,12 @@ function validateTimeClaim(claimValue, comparator) {
 
 function verifyJwt(token) {
   if (!token || typeof token !== 'string') {
-    throw new Error('Bearer token is required');
+    throwJwtError('Bearer token is required');
   }
 
   const parts = token.split('.');
   if (parts.length !== 3) {
-    throw new Error('Malformed JWT');
+    throwJwtError('Malformed JWT', { tokenParts: parts.length });
   }
 
   const [encodedHeader, encodedPayload, encodedSignature] = parts;
@@ -70,10 +87,10 @@ function verifyJwt(token) {
   const payload = base64UrlToJson(encodedPayload);
 
   if (header.alg !== 'RS256') {
-    throw new Error(`Unsupported JWT algorithm: ${header.alg}`);
+    throwJwtError(`Unsupported JWT algorithm: ${header.alg}`, { algorithm: header.alg });
   }
 
-  const verifier = crypto.createVerify('RSA-SHA256');
+  const verifier = nodeCrypto.createVerify('RSA-SHA256');
   verifier.update(`${encodedHeader}.${encodedPayload}`);
   verifier.end();
 
@@ -83,12 +100,15 @@ function verifyJwt(token) {
 
   const signatureIsValid = verifier.verify(publicKey, base64UrlToBuffer(encodedSignature));
   if (!signatureIsValid) {
-    throw new Error('Invalid JWT signature');
+    throwJwtError('Invalid JWT signature');
   }
 
   const issuer = process.env.KEYCLOAK_ISSUER;
   if (issuer && payload.iss !== issuer) {
-    throw new Error('Invalid JWT issuer');
+    throwJwtError('Invalid JWT issuer', {
+      expectedIssuer: issuer,
+      actualIssuer: payload.iss,
+    });
   }
 
   const audience = getRequiredAudience();
@@ -99,7 +119,10 @@ function verifyJwt(token) {
     );
 
     if (!hasExpectedAudience) {
-      throw new Error('Invalid JWT audience');
+      throwJwtError('Invalid JWT audience', {
+        expectedAudience: audience,
+        actualAudience: tokenAudiences,
+      });
     }
   }
 
@@ -107,15 +130,15 @@ function verifyJwt(token) {
   const clockSkew = Number(process.env.KEYCLOAK_CLOCK_SKEW_SECONDS || DEFAULT_CLOCK_SKEW_SECONDS);
 
   if (!validateTimeClaim(payload.exp, (exp) => exp + clockSkew >= now)) {
-    throw new Error('JWT expired');
+    throwJwtError('JWT expired', { exp: payload.exp, now, clockSkew });
   }
 
   if (!validateTimeClaim(payload.nbf, (nbf) => nbf - clockSkew <= now)) {
-    throw new Error('JWT not active yet');
+    throwJwtError('JWT not active yet', { nbf: payload.nbf, now, clockSkew });
   }
 
   if (!validateTimeClaim(payload.iat, (iat) => iat - clockSkew <= now)) {
-    throw new Error('JWT issued in the future');
+    throwJwtError('JWT issued in the future', { iat: payload.iat, now, clockSkew });
   }
 
   return {

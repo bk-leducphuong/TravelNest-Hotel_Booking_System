@@ -1,9 +1,18 @@
 require('../../../register-aliases');
 const express = require('express');
 const request = require('supertest');
+jest.mock('@services/identity.service', () => ({
+  resolveAuthenticatedUser: jest.fn(),
+}));
+
+jest.mock('@utils/jwt.util', () => ({
+  verifyJwt: jest.fn(),
+}));
 
 const authRoutes = require('../../../routes/v1/auth.routes');
 const errorMiddleware = require('../../../middlewares/error.middleware');
+const identityService = require('@services/identity.service');
+const { verifyJwt } = require('@utils/jwt.util');
 
 describe('Auth API Integration Tests', () => {
   let app;
@@ -16,6 +25,10 @@ describe('Auth API Integration Tests', () => {
   });
 
   describe('GET /api/v1/auth/session', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
     it('returns an unauthenticated principal when no bearer token is provided', async () => {
       const res = await request(app).get('/api/v1/auth/session');
 
@@ -32,31 +45,38 @@ describe('Auth API Integration Tests', () => {
         },
       });
     });
-  });
 
-  describe('Removed app-owned auth flows', () => {
-    const deprecatedEndpoints = [
-      ['post', '/api/v1/auth/users'],
-      ['post', '/api/v1/auth/sessions'],
-      ['delete', '/api/v1/auth/sessions'],
-      ['post', '/api/v1/auth/email/check'],
-      ['get', '/api/v1/auth/csrf-token'],
-      ['get', '/api/v1/auth/google'],
-      ['get', '/api/v1/auth/google/callback'],
-      ['get', '/api/v1/auth/twitter'],
-      ['get', '/api/v1/auth/twitter/callback'],
-    ];
+    it('returns a hydrated session for verified bearer tokens', async () => {
+      verifyJwt.mockReturnValue({
+        subject: 'kc-user-1',
+        email: 'user@example.com',
+        roles: ['user'],
+        payload: { sub: 'kc-user-1', email_verified: true },
+      });
+      identityService.resolveAuthenticatedUser.mockResolvedValue({
+        id: 'user-1',
+        email: 'user@example.com',
+        status: 'active',
+        roles: [{ role: { name: 'user' } }],
+        hotel_roles: [],
+      });
 
-    it.each(deprecatedEndpoints)('returns 410 for %s %s', async (method, url) => {
-      const res = await request(app)[method](url);
+      const res = await request(app)
+        .get('/api/v1/auth/session')
+        .set('Authorization', 'Bearer valid.token');
 
-      expect(res.status).toBe(410);
-      expect(res.body).toEqual({
-        error: {
-          code: 'AUTH_FLOW_REMOVED',
-          message:
-            'This auth flow is no longer served by TravelNest. Use Keycloak/OpenID Connect for login, logout, registration, password reset, and social sign-in.',
+      expect(res.status).toBe(200);
+      expect(res.body.data.isAuthenticated).toBe(true);
+      expect(res.body.data.session).toEqual({
+        id: 'kc-user-1',
+        user: {
+          id: 'user-1',
+          type: 'USER',
+          email: 'user@example.com',
+          roles: ['user'],
         },
+        context: null,
+        authProvider: 'keycloak',
       });
     });
   });

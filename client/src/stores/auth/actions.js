@@ -22,6 +22,14 @@ function setAnonymousState(commit) {
   commit('setAuthLoaded', true)
 }
 
+function getApiErrorCode(error) {
+  return error?.response?.data?.error?.code || ''
+}
+
+function getApiErrorMessage(error) {
+  return error?.response?.data?.error?.message || error?.message || ''
+}
+
 function setAuthenticatedState(commit, authState, payload) {
   const session = payload?.session || null
   const authenticated = !!authState?.isAuthenticated && !!session?.user
@@ -34,6 +42,22 @@ function setAuthenticatedState(commit, authState, payload) {
   commit('setUserId', session?.user?.id || null)
   commit('setUserRole', authenticated ? mapSessionToRole(session) : '')
   commit('setLoginFailure', false)
+  commit('setVerificationRequired', false)
+  commit('setAuthErrorCode', '')
+  commit('setAuthLoaded', true)
+}
+
+function setVerificationRequiredState(commit, authState, error) {
+  commit('setSubject', authState?.claims?.subject || '')
+  commit('setEmail', authState?.claims?.email || '')
+  commit('setTokenRoles', authState?.claims?.roles || [])
+  commit('setHotelContext', null)
+  commit('setAuthentication', false)
+  commit('setUserId', null)
+  commit('setUserRole', '')
+  commit('setLoginFailure', false)
+  commit('setVerificationRequired', true)
+  commit('setAuthErrorCode', getApiErrorCode(error))
   commit('setAuthLoaded', true)
 }
 
@@ -52,6 +76,11 @@ export default {
         redirectPath: authState.redirectPath,
       })
     } catch (error) {
+      if (getApiErrorCode(error) === 'EMAIL_VERIFICATION_REQUIRED') {
+        setVerificationRequiredState(commit, AuthService.getClientAuthState(), error)
+        return
+      }
+
       setAnonymousState(commit)
     }
   },
@@ -78,6 +107,12 @@ export default {
         await router.replace(redirectPath)
       }
     } catch (error) {
+      if (getApiErrorCode(error) === 'EMAIL_VERIFICATION_REQUIRED') {
+        setVerificationRequiredState(commit, normalizedAuthState, error)
+        error.message = getApiErrorMessage(error)
+        throw error
+      }
+
       setAnonymousState(commit)
       throw error
     }
