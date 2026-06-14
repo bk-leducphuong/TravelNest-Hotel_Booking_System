@@ -1,85 +1,20 @@
-<!-- src/views/Login.vue -->
 <template>
-  <ForgotPassword
-    :email="email"
-    :userRole="userRole"
-    @close="closeForgotPassword"
-    v-if="isForgotPassword"
-  />
   <LoginHeader :isAdminLogin="false" />
-  <div class="container" v-if="step === 1">
+  <div class="container">
     <h1>{{ $t('loginHeader') }}</h1>
-    <p>
-      Bạn có thể đăng nhập tài khoản Booking.com của mình để truy cập các dịch vụ của chúng tôi.
+    <p>Đăng nhập bằng Keycloak để truy cập tài khoản TravelNest của bạn.</p>
+
+    <div class="actions">
+      <button type="button" class="btn" @click="startLogin">Đăng nhập</button>
+      <button type="button" class="btn btn-secondary" @click="startRegister">Tạo tài khoản</button>
+    </div>
+
+    <button type="button" class="link-button" @click="startResetPassword">Quên mật khẩu?</button>
+
+    <p class="hint">
+      Google, Twitter và các nhà cung cấp xã hội khác sẽ xuất hiện trực tiếp trên trang đăng nhập
+      Keycloak nếu đã được cấu hình.
     </p>
-    <form @submit.prevent="checkEmail">
-      <label for="email">Địa chỉ email</label>
-      <input
-        type="email"
-        id="email"
-        name="email"
-        v-model="email"
-        placeholder="Nhập địa chỉ email của bạn"
-        required
-      />
-      <button type="submit" class="btn">Tiếp tục với email</button>
-    </form>
-    <p>hoặc sử dụng một trong các lựa chọn này</p>
-    <div class="social-login">
-      <button @click="socialLogin('facebook')" class="social-btn">
-        <img src="../assets/icons/facebook.png" alt="Facebook" />
-      </button>
-      <button @click="socialLogin('google')" class="social-btn">
-        <img src="../assets/icons/search.png" alt="Google" />
-      </button>
-      <button @click="socialLogin('twitter')" class="social-btn">
-        <img src="../assets/icons/twitter.png" alt="Twitter" />
-      </button>
-    </div>
-  </div>
-
-  <div class="container" v-if="step === 2">
-    <div>
-      <h1>{{ isNewUser ? 'Tạo mật khẩu' : 'Nhập mật khẩu của bạn' }}</h1>
-      <p>
-        {{
-          isNewUser
-            ? 'Dùng ít nhất 8 ký tự, trong đó có chữ hoa, chữ thường, số'
-            : 'Vui lòng nhập mật khẩu Booking.com của bạn cho'
-        }}
-      </p>
-    </div>
-    <form @submit.prevent="registerOrLogin">
-      <div>
-        <label for="password">Mật khẩu</label>
-        <input
-          type="password"
-          id="password"
-          name="password"
-          placeholder="Nhập mật khẩu"
-          v-model="password"
-          required
-        />
-      </div>
-      <div class="forgot-password" @click="isForgotPassword = true" v-if="!isNewUser">
-        Forgot password?
-      </div>
-
-      <div v-if="isNewUser">
-        <label for="confirm password">Xác nhận mật khẩu</label>
-        <input
-          type="password"
-          id="confirm password"
-          name="confirm password"
-          v-model="confirmPassword"
-          placeholder="Nhập mật khẩu"
-          required
-        />
-        <p v-if="passwordMismatch" style="color: red" class="error">Mật khẩu không khớp!</p>
-      </div>
-
-      <button type="submit" class="btn">{{ isNewUser ? 'Tạo tài khoản' : 'Đăng nhập' }}</button>
-    </form>
   </div>
 
   <div class="footer">
@@ -92,126 +27,40 @@
 </template>
 
 <script>
-  import { mapActions, mapGetters } from 'vuex';
+  import { mapActions } from 'vuex';
   import { useToast } from 'vue-toastification';
-  import ForgotPassword from '@/components/ForgotPassword.vue';
-  import checkPasswordStrength from '@/utils/checkPasswordStrength';
   import LoginHeader from '@/components/LoginHeader.vue';
-  import errorHandler from '@/request/errorHandler';
-  import { AuthService } from '@/services/auth.service';
 
   export default {
     components: {
-      ForgotPassword,
       LoginHeader,
     },
     setup() {
-      // Get toast interface
       const toast = useToast();
-      // Make it available inside methods
       return { toast };
     },
-    data() {
-      return {
-        step: 1, // Step 1: Email, Step 2: Password
-        email: '',
-        password: '',
-        confirmPassword: '',
-        isNewUser: false,
-        isForgotPassword: false,
-        userRole: 'user',
-        isLoading: false,
-      };
-    },
-    computed: {
-      ...mapGetters('auth', ['isLoginFail']),
-      passwordMismatch() {
-        return this.isNewUser && this.password !== this.confirmPassword;
-      },
-    },
     methods: {
-      ...mapActions('auth', ['login', 'register']), // Map the login and register actions
-
-      async checkEmail() {
+      ...mapActions('auth', ['login', 'register', 'resetPassword']),
+      async startLogin() {
         try {
-          const response = await AuthService.checkEmail({
-            email: this.email,
-            userRole: this.userRole,
-          });
-
-          // Check if response has data property (from http interceptor) or is the data itself
-          const data = response.data || response;
-
-          if (data.exists) {
-            // Email exists, proceed to login
-            this.isNewUser = false;
-          } else {
-            // Email doesn't exist, register new user
-            this.isNewUser = true;
-          }
-          this.step = 2;
+          await this.login({ redirectRoute: this.$route.query.redirect || '/' });
         } catch (error) {
-          if (error.response && error.response.status === 400) {
-            this.toast.error(error.response.data?.message || 'Invalid email');
-          } else {
-            this.toast.error('Unexpected error occurred. Please try again.');
-          }
+          this.toast.error(error.message || 'Không thể chuyển tới trang đăng nhập.');
         }
       },
-      async registerOrLogin() {
-        if (this.passwordMismatch) {
-          return; // Prevent proceeding if passwords do not match
-        }
-
-        if (this.isNewUser) {
-          const strength = checkPasswordStrength(this.password);
-          if (strength < 4) {
-            this.toast.error('Password is too weak. Please use a stronger password.');
-            return;
-          }
-        }
-
-        const payload = {
-          email: this.email,
-          password: this.password,
-          userRole: this.userRole,
-        };
-
-        const redirectRoute = this.$route.query.redirect || '/';
-
+      async startRegister() {
         try {
-          if (this.isNewUser) {
-            await this.register({ payload, redirectRoute });
-          } else {
-            await this.login({ payload, redirectRoute });
-          }
-
-          if (this.isLoginFail) {
-            this.toast.error('Mật khẩu sai!');
-            this.password = '';
-          }
+          await this.register({ redirectRoute: this.$route.query.redirect || '/' });
         } catch (error) {
-          this.toast.error('Đăng nhập/Đăng ký thất bại. Vui lòng thử lại.');
-          this.password = '';
+          this.toast.error(error.message || 'Không thể chuyển tới trang đăng ký.');
         }
       },
-      socialLogin(provider) {
-        const allowedProviders = ['facebook', 'google', 'twitter'];
-        if (!allowedProviders.includes(provider)) {
-          console.error('Invalid provider');
-          return;
+      async startResetPassword() {
+        try {
+          await this.resetPassword({ redirectRoute: this.$route.query.redirect || '/' });
+        } catch (error) {
+          this.toast.error(error.message || 'Không thể bắt đầu quy trình đặt lại mật khẩu.');
         }
-
-        if (provider === 'google') {
-          AuthService.loginWithGoogle();
-        } else if (provider === 'facebook') {
-          AuthService.loginWithFacebook();
-        } else if (provider === 'twitter') {
-          AuthService.loginWithTwitter();
-        }
-      },
-      closeForgotPassword() {
-        this.isForgotPassword = false;
       },
     },
   };
@@ -238,68 +87,34 @@
     line-height: 1.5;
   }
 
-  input {
-    @include input-base;
+  .actions {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    margin: $spacing-lg 0;
   }
 
   .btn {
     @include button-primary;
   }
 
-  .social-login {
-    @include flex-between;
-    margin-top: $spacing-lg;
-  }
-
-  .social-btn {
-    width: 30%;
-    height: $spacing-xxl;
+  .btn-secondary {
+    color: $text-primary;
+    background-color: transparent;
     border: 1px solid $border-color;
-    border-radius: $border-radius-sm;
-    @include flex-center;
-    cursor: pointer;
-    transition: border-color 0.2s ease;
-
-    &:hover {
-      border-color: $primary-color-light;
-    }
-
-    img {
-      width: $spacing-lg;
-      height: $spacing-lg;
-    }
   }
 
-  .footer {
-    text-align: center;
-    margin-top: $spacing-lg;
-    font-size: $font-size-xs;
-    color: $text-secondary;
-
-    a {
-      color: $primary-color-light;
-      text-decoration: none;
-
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-  }
-
-  .forgot-password {
-    font-size: $font-size-base;
-    color: $primary-color-light;
+  .link-button {
+    padding: 0;
     margin-bottom: $spacing-md;
+    color: $primary-color;
+    text-align: left;
+    background: transparent;
+    border: none;
     cursor: pointer;
-    text-align: right;
-    transition: color 0.2s ease;
-
-    &:hover {
-      color: $primary-color-hover;
-    }
   }
 
-  .error {
-    color: $error-color;
+  .hint {
+    font-size: 14px;
   }
 </style>

@@ -1,6 +1,6 @@
-const { Users, UserRoles, Roles } = require('@models/index.js');
 const ApiError = require('@utils/ApiError');
 const { ROLES } = require('@constants/roles');
+const { authenticateRequest } = require('@middlewares/auth.middleware');
 
 function getRequestToken(req) {
   const headerToken = req.get('x-internal-superadmin-token');
@@ -23,42 +23,22 @@ function hasConfiguredTokenAccess(req) {
   return Boolean(configuredToken && requestToken && requestToken === configuredToken);
 }
 
-function hasAdminRole(user) {
-  return user.roles?.some((userRole) => userRole.role?.name === ROLES.ADMIN);
-}
-
 async function requireInternalSuperadmin(req, res, next) {
   try {
     if (hasConfiguredTokenAccess(req)) {
       return next();
     }
 
-    const userId = req.session?.user?.id;
-    if (!userId) {
-      throw new ApiError(401, 'INTERNAL_SUPERADMIN_AUTH_REQUIRED', 'Superadmin access required');
-    }
+    await authenticateRequest(req);
 
-    const user = await Users.findByPk(userId, {
-      include: [
-        {
-          model: UserRoles,
-          as: 'roles',
-          include: [
-            {
-              model: Roles,
-              as: 'role',
-              attributes: ['id', 'name', 'description'],
-            },
-          ],
-        },
-      ],
-    });
+    const hasAdminRole =
+      req.auth?.roles?.includes(ROLES.ADMIN) ||
+      req.user?.roles?.some((userRole) => userRole.role?.name === ROLES.ADMIN);
 
-    if (!user || user.status !== 'active' || !hasAdminRole(user)) {
+    if (!req.user || req.user.status !== 'active' || !hasAdminRole) {
       throw new ApiError(403, 'INTERNAL_SUPERADMIN_FORBIDDEN', 'Superadmin access required');
     }
 
-    req.user = user;
     return next();
   } catch (error) {
     return next(error);

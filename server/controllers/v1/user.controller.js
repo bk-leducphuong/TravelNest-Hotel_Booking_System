@@ -1,6 +1,7 @@
 const userService = require('@services/user.service');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
+const ApiError = require('@utils/ApiError');
 
 /**
  * User Controller - HTTP ↔ business mapping
@@ -12,7 +13,7 @@ const asyncHandler = require('@utils/asyncHandler');
  * Get current user information
  */
 const getCurrentUser = asyncHandler(async (req, res) => {
-  const userId = req.session.user.id;
+  const userId = req.user.id;
   const user = await userService.getUserInformation(userId);
 
   if (!user) {
@@ -35,7 +36,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
  * Validation handled by Joi middleware
  */
 const updateCurrentUser = asyncHandler(async (req, res) => {
-  const userId = req.session.user.id;
+  const userId = req.user.id;
   const updateData = req.body; // Already validated and sanitized by Joi
 
   // Map request fields to database fields
@@ -78,16 +79,11 @@ const updateCurrentUser = asyncHandler(async (req, res) => {
  * Validation handled by Joi middleware
  */
 const updatePassword = asyncHandler(async (req, res) => {
-  const { oldPassword, newPassword } = req.body; // Already validated by Joi
-  const userId = req.session.user.id;
-
-  await userService.resetPassword(userId, oldPassword, newPassword);
-
-  res.status(200).json({
-    data: {
-      message: 'Password updated successfully',
-    },
-  });
+  throw new ApiError(
+    410,
+    'PASSWORD_FLOW_REMOVED',
+    'Password changes are now managed through Keycloak account management.'
+  );
 });
 
 /**
@@ -107,7 +103,7 @@ const updateAvatar = asyncHandler(async (req, res) => {
     });
   }
 
-  const userId = req.session.user.id.toString();
+  const userId = req.user.id.toString();
 
   try {
     const profilePictureUrl = await userService.updateAvatar(userId, req.file);
@@ -137,7 +133,7 @@ const updateAvatar = asyncHandler(async (req, res) => {
  * Validation handled by Joi middleware
  */
 const getFavoriteHotels = asyncHandler(async (req, res) => {
-  const userId = req.session.user.id;
+  const userId = req.user.id;
   const { page, limit } = req.query; // Already validated and defaulted by Joi
 
   const result = await userService.getFavoriteHotels(userId, page, limit);
@@ -158,7 +154,7 @@ const getFavoriteHotels = asyncHandler(async (req, res) => {
  * Validation handled by Joi middleware
  */
 const addFavoriteHotel = asyncHandler(async (req, res) => {
-  const userId = req.session.user.id;
+  const userId = req.user.id;
   const { hotelId } = req.body; // Already validated by Joi
 
   await userService.addFavoriteHotel(userId, hotelId);
@@ -176,7 +172,7 @@ const addFavoriteHotel = asyncHandler(async (req, res) => {
  * Validation handled by Joi middleware
  */
 const removeFavoriteHotel = asyncHandler(async (req, res) => {
-  const userId = req.session.user.id;
+  const userId = req.user.id;
   const { hotelId } = req.params; // Already validated by Joi
 
   await userService.removeFavoriteHotel(userId, hotelId);
@@ -190,7 +186,7 @@ const removeFavoriteHotel = asyncHandler(async (req, res) => {
  * Validation handled by Joi middleware
  */
 const checkFavoriteHotel = asyncHandler(async (req, res) => {
-  const userId = req.session.user.id;
+  const userId = req.user.id;
   const { hotelId } = req.params; // Already validated by Joi
 
   const isFavorite = await userService.checkFavoriteHotel(userId, hotelId);

@@ -1,9 +1,8 @@
 const { Server } = require('socket.io');
 const logger = require('@config/logger.config');
-const sessionMiddleware = require('@middlewares/session.middleware');
 const { ROLES } = require('@constants/roles');
 
-const { socketAuthentication, socketAuthorization, wrapMiddleware } = require('./socket.auth');
+const { socketAuthentication, socketAuthorization } = require('./socket.auth');
 
 // Import namespace controllers
 const publicController = require('./controllers/public.controller');
@@ -53,7 +52,6 @@ const initSocket = (server) => {
   // For authenticated regular users (customers)
   const userNamespace = io.of('/user');
 
-  userNamespace.use(wrapMiddleware(sessionMiddleware));
   userNamespace.use(socketAuthentication);
   userNamespace.use(socketAuthorization([ROLES.USER, ROLES.ADMIN]));
 
@@ -71,7 +69,6 @@ const initSocket = (server) => {
   // For hotel owners, managers, and staff
   const propertyNamespace = io.of('/property');
 
-  propertyNamespace.use(wrapMiddleware(sessionMiddleware));
   propertyNamespace.use(socketAuthentication);
   propertyNamespace.use(
     socketAuthorization([ROLES.OWNER, ROLES.MANAGER, ROLES.STAFF, ROLES.ADMIN])
@@ -92,7 +89,6 @@ const initSocket = (server) => {
   // For support agents
   const supportNamespace = io.of('/support');
 
-  supportNamespace.use(wrapMiddleware(sessionMiddleware));
   supportNamespace.use(socketAuthentication);
   supportNamespace.use(socketAuthorization([ROLES.SUPPORT_AGENT, ROLES.ADMIN]));
 
@@ -110,7 +106,6 @@ const initSocket = (server) => {
   // For platform administrators
   const adminNamespace = io.of('/admin');
 
-  adminNamespace.use(wrapMiddleware(sessionMiddleware));
   adminNamespace.use(socketAuthentication);
   adminNamespace.use(socketAuthorization([ROLES.ADMIN]));
 

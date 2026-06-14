@@ -1,6 +1,7 @@
 const searchService = require('@services/search.service');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
+const { getAuthenticatedUserId } = require('@helpers/auth-context.helper');
 
 function parseNumber(value) {
   if (value === undefined || value === null || value === '') return undefined;
@@ -76,7 +77,7 @@ const searchHotels = asyncHandler(async (req, res) => {
     limit: parseInteger(req.query.limit) || 20,
   };
 
-  const userId = req.session?.user?.id || null;
+  const userId = getAuthenticatedUserId(req);
   const { destination, searchResults } = await searchService.searchHotels(searchParams, userId);
 
   // Publish search analytics asynchronously (don't wait)
@@ -177,7 +178,7 @@ const getDestinationAutocomplete = asyncHandler(async (req, res) => {
  * Save search information to search logs (optional, for analytics)
  */
 const saveSearchInformation = asyncHandler(async (req, res) => {
-  const userId = req.session?.user?.id || null;
+  const userId = getAuthenticatedUserId(req);
   const searchData = req.body;
 
   const result = await searchService.saveSearchLog(searchData, userId, req.body.metadata || {});
@@ -216,7 +217,7 @@ const getTrendingDestinations = asyncHandler(async (req, res) => {
  * Get recent hotel search queries for authenticated user (from Redis)
  */
 const getRecentSearches = asyncHandler(async (req, res) => {
-  const userId = req.session.user.id;
+  const userId = req.user.id;
   const { limit } = req.query;
 
   const searches = await searchService.getRecentSearches(userId, limit ? parseInt(limit, 10) : 10);

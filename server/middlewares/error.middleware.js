@@ -36,7 +36,7 @@ module.exports = (err, req, res, next) => {
 
       // User context
       userId: req.user?.id,
-      sessionId: req.sessionID,
+      authSubject: req.auth?.subject,
 
       // Client info
       ip: req.ip || req.connection?.remoteAddress,

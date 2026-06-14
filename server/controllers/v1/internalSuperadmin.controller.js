@@ -87,7 +87,7 @@ async function previewNotificationTargets(req, res) {
 
 async function sendTestNotification(req, res) {
   const result = await notificationTestService.sendTestInAppNotification(req.body, req.body, {
-    userId: req.user?.id || req.session?.user?.id || null,
+    userId: req.user?.id || null,
     requestId: req.id,
   });
 
@@ -99,7 +99,7 @@ async function sendTestNotification(req, res) {
 
 async function sendTestEmail(req, res) {
   const result = await notificationTestService.sendTestEmail(req.body, req.body, {
-    userId: req.user?.id || req.session?.user?.id || null,
+    userId: req.user?.id || null,
     requestId: req.id,
   });
 

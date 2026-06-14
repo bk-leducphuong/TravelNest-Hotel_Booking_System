@@ -1,39 +1,84 @@
-import http, { apiBaseURL } from './http';
+import http from './http'
+import {
+  consumeRedirectPath,
+  getAccessToken,
+  getClaims,
+  initializeKeycloak,
+  isAuthenticated,
+  login as keycloakLogin,
+  logout as keycloakLogout,
+  openAccountManagement,
+  register as keycloakRegister,
+  resetPassword as keycloakResetPassword,
+} from './keycloak.service'
 
 export const AuthService = {
+  async initialize() {
+    await initializeKeycloak()
+    return this.getClientAuthState()
+  },
+
   checkSession() {
-    return http.get('/auth/session');
+    return http.get('/auth/session')
   },
-  getCsrfToken() {
-    return http.get('/auth/csrf-token');
+
+  getClientAuthState() {
+    return {
+      isAuthenticated: isAuthenticated(),
+      claims: getClaims(),
+      redirectPath: consumeRedirectPath(),
+    }
   },
-  login(credentials) {
-    return http.post('/auth/sessions', credentials);
+
+  getAccessToken(minValidity) {
+    return getAccessToken(minValidity)
   },
+
+  login({ redirectPath } = {}) {
+    return keycloakLogin({ redirectPath })
+  },
+
   logout() {
-    return http.delete('/auth/sessions');
-  },
-  checkEmail(data) {
-    return http.post('/auth/email/check', data);
-  },
-  register(userData) {
-    return http.post('/auth/users', userData);
+    return keycloakLogout()
   },
 
-  loginWithGoogle() {
-    window.location.href = `${apiBaseURL}/auth/google`;
+  register({ redirectPath } = {}) {
+    return keycloakRegister({ redirectPath })
   },
+
+  resetPassword({ redirectPath } = {}) {
+    return keycloakResetPassword({ redirectPath })
+  },
+
+  openAccountManagement() {
+    return openAccountManagement()
+  },
+
+  loginAdmin({ redirectPath } = {}) {
+    return keycloakLogin({ redirectPath })
+  },
+
+  registerAdmin({ redirectPath } = {}) {
+    return keycloakRegister({ redirectPath })
+  },
+
+  checkEmail() {
+    return Promise.reject(new Error('Email checks are handled by Keycloak.'))
+  },
+
+  getCsrfToken() {
+    return Promise.reject(new Error('CSRF tokens are not used with bearer-token auth.'))
+  },
+
+  loginWithGoogle({ redirectPath } = {}) {
+    return keycloakLogin({ redirectPath, idpHint: 'google' })
+  },
+
   loginWithFacebook() {
-    return Promise.reject(new Error('Facebook OAuth is not available in the backend API'));
-  },
-  loginWithTwitter() {
-    window.location.href = `${apiBaseURL}/auth/twitter`;
+    return Promise.reject(new Error('Facebook login must be configured in Keycloak first.'))
   },
 
-  loginAdmin(credentials) {
-    return http.post('/auth/sessions', credentials);
+  loginWithTwitter({ redirectPath } = {}) {
+    return keycloakLogin({ redirectPath, idpHint: 'twitter' })
   },
-  registerAdmin(userData) {
-    return http.post('/auth/users', userData);
-  },
-};
+}

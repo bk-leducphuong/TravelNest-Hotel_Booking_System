@@ -118,6 +118,7 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
     command: --default-authentication-plugin=mysql_native_password
     networks:
       - travelnest-net
@@ -130,6 +131,25 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+
+  keycloak-db-init:
+    image: mysql:8.0
+    container_name: travelnest-keycloak-db-init
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      KEYCLOAK_DB_NAME: ${KEYCLOAK_DB_NAME:-keycloak}
+      KEYCLOAK_DB_USER: ${KEYCLOAK_DB_USER:-keycloak}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak}
+    volumes:
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
+    command: ["sh", "/docker-entrypoint-initdb.d/01-keycloak.sh"]
+    networks:
+      - travelnest-net
+    env_file:
+      - ../.env.development
 
   redis:
     image: redis:7-alpine
@@ -281,6 +301,36 @@ services:
       - travelnest-net
     depends_on:
       - nats
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: travelnest-keycloak-test
+    restart: unless-stopped
+    command: ["start-dev", "--http-enabled=true", "--hostname-strict=false"]
+    environment:
+      KC_DB: mysql
+      KC_DB_URL_HOST: mysql
+      KC_DB_URL_PORT: "3306"
+      KC_DB_URL_DATABASE: ${KEYCLOAK_DB_NAME:-keycloak}
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USER:-keycloak}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_PROXY_HEADERS: xforwarded
+    depends_on:
+      mysql:
+        condition: service_healthy
+      keycloak-db-init:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    networks:
+      - travelnest-net
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
 
 networks:
   travelnest-net:

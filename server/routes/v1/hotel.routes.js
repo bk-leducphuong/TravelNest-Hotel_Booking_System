@@ -7,7 +7,7 @@ const {
   getHotelPolicies,
   getNearbyPlaces,
 } = require('@controllers/v1/hotel.controller.js');
-const { authenticate } = require('@middlewares/auth.middleware');
+const { authenticate, optionalAuthenticate } = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
 const hotelSchema = require('@validators/v1/hotel.schema');
 const router = express.Router();
@@ -353,7 +353,7 @@ router.get('/trending', validate(hotelSchema.getTrendingHotels), getTrendingHote
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:hotelId', validate(hotelSchema.getHotelDetails), getHotelDetails);
+router.get('/:hotelId', optionalAuthenticate, validate(hotelSchema.getHotelDetails), getHotelDetails);
 
 /**
  * @swagger

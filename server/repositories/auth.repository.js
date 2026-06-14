@@ -1,5 +1,50 @@
-const { Users, Roles, UserRoles, HotelUsers, AuthAccounts } = require('@models/index.js');
+const {
+  Users,
+  Roles,
+  UserRoles,
+  HotelUsers,
+  AuthAccounts,
+  Permissions,
+  RolePermissions,
+} = require('@models/index.js');
 const { Op } = require('sequelize');
+
+const USER_CONTEXT_INCLUDE = [
+  {
+    model: UserRoles,
+    as: 'roles',
+    include: [
+      {
+        model: Roles,
+        as: 'role',
+        attributes: ['id', 'name', 'description'],
+        include: [
+          {
+            model: Permissions,
+            as: 'permissions',
+            through: {
+              model: RolePermissions,
+              attributes: [],
+            },
+            attributes: ['id', 'name', 'description'],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    model: HotelUsers,
+    as: 'hotel_roles',
+    attributes: ['hotel_id', 'role_id', 'is_primary_owner'],
+    include: [
+      {
+        model: Roles,
+        as: 'role',
+        attributes: ['id', 'name', 'description'],
+      },
+    ],
+  },
+];
 
 /**
  * Auth Repository - Contains all database operations for authentication
@@ -47,19 +92,14 @@ class AuthRepository {
   async findByEmail(email) {
     return await Users.findOne({
       where: { email },
-      include: [
-        {
-          model: UserRoles,
-          as: 'roles',
-          include: [
-            {
-              model: Roles,
-              as: 'role',
-              attributes: ['id', 'name', 'description'],
-            },
-          ],
-        },
-      ],
+      include: USER_CONTEXT_INCLUDE,
+    });
+  }
+
+  async findByKeycloakUserId(keycloakUserId) {
+    return await Users.findOne({
+      where: { keycloak_user_id: keycloakUserId },
+      include: USER_CONTEXT_INCLUDE,
     });
   }
 
@@ -107,6 +147,10 @@ class AuthRepository {
     return await Users.create(userData);
   }
 
+  async bindKeycloakUserId(userId, keycloakUserId) {
+    await Users.update({ keycloak_user_id: keycloakUserId }, { where: { id: userId } });
+  }
+
   /**
    * Create local auth account for a user
    * @param {string} userId
@@ -143,6 +187,46 @@ class AuthRepository {
    */
   async findRoleByName(roleName) {
     return await Roles.findOne({ where: { name: roleName } });
+  }
+
+  async findRolesByNames(roleNames) {
+    if (!Array.isArray(roleNames) || roleNames.length === 0) {
+      return [];
+    }
+
+    return await Roles.findAll({
+      where: {
+        name: {
+          [Op.in]: roleNames,
+        },
+      },
+    });
+  }
+
+  async replaceManagedUserRoles(userId, nextRoleIds, managedRoleIds) {
+    if (!Array.isArray(managedRoleIds) || managedRoleIds.length === 0) {
+      return;
+    }
+
+    await UserRoles.destroy({
+      where: {
+        user_id: userId,
+        role_id: {
+          [Op.in]: managedRoleIds,
+        },
+      },
+    });
+
+    if (!Array.isArray(nextRoleIds) || nextRoleIds.length === 0) {
+      return;
+    }
+
+    await UserRoles.bulkCreate(
+      nextRoleIds.map((roleId) => ({
+        user_id: userId,
+        role_id: roleId,
+      }))
+    );
   }
 
   /**
@@ -235,31 +319,7 @@ class AuthRepository {
    */
   async getUserWithContext(userId) {
     return await Users.findByPk(userId, {
-      include: [
-        {
-          model: UserRoles,
-          as: 'roles',
-          include: [
-            {
-              model: Roles,
-              as: 'role',
-              attributes: ['id', 'name', 'description'],
-            },
-          ],
-        },
-        {
-          model: HotelUsers,
-          as: 'hotel_roles',
-          attributes: ['hotel_id', 'role_id', 'is_primary_owner'],
-          include: [
-            {
-              model: Roles,
-              as: 'role',
-              attributes: ['id', 'name', 'description'],
-            },
-          ],
-        },
-      ],
+      include: USER_CONTEXT_INCLUDE,
     });
   }
 }

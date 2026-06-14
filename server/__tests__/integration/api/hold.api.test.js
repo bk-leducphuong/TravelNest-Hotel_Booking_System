@@ -1,6 +1,5 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const session = require('express-session');
 const request = require('supertest');
 require('../../../register-aliases');
 const holdService = require('@services/hold.service');
@@ -35,13 +34,10 @@ describe('Hold API Integration Tests', () => {
     app = express();
 
     app.use(bodyParser.json());
-    app.use(
-      session({
-        secret: 'test-hold-secret',
-        resave: false,
-        saveUninitialized: false,
-      })
-    );
+    app.use((req, res, next) => {
+      req.session = req.session || {};
+      next();
+    });
 
     app.use('/api/v1/hold', holdRoutes);
     app.use(errorMiddleware);

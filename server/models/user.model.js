@@ -17,6 +17,12 @@ module.exports = function (sequelize, DataTypes) {
           isEmail: true,
         },
       },
+      keycloak_user_id: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        unique: 'keycloak_user_id_UNIQUE',
+        comment: 'Stable Keycloak subject identifier mapped to this local application user.',
+      },
       first_name: {
         type: DataTypes.STRING(255),
         allowNull: false,
@@ -142,6 +148,12 @@ module.exports = function (sequelize, DataTypes) {
           unique: true,
           using: 'BTREE',
           fields: [{ name: 'connect_account_id' }],
+        },
+        {
+          name: 'keycloak_user_id_UNIQUE',
+          unique: true,
+          using: 'BTREE',
+          fields: [{ name: 'keycloak_user_id' }],
         },
       ],
     }

@@ -11,21 +11,31 @@ import 'vue-toastification/dist/index.css';
 import 'leaflet';
 import './assets/styles/index.scss';
 
-const app = createApp(App);
+if (window.location.pathname === '/silent-check-sso.html') {
+  window.parent.postMessage(window.location.href, window.location.origin);
+} else {
+async function bootstrap() {
+  await stores.dispatch('auth/initializeAuth');
 
-// add custom directives
-app.directive('click-outside', clickOutside);
+  const app = createApp(App);
 
-// Add i18n to the app instance
-app.use(i18n);
-app.use(stores);
-app.use(router);
+  // add custom directives
+  app.directive('click-outside', clickOutside);
 
-// toast notification
-const options = {
-  //...
-};
+  // Add i18n to the app instance
+  app.use(i18n);
+  app.use(stores);
+  app.use(router);
 
-app.use(Toast, options);
+  // toast notification
+  const options = {
+    //...
+  };
 
-app.mount('#app');
+  app.use(Toast, options);
+  await router.isReady();
+  app.mount('#app');
+}
+
+bootstrap();
+}

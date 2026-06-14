@@ -16,13 +16,11 @@ const { startHoldExpirySubscriber } = require('@events/holdExpiry.subscriber');
 const { startNotificationRealtimeSubscriber } = require('@events/notificationRealtime.subscriber');
 const { initBucket } = require('@config/minio.config');
 const { setupSwagger } = require('@config/swagger.config');
-const passport = require('@config/passport.config');
 const natsPublisher = require('@events/nats.publisher');
 
 /** ********************* Middlewares ************************ */
 const errorMiddleware = require('@middlewares/error.middleware.js');
 const limiter = require('@middlewares/rate-limitter.middleware');
-const sessionMiddleware = require('@middlewares/session.middleware');
 const requestLogger = require('@middlewares/request-logger.middleware');
 
 /** ********************* Routes ************************ */
@@ -37,8 +35,6 @@ const createApp = async () => {
 
   require('@models/index.js');
   logger.info('Database connected successfully');
-
-  await natsPublisher.connect();
 
   await natsPublisher.connect();
 
@@ -98,13 +94,6 @@ const createApp = async () => {
 
   app.use(cookieParser());
 
-  // Configure Session
-  app.use(sessionMiddleware);
-
-  // Initialize passport (OAuth strategies)
-  app.use(passport.initialize());
-  app.use(passport.session());
-
   // Rate limiter
   // app.use(limiter);
 
@@ -136,10 +125,6 @@ const createApp = async () => {
 
   // API v1 routes
   app.use('/api/v1', v1Routes);
-
-  const { csrfErrorHandler } = require('@middlewares/csrf.middleware');
-
-  app.use(csrfErrorHandler);
   app.use(errorMiddleware);
 
   // Default route

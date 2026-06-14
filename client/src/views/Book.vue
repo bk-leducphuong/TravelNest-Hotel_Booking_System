@@ -118,13 +118,13 @@
           },
         });
       },
-      connectHoldExpirySocket() {
-        this.userSocket = getUserSocket();
+      async connectHoldExpirySocket() {
+        this.userSocket = await getUserSocket();
         this.userSocket.on('hold:expired', this.handleHoldExpired);
       },
     },
-    mounted() {
-      this.connectHoldExpirySocket();
+    async mounted() {
+      await this.connectHoldExpirySocket();
     },
     beforeUnmount() {
       if (this.userSocket) {
