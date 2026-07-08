@@ -1,64 +1,86 @@
 # TravelNest Deployment & Infrastructure
 
-This directory now contains two deployment tracks:
+This directory contains the deployment infrastructure for TravelNest.
 
-- `deploy/k8s/` for the active Kubernetes + Argo CD GitOps deployment
-- `deploy/docker/` for the legacy Docker Compose stack kept only as a rollback/reference path
+## Deployment Tracks
 
-## Current Target Architecture
+Two deployment paths are maintained:
 
-TravelNest now deploys as a mixed Node.js + Go microservice system:
-
-- Public workloads:
-  - `frontend`
-  - `admin-client`
-  - `api`
-- Internal workloads:
-  - `worker`
-  - `analytics`
-  - `media`
-  - `notification`
-- In-cluster stateful services:
-  - `mysql`
-  - `redis`
-  - `minio`
-  - `nats`
-- External managed services:
-  - MongoDB
-  - Elasticsearch
-
-Cloudflare Tunnel remains the public entrypoint in phase 1 and forwards traffic
-to the `k3s` ingress layer on the VPS.
+| Track | Directory | Status |
+|---|---|---|
+| **Kubernetes + Argo CD** | `deploy/k8s/` | **Active** (current) |
+| Docker Compose | `deploy/docker/` | Legacy (rollback reference) |
 
 ## Kubernetes GitOps Layout
 
-The active deployment code is under `deploy/k8s/`.
+```
+deploy/k8s/
+├── apps/                  Application workloads
+│   ├── admin-client/      Nuxt 4 admin dashboard
+│   ├── analytics/         Go analytics microservice
+│   ├── api/               Express API
+│   ├── frontend/          Vue 3 user app
+│   ├── media/             Go media microservice
+│   ├── notification/      Go notification microservice
+│   └── worker/            BullMQ worker
+├── infra/                 In-cluster stateful services
+│   ├── keycloak/          Identity provider
+│   ├── minio/             Object storage
+│   ├── mysql/             Primary database
+│   ├── nats/              Message bus
+│   └── redis/             Cache and queues
+├── environments/prod/     Environment overlays (Kustomize)
+│   └── root/              Root kustomization
+├── bootstrap/argocd/      Argo CD bootstrap manifests
+└── components/            Shared Kustomize components
+```
 
-Key entrypoints:
+To bootstrap Argo CD:
 
-- `deploy/k8s/bootstrap/argocd/root-application.yaml`
-- `deploy/k8s/environments/prod/root/kustomization.yaml`
-- `deploy/k8s/apps/`
-- `deploy/k8s/infra/`
-
-Use `kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application.yaml`
-after Argo CD is installed.
+```bash
+kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application.yaml
+```
 
 ## CI/CD Model
 
-GitHub Actions now build and push images only.
-Deployment is driven by Git changes to manifests under `deploy/k8s/`, which
-Argo CD syncs into the cluster.
+GitHub Actions build and push Docker images to a container registry. Argo CD detects changes to manifests in `deploy/k8s/` and syncs them into the cluster.
 
-See `deploy/docs/CICD.md` for the updated flow.
+See [`deploy/docs/CICD.md`](docs/CICD.md) for the full pipeline description.
+
+## Infrastructure Services
+
+| Service | Purpose |
+|---|---|
+| **MySQL 8.0** | Primary application database |
+| **Redis 7** | Caching, sessions, BullMQ queues |
+| **Elasticsearch 8.11** | Hotel search + log indexing |
+| **MongoDB** | Analytics (search logs, hotel views) |
+| **MinIO** | S3-compatible object storage (media) |
+| **NATS** | JetStream event bus for microservices |
+| **Keycloak** | Identity and access management |
+
+## External Managed Services
+
+- MongoDB (analytics)
+- Elasticsearch (search/logs)
+- Cloudflare Tunnel (public ingress)
 
 ## Legacy Docker Compose
 
-The old Compose stack remains in:
+The old Docker Compose stack is preserved at `deploy/docker/docker-compose.yml` for rollback and migration reference.
 
-- `deploy/docker/docker-compose.yml`
-- `deploy/configs/`
-- `deploy/scripts/`
+## Scripts
 
-It is no longer the primary deployment path. Keep it only for rollback,
-comparison, or migration reference while Kubernetes is being adopted.
+`deploy/scripts/` contains utility scripts for:
+
+- Infrastructure setup (01-05)
+- MySQL backups
+- Health checks
+- Elasticsearch index setup
+- Kibana user setup
+- ClickHouse initialization
+- Maintenance mode toggling
+
+---
+
+📖 See the **[Wiki: Deployment](https://github.com/bk-leducphuong/TravelNest/wiki/Deployment)** and **[Wiki: CI-CD](https://github.com/bk-leducphuong/TravelNest/wiki/CI-CD)** for more details.
