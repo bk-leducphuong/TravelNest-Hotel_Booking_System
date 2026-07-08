@@ -94,16 +94,45 @@ npm run format
 
 ## Testing
 
-There is currently no dedicated unit/e2e test suite configured for this package.
-Testing is mainly done via manual QA and higher-level end-to-end tests.
+The client uses Vitest for unit/component tests and Playwright for end-to-end tests.
 
-> If you add a test setup (e.g. Vitest + Playwright), consider adding scripts like `npm run test` and documenting them here.
+```bash
+# All tests
+npm run test
+
+# Unit tests
+npm run test:unit
+
+# Component tests
+npm run test:component
+
+# End-to-end tests (Playwright)
+npm run test:e2e
+```
+
+## Project Structure
+
+```
+src/
+├── assets/styles/   SCSS variables, mixins, global styles
+├── components/      Reusable UI components grouped by domain
+├── config/          App configuration
+├── locales/         en.json, vi.json (i18n)
+├── request/         HTTP request/response helpers
+├── router/          Route definitions + guards
+├── services/        API service modules
+├── stores/          Vuex modules (state, getters, mutations, actions)
+├── utils/           Utility functions
+└── views/           Page-level views
+```
 
 ## Roadmap
 
-- [ ] Add component/unit test coverage with Vitest and Vue Test Utils.
-- [ ] Add end-to-end tests (e.g. Playwright or Cypress) for core booking flows.
 - [ ] Improve accessibility (ARIA attributes, keyboard navigation, color contrast).
 - [ ] Optimize bundle size and introduce route-level code splitting where needed.
 - [ ] Enhance offline resilience and error states for flaky network conditions.
+
+---
+
+📖 See the **[Wiki: Frontend Development](https://github.com/bk-leducphuong/TravelNest/wiki/Frontend-Development)** for more details.
 

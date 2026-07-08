@@ -120,6 +120,21 @@ npm run test:e2e:ui
 
 Refer to the test configuration (Vitest, Playwright) for more details on how tests are organized.
 
+## Project Structure
+
+```
+admin-client/
+├── pages/           File-based routes (index.vue, login.vue)
+├── layouts/         Nuxt layouts
+├── middleware/      Route middleware (auth checks)
+├── stores/          Pinia stores (auth.ts)
+├── composables/     Reusable composition functions (useApiFetch)
+├── tests/           Unit (Vitest), Nuxt integration, E2E (Playwright)
+├── nuxt.config.ts   Nuxt configuration
+├── vitest.config.ts Vitest configuration
+└── playwright.config.ts
+```
+
 ## Roadmap
 
 - [ ] Add more end-to-end coverage for complex admin workflows (pricing, availability, policies).
@@ -127,3 +142,7 @@ Refer to the test configuration (Vitest, Playwright) for more details on how tes
 - [ ] Improve performance on large datasets (infinite scroll, table virtualization).
 - [ ] Add auditing views for sensitive actions (refunds, payouts, manual overrides).
 - [ ] Enhance admin dashboards with more analytics powered by MongoDB.
+
+---
+
+📖 See the **[Wiki: Frontend Development](https://github.com/bk-leducphuong/TravelNest/wiki/Frontend-Development)** for more details.

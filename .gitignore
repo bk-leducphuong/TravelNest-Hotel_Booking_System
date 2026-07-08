@@ -56,3 +56,6 @@ server/secrets/*
 # Services
 services/*/.env
 
+# Wiki clone (nested .wiki directory)
+*.wiki/
+

@@ -10,22 +10,22 @@ It powers search, bookings, reviews, notifications, payments, and analytics for 
 - **Database**: MySQL with Sequelize ORM
 - **Caching & Queues**:
   - Redis (sessions, caching, rate limiting)
-  - BullMQ for background jobs (`email`, `notifications`, analytics, etc.)
+  - BullMQ for background jobs (booking expiry, hold expiry, hotel snapshots, etc.)
 - **Search & Analytics**:
   - Elasticsearch for hotel search and log indexing
   - MongoDB + Mongoose for search and view analytics
-- **Storage**:
-  - MinIO / S3-compatible storage for media
-  - (Optionally) Cloudinary for image delivery
+- **Storage**: MinIO / S3-compatible storage for media
 - **Auth & Security**:
   - Session-based authentication
-  - Passport (Google, Twitter, etc.)
+  - Passport (Google, Twitter)
   - CSRF protection, rate limiting, validation with Joi
+  - Keycloak integration (in progress)
 - **Payments & Integrations**:
-  - Stripe (payments)
+  - Stripe (payments, webhooks, refunds, payouts, ledger)
   - Infobip (SMS)
-  - Email validation provider
+  - Nodemailer (email)
 - **Realtime**: Socket.IO (notifications and live updates)
+- **Messaging**: NATS JetStream (event bus for Go microservices)
 - **Logging**: Pino + structured JSON logs
 
 ## Architecture
@@ -47,6 +47,11 @@ flowchart LR
   end
 
   MQ --> W["Workers\n(BullMQ workers)"]
+
+  API --> NS["NATS JetStream"]
+  NS --> AS["Analytics Service\n(Go)"]
+  NS --> MS["Media Service\n(Go)"]
+  NS --> NSVC["Notification Service\n(Go)"]
 
   API --> STRIPE[[Stripe]]
   API --> SMS[[Infobip SMS]]
@@ -182,6 +187,32 @@ npm run lint:fix
 npm run format
 ```
 
+## Project Structure
+
+```
+server/
+├── adapters/         External provider integrations (payments, webhooks)
+├── config/           Configuration files (DB, Redis, ES, MinIO, Stripe, Swagger)
+├── constants/        Application constants
+├── controllers/v1/   HTTP request handlers
+├── events/           NATS event publishers/subscribers
+├── helpers/          Helper utilities
+├── infra/            Dockerfiles, migrations, ES/Mongo setup scripts
+├── interfaces/       Interface definitions
+├── middlewares/      Auth, error, rate-limiter, validation, request-logger
+├── models/           Sequelize models (MySQL) + Mongoose models (MongoDB)
+├── queues/           BullMQ queue definitions
+├── repositories/     Database access layer
+├── routes/v1/        API route definitions
+├── scripts/          Utility scripts (clear-db, infra helpers, keycloak)
+├── seeders/          Database, ES, MongoDB seeders
+├── services/         Business logic layer
+├── socket/           Socket.IO setup and controllers
+├── validators/v1/    Joi request validation schemas
+├── workers/          BullMQ worker processors
+└── __tests__/        Unit and integration tests (Jest)
+```
+
 ## Roadmap
 
 - [ ] Expand API documentation with full OpenAPI/Swagger coverage.
@@ -190,3 +221,7 @@ npm run format
 - [ ] Introduce per-tenant and per-user rate limiting strategies.
 - [ ] Improve observability (structured logs, metrics, and tracing across services).
 - [ ] Add background jobs for heavy reporting and data exports.
+
+---
+
+📖 See the **[Wiki: Backend Development](https://github.com/bk-leducphuong/TravelNest/wiki/Backend-Development)** and **[Wiki: API Reference](https://github.com/bk-leducphuong/TravelNest/wiki/API-Reference)** for more details.
