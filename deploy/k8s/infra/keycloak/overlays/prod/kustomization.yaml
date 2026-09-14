@@ -4,3 +4,6 @@ namespace: travelnest
 resources:
   - ../../base
   - ingress.yaml
+
+generators:
+  - secret-generator.yaml

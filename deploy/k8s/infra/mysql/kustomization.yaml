@@ -3,7 +3,9 @@ kind: Kustomization
 namespace: travelnest
 resources:
   - configmap.yaml
-  - secret.yaml
   - init-configmap.yaml
   - service.yaml
   - statefulset.yaml
+
+generators:
+  - secret-generator.yaml

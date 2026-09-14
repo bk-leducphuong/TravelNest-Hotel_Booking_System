@@ -3,6 +3,5 @@ kind: Kustomization
 namespace: travelnest
 resources:
   - configmap.yaml
-  - secret.yaml
   - service.yaml
   - deployment.yaml

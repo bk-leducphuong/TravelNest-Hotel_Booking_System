@@ -4,8 +4,9 @@ namespace: travelnest
 resources:
   - ../../base
   - configmap.yaml
-  - secret.yaml
 images:
   - name: travelnest-media
     newName: docker.io/leducphuong/travelnest-media
     newTag: latest
+generators:
+  - secret-generator.yaml

@@ -4,9 +4,10 @@ namespace: travelnest
 resources:
   - ../../base
   - configmap.yaml
-  - secret.yaml
   - ingress.yaml
 images:
   - name: travelnest-api
     newName: docker.io/leducphuong/travelnest-api
     newTag: latest
+generators:
+  - secret-generator.yaml
