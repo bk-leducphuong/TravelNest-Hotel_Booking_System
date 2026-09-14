@@ -7,5 +7,5 @@ resources:
   - secret.yaml
 images:
   - name: travelnest-media
-    newName: docker.io/your-dockerhub-user/travelnest-media
+    newName: docker.io/leducphuong/travelnest-media
     newTag: latest

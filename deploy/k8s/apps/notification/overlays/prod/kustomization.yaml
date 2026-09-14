@@ -7,5 +7,5 @@ resources:
   - secret.yaml
 images:
   - name: travelnest-notification
-    newName: docker.io/your-dockerhub-user/travelnest-notification
+    newName: docker.io/leducphuong/travelnest-notification
     newTag: latest

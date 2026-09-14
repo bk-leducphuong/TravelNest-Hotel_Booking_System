@@ -6,5 +6,5 @@ resources:
   - ingress.yaml
 images:
   - name: travelnest-frontend
-    newName: docker.io/your-dockerhub-user/travelnest-frontend
+    newName: docker.io/leducphuong/travelnest-frontend
     newTag: latest

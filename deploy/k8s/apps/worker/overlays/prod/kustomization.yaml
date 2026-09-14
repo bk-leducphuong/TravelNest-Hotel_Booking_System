@@ -7,5 +7,5 @@ resources:
   - secret.yaml
 images:
   - name: travelnest-api
-    newName: docker.io/your-dockerhub-user/travelnest-api
+    newName: docker.io/leducphuong/travelnest-api
     newTag: latest

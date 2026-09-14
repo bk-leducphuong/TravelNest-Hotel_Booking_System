@@ -7,5 +7,5 @@ resources:
   - secret.yaml
 images:
   - name: travelnest-analytics
-    newName: docker.io/your-dockerhub-user/travelnest-analytics
+    newName: docker.io/leducphuong/travelnest-analytics
     newTag: latest
