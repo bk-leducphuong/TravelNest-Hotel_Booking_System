@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: travelnest-admin-client
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "40"
+spec:
+  project: travelnest
+  source:
+    repoURL: https://github.com/bk-leducphuong/TravelNest.git
+    targetRevision: master
+    path: deploy/k8s/apps/admin-client/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: travelnest
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true

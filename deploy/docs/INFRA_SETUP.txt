@@ -1,0 +1,445 @@
+═══════════════════════════════════════════════════════════════════════════════
+                            TRAVELNEST INFRASTRUCTURE
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          ARCHITECTURE DIAGRAM                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                                  Internet
+                                     │
+                          Cloudflare DNS + CDN
+                                     │
+                        Cloudflare Tunnel (cloudflared)
+                          (HTTPS/SSL Termination)
+                                     │
+                           Nginx (Reverse Proxy)
+                         (Port 80 in container)
+                                     │
+              ┌──────────────────────┼──────────────────────┐
+              │                      │                      │
+    deployserver.work     admin.deployserver.work  api.deployserver.work
+       (Vue3 SPA)            (Nuxt4 SSR)              (Node.js API)
+                                                            │
+                                         ┌──────────────────┼──────────────┬─────────────┐
+                                         │                  │              │             │
+                                      MySQL              Redis      Elasticsearch  ClickHouse
+                                   (Primary DB)         (Cache)       (Search)     (Analytics)
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        1. APPLICATION COMPONENTS                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Frontend Applications ──────────────────────────────────────────────────────┐
+│                                                                               │
+│ User Client (deployserver.work)                                              │
+│   - Framework: Vue 3 (SPA)                                                   │
+│   - Build: Vite                                                              │
+│   - Deployment: Static files served via Nginx                                │
+│   - Features: Client-side routing, optimistic UI updates                     │
+│                                                                               │
+│ Admin Client (admin.deployserver.work)                                       │
+│   - Framework: Nuxt 4 (SSR/Universal mode)                                   │
+│   - Build: Nuxt build                                                        │
+│   - Deployment: Node.js server or static generation (clarify approach)       │
+│   - Features: SEO-friendly, server-side data fetching                        │
+│   - Note: If truly SPA, consider switching to Vue 3 or use Nuxt SSR benefits │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Backend Services ───────────────────────────────────────────────────────────┐
+│                                                                               │
+│ API Server (api.deployserver.work)                                           │
+│   - Runtime: Node.js (Express/Fastify)                                       │
+│   - Port: 3000 (internal)                                                    │
+│   - Endpoints:                                                               │
+│     • /api/v1/user/* - User-facing APIs                                      │
+│     • /api/v1/admin/* - Admin-facing APIs                                    │
+│   - Features:                                                                │
+│     • RESTful API design                                                     │
+│     • JWT authentication                                                     │
+│     • Request validation                                                     │
+│     • Error handling & logging                                               │
+│     • Rate limiting (application-level)                                      │
+│   - Health Check: /health (for deployment verification)                      │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Data Layer ─────────────────────────────────────────────────────────────────┐
+│                                                                               │
+│ MySQL (Primary Database)                                                     │
+│   - Version: 8.0+                                                            │
+│   - Purpose: Transactional data (users, bookings, properties)                │
+│   - Backup: Daily automated backups, 30-day retention                        │
+│   - Replication: Single instance (add read replicas for scaling)             │
+│                                                                               │
+│ Redis (Cache & Session Store)                                                │
+│   - Version: 7.0+                                                            │
+│   - Purpose:                                                                 │
+│     • Session storage                                                        │
+│     • API response caching                                                   │
+│     • Rate limiting counters                                                 │
+│   - Persistence: RDB snapshots + AOF                                         │
+│                                                                               │
+│ Elasticsearch (Search Engine)                                                │
+│   - Version: 8.x                                                             │
+│   - Purpose: Full-text search for properties, locations                      │
+│   - Indices: Properties, users, reviews                                      │
+│                                                                               │
+│ ClickHouse (Analytics Database)                                              │
+│   - Purpose: Event tracking, user behavior analytics, reporting              │
+│   - Data: Page views, searches, bookings, performance metrics                │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      2. NGINX REVERSE PROXY CONFIGURATION                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Capabilities:
+  ✓ Reverse proxy & routing
+  ✓ Response caching (static assets, API responses)
+  ✓ Rate limiting (per IP/endpoint)
+  ✓ Gzip/Brotli compression
+  ✓ WebSocket proxying with compression
+  ✓ Request buffering
+  ✓ Security headers (HSTS, CSP, X-Frame-Options)
+
+Note: SSL/TLS is handled by Cloudflare Tunnel, not Nginx
+
+Routing Rules:
+  deployserver.work            → /usr/share/nginx/html/user (Vue3 SPA)
+  admin.deployserver.work      → /usr/share/nginx/html/admin (Nuxt4)
+  api.deployserver.work        → proxy_pass http://api:3000
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    3. NETWORKING & SECURITY                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Network Architecture ───────────────────────────────────────────────────────┐
+│                                                                               │
+│ Docker Networks (Bridge Mode):                                               │
+│   - frontend_network: nginx, user-client, admin-client                       │
+│   - backend_network: api, mysql, redis, elasticsearch, clickhouse            │
+│   - proxy_network: nginx ↔ api (bridge between frontend/backend)             │
+│                                                                               │
+│ Port Exposure:                                                               │
+│   - Nginx: 80 (exposed to Cloudflare Tunnel only)                            │
+│   - API: 3000 (internal only)                                                │
+│   - Databases: Internal only (no external exposure)                          │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Security Measures ──────────────────────────────────────────────────────────┐
+│                                                                               │
+│ ✓ Cloudflare WAF & DDoS protection                                           │
+│ ✓ SSL/TLS via Cloudflare Tunnel (automatic certificate management)           │
+│ ✓ Network isolation (Docker networks)                                        │
+│ ✓ Database access restricted to API container only                           │
+│ ✓ Environment variables via Docker secrets/env files                         │
+│ ✓ Container image scanning (Trivy in CI pipeline)                            │
+│ ✓ Rate limiting (Nginx + application layer)                                  │
+│ ✓ Security headers (CSP, HSTS, X-Frame-Options)                              │
+│ ✓ Principle of least privilege (container users, file permissions)           │
+│                                                                               │
+│ TODO:                                                                         │
+│   - Implement secret management (HashiCorp Vault or AWS Secrets Manager)     │
+│   - Add database connection encryption                                       │
+│   - Enable audit logging                                                     │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       4. CI/CD DEPLOYMENT PIPELINE                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ API Server Pipeline ────────────────────────────────────────────────────────┐
+│                                                                               │
+│ Trigger: Push to master branch                                               │
+│                                                                               │
+│ Stages:                                                                      │
+│   1. Lint & Code Quality                                                     │
+│      - ESLint, Prettier check                                                │
+│                                                                               │
+│   2. Test                                                                    │
+│      - Unit tests (Jest/Vitest)                                              │
+│      - Integration tests                                                     │
+│      - Coverage threshold: 80%+                                              │
+│                                                                               │
+│   3. Build                                                                   │
+│      - Build Docker image                                                    │
+│      - Tag: <commit-sha>, latest                                             │
+│      - Multi-stage build for optimization                                    │
+│                                                                               │
+│   4. Security Scan                                                           │
+│      - Trivy image vulnerability scan                                        │
+│      - Block on HIGH/CRITICAL vulnerabilities                                │
+│                                                                               │
+│   5. Push to Registry                                                        │
+│      - Push to Docker Hub                                                    │
+│      - Registry: dockerhub.com/your-org/travelnest-api                       │
+│                                                                               │
+│   6. Deploy to Production                                                    │
+│      - SSH into server                                                       │
+│      - docker compose pull travelnest-api:latest                             │
+│      - Health check on old container                                         │
+│      - docker compose up -d --no-deps --build api                            │
+│      - Wait for health check (30s timeout)                                   │
+│      - If healthy: Remove old container                                      │
+│      - If unhealthy: Rollback (docker compose up -d previous-version)        │
+│      - Send deployment notification (Slack/Discord)                          │
+│                                                                               │
+│ Rollback Strategy:                                                           │
+│   - Keep last 3 image versions in registry                                   │
+│   - Manual rollback: docker compose up -d api:v<previous-version>            │
+│   - Automatic rollback on health check failure                               │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Frontend Clients Pipeline ──────────────────────────────────────────────────┐
+│                                                                               │
+│ Trigger: Push to master branch                                               │
+│                                                                               │
+│ Stages (User Client - Vue3):                                                 │
+│   1. Lint & Type Check                                                       │
+│      - ESLint, Prettier check                                                │
+│      - TypeScript type checking                                              │
+│                                                                               │
+│   2. Test                                                                    │
+│      - Unit tests (Vitest)                                                   │
+│      - Component tests                                                       │
+│                                                                               │
+│   3. Build                                                                   │
+│      - npm run build (Vite)                                                  │
+│      - Output: dist/                                                         │
+│      - Asset optimization, code splitting                                    │
+│                                                                               │
+│   4. Build Nginx Image                                                       │
+│      - Create new Nginx image with static files                              │
+│      - Tag: user-client:<commit-sha>, user-client:latest                     │
+│      - Dockerfile:                                                           │
+│        FROM nginx:alpine                                                     │
+│        COPY dist/ /usr/share/nginx/html/user/                                │
+│        COPY nginx.conf /etc/nginx/nginx.conf                                 │
+│                                                                               │
+│   5. Push to Registry                                                        │
+│      - Push to Docker Hub                                                    │
+│                                                                               │
+│   6. Deploy                                                                  │
+│      - SSH into server                                                       │
+│      - docker compose pull nginx                                             │
+│      - docker compose up -d --no-deps nginx                                  │
+│      - Smoke test: curl https://deployserver.work                            │
+│                                                                               │
+│ Stages (Admin Client - Nuxt4):                                               │
+│   - Same as above, but:                                                      │
+│     • npm run generate (if using static generation)                          │
+│     • OR npm run build + start Node server (if using SSR)                    │
+│     • Output: .output/public/ or server bundle                               │
+│                                                                               │
+│ Alternative Approach (Recommended):                                          │
+│   Instead of rebuilding Nginx image, use volume mounts with versioned dirs:  │
+│     - Deploy to: /var/www/releases/<timestamp>/                              │
+│     - Symlink: /var/www/current -> /var/www/releases/<timestamp>/            │
+│     - Nginx serves from: /var/www/current                                    │
+│     - Rollback: Update symlink to previous release                           │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    5. MONITORING & OBSERVABILITY                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Logging ────────────────────────────────────────────────────────────────────┐
+│                                                                               │
+│ Application Logs:                                                            │
+│   - Structured JSON logging (Winston/Pino)                                   │
+│   - Log levels: ERROR, WARN, INFO, DEBUG                                     │
+│   - Centralized: Docker logs → journald → Log aggregator                     │
+│                                                                               │
+│ Access Logs:                                                                 │
+│   - Nginx access logs (JSON format)                                          │
+│   - Include: timestamp, IP, method, path, status, response_time              │
+│                                                                               │
+│ Log Retention:                                                               │
+│   - Application logs: 30 days                                                │
+│   - Access logs: 90 days                                                     │
+│   - Error logs: 90 days                                                      │
+│                                                                               │
+│ TODO: Implement ELK/Loki stack for centralized logging                       │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Monitoring ─────────────────────────────────────────────────────────────────┐
+│                                                                               │
+│ TODO: Implement comprehensive monitoring                                     │
+│                                                                               │
+│ Proposed Stack:                                                              │
+│   - Prometheus: Metrics collection                                           │
+│   - Grafana: Dashboards & visualization                                      │
+│   - Node Exporter: Host metrics                                              │
+│   - cAdvisor: Container metrics                                              │
+│                                                                               │
+│ Key Metrics to Track:                                                        │
+│   • API response times (p50, p95, p99)                                       │
+│   • Error rates (4xx, 5xx)                                                   │
+│   • Request throughput (requests/second)                                     │
+│   • Database query performance                                               │
+│   • Cache hit/miss rates                                                     │
+│   • Container resource usage (CPU, memory, disk)                             │
+│   • Uptime & availability                                                    │
+│                                                                               │
+│ Alerting:                                                                    │
+│   - Error rate > 5% (5min window)                                            │
+│   - API response time p95 > 2s                                               │
+│   - Container crashes/restarts                                               │
+│   - Disk usage > 85%                                                         │
+│   - Database connection pool exhaustion                                      │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      6. BACKUP & DISASTER RECOVERY                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Database Backups ───────────────────────────────────────────────────────────┐
+│                                                                               │
+│ MySQL:                                                                       │
+│   - Strategy: Automated daily backups via cron                               │
+│   - Method: mysqldump or Percona XtraBackup                                  │
+│   - Schedule: Daily at 2:00 AM UTC                                           │
+│   - Retention: 30 daily, 12 weekly, 6 monthly                                │
+│   - Storage: AWS S3 or similar object storage                                │
+│   - Encryption: AES-256 at rest                                              │
+│   - Recovery Time Objective (RTO): < 2 hours                                 │
+│   - Recovery Point Objective (RPO): 24 hours                                 │
+│                                                                               │
+│ Redis:                                                                       │
+│   - RDB snapshots: Every 6 hours                                             │
+│   - AOF: appendfsync everysec                                                │
+│   - Retention: Last 7 days                                                   │
+│                                                                               │
+│ Elasticsearch:                                                               │
+│   - Snapshot repository: S3                                                  │
+│   - Schedule: Daily snapshots                                                │
+│   - Retention: 7 days (can rebuild from MySQL if needed)                     │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Disaster Recovery Plan ─────────────────────────────────────────────────────┐
+│                                                                               │
+│ 1. Complete Server Failure:                                                  │
+│    - Provision new server                                                    │
+│    - Install Docker & dependencies                                           │
+│    - Clone infrastructure repo                                               │
+│    - Restore database from latest backup                                     │
+│    - Deploy applications via CI/CD                                           │
+│    - Update DNS if needed                                                    │
+│                                                                               │
+│ 2. Database Corruption:                                                      │
+│    - Stop API server                                                         │
+│    - Restore from latest backup                                              │
+│    - Verify data integrity                                                   │
+│    - Restart API server                                                      │
+│    - Monitor error logs                                                      │
+│                                                                               │
+│ 3. Bad Deployment:                                                           │
+│    - Automated rollback via health check failure                             │
+│    - OR manual rollback to previous image version                            │
+│    - Investigate logs to identify issue                                      │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        7. SCALING STRATEGY                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Current: Single server with Docker Compose (suitable for MVP/small scale)
+
+┌─ Vertical Scaling (Short-term) ──────────────────────────────────────────────┐
+│   - Increase server resources (CPU, RAM, disk)                               │
+│   - Optimize database queries & add indices                                  │
+│   - Implement aggressive caching                                             │
+│   - Connection pooling                                                       │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Horizontal Scaling (Long-term) ─────────────────────────────────────────────┐
+│                                                                               │
+│ When to scale:                                                               │
+│   - Consistent CPU usage > 70%                                               │
+│   - Memory usage > 80%                                                       │
+│   - API response times degrading                                             │
+│   - Traffic > 10,000 concurrent users                                        │
+│                                                                               │
+│ Migration Path:                                                              │
+│   1. Database Layer:                                                         │
+│      - Add MySQL read replicas                                               │
+│      - Implement read/write splitting                                        │
+│      - Consider sharding for massive scale                                   │
+│                                                                               │
+│   2. Application Layer:                                                      │
+│      - Multiple API server instances behind load balancer                    │
+│      - Stateless API design (sessions in Redis)                              │
+│      - Use container orchestration (Kubernetes or Docker Swarm)              │
+│                                                                               │
+│   3. Caching Layer:                                                          │
+│      - Redis Cluster or Sentinel for HA                                      │
+│      - CDN for static assets (Cloudflare already provides this)              │
+│                                                                               │
+│   4. Architecture Evolution:                                                 │
+│      - Consider microservices if monolith becomes unmaintainable             │
+│      - Separate user-facing and admin APIs                                   │
+│      - Message queue for async tasks (RabbitMQ/Redis Queue)                  │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        8. ENVIRONMENTS                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Development (Local):
+  - Docker Compose with hot reload
+  - Mock external services
+  - Seed data for testing
+  - Debug logging enabled
+
+Staging (TODO):
+  - Production-like environment
+  - Separate database with anonymized production data
+  - Used for QA and client demos
+  - Deploy on merge to develop branch
+
+Production:
+  - Single server deployment (current)
+  - Real database with backups
+  - Deploy on merge to master branch
+  - Monitoring and alerting active
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           9. OPEN QUESTIONS                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+1. Is admin client truly SPA or using Nuxt SSR?
+   - If SPA: Why use Nuxt over Vue 3?
+   - If SSR: Need to run Node.js server, not just static files
+
+2. What's the deployment strategy for Nuxt admin client?
+   - Static generation (nuxt generate)?
+   - SSR server (Node.js process)?
+
+3. Database migration strategy?
+   - Using migration tool (Knex, Sequelize, TypeORM)?
+   - How to handle migrations during deployment?
+
+4. Secret management approach?
+   - Currently using .env files?
+   - Plan to use proper secret management?
+
+5. Cost considerations?
+   - Current server size and costs?
+   - Budget for monitoring/logging tools?
+
+═══════════════════════════════════════════════════════════════════════════════
+                                END OF DOCUMENT
+═══════════════════════════════════════════════════════════════════════════════
+

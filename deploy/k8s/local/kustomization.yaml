@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - ../infra/mysql
+  - ../infra/redis
+  - ../infra/nats
+  - ../infra/keycloak/overlays/local
+  - minio
+  - ../apps/analytics/overlays/local
+  - ../apps/media/overlays/local
+  - ../apps/notification/overlays/local
+  - ../apps/api/overlays/local
+  - ../apps/worker/overlays/local
+  - ../apps/frontend/overlays/local
+  - ../apps/admin-client/overlays/local

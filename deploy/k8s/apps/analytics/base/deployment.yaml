@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: analytics
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: analytics
+    spec:
+      containers:
+        - name: analytics
+          image: travelnest-analytics:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: analytics-config
+            - secretRef:
+                name: analytics-secret
+          ports:
+            - containerPort: 8081
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

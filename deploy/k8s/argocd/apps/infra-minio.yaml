@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: travelnest-minio
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  project: travelnest
+  source:
+    repoURL: https://github.com/bk-leducphuong/TravelNest.git
+    targetRevision: master
+    path: deploy/k8s/infra/minio
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: travelnest
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init-scripts
+data:
+  01-keycloak.sh: |
+    #!/bin/sh
+    set -eu
+    mysql -u root -p"${MYSQL_ROOT_PASSWORD}" <<SQL
+    CREATE DATABASE IF NOT EXISTS \`${KEYCLOAK_DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE USER IF NOT EXISTS '${KEYCLOAK_DB_USER}'@'%' IDENTIFIED BY '${KEYCLOAK_DB_PASSWORD}';
+    GRANT ALL PRIVILEGES ON \`${KEYCLOAK_DB_NAME}\`.* TO '${KEYCLOAK_DB_USER}'@'%';
+    FLUSH PRIVILEGES;
+    SQL
