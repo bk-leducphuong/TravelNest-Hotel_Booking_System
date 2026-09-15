@@ -50,4 +50,8 @@ infra/database/*.sqlite
 # Storage / uploads (if generated at runtime)
 public/uploads/
 infra/minio-data/
+infra/minio-data-test/
 infra/elasticsearch/data/
+
+# Generated Keycloak migration reports
+scripts/keycloak/reports/

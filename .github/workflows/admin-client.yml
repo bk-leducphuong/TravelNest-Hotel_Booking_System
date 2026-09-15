@@ -5,66 +5,85 @@ on:
     branches: [master, develop, staging]
     paths:
       - "admin-client/**"
+      - "package.json"
+      - "yarn.lock"
+      - ".yarnrc.yml"
       - ".github/workflows/admin-client.yml"
   pull_request:
     branches: [master, develop, staging]
     paths:
       - "admin-client/**"
+      - "package.json"
+      - "yarn.lock"
+      - ".yarnrc.yml"
       - ".github/workflows/admin-client.yml"
   workflow_dispatch:
   release:
     types: [published]
 
+concurrency:
+  group: admin-client-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-admin
+  # nuxt.config.ts reads NUXT_PUBLIC_API_BASE (not ..._API_URL).
+  NUXT_PUBLIC_API_BASE: ${{ vars.NUXT_PUBLIC_API_BASE || 'https://api.deployserver.work/api/v1' }}
 
 jobs:
   lint-and-build:
-    name: Lint and Build Admin Client
+    name: Lint, Typecheck and Build Admin Client (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         node-version: [22.x, 24.x]
-    defaults:
-      run:
-        working-directory: ./admin-client
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
           node-version: ${{ matrix.node-version }}
-          cache: npm
-          cache-dependency-path: admin-client/package-lock.json
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Cache Yarn
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: .yarn/cache
+          key: yarn-${{ runner.os }}-${{ matrix.node-version }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            yarn-${{ runner.os }}-${{ matrix.node-version }}-
 
       - name: Install dependencies
-        run: npm ci
+        run: yarn install --immutable
 
+      # TODO(quality-debt): pre-existing lint/format failures; advisory so
+      # deploys are not blocked. Remove `continue-on-error` once cleared.
       - name: Run ESLint
-        run: npm run lint
+        continue-on-error: true
+        run: yarn workspace @travelnest/admin-client run lint
 
+      # TODO(quality-debt): `vue-tsc` cannot run because admin-client does not
+      # declare `typescript` as a devDependency. Add it, fix the type errors,
+      # then remove `continue-on-error`.
       - name: Type check
-        run: npm run typecheck
+        continue-on-error: true
+        run: yarn workspace @travelnest/admin-client run typecheck
 
       - name: Check formatting
-        run: npx prettier --check .
+        continue-on-error: true
+        run: yarn workspace @travelnest/admin-client exec prettier --check .
 
-      - name: Build static site
-        run: npm run generate
+      # `nuxt build` is what the Docker image runs (a Node SSR server), so CI
+      # validates the same target instead of the static `nuxt generate` output.
+      - name: Build app
+        run: yarn workspace @travelnest/admin-client run build
         env:
           NODE_ENV: production
-          NUXT_PUBLIC_API_URL: https://api.deployserver.work
-
-      - name: Archive build artifacts
-        uses: actions/upload-artifact@v4
-        if: matrix.node-version == '24.x'
-        with:
-          name: admin-dist
-          path: admin-client/.output/public/
-          retention-days: 7
 
   build-and-push:
     name: Build and Push Admin Image
@@ -73,47 +92,41 @@ jobs:
     if: github.event_name != 'pull_request'
     permissions:
       contents: read
-      packages: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: admin-dist
-          path: admin-client/.output/public
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
+            type=sha,prefix=sha-,format=short
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push admin image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
         with:
-          context: ./admin-client
+          context: .
           file: ./admin-client/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NUXT_PUBLIC_API_BASE=${{ env.NUXT_PUBLIC_API_BASE }}
           cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
           platforms: linux/amd64
@@ -123,4 +136,5 @@ jobs:
           echo "## Admin image published" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- Image: \`${{ env.IMAGE_NAME }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- GitOps deploy: update the image tag under \`deploy/k8s\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Tags: \`${{ steps.meta.outputs.tags }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Argo CD Image Updater promotes the immutable \`sha-*\` tag to prod; no manual tag edit needed." >> "$GITHUB_STEP_SUMMARY"

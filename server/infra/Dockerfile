@@ -1,33 +1,29 @@
-FROM node:18-alpine
+# Built with the repository root as the build context (see backend.yml) so the
+# image uses the committed yarn.lock instead of a floating npm resolution.
+FROM node:22-alpine AS deps
+WORKDIR /app
+RUN corepack enable
+COPY package.json yarn.lock .yarnrc.yml ./
+COPY server/package.json server/
+COPY client/package.json client/
+COPY admin-client/package.json admin-client/
+# Install only the API workspace's production dependencies.
+RUN yarn workspaces focus @travelnest/server --production
+
+FROM node:22-alpine
 ENV NODE_ENV=production
 
-# Create app directory
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Copy server package files from the monorepo workspace.
-COPY --chown=node:node server/package*.json ./
+COPY --from=deps /app/node_modules ./node_modules
+COPY --chown=node:node server/ ./server/
 
-# Install production dependencies.
-# Fall back to npm install when no lockfile is present in the repo.
-RUN if [ -f package-lock.json ]; then \
-      npm ci --omit=dev; \
-    else \
-      npm install --omit=dev; \
-    fi && \
-    npm cache clean --force
-
-# Copy only the server workspace contents so npm scripts match the installed app.
-COPY --chown=node:node server/ ./
-
-# Switch to non-root user
 USER node
+WORKDIR /app/server
 
-# Expose port
 EXPOSE 3000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD node -e "require('http').get('http://localhost:3000/health/live', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on('error', () => process.exit(1))"
 
-# Start the server
-CMD ["npm", "start"]
+CMD ["node", "server.js"]

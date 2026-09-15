@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-config
+data:
+  KEYCLOAK_DB_NAME: keycloak
+  KEYCLOAK_DB_USER: keycloak
+  KC_DB: mysql
+  KC_DB_URL_HOST: mysql
+  KC_DB_URL_PORT: "3306"
+  KC_DB_URL_DATABASE: keycloak
+  KC_HTTP_ENABLED: "true"
+  KC_PROXY_HEADERS: xforwarded
+  KC_HOSTNAME_STRICT: "false"

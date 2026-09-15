@@ -1,0 +1,10 @@
+# SOPS creation rules for TravelNest.
+#
+# The age recipient below is written by
+# deploy/scripts/secrets/init-age-key.sh. If it still reads
+# "age1replace-me", run that script first.
+creation_rules:
+  - path_regex: deploy/k8s/.*\.enc\.yaml$
+    # Only encrypt the values, so secret names/types stay reviewable in diffs.
+    encrypted_regex: '^(data|stringData)$'
+    age: age1replace-me

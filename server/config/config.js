@@ -34,7 +34,10 @@ module.exports = {
   production: {
     username: process.env.DB_USER || 'user',
     password: process.env.DB_PASSWORD || '123',
-    database: process.env.DB_NAME ? `${process.env.DB_NAME}_prod` : 'travelnest_prod',
+    // Must match the runtime connection in database.config.js and the
+    // DB_NAME set by the api ConfigMap, otherwise `sequelize-cli db:migrate`
+    // would target a different database than the application.
+    database: process.env.DB_NAME || 'travelnest',
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT) || 3306,
     dialect: 'mysql',

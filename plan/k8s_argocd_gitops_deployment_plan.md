@@ -40,8 +40,8 @@ Implemented in this repository:
 
 Before first deployment:
 
-- replace all `CHANGE_ME` placeholders in `deploy/k8s/**/secret.yaml`
-- replace `docker.io/your-dockerhub-user/...` image names in the prod overlays
+- seal prod secrets with SOPS + age and patch Argo CD for KSOPS
+  (see `deploy/docs/SECRETS.md`)
 - set managed `MONGODB_URI`
 - set managed Elasticsearch endpoint and API key
 - set SMTP, Stripe, OAuth, MinIO, and internal service tokens

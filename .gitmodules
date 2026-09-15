@@ -1,3 +1,0 @@
-[submodule "deploy"]
-	path = deploy
-	url = https://github.com/bk-leducphuong/TravelNest-Deploy.git
