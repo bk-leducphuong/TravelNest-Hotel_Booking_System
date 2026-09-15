@@ -1,0 +1,52 @@
+name: Validate Deploy Manifests
+
+on:
+  push:
+    branches: [master, develop, staging]
+    paths:
+      - "deploy/**"
+      - ".github/workflows/deploy-validate.yml"
+  pull_request:
+    branches: [master, develop, staging]
+    paths:
+      - "deploy/**"
+      - ".github/workflows/deploy-validate.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  KUSTOMIZE_VERSION: v5.5.0
+  KUBECONFORM_VERSION: v0.6.7
+
+jobs:
+  validate:
+    name: Render and Validate kustomize Overlays
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install kustomize
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL -o /tmp/kustomize.tar.gz \
+            "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+          tar -xzf /tmp/kustomize.tar.gz -C "$HOME/.local/bin" kustomize
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/kustomize" version
+
+      - name: Install kubeconform
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL -o /tmp/kubeconform.tar.gz \
+            "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz"
+          tar -xzf /tmp/kubeconform.tar.gz -C "$HOME/.local/bin" kubeconform
+          "$HOME/.local/bin/kubeconform" -v
+
+      - name: Validate manifests
+        run: bash deploy/scripts/validate-manifests.sh

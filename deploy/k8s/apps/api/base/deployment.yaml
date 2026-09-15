@@ -15,7 +15,7 @@ spec:
       containers:
         - name: api
           image: travelnest-api:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
                 name: api-config

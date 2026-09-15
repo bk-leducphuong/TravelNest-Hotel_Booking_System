@@ -15,7 +15,7 @@ spec:
       containers:
         - name: analytics
           image: travelnest-analytics:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
                 name: analytics-config

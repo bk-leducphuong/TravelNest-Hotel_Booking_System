@@ -1,11 +1,12 @@
 # TravelNest – Hotel Booking Platform
 
-[![Backend CI](https://github.com/bk-leducphuong/TravelNest/actions/workflows/backend.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest/actions/workflows/backend.yml)
-[![Frontend CI](https://github.com/bk-leducphuong/TravelNest/actions/workflows/frontend.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest/actions/workflows/frontend.yml)
-[![Admin Client CI](https://github.com/bk-leducphuong/TravelNest/actions/workflows/admin-client.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest/actions/workflows/admin-client.yml)
-[![Analytics Service CI](https://github.com/bk-leducphuong/TravelNest/actions/workflows/analytics-service.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest/actions/workflows/analytics-service.yml)
-[![Media Service CI](https://github.com/bk-leducphuong/TravelNest/actions/workflows/media-service.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest/actions/workflows/media-service.yml)
-[![Notification Service CI](https://github.com/bk-leducphuong/TravelNest/actions/workflows/notification-service.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest/actions/workflows/notification-service.yml)
+[![Backend CI](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/backend.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/backend.yml)
+[![Frontend CI](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/frontend.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/frontend.yml)
+[![Admin Client CI](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/admin-client.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/admin-client.yml)
+[![Analytics Service CI](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/analytics-service.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/analytics-service.yml)
+[![Media Service CI](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/media-service.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/media-service.yml)
+[![Notification Service CI](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/notification-service.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/notification-service.yml)
+[![Validate Deploy Manifests](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/deploy-validate.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/deploy-validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 <p align="center">
@@ -131,7 +132,26 @@ yarn dev:admin
 
 ## CI/CD & Deployment
 
-GitHub Actions build and push Docker images for all packages. The active deployment uses **Kubernetes + Argo CD GitOps** — manifests live in `deploy/k8s/` and Argo CD auto-syncs changes. A legacy Docker Compose stack is in `deploy/docker/` for rollback reference.
+GitHub Actions build and push Docker images for all packages, tagged with an
+immutable `sha-<short-commit>` (plus `latest` on the default branch). Dependency
+installs run through Yarn Berry from the committed root `yarn.lock`, and the
+container builds use the same lockfile.
+
+The active deployment uses **Kubernetes + Argo CD GitOps** — manifests live in
+`deploy/k8s/` and Argo CD auto-syncs changes. **[Argo CD Image
+Updater](deploy/k8s/bootstrap/argocd/image-updater/README.md)** promotes new
+`sha-*` tags by committing them back to the prod overlays, so every deploy is a
+revertible Git commit. Changes under `deploy/**` are rendered and schema-checked
+by the `Validate Deploy Manifests` workflow before they can reach the cluster.
+Database migrations run as an Argo CD PreSync hook.
+
+> **Quality gates are currently advisory.** The lint, formatting and unit-test
+> steps run but do not block builds (`continue-on-error`) because the repository
+> has pre-existing failures that predate this pipeline. Remove the
+> `continue-on-error` flags once the debt is cleared — see the `TODO(quality-debt)`
+> comments in `.github/workflows/`.
+
+A legacy Docker Compose stack is in `deploy/docker/` for rollback reference.
 
 See the **[Wiki: Deployment](https://github.com/bk-leducphuong/TravelNest/wiki/Deployment)** and **[Wiki: CI-CD](https://github.com/bk-leducphuong/TravelNest/wiki/CI-CD)** for details.
 

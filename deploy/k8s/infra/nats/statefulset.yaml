@@ -2,6 +2,9 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: nats
+  annotations:
+    # Never let an automated sync prune these stateful, data-holding objects.
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   serviceName: nats
   replicas: 1

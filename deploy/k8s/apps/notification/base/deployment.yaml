@@ -15,7 +15,7 @@ spec:
       containers:
         - name: notification
           image: travelnest-notification:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
                 name: notification-config

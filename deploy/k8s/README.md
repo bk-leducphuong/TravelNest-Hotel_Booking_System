@@ -74,9 +74,50 @@ cp deploy/k8s/.env.prod.example deploy/k8s/.env.prod && $EDITOR deploy/k8s/.env.
 ./deploy/scripts/secrets/install-argo-ksops.sh    # patch Argo CD repo-server
 ```
 
+## Image promotion (GitOps)
+
+CI publishes an immutable `sha-<short-commit>` tag for every image (plus a
+mutable `latest` on the default branch). Images are promoted to prod by
+**Argo CD Image Updater**, which commits the new `sha-*` tag into the matching
+`apps/*/overlays/prod/kustomization.yaml`. Argo CD's automated sync then rolls
+the workload out — no manual tag edits.
+
+```
+CI ──▶ docker.io/leducphuong/<image>:sha-abc1234
+          │
+   Argo CD Image Updater ──(git commit)──▶ deploy/k8s/.../prod/kustomization.yaml
+          │
+     Argo CD auto-sync ──▶ rollout
+```
+
+Set-up and caveats: **[bootstrap/argocd/image-updater/README.md](bootstrap/argocd/image-updater/README.md)**.
+
+## Manifest validation
+
+Every change under `deploy/**` runs
+**[`deploy/scripts/validate-manifests.sh`](../scripts/validate-manifests.sh)**
+in the `Validate Deploy Manifests` workflow: it renders all kustomize targets
+and checks them with `kubeconform`. Run it locally with `kustomize` and
+`kubeconform` on `PATH`:
+
+```bash
+./deploy/scripts/validate-manifests.sh
+```
+
+## Database migrations
+
+`apps/api/overlays/prod/migration-job.yaml` is an Argo CD **PreSync hook** that
+runs `sequelize-cli db:migrate` against the production database before the API
+rolls out. It reuses the `api-config` ConfigMap and `api-secret` Secret.
+
+> **First-install caveat:** a PreSync hook runs before the sync creates
+> `api-secret`, so on a brand-new cluster make sure the prod secrets exist
+> (apply them first) before the very first sync.
+
 ## Before First Deploy
 
 - Point `MONGODB_URI` and Elasticsearch credentials at your cloud-managed services
   via `deploy/k8s/.env.prod`, then seal them (see above).
+- Install Argo CD Image Updater (see above) so image pushes actually deploy.
 - If you do not want public MinIO object delivery at `storage.deployserver.work`,
   change `PUBLIC_OBJECT_BASE_URL` and remove or replace the MinIO ingress.

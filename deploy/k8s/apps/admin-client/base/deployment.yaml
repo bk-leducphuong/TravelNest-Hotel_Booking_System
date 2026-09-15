@@ -15,7 +15,7 @@ spec:
       containers:
         - name: admin-client
           image: travelnest-admin:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
               name: http

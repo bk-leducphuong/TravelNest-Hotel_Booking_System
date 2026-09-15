@@ -15,7 +15,7 @@ spec:
       containers:
         - name: worker
           image: travelnest-api:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command:
             - npm
             - run

@@ -1,0 +1,61 @@
+version: 2
+updates:
+  # --- GitHub Actions ---
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  # --- Node (Yarn workspaces, root lockfile) ---
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # --- Go services ---
+  - package-ecosystem: gomod
+    directory: "/services/analytics"
+    schedule:
+      interval: weekly
+  - package-ecosystem: gomod
+    directory: "/services/media"
+    schedule:
+      interval: weekly
+  - package-ecosystem: gomod
+    directory: "/services/notification"
+    schedule:
+      interval: weekly
+
+  # --- Container base images ---
+  - package-ecosystem: docker
+    directory: "/server/infra"
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: "/client"
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: "/admin-client"
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: "/services/analytics"
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: "/services/media"
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: "/services/notification"
+    schedule:
+      interval: weekly
