@@ -7,6 +7,4 @@ resources:
 images:
   - name: travelnest-frontend
     newName: docker.io/leducphuong/travelnest-frontend
-    # Managed by Argo CD Image Updater: rewritten to an immutable
-    # sha-<commit> tag. Do not hand-edit unless Image Updater is disabled.
-    newTag: latest
+    newTag: sha-7676526
