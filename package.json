@@ -32,9 +32,10 @@
     "db:migrate": "yarn workspace @travelnest/server migrate"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "yarn": ">=1.22.0"
+    "node": ">=20.0.0",
+    "yarn": ">=4.0.0"
   },
+  "packageManager": "yarn@4.13.0",
   "devDependencies": {
     "prettier": "^3.5.3"
   }

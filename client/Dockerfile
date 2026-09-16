@@ -1,42 +1,35 @@
-# Multi-stage build for optimized production image
-FROM node:18-alpine AS builder
+# Built with the repository root as the build context (see frontend.yml) so the
+# image uses the committed yarn.lock instead of a floating npm resolution.
+FROM node:22-alpine AS builder
 
-# Create app directory
-WORKDIR /usr/src/app
+WORKDIR /app
+RUN corepack enable
+COPY package.json yarn.lock .yarnrc.yml ./
+COPY server/package.json server/
+COPY client/package.json client/
+COPY admin-client/package.json admin-client/
+# Install the frontend workspace including dev deps (vite, etc.).
+RUN yarn workspaces focus @travelnest/client
 
-# Copy package files
-COPY package*.json ./
+COPY client/ ./client/
 
-# Install dependencies.
-# Fall back to npm install when no lockfile is present in the repo.
-RUN if [ -f package-lock.json ]; then \
-      npm ci; \
-    else \
-      npm install; \
-    fi && \
-    npm cache clean --force
+# Vite inlines VITE_* variables at build time.
+ARG VITE_SERVER_HOST
+ARG VITE_MINIO_URL
+ENV VITE_SERVER_HOST=${VITE_SERVER_HOST}
+ENV VITE_MINIO_URL=${VITE_MINIO_URL}
 
-# Copy source code
-COPY . .
-
-# Build the application
-RUN npm run build
+RUN yarn workspace @travelnest/client run build
 
 # Production stage with nginx
 FROM nginx:alpine
 
-# Copy built assets from builder
-COPY --from=builder /usr/src/app/dist /usr/share/nginx/html
+COPY client/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/client/dist /usr/share/nginx/html
 
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Expose port
 EXPOSE 80
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --quiet --tries=1 --spider http://localhost:80/health || exit 1
 
-# Start nginx
 CMD ["nginx", "-g", "daemon off;"]

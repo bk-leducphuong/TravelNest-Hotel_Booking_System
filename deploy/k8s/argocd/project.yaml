@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: travelnest
+  namespace: argocd
+spec:
+  description: TravelNest application and infrastructure
+  # Only this repository may be deployed by the project (previously '*').
+  sourceRepos:
+    - https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System.git
+  destinations:
+    - namespace: travelnest
+      server: https://kubernetes.default.svc
+    - namespace: argocd
+      server: https://kubernetes.default.svc
+  # Child Applications only create namespaced workloads. Namespace is allowed
+  # so the CreateNamespace sync option keeps working.
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  # Explicit allow-list of the resource kinds the overlays render (previously '*').
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Secret
+    - group: ""
+      kind: Service
+    - group: apps
+      kind: Deployment
+    - group: apps
+      kind: StatefulSet
+    - group: batch
+      kind: Job
+    - group: networking.k8s.io
+      kind: Ingress
+    - group: ""
+      kind: PersistentVolumeClaim

@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: travelnest
+resources:
+  - ../../base
+  - ingress.yaml
+images:
+  - name: travelnest-admin
+    newName: docker.io/leducphuong/travelnest-admin
+    # Managed by Argo CD Image Updater: rewritten to an immutable
+    # sha-<commit> tag. Do not hand-edit unless Image Updater is disabled.
+    newTag: latest

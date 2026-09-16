@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+data:
+  NODE_ENV: production
+  PORT: "3000"
+  CLIENT_HOST: https://deployserver.work
+  DB_HOST: mysql
+  DB_PORT: "3306"
+  DB_USER: travelnest
+  DB_NAME: travelnest
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_DB: "1"
+  NATS_URL: nats://nats:4222
+  NATS_STREAM: TRAVELNEST_ANALYTICS
+  NATS_CLIENT_NAME: travelnest-api
+  ANALYTICS_SERVICE_URL: http://analytics:8081
+  MEDIA_SERVICE_URL: http://media:8082
+  NOTIFICATION_SERVICE_URL: http://notification:8083
+  ANALYTICS_SERVICE_TIMEOUT_MS: "2000"
+  MEDIA_SERVICE_TIMEOUT_MS: "30000"
+  NOTIFICATION_SERVICE_TIMEOUT_MS: "10000"
+  MONGODB_DATABASE: travelnest_analytics
+  ELASTICSEARCH_TLS_REJECT_UNAUTHORIZED: "true"
+  MINIO_ENDPOINT: minio
+  MINIO_PORT: "9000"
+  MINIO_BUCKET: uploads
+  MINIO_USE_SSL: "false"
+  API_BASE_URL: https://api.deployserver.work/api/v1
+  EXTERNAL_BASE_URL: https://api.deployserver.work
+  KEYCLOAK_ISSUER: https://keycloak.deployserver.work/realms/travelnest
+  KEYCLOAK_CLIENT_ID: travelnest-web
+  KEYCLOAK_AUDIENCE: travelnest-web
+  KEYCLOAK_CLOCK_SKEW_SECONDS: "60"
+  WORKER_HEALTH_PORT: "4001"
+  REDIS_USERNAME: ""
+  ELASTICSEARCH_USERNAME: ""
+  ELASTICSEARCH_PASSWORD: ""

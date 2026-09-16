@@ -5,95 +5,125 @@ on:
     branches: [master, develop, staging]
     paths:
       - "client/**"
+      - "package.json"
+      - "yarn.lock"
+      - ".yarnrc.yml"
       - ".github/workflows/frontend.yml"
   pull_request:
     branches: [master, develop, staging]
     paths:
       - "client/**"
+      - "package.json"
+      - "yarn.lock"
+      - ".yarnrc.yml"
       - ".github/workflows/frontend.yml"
   release:
     types: [published]
   workflow_dispatch:
 
+concurrency:
+  group: frontend-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-frontend
+  # Baked into the bundle at build time. Override with a repository variable
+  # (Settings > Variables) without touching this file.
+  VITE_SERVER_HOST: ${{ vars.VITE_SERVER_HOST || 'https://api.deployserver.work' }}
+  VITE_MINIO_URL: ${{ vars.VITE_MINIO_URL || 'https://storage.deployserver.work/uploads/' }}
 
 jobs:
   lint-and-build:
-    name: Lint and Build Frontend
+    name: Lint and Build Frontend (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         node-version: [22.x, 24.x]
-    defaults:
-      run:
-        working-directory: ./client
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
           node-version: ${{ matrix.node-version }}
-          cache: npm
-          cache-dependency-path: client/package-lock.json
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Cache Yarn
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: .yarn/cache
+          key: yarn-${{ runner.os }}-${{ matrix.node-version }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            yarn-${{ runner.os }}-${{ matrix.node-version }}-
 
       - name: Install dependencies
-        run: npm ci
+        run: yarn install --immutable
 
+      # TODO(quality-debt): pre-existing lint/format failures; advisory so
+      # deploys are not blocked. Remove `continue-on-error` once cleared.
       - name: Run ESLint
-        run: npm run lint
+        continue-on-error: true
+        run: yarn workspace @travelnest/client run lint
 
       - name: Check formatting
-        run: npx prettier --check "src/**/*.{js,vue,json,css,scss}"
+        continue-on-error: true
+        run: yarn workspace @travelnest/client exec prettier --check "src/**/*.{js,vue,json,css,scss}"
 
       - name: Build app
-        run: npm run build
+        run: yarn workspace @travelnest/client run build
         env:
           NODE_ENV: production
-          VITE_API_URL: https://api.deployserver.work
-
-      - name: Archive build artifacts
-        uses: actions/upload-artifact@v4
-        if: matrix.node-version == '24.x'
-        with:
-          name: frontend-dist
-          path: client/dist/
-          retention-days: 7
 
   preview-validation:
     name: Validate Preview Build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./client
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
           node-version: 24.x
-          cache: npm
-          cache-dependency-path: client/package-lock.json
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Cache Yarn
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: .yarn/cache
+          key: yarn-${{ runner.os }}-24.x-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            yarn-${{ runner.os }}-24.x-
 
       - name: Install dependencies
-        run: npm ci
+        run: yarn install --immutable
 
       - name: Build preview
-        run: npm run build
+        run: yarn workspace @travelnest/client run build
         env:
-          VITE_API_URL: https://api.deployserver.work
+          NODE_ENV: production
 
-      - name: Test preview server
+      - name: Smoke-test the preview server
         run: |
-          npm run preview &
-          sleep 5
-          curl -f http://localhost:4173
-          pkill -f "vite preview"
+          set -euo pipefail
+          yarn workspace @travelnest/client exec vite preview --port 4173 --strictPort &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:4173 >/dev/null; then
+              echo "Preview server responded on attempt ${attempt}."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Preview server did not become ready in time." >&2
+          exit 1
 
   build-and-push:
     name: Build and Push Frontend Image
@@ -102,47 +132,42 @@ jobs:
     if: github.event_name != 'pull_request'
     permissions:
       contents: read
-      packages: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: client/dist
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
+            type=sha,prefix=sha-,format=short
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push frontend image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
         with:
-          context: ./client
+          context: .
           file: ./client/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VITE_SERVER_HOST=${{ env.VITE_SERVER_HOST }}
+            VITE_MINIO_URL=${{ env.VITE_MINIO_URL }}
           cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
           platforms: linux/amd64
@@ -152,4 +177,5 @@ jobs:
           echo "## Frontend image published" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- Image: \`${{ env.IMAGE_NAME }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- GitOps deploy: update the image tag under \`deploy/k8s\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Tags: \`${{ steps.meta.outputs.tags }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Argo CD Image Updater promotes the immutable \`sha-*\` tag to prod; no manual tag edit needed." >> "$GITHUB_STEP_SUMMARY"

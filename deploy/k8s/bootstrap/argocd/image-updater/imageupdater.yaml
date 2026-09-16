@@ -1,0 +1,75 @@
+# Argo CD Image Updater configuration for TravelNest.
+#
+# Apply this AFTER installing the Image Updater controller (see README.md):
+#
+#   kubectl apply -f deploy/k8s/bootstrap/argocd/image-updater/
+#
+# For each application it watches the immutable `sha-<short-commit>` tag that
+# CI pushes, then commits the new tag back to the prod overlay's
+# kustomization.yaml. Argo CD's automated sync then rolls the workload out.
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: travelnest
+  namespace: argocd
+spec:
+  # Persist updates in Git (not just in the live Application object) so the
+  # repository remains the single source of truth and rollbacks work.
+  writeBackConfig:
+    method: "git"
+    gitConfig:
+      branch: "master"
+      writeBackTarget: "kustomization"
+  commonUpdateSettings:
+    updateStrategy: "newest-build"
+    allowTags: "regexp:^sha-[0-9a-f]{7}$"
+  applicationRefs:
+    - namePattern: "travelnest-api"
+      images:
+        - alias: "api"
+          imageName: "docker.io/leducphuong/travelnest-api"
+          manifestTargets:
+            kustomize:
+              name: "travelnest-api"
+    - namePattern: "travelnest-worker"
+      images:
+        - alias: "api"
+          imageName: "docker.io/leducphuong/travelnest-api"
+          manifestTargets:
+            kustomize:
+              name: "travelnest-api"
+    - namePattern: "travelnest-analytics"
+      images:
+        - alias: "analytics"
+          imageName: "docker.io/leducphuong/travelnest-analytics"
+          manifestTargets:
+            kustomize:
+              name: "travelnest-analytics"
+    - namePattern: "travelnest-media"
+      images:
+        - alias: "media"
+          imageName: "docker.io/leducphuong/travelnest-media"
+          manifestTargets:
+            kustomize:
+              name: "travelnest-media"
+    - namePattern: "travelnest-notification"
+      images:
+        - alias: "notification"
+          imageName: "docker.io/leducphuong/travelnest-notification"
+          manifestTargets:
+            kustomize:
+              name: "travelnest-notification"
+    - namePattern: "travelnest-frontend"
+      images:
+        - alias: "frontend"
+          imageName: "docker.io/leducphuong/travelnest-frontend"
+          manifestTargets:
+            kustomize:
+              name: "travelnest-frontend"
+    - namePattern: "travelnest-admin-client"
+      images:
+        - alias: "admin"
+          imageName: "docker.io/leducphuong/travelnest-admin"
+          manifestTargets:
+            kustomize:
+              name: "travelnest-admin"

@@ -1,0 +1,27 @@
+# Shared build context for the Node images (API, frontend, admin-client).
+# Each Dockerfile copies only the workspace it needs; keep the context small
+# and avoid leaking local state (node_modules, .env files, git history).
+.git
+.github
+.agents
+.claude
+.yarn/cache
+.yarn/install-state.gz
+node_modules
+**/node_modules
+**/coverage
+**/dist
+**/.output
+**/logs
+**/*.log
+**/.env
+**/.env.*
+**/.nuxt
+**/.DS_Store
+services
+deploy
+docs
+wiki
+reports
+plan
+scrape_data
