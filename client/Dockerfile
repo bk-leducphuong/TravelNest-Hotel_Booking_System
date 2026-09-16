@@ -1,6 +1,6 @@
 # Built with the repository root as the build context (see frontend.yml) so the
 # image uses the committed yarn.lock instead of a floating npm resolution.
-FROM node:22-alpine AS builder
+FROM node:26-alpine AS builder
 
 WORKDIR /app
 RUN corepack enable
