@@ -7,6 +7,9 @@ resources:
   - ../infra/nats
   - ../infra/keycloak/overlays/local
   - ../infra/minio/overlays/local
+  # Dev-only data stores (managed MongoDB/Elasticsearch in prod).
+  - mongodb
+  - elasticsearch
   - ../apps/analytics/overlays/local
   - ../apps/media/overlays/local
   - ../apps/notification/overlays/local
