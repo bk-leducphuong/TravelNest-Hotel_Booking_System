@@ -122,6 +122,44 @@ rolls out. It reuses the `api-config` ConfigMap and `api-secret` Secret.
 > `api-secret`, so on a brand-new cluster make sure the prod secrets exist
 > (apply them first) before the very first sync.
 
+## Local environment (k3d)
+
+`deploy/k8s/local/` is a self-contained environment overlay for a local k3d
+cluster. It deploys the same workloads as prod plus two dev-only data stores
+that stand in for the managed MongoDB/Elasticsearch:
+
+- `local/mongodb/` — single-node MongoDB (`mongodb:27017`).
+- `local/elasticsearch/` — single-node Elasticsearch 8.11, security disabled
+  (`http://elasticsearch:9200`).
+
+All local Secrets are SOPS-encrypted with their own values — see
+[Secrets](#secrets-sops--age) and `deploy/docs/SECRETS.md`.
+
+Local overlays track the CI-built **`develop`** image tag (`latest` is only
+produced on `master`), so a fresh `git push` to `develop` yields a pullable
+image.
+
+Bring-up order (after the cluster + Argo CD + KSOPS are installed):
+
+```bash
+# 1. Deploy the environment (data layer + apps) via Argo CD, or directly:
+kubectl apply -k deploy/k8s/local
+
+# 2. Migrate, then seed quick MySQL data (see deploy/k8s/local/jobs/).
+kubectl apply -k deploy/k8s/local/jobs
+kubectl -n travelnest logs -f job/api-migrate
+kubectl -n travelnest logs -f job/seed-quick
+
+# 3. Once the api Service and MinIO are up, upload the sample images:
+kubectl -n travelnest delete job seed-images 2>/dev/null
+kubectl apply -k deploy/k8s/local/jobs
+kubectl -n travelnest logs -f job/seed-images
+```
+
+The jobs live in `deploy/k8s/local/jobs/` and are deliberately **not** part of
+`deploy/k8s/local/` so Argo CD does not re-run migrations/seeds on every sync.
+Job specs are immutable — delete a finished Job before re-applying it.
+
 ## Before First Deploy
 
 - Point `MONGODB_URI` and Elasticsearch credentials at your cloud-managed services

@@ -1,0 +1,21 @@
+# Manually-run maintenance jobs for the local environment.
+#
+# These are intentionally NOT referenced by deploy/k8s/local/kustomization.yaml
+# so Argo CD does not create/re-run them on every sync:
+#
+#   kubectl apply -k deploy/k8s/local/jobs
+#   kubectl -n travelnest logs -f job/seed-quick
+#
+# Because Job specs are immutable, delete a finished Job before re-applying it:
+#   kubectl -n travelnest delete job seed-quick && kubectl apply -k deploy/k8s/local/jobs
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: travelnest
+resources:
+  - migrate-job.yaml
+  - seed-quick-job.yaml
+  - seed-images-job.yaml
+images:
+  - name: travelnest-api
+    newName: docker.io/leducphuong/travelnest-api
+    newTag: develop

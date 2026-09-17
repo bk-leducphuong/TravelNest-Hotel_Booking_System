@@ -7,7 +7,8 @@ resources:
 images:
   - name: travelnest-notification
     newName: docker.io/leducphuong/travelnest-notification
-    newTag: latest
+    # Local dev tracks the CI-built 'develop' tag ('latest' is master-only).
+    newTag: develop
 
 generators:
   - secret-generator.yaml
