@@ -1,0 +1,28 @@
+# Local (k3d) root Application. Apply on the local cluster after Argo CD + KSOPS
+# are installed:
+#
+#   kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application-local.yaml
+#
+# This renders deploy/k8s/environments/local, which creates the shared
+# AppProject + the travelnest-local ApplicationSet. The app-set controller then
+# creates the infra and app Applications, ordered by sync-wave.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: travelnest-root-local
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System.git
+    targetRevision: develop
+    path: deploy/k8s/environments/local
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

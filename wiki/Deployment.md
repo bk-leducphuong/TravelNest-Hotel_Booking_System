@@ -1,12 +1,12 @@
 # Deployment
 
-TravelNest has two deployment tracks. The **Kubernetes + Argo CD** path is the active deployment. The **Docker Compose** stack is kept as a rollback reference.
+TravelNest deploys with **Kubernetes + Argo CD GitOps**. Manifests live in
+`deploy/k8s/`; Argo CD auto-syncs them. The legacy Docker Compose stack has been
+retired.
 
 ---
 
-## Kubernetes + Argo CD (Active)
-
-### Architecture
+## Architecture
 
 ```
 GitHub Repo ──push──► GitHub Actions ──build & push──► Container Registry
@@ -25,11 +25,11 @@ GitHub Repo ──push──► GitHub Actions ──build & push──► Conta
                                                      └─────────────────┘
 ```
 
-### Directory Layout
+## Directory Layout
 
 ```
 deploy/k8s/
-├── apps/                  Application workloads
+├── apps/                  Application workloads (base + local/prod overlays)
 │   ├── admin-client/      Nuxt 4 admin
 │   ├── analytics/         Go analytics service
 │   ├── api/               Express API
@@ -38,43 +38,42 @@ deploy/k8s/
 │   ├── notification/      Go notification service
 │   └── worker/            BullMQ worker
 ├── infra/                 Stateful services in cluster
-│   ├── keycloak/          
-│   ├── minio/             
-│   ├── mysql/             
-│   ├── nats/              
-│   └── redis/             
-├── environments/prod/     Production Kustomize overlays
-├── bootstrap/argocd/       Argo CD bootstrap
-└── components/            Shared Kustomize components
+│   ├── keycloak/
+│   ├── minio/
+│   ├── mysql/             (+ prod backup CronJob)
+│   ├── nats/
+│   └── redis/
+├── environments/          One root per cluster
+│   ├── base/              Shared namespace + AppProject
+│   ├── prod/              Prod root kustomization + ApplicationSet
+│   └── local/             Local root kustomization + ApplicationSet
+├── local/                 Dev-only MongoDB/Elasticsearch + manual jobs
+└── bootstrap/argocd/      Argo CD bootstrap
 ```
 
-### Bootstrap
+## Environments
+
+Each cluster applies **one environment root** (`deploy/k8s/environments/<env>`).
+The root renders the namespace, the shared `AppProject`, and a single
+`ApplicationSet`; the application-set controller expands it into one
+`Application` per workload, ordered by sync-wave (`10` infra → `20` services →
+`30` api/worker → `40` frontends). Local and prod use the identical mechanism.
+
+## Bootstrap
 
 ```bash
-# After k3s is installed and Argo CD is deployed:
+# prod
 kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application.yaml
+
+# local (k3d)
+kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application-local.yaml
 ```
 
-### External Managed Services
+## External Managed Services
 
 - **MongoDB** (analytics)
-- **Elasticsearch** (search + logs)
+- **Elasticsearch** (search)
 - **Cloudflare Tunnel** (public ingress)
-
----
-
-## Docker Compose (Legacy)
-
-The old stack is preserved at `deploy/docker/docker-compose.yml`.
-
-**Services**: nginx, api (Node.js), worker (BullMQ), mysql, redis, elasticsearch, kibana, logstash, filebeat, clickhouse, minio
-
-**Usage** (rollback only):
-
-```bash
-cd deploy/docker
-docker compose up -d
-```
 
 ---
 
@@ -86,31 +85,22 @@ Environment templates are available for each component:
 - `client/.env.format` — Client environment variables
 - `admin-client/.env.example` — Admin client environment
 - `services/*/.env.format` — Go service environments
-- `deploy/docker/.env.template` — Docker Compose environment
+
+Cluster configuration is passed through Kustomize ConfigMaps and SOPS-encrypted
+Secrets — see [`deploy/docs/SECRETS.md`](../deploy/docs/SECRETS.md).
 
 ---
 
 ## Scripts
 
-`deploy/scripts/` includes automation for:
+`deploy/scripts/` includes:
 
 | Script | Purpose |
 |---|---|
-| `01-install-packages.sh` | System package installation |
-| `02-*.sh` through `05-*.sh` | Step-by-step infrastructure setup |
-| `setup-all.sh` | Full setup automation |
-| `backup-setup.sh` | Backup configuration |
-| `health-check.sh` | Service health verification |
-| `mysql-backup.sh` | Database backup |
-| `toggle-maintenance-mode.sh` | Maintenance mode control |
+| `secrets/` | SOPS + age key generation and prod/local secret sealing |
+| `validate-manifests.sh` | Render every Kustomize target and schema-check it |
 | `setup-hotels-index.sh` | Elasticsearch hotels index |
-| `setup-logs-index.sh` | Elasticsearch logs index |
-| `setup-kibana-user.sh` | Kibana user setup |
-| `init-clickhouse.sh` | ClickHouse initialization |
-| `post-deploy.sh` | Post-deployment tasks |
 
 ## Monitoring
 
-- **Kibana**: [kibana.deployserver.work](https://kibana.deployserver.work) — log aggregation and visualization
-- **Elasticsearch**: Application and system logs indexed in `logs-*` indices
 - **Bull Board**: Queue monitoring at `/admin/queues` on the API server

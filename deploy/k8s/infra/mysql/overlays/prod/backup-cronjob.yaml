@@ -1,0 +1,119 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mysql-backup
+  labels:
+    app.kubernetes.io/name: mysql-backup
+    app.kubernetes.io/component: backup
+spec:
+  schedule: "15 2 * * *"
+  timeZone: Etc/UTC
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: mysql-backup
+        spec:
+          restartPolicy: Never
+          containers:
+            # 1. Dump the travelnest database into a shared emptyDir.
+            - name: dump
+              image: mysql:8.0
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  ts="$(date -u +%Y%m%dT%H%M%SZ)"
+                  out="/backup/${MYSQL_DATABASE}-${ts}.sql.gz"
+                  echo "dumping ${MYSQL_DATABASE} -> ${out}"
+                  mysqldump \
+                    -h mysql \
+                    -u "${MYSQL_USER}" \
+                    -p"${MYSQL_PASSWORD}" \
+                    --single-transaction \
+                    --routines \
+                    --triggers \
+                    "${MYSQL_DATABASE}" | gzip > "${out}"
+                  touch /backup/.done
+                  echo "dump complete: $(du -h "${out}" | cut -f1)"
+              envFrom:
+                - configMapRef:
+                    name: mysql-config
+                - secretRef:
+                    name: mysql-secret
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+            # 2. Upload dumps to MinIO once the dump sidecar signals completion,
+            #    then prune objects older than the retention window.
+            - name: upload
+              image: amazon/aws-cli:2.15.17
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -e
+                  for _ in $(seq 1 900); do
+                    [ -f /backup/.done ] && break
+                    sleep 2
+                  done
+                  if [ ! -f /backup/.done ]; then
+                    echo "dump did not complete in time" >&2
+                    exit 1
+                  fi
+                  endpoint="http://minio:9000"
+                  bucket="travelnest-backups"
+                  aws --endpoint-url "${endpoint}" s3 mb "s3://${bucket}" 2>/dev/null || true
+                  aws --endpoint-url "${endpoint}" s3 cp /backup/ "s3://${bucket}/" \
+                    --recursive --exclude ".done"
+                  cutoff="$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%S)"
+                  keys="$(aws --endpoint-url "${endpoint}" s3api list-objects-v2 \
+                    --bucket "${bucket}" \
+                    --query "Contents[?LastModified<='${cutoff}'].Key" \
+                    --output text)"
+                  for key in ${keys}; do
+                    [ -n "${key}" ] || continue
+                    aws --endpoint-url "${endpoint}" s3 rm "s3://${bucket}/${key}"
+                  done
+              env:
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: minio-secret
+                      key: MINIO_ROOT_USER
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: minio-secret
+                      key: MINIO_ROOT_PASSWORD
+                - name: AWS_DEFAULT_REGION
+                  value: us-east-1
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+          volumes:
+            - name: backup
+              emptyDir: {}

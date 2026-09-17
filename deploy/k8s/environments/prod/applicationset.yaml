@@ -1,0 +1,74 @@
+# Prod cluster entrypoint. Rendered by the root Argo CD Application
+# (bootstrap/argocd/root-application.yaml) and reconciled by the
+# application-set controller into one Application per list element.
+#
+# This replaces the 12 near-identical Application manifests that used to live
+# in deploy/k8s/argocd/apps/. The list generator keeps each workload's
+# sync-wave so Argo CD orders infra before apps.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: travelnest-prod
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: travelnest-mysql
+            path: deploy/k8s/infra/mysql/overlays/prod
+            wave: "10"
+          - name: travelnest-redis
+            path: deploy/k8s/infra/redis
+            wave: "10"
+          - name: travelnest-minio
+            path: deploy/k8s/infra/minio/overlays/prod
+            wave: "10"
+          - name: travelnest-nats
+            path: deploy/k8s/infra/nats
+            wave: "10"
+          - name: travelnest-keycloak
+            path: deploy/k8s/infra/keycloak/overlays/prod
+            wave: "10"
+          - name: travelnest-analytics
+            path: deploy/k8s/apps/analytics/overlays/prod
+            wave: "20"
+          - name: travelnest-media
+            path: deploy/k8s/apps/media/overlays/prod
+            wave: "20"
+          - name: travelnest-notification
+            path: deploy/k8s/apps/notification/overlays/prod
+            wave: "20"
+          - name: travelnest-api
+            path: deploy/k8s/apps/api/overlays/prod
+            wave: "30"
+          - name: travelnest-worker
+            path: deploy/k8s/apps/worker/overlays/prod
+            wave: "30"
+          - name: travelnest-frontend
+            path: deploy/k8s/apps/frontend/overlays/prod
+            wave: "40"
+          - name: travelnest-admin-client
+            path: deploy/k8s/apps/admin-client/overlays/prod
+            wave: "40"
+  template:
+    metadata:
+      name: "{{name}}"
+      namespace: argocd
+      annotations:
+        argocd.argoproj.io/sync-wave: "{{wave}}"
+    spec:
+      project: travelnest
+      source:
+        repoURL: https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System.git
+        targetRevision: master
+        path: "{{path}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: travelnest
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ApplyOutOfSyncOnly=true

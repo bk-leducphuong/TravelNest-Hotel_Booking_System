@@ -24,12 +24,12 @@ Phase 1 target:
 
 Implemented in this repository:
 
-- Argo CD bootstrap manifest:
-  - `deploy/k8s/bootstrap/argocd/root-application.yaml`
-- root application set:
-  - `deploy/k8s/`
-- child Argo applications:
-  - `deploy/k8s/argocd/apps/`
+- Argo CD bootstrap manifests:
+  - `deploy/k8s/bootstrap/argocd/root-application.yaml` (prod)
+  - `deploy/k8s/bootstrap/argocd/root-application-local.yaml` (local k3d)
+- environment roots (namespace + AppProject + ApplicationSet):
+  - `deploy/k8s/environments/prod/`
+  - `deploy/k8s/environments/local/`
 - app manifests:
   - `deploy/k8s/apps/`
 - infra manifests:
@@ -49,7 +49,7 @@ Before first deployment:
 
 ## Notes
 
-- Legacy Docker Compose assets remain in `deploy/docker/` as a temporary fallback only.
+- The legacy Docker Compose stack has been retired; `deploy/k8s/` is the only deploy path.
 - `notification` is the current service name in code and manifests.
 - NATS is provisioned with the current stream split used by the codebase:
   - `TRAVELNEST_ANALYTICS`

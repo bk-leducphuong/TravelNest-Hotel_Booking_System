@@ -28,22 +28,34 @@ These stay external and are configured through Kubernetes secrets:
 
 ```text
 deploy/k8s/
-  bootstrap/argocd/
-  argocd/
-  apps/
-  infra/
-  environments/prod/root/
+  bootstrap/argocd/        Argo CD bootstrap (root applications + KSOPS/Image Updater)
+  environments/
+    base/                  Shared namespace + AppProject (env-agnostic)
+    prod/                  Prod root kustomization + ApplicationSet
+    local/                 Local root kustomization + ApplicationSet
+  apps/                    Application workloads (base + local/prod overlays)
+  infra/                   In-cluster stateful services (base + local/prod overlays)
+  local/                   Dev-only MongoDB/Elasticsearch + manual maintenance jobs
 ```
+
+Each cluster bootstraps one **environment root** (`environments/<env>`), which
+renders the namespace, the shared `AppProject`, and one `ApplicationSet`. The
+application-set controller turns each list element into an `Application`, so the
+per-workload manifests live in a single file instead of 12 near-identical ones.
 
 ## Bootstrap
 
 1. Install `k3s` and Argo CD on the VPS.
 2. Bootstrap SOPS + age and seal the prod secrets, then patch Argo CD for KSOPS
    (see [Secrets](#secrets-sops--age) below).
-3. Apply the root Argo CD application:
+3. Apply the root Argo CD application for your cluster:
 
 ```bash
+# prod
 kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application.yaml
+
+# local (k3d)
+kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application-local.yaml
 ```
 
 Argo CD then syncs the full stack from this repository.
@@ -142,8 +154,9 @@ image.
 Bring-up order (after the cluster + Argo CD + KSOPS are installed):
 
 ```bash
-# 1. Deploy the environment (data layer + apps) via Argo CD, or directly:
-kubectl apply -k deploy/k8s/local
+# 1. Bootstrap the environment via its AppProject + ApplicationSet:
+kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application-local.yaml
+# sync-waves then roll out the data layer (wave 10) before apps (waves 20-40)
 
 # 2. Migrate, then seed quick MySQL data (see deploy/k8s/local/jobs/).
 kubectl apply -k deploy/k8s/local/jobs
@@ -156,9 +169,29 @@ kubectl apply -k deploy/k8s/local/jobs
 kubectl -n travelnest logs -f job/seed-images
 ```
 
-The jobs live in `deploy/k8s/local/jobs/` and are deliberately **not** part of
-`deploy/k8s/local/` so Argo CD does not re-run migrations/seeds on every sync.
+The jobs live in `deploy/k8s/local/jobs/` and are deliberately **not** referenced
+by the environment root so Argo CD does not re-run migrations/seeds on every sync.
 Job specs are immutable — delete a finished Job before re-applying it.
+
+## Portability (running the same manifests on another cluster)
+
+The overlays are intentionally cluster-agnostic so the same `prod` manifests run
+on the VPS k3s cluster or a managed cloud cluster. Assumptions to satisfy on any
+new cluster:
+
+- **StorageClass** — `mysql`, `redis`, `nats`, `minio`, `mongodb` and
+  `elasticsearch` use `volumeClaimTemplates` with **no `storageClassName`**, so
+  the cluster must have a default StorageClass. Don't hardcode one in the
+  manifests; set the default on the cluster instead.
+- **Ingress class** — every Ingress hardcodes `ingressClassName: traefik`. A
+  target cluster must run **Traefik**. If it uses another controller (e.g.
+  nginx/ALB), patch the ingress class at that time.
+- **TLS / edge** — the Ingresses carry no TLS config; prod assumes **Cloudflare
+  Tunnel** terminates TLS in front of the cluster. A cloud cluster must supply
+  its own edge (cert-manager or a cloud load balancer).
+- **Image promotion** — prod expects **Argo CD Image Updater** (see
+  `bootstrap/argocd/image-updater/`) to commit `sha-*` tags. A prod cluster
+  without it will stay on the tag currently in the overlay.
 
 ## Before First Deploy
 

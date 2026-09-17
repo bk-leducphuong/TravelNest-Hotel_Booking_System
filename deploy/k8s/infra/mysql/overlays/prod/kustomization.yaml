@@ -3,5 +3,6 @@ kind: Kustomization
 namespace: travelnest
 resources:
   - ../../base
+  - backup-cronjob.yaml
 generators:
   - secret-generator.yaml

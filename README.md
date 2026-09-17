@@ -151,7 +151,8 @@ Database migrations run as an Argo CD PreSync hook.
 > `continue-on-error` flags once the debt is cleared — see the `TODO(quality-debt)`
 > comments in `.github/workflows/`.
 
-A legacy Docker Compose stack is in `deploy/docker/` for rollback reference.
+The legacy Docker Compose stack has been retired; **Kubernetes + Argo CD** is the
+only deployment path.
 
 See the **[Wiki: Deployment](https://github.com/bk-leducphuong/TravelNest/wiki/Deployment)** and **[Wiki: CI-CD](https://github.com/bk-leducphuong/TravelNest/wiki/CI-CD)** for details.
 
