@@ -1,19 +1,11 @@
+# Union of the local environment (kept for `kubectl apply -k deploy/k8s/local`).
+#
+# Argo CD splits this into two Applications so the data layer can be brought up
+# and verified before the workloads:
+#   - deploy/k8s/local/infra  -> travelnest-local-infra
+#   - deploy/k8s/local/apps   -> travelnest-local-apps
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - namespace.yaml
-  - ../infra/mysql/overlays/local
-  - ../infra/redis
-  - ../infra/nats
-  - ../infra/keycloak/overlays/local
-  - ../infra/minio/overlays/local
-  # Dev-only data stores (managed MongoDB/Elasticsearch in prod).
-  - mongodb
-  - elasticsearch
-  - ../apps/analytics/overlays/local
-  - ../apps/media/overlays/local
-  - ../apps/notification/overlays/local
-  - ../apps/api/overlays/local
-  - ../apps/worker/overlays/local
-  - ../apps/frontend/overlays/local
-  - ../apps/admin-client/overlays/local
+  - infra
+  - apps

@@ -1,0 +1,12 @@
+# Local Argo CD Applications. Apply in order:
+#
+#   kubectl apply -f deploy/k8s/local/argocd/application-infra.yaml
+#   # wait for travelnest-local-infra to be Healthy
+#   kubectl apply -f deploy/k8s/local/argocd/application-apps.yaml
+#   argocd app sync travelnest-local-apps
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: argocd
+resources:
+  - application-infra.yaml
+  - application-apps.yaml
