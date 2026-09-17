@@ -62,7 +62,8 @@ services/*/.env
 # Local AI tooling config
 .claude/
 
-# SOPS/age private key and plaintext prod values (never commit)
+# SOPS/age private key and plaintext prod/local values (never commit)
 deploy/k8s/.age/
 deploy/k8s/.env.prod
+deploy/k8s/.env.local
 

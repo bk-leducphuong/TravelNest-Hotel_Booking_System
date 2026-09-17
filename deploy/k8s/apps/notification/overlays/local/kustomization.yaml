@@ -4,8 +4,10 @@ namespace: travelnest
 resources:
   - ../../base
   - configmap.yaml
-  - secret.yaml
 images:
   - name: travelnest-notification
     newName: docker.io/leducphuong/travelnest-notification
     newTag: latest
+
+generators:
+  - secret-generator.yaml

@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 #
-# Render every PROD secret.template.yaml with values from deploy/k8s/.env.prod
-# and write a SOPS-encrypted secret.enc.yaml next to it.
+# Render every LOCAL secret.template.yaml with values from
+# deploy/k8s/.env.local and write a SOPS-encrypted secret.enc.yaml next to it.
 #
-# Local templates (deploy/k8s/local/** and **/overlays/local/**) are sealed by
-# seal-local-secrets.sh from .env.local and are deliberately excluded here so
-# the two environments can never overwrite each other's encrypted files.
+# This mirrors deploy/scripts/secrets/seal-prod-secrets.sh, but only touches
+# templates under an `overlays/local/` path or `deploy/k8s/local/`, so local
+# values are never mixed with (or overwrite) the prod encrypted secrets.
 #
-# The encrypted files are safe to commit (public repo). Argo CD decrypts them
-# at sync time through the KSOPS plugin + the sops-age cluster Secret.
+# The encrypted files are safe to commit. Argo CD decrypts them at render time
+# through the KSOPS plugin + the sops-age cluster Secret.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-ENV_FILE="${1:-$ROOT/deploy/k8s/.env.prod}"
+ENV_FILE="${1:-$ROOT/deploy/k8s/.env.local}"
 KEY_FILE="$ROOT/deploy/k8s/.age/keys.txt"
 
 for bin in sops age-keygen envsubst; do
@@ -24,7 +24,7 @@ done
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "ERROR: env file not found: $ENV_FILE" >&2
-  echo "Copy deploy/k8s/.env.prod.example and fill it in." >&2
+  echo "Copy deploy/k8s/.env.local.example and fill it in." >&2
   exit 1
 fi
 
@@ -55,7 +55,6 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   [[ "$line" != *=* ]] && continue
   key="${line%%=*}"
   value="${line#*=}"
-  # trim surrounding whitespace and one layer of optional quotes
   key="${key#"${key%%[![:space:]]*}"}"; key="${key%"${key##*[![:space:]]}"}"
   value="${value#"${value%%[![:space:]]*}"}"; value="${value%"${value##*[![:space:]]}"}"
   value="${value%\"}"; value="${value#\"}"
@@ -68,7 +67,6 @@ while IFS= read -r template; do
   dir="$(dirname "$template")"
   enc="$dir/secret.enc.yaml"
 
-  # Collect the ${VARS} this template needs.
   mapfile -t vars < <(grep -oE '\$\{[A-Za-z0-9_]+\}' "$template" | tr -d '${}' | sort -u)
 
   missing=()
@@ -83,8 +81,6 @@ while IFS= read -r template; do
     continue
   fi
 
-  # Substitute only the variables this template declares, so values containing
-  # '$' are never re-expanded.
   subst_list="$(printf '${%s} ' "${vars[@]}")"
   rendered="$(mktemp)"
   envsubst "$subst_list" < "$template" > "$rendered"
@@ -108,7 +104,7 @@ while IFS= read -r template; do
     fail=1
   fi
   rm -f "$rendered"
-done < <(find "$ROOT/deploy/k8s" -name secret.template.yaml | grep -vE "($ROOT/deploy/k8s/local/|/overlays/local/)" | sort)
+done < <(find "$ROOT/deploy/k8s" -name secret.template.yaml | grep -E "($ROOT/deploy/k8s/local/|/overlays/local/)" | sort)
 
 if (( fail )); then
   echo "One or more templates failed. Nothing was partially written for those." >&2
@@ -116,5 +112,5 @@ if (( fail )); then
 fi
 
 echo
-echo "Done. Commit the generated secret.enc.yaml files."
+echo "Done. Commit the generated local secret.enc.yaml files."
 echo "Verify locally with: sops --decrypt <file>"

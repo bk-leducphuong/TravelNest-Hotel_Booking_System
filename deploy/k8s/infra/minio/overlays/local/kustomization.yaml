@@ -3,11 +3,6 @@ kind: Kustomization
 namespace: travelnest
 resources:
   - ../../base
-  - configmap.yaml
-images:
-  - name: travelnest-api
-    newName: docker.io/leducphuong/travelnest-api
-    newTag: latest
-
+  - ingress.yaml
 generators:
   - secret-generator.yaml

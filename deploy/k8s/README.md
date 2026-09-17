@@ -65,13 +65,21 @@ Prod secrets are managed with SOPS + age and decrypted in-cluster by the KSOPS
 kustomize plugin. Plaintext values and the age key never enter git; each prod
 overlay commits a `secret.enc.yaml` that Argo CD decrypts at sync time.
 
+The **local** environment (`deploy/k8s/local/**`) uses the same mechanism with
+its own values (`deploy/k8s/.env.local`) and its own encrypted files, sealed by
+`seal-local-secrets.sh`. The two seal scripts never touch each other's paths.
+
 Full guide: **[../docs/SECRETS.md](../docs/SECRETS.md)**. Short version:
 
 ```bash
 ./deploy/scripts/secrets/init-age-key.sh          # generate key + sops-age Secret
 cp deploy/k8s/.env.prod.example deploy/k8s/.env.prod && $EDITOR deploy/k8s/.env.prod
-./deploy/scripts/secrets/seal-prod-secrets.sh     # render + encrypt
+./deploy/scripts/secrets/seal-prod-secrets.sh     # render + encrypt (prod)
 ./deploy/scripts/secrets/install-argo-ksops.sh    # patch Argo CD repo-server
+
+# Local environment instead:
+cp deploy/k8s/.env.local.example deploy/k8s/.env.local && $EDITOR deploy/k8s/.env.local
+./deploy/scripts/secrets/seal-local-secrets.sh    # render + encrypt (local)
 ```
 
 ## Image promotion (GitOps)

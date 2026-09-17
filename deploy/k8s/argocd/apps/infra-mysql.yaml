@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System.git
     targetRevision: master
-    path: deploy/k8s/infra/mysql
+    path: deploy/k8s/infra/mysql/overlays/prod
   destination:
     server: https://kubernetes.default.svc
     namespace: travelnest
