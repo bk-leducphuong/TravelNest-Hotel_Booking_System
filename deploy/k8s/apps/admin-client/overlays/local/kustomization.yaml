@@ -10,6 +10,12 @@ images:
     # Local dev tracks the CI-built 'develop' tag ('latest' is master-only).
     newTag: develop
 patches:
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
   - path: service.yaml
   - target:
       kind: Deployment

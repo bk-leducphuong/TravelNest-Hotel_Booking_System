@@ -13,3 +13,11 @@ images:
 
 generators:
   - secret-generator.yaml
+
+patches:
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
