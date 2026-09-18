@@ -18,9 +18,23 @@ async function indexExists(queryInterface, tableName, indexName) {
   return indexes.some((index) => index.name === indexName);
 }
 
+async function columnExists(queryInterface, tableName, columnName) {
+  if (!(await tableExists(queryInterface, tableName))) {
+    return false;
+  }
+  const columns = await queryInterface.describeTable(tableName);
+  return Object.prototype.hasOwnProperty.call(columns, columnName);
+}
+
 async function createTableIfMissing(queryInterface, tableName, definition) {
   if (!(await tableExists(queryInterface, tableName))) {
     await queryInterface.createTable(tableName, definition);
+  }
+}
+
+async function addColumnIfMissing(queryInterface, tableName, columnName, definition) {
+  if (!(await columnExists(queryInterface, tableName, columnName))) {
+    await queryInterface.addColumn(tableName, columnName, definition);
   }
 }
 
@@ -31,7 +45,9 @@ async function addIndexIfMissing(queryInterface, tableName, fields, options) {
 }
 
 module.exports = {
+  addColumnIfMissing,
   addIndexIfMissing,
+  columnExists,
   createTableIfMissing,
   indexExists,
   tableExists,

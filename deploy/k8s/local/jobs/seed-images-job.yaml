@@ -1,0 +1,45 @@
+# Uploads the committed sample images through the API into MinIO. Requires the
+# api Service and MinIO to be up, so run it AFTER the stack is synced and seeded.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: seed-images
+  labels:
+    app.kubernetes.io/name: seed-images
+spec:
+  backoffLimit: 0
+  # ~80k uploads (3 per room) takes over an hour; don't cut it short.
+  activeDeadlineSeconds: 14400
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: seed-images
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: seed-images
+          image: travelnest-api:develop
+          imagePullPolicy: Always
+          command: ["node", "seeders/database/images.seed.js"]
+          env:
+            - name: NODE_ENV
+              value: production
+            # The api-config values point at the ingress host, which is not
+            # resolvable from inside the cluster; use the Service DNS instead.
+            - name: API_BASE_URL
+              value: http://api:3000/api/v1
+            - name: HEALTH_CHECK_URL
+              value: http://api:3000/health/live
+          envFrom:
+            - configMapRef:
+                name: api-config
+            - secretRef:
+                name: api-secret
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi

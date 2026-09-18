@@ -1,0 +1,8 @@
+# Shared, environment-agnostic resources consumed by every environment root.
+# Kept as a kustomize directory (not bare files) so overlays can reference it
+# with `../base`, matching the apps/infra base+overlay pattern.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - project.yaml

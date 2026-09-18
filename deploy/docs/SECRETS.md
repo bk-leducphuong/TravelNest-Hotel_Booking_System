@@ -122,11 +122,39 @@ build` of a prod overlay will fail until you either:
 `deploy/k8s/.env.prod` and `deploy/k8s/.age/` are gitignored and must never be
 committed.
 
+## Local environment (`deploy/k8s/local`)
+
+The local k3d environment uses the **same** SOPS + age + KSOPS mechanism as prod,
+but with its own values and its own encrypted files:
+
+| | Prod | Local |
+|---|---|---|
+| Values file | `deploy/k8s/.env.prod` (gitignored) | `deploy/k8s/.env.local` (gitignored) |
+| Templates | `**/overlays/prod/secret.template.yaml`, `infra/minio/` | `**/overlays/local/secret.template.yaml`, `local/minio/` |
+| Seal script | `seal-prod-secrets.sh` | `seal-local-secrets.sh` |
+
+The two seal scripts are mutually exclusive by design — each excludes the other
+environment's paths — so sealing one can never overwrite the other's
+`secret.enc.yaml`.
+
+**Guides**
+
+1. Copy `deploy/k8s/.env.local.example` → `deploy/k8s/.env.local` and fill it in.
+2. `./deploy/scripts/secrets/init-age-key.sh` (once per machine).
+3. `./deploy/scripts/secrets/seal-local-secrets.sh`.
+4. Commit the generated local `secret.enc.yaml` files.
+5. Patch the local Argo CD repo-server with KSOPS:
+   `./deploy/scripts/secrets/install-argo-ksops.sh`.
+
+The `*.enc.yaml` local files are safe to commit (encrypted). `deploy/k8s/.env.local`
+and `deploy/k8s/.age/` are gitignored and must never be committed.
+
 ## Security notes
 
 - **Back up `deploy/k8s/.age/keys.txt` somewhere safe and offline.** Losing it
   means every committed `secret.enc.yaml` becomes unrecoverable.
-- Never commit `.env.prod` or the age key; `.gitignore` already excludes them.
+- Never commit `.env.prod`, `.env.local`, or the age key; `.gitignore` already
+  excludes them.
 - To rotate the age key: generate a new one, add the new recipient to
   `.sops.yaml`, run `sops updatekeys` on each encrypted file, replace the
   `sops-age` cluster Secret, and re-seal.

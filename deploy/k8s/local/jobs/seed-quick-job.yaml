@@ -1,0 +1,47 @@
+# Quick MySQL-only seed: 63 cities x 80 hotels, 30 days of inventory, no images
+# and no search-snapshot rebuild. Run once; re-running may duplicate rows.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: seed-quick
+  labels:
+    app.kubernetes.io/name: seed-quick
+spec:
+  # Seeding is not idempotent enough to retry blindly.
+  backoffLimit: 0
+  activeDeadlineSeconds: 3600
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: seed-quick
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: seed
+          image: travelnest-api:develop
+          imagePullPolicy: Always
+          command:
+            - node
+            - seeders/database/seed-all.js
+            - --quick
+            - --skip-images
+            - --skip-snapshots
+          env:
+            - name: NODE_ENV
+              value: production
+            # The review seeder builds ~100k rows in memory before bulkCreate.
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=3072"
+          envFrom:
+            - configMapRef:
+                name: api-config
+            - secretRef:
+                name: api-secret
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
