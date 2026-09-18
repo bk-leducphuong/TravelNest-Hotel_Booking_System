@@ -1,7 +1,8 @@
 # Manually-run maintenance jobs for the local environment.
 #
-# These are intentionally NOT referenced by deploy/k8s/local/kustomization.yaml
-# so Argo CD does not create/re-run them on every sync:
+# These are intentionally NOT referenced by the local ApplicationSet
+# (deploy/k8s/environments/local) so Argo CD does not create/re-run them on
+# every sync:
 #
 #   kubectl apply -k deploy/k8s/local/jobs
 #   kubectl -n travelnest logs -f job/seed-quick

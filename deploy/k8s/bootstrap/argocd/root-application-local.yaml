@@ -5,7 +5,8 @@
 #
 # This renders deploy/k8s/environments/local, which creates the shared
 # AppProject + the travelnest-local ApplicationSet. The app-set controller then
-# creates the infra and app Applications, ordered by sync-wave.
+# creates the infra and app Applications; they sync concurrently (ApplicationSet
+# does not honour sync-wave ordering).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

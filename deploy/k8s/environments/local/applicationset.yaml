@@ -4,6 +4,10 @@
 # Uses the exact same mechanism as prod, plus two dev-only data stores
 # (mongodb, elasticsearch) that stand in for the managed services in prod.
 # Local dev tracks the CI-built 'develop' image tag.
+#
+# The child Applications sync concurrently (ApplicationSet does not order by
+# sync-wave); the data-layer pods just take a moment to become ready, and the
+# workloads self-heal once they are.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -59,7 +63,12 @@ spec:
     metadata:
       name: "{{name}}"
       namespace: argocd
+      labels:
+        # Consumed by the opt-in RollingSync strategy (see deploy/k8s/README.md).
+        wave: "{{wave}}"
       annotations:
+        # Informational only: ApplicationSet-generated Applications are not
+        # ordered by sync-wave; they sync concurrently.
         argocd.argoproj.io/sync-wave: "{{wave}}"
     spec:
       project: travelnest

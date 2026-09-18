@@ -3,8 +3,14 @@
 # application-set controller into one Application per list element.
 #
 # This replaces the 12 near-identical Application manifests that used to live
-# in deploy/k8s/argocd/apps/. The list generator keeps each workload's
-# sync-wave so Argo CD orders infra before apps.
+# in deploy/k8s/argocd/apps/.
+#
+# NOTE ON ORDERING: the application-set controller creates these child
+# Applications directly, so `argocd.argoproj.io/sync-wave` on them is NOT
+# honoured — all children sync concurrently and converge via selfHeal. For
+# guaranteed infra-before-apps ordering, enable progressive syncs on the
+# controller and switch this to `strategy: {type: RollingSync}` matching the
+# `wave` label below (see deploy/k8s/README.md).
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -54,7 +60,12 @@ spec:
     metadata:
       name: "{{name}}"
       namespace: argocd
+      labels:
+        # Consumed by the opt-in RollingSync strategy (see deploy/k8s/README.md).
+        wave: "{{wave}}"
       annotations:
+        # Informational only: ApplicationSet-generated Applications are not
+        # ordered by sync-wave; they sync concurrently.
         argocd.argoproj.io/sync-wave: "{{wave}}"
     spec:
       project: travelnest

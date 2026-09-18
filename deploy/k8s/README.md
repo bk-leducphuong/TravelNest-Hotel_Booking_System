@@ -60,6 +60,41 @@ kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application-local.ya
 
 Argo CD then syncs the full stack from this repository.
 
+## Sync ordering
+
+The `ApplicationSet` uses a **list generator**, and the application-set controller
+creates the child `Application`s directly. As a result,
+`argocd.argoproj.io/sync-wave` on those child Applications is **not honoured** —
+all of them sync concurrently and converge via `selfHeal` (workload pods may
+briefly restart until MySQL/Redis/Keycloak/servers are ready). The `wave` values
+are kept as an `Application` **label** so you can opt into real ordering later.
+
+To enforce infra-before-apps, enable **progressive syncs** on the controller and
+switch the ApplicationSet to `RollingSync`:
+
+```bash
+# enable progressive syncs (once, cluster-side)
+kubectl -n argocd patch configmap argocd-cmd-params-cm --type merge \
+  -p '{"data":{"applicationsetcontroller.enable.progressive.syncs":"true"}}'
+kubectl -n argocd rollout restart deploy/argocd-applicationset-controller
+```
+
+```yaml
+# in environments/<env>/applicationset.yaml
+spec:
+  strategy:
+    type: RollingSync
+    rollingSync:
+      steps:
+        - matchExpressions: [{key: wave, operator: In, values: ["10"]}]
+        - matchExpressions: [{key: wave, operator: In, values: ["20"]}]
+        - matchExpressions: [{key: wave, operator: In, values: ["30"]}]
+        - matchExpressions: [{key: wave, operator: In, values: ["40"]}]
+```
+
+Note: RollingSync is beta and forces auto-sync **off** on the generated
+Applications (the controller triggers syncs itself, step by step).
+
 ## Important Defaults
 
 - Namespace: `travelnest`
@@ -156,7 +191,8 @@ Bring-up order (after the cluster + Argo CD + KSOPS are installed):
 ```bash
 # 1. Bootstrap the environment via its AppProject + ApplicationSet:
 kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application-local.yaml
-# sync-waves then roll out the data layer (wave 10) before apps (waves 20-40)
+# the ApplicationSet creates the data layer + app Applications; they sync
+# concurrently and converge (see "Sync ordering" above)
 
 # 2. Migrate, then seed quick MySQL data (see deploy/k8s/local/jobs/).
 kubectl apply -k deploy/k8s/local/jobs
