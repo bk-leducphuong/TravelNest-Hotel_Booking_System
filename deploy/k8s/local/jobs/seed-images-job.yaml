@@ -8,7 +8,8 @@ metadata:
     app.kubernetes.io/name: seed-images
 spec:
   backoffLimit: 0
-  activeDeadlineSeconds: 3600
+  # ~80k uploads (3 per room) takes over an hour; don't cut it short.
+  activeDeadlineSeconds: 14400
   ttlSecondsAfterFinished: 86400
   template:
     metadata:
