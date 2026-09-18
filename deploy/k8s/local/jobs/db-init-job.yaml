@@ -20,7 +20,7 @@ spec:
       containers:
         - name: db-init
           image: travelnest-api:develop
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           command: ["node", "infra/database/init.js"]
           env:
             - name: NODE_ENV
