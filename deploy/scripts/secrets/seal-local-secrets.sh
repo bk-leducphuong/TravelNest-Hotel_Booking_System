@@ -70,15 +70,22 @@ while IFS= read -r template; do
   mapfile -t vars < <(grep -oE '\$\{[A-Za-z0-9_]+\}' "$template" | tr -d '${}' | sort -u)
 
   missing=()
+  empty=()
   for v in "${vars[@]}"; do
     if [[ -z "${!v+x}" ]]; then
       missing+=("$v")
+    elif [[ -z "${!v}" ]]; then
+      empty+=("$v")
     fi
   done
   if (( ${#missing[@]} )); then
     echo "ERROR: $template references variables missing from $ENV_FILE: ${missing[*]}" >&2
     fail=1
     continue
+  fi
+  if (( ${#empty[@]} )); then
+    echo "WARNING: $template has empty values for: ${empty[*]}" >&2
+    echo "         Kubernetes drops empty stringData keys, which makes Argo CD report the Secret as permanently OutOfSync. Prefer a dummy non-empty value locally." >&2
   fi
 
   subst_list="$(printf '${%s} ' "${vars[@]}")"

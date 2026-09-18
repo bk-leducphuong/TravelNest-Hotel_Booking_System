@@ -14,7 +14,8 @@ spec:
     spec:
       containers:
         - name: minio
-          image: minio/minio:latest
+          # MinIO is no longer published on Docker Hub; it lives on quay.io.
+          image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
           imagePullPolicy: IfNotPresent
           args:
             - server
