@@ -1,18 +1,25 @@
 # Manually-run maintenance jobs for the local environment.
 #
+# Run in order:
+#   db-init  -> create the base schema (sequelize.sync)
+#   migrate  -> apply the incremental migrations
+#   seed-quick -> load the quick MySQL fixture data
+#   seed-images -> upload sample images (needs api + MinIO up)
+#
 # These are intentionally NOT referenced by the local ApplicationSet
 # (deploy/k8s/environments/local) so Argo CD does not create/re-run them on
 # every sync:
 #
 #   kubectl apply -k deploy/k8s/local/jobs
-#   kubectl -n travelnest logs -f job/seed-quick
+#   kubectl -n travelnest logs -f job/db-init
 #
 # Because Job specs are immutable, delete a finished Job before re-applying it:
-#   kubectl -n travelnest delete job seed-quick && kubectl apply -k deploy/k8s/local/jobs
+#   kubectl -n travelnest delete job db-init && kubectl apply -k deploy/k8s/local/jobs
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: travelnest
 resources:
+  - db-init-job.yaml
   - migrate-job.yaml
   - seed-quick-job.yaml
   - seed-images-job.yaml
