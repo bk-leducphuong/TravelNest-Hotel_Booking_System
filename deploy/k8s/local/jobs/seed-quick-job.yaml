@@ -30,6 +30,9 @@ spec:
           env:
             - name: NODE_ENV
               value: production
+            # The review seeder builds ~100k rows in memory before bulkCreate.
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=3072"
           envFrom:
             - configMapRef:
                 name: api-config
@@ -37,8 +40,8 @@ spec:
                 name: api-secret
           resources:
             requests:
-              cpu: 250m
-              memory: 512Mi
+              cpu: 500m
+              memory: 1Gi
             limits:
               cpu: "2"
-              memory: 2Gi
+              memory: 4Gi
