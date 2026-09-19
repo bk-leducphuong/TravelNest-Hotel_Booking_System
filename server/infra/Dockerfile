@@ -1,6 +1,6 @@
 # Built with the repository root as the build context (see backend.yml) so the
 # image uses the committed yarn.lock instead of a floating npm resolution.
-FROM node:22-alpine AS deps
+FROM node:25-alpine AS deps
 WORKDIR /app
 RUN corepack enable
 COPY package.json yarn.lock .yarnrc.yml ./
@@ -10,7 +10,7 @@ COPY admin-client/package.json admin-client/
 # Install only the API workspace's production dependencies.
 RUN yarn workspaces focus @travelnest/server --production
 
-FROM node:22-alpine
+FROM node:25-alpine
 ENV NODE_ENV=production
 
 WORKDIR /app
