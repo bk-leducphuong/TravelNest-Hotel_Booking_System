@@ -1,6 +1,6 @@
 # Built with the repository root as the build context (see admin-client.yml) so
 # the image uses the committed yarn.lock instead of a floating npm resolution.
-FROM node:22-alpine AS builder
+FROM node:25-alpine AS builder
 
 WORKDIR /app
 RUN corepack enable
@@ -18,7 +18,7 @@ ENV NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE}
 
 RUN yarn workspace @travelnest/admin-client run build
 
-FROM node:22-alpine
+FROM node:25-alpine
 
 ENV NODE_ENV=production
 ENV NITRO_HOST=0.0.0.0
