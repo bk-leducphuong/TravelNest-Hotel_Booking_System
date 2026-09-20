@@ -184,7 +184,14 @@ All local Secrets are SOPS-encrypted with their own values — see
 
 Local overlays track the CI-built **`develop`** image tag (`latest` is only
 produced on `master`), so a fresh `git push` to `develop` yields a pullable
-image.
+image. The one exception is the **frontend**: Vite inlines the API URL at build
+time and the CI image bakes `https://api.deployserver.work` into the bundle, so
+the local overlay pins `travelnest-frontend:local` instead. Produce that image
+with:
+
+```bash
+deploy/scripts/build-local-frontend.sh   # build + k3d image import
+```
 
 Bring-up order (after the cluster + Argo CD + KSOPS are installed):
 
@@ -211,6 +218,29 @@ kubectl -n travelnest logs -f job/seed-images
 The jobs live in `deploy/k8s/local/jobs/` and are deliberately **not** referenced
 by the environment root so Argo CD does not re-run migrations/seeds on every sync.
 Job specs are immutable — delete a finished Job before re-applying it.
+
+### Reaching the local cluster
+
+k3d publishes the load balancer on host **:8080** only, but every manifest, the
+Keycloak realm and the SPA use port-less URLs (`http://travelnest.local`,
+`http://keycloak.travelnest.local`, ...). `enable-local-edge.sh` adds a small L4
+passthrough container that publishes host **:80** to the k3d load balancer, so
+those values work unchanged:
+
+```bash
+deploy/scripts/enable-local-edge.sh
+
+# One-time, needs sudo:
+sudo tee -a /etc/hosts >/dev/null <<'EOF'
+127.0.0.1 travelnest.local api.travelnest.local keycloak.travelnest.local storage.travelnest.local admin.travelnest.local
+EOF
+```
+
+Then browse to `http://travelnest.local`. The local overlay imports the
+`travelnest` Keycloak realm on startup; the realm ships **without users**, so
+register one (or run the migration under `server/scripts/keycloak/`) before
+logging in. `kubectl port-forward` still works for debugging and bypasses
+Traefik entirely.
 
 ## Portability (running the same manifests on another cluster)
 
