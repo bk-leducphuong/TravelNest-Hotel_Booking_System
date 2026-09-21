@@ -4,9 +4,20 @@ namespace: travelnest
 resources:
   - ../../base
   - configmap.yaml
-  - secret.yaml
   - ingress.yaml
 images:
   - name: travelnest-api
     newName: docker.io/leducphuong/travelnest-api
-    newTag: latest
+    # Local dev tracks the CI-built 'develop' tag ('latest' is master-only).
+    newTag: develop
+
+generators:
+  - secret-generator.yaml
+
+patches:
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always

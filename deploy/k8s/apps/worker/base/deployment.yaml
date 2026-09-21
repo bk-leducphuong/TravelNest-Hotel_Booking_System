@@ -28,17 +28,26 @@ spec:
           ports:
             - containerPort: 4001
               name: health
+          # The worker only starts its health server after every BullMQ worker
+          # has initialised (which can take ~a minute), so a startupProbe gates
+          # liveness/readiness until then rather than letting liveness kill it
+          # mid-startup.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: health
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 60
           livenessProbe:
             httpGet:
               path: /healthz
               port: health
-            initialDelaySeconds: 30
             periodSeconds: 15
           readinessProbe:
             httpGet:
               path: /health
               port: health
-            initialDelaySeconds: 20
             periodSeconds: 10
           resources:
             requests:

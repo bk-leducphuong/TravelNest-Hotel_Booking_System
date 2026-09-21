@@ -4,4 +4,35 @@ namespace: travelnest
 resources:
   - ../../base
   - ingress.yaml
-  - secret.yaml
+
+generators:
+  - secret-generator.yaml
+
+# Import the TravelNest realm on startup so the SPA can authenticate locally.
+# Kept in the local overlay: the prod realm is managed outside this repo.
+configMapGenerator:
+  - name: keycloak-realm
+    files:
+      - travelnest-realm.json
+    options:
+      disableNameSuffixHash: true
+
+patches:
+  - target:
+      kind: Deployment
+      name: keycloak
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --import-realm
+      - op: add
+        path: /spec/template/spec/containers/0/volumeMounts
+        value:
+          - name: realm-import
+            mountPath: /opt/keycloak/data/import
+      - op: add
+        path: /spec/template/spec/volumes
+        value:
+          - name: realm-import
+            configMap:
+              name: keycloak-realm

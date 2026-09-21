@@ -25,7 +25,11 @@ if ! kubectl -n "$ARGOCD_NS" get secret sops-age >/dev/null 2>&1; then
 fi
 
 kubectl apply -f "$DIR/argocd-cm-patch.yaml"
-kubectl apply -f "$DIR/argocd-repo-server-patch.yaml"
+# argocd-repo-server-patch.yaml is a *partial* strategic-merge patch, so it must
+# be applied with `kubectl patch` — `kubectl apply` rejects it as an incomplete
+# Deployment (missing selector/image).
+kubectl -n "$ARGOCD_NS" patch deployment argocd-repo-server \
+  --type=strategic --patch-file "$DIR/argocd-repo-server-patch.yaml"
 
 echo
 echo "Waiting for the repo-server rollout..."

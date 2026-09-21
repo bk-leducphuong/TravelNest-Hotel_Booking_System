@@ -1,0 +1,88 @@
+# Local (k3d) cluster entrypoint. Rendered by bootstrap/argocd/root-application-local.yaml
+# and reconciled by the application-set controller.
+#
+# Uses the exact same mechanism as prod, plus two dev-only data stores
+# (mongodb, elasticsearch) that stand in for the managed services in prod.
+# Local dev tracks the CI-built 'develop' image tag.
+#
+# The child Applications sync concurrently (ApplicationSet does not order by
+# sync-wave); the data-layer pods just take a moment to become ready, and the
+# workloads self-heal once they are.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: travelnest-local
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: travelnest-mysql
+            path: deploy/k8s/infra/mysql/overlays/local
+            wave: "10"
+          - name: travelnest-redis
+            path: deploy/k8s/infra/redis
+            wave: "10"
+          - name: travelnest-minio
+            path: deploy/k8s/infra/minio/overlays/local
+            wave: "10"
+          - name: travelnest-nats
+            path: deploy/k8s/infra/nats
+            wave: "10"
+          - name: travelnest-keycloak
+            path: deploy/k8s/infra/keycloak/overlays/local
+            wave: "10"
+          - name: travelnest-mongodb
+            path: deploy/k8s/local/mongodb
+            wave: "10"
+          - name: travelnest-elasticsearch
+            path: deploy/k8s/local/elasticsearch
+            wave: "10"
+          - name: travelnest-analytics
+            path: deploy/k8s/apps/analytics/overlays/local
+            wave: "20"
+          - name: travelnest-media
+            path: deploy/k8s/apps/media/overlays/local
+            wave: "20"
+          - name: travelnest-notification
+            path: deploy/k8s/apps/notification/overlays/local
+            wave: "20"
+          - name: travelnest-api
+            path: deploy/k8s/apps/api/overlays/local
+            wave: "30"
+          - name: travelnest-worker
+            path: deploy/k8s/apps/worker/overlays/local
+            wave: "30"
+          - name: travelnest-frontend
+            path: deploy/k8s/apps/frontend/overlays/local
+            wave: "40"
+          - name: travelnest-admin-client
+            path: deploy/k8s/apps/admin-client/overlays/local
+            wave: "40"
+  template:
+    metadata:
+      name: "{{name}}"
+      namespace: argocd
+      labels:
+        # Consumed by the opt-in RollingSync strategy (see deploy/k8s/README.md).
+        wave: "{{wave}}"
+      annotations:
+        # Informational only: ApplicationSet-generated Applications are not
+        # ordered by sync-wave; they sync concurrently.
+        argocd.argoproj.io/sync-wave: "{{wave}}"
+    spec:
+      project: travelnest
+      source:
+        repoURL: https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System.git
+        targetRevision: develop
+        path: "{{path}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: travelnest
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ApplyOutOfSyncOnly=true

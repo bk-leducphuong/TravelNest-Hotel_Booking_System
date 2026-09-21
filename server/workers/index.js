@@ -43,7 +43,18 @@ async function startWorkers() {
   try {
     await scheduleHoldExpiryScanner();
     await scheduleBookingExpiryScanner();
-    await Promise.all(workers.map((worker) => worker.run()));
+
+    // Worker.run() is a blocking main loop that only resolves once the worker
+    // closes, so start it without awaiting and wait for readiness instead —
+    // otherwise the health server below never starts and the liveness probe
+    // restarts the pod forever.
+    workers.forEach((worker) => {
+      worker.run().catch((error) => {
+        logger.error(`Worker ${worker.name} stopped unexpectedly:`, error);
+        process.exitCode = 1;
+      });
+    });
+    await Promise.all(workers.map((worker) => worker.waitUntilReady()));
 
     logger.info('All BullMQ workers started', {
       workerCount: workers.length,

@@ -31,6 +31,11 @@ env:
   # (Settings > Variables) without touching this file.
   VITE_SERVER_HOST: ${{ vars.VITE_SERVER_HOST || 'https://api.deployserver.work' }}
   VITE_MINIO_URL: ${{ vars.VITE_MINIO_URL || 'https://storage.deployserver.work/uploads/' }}
+  # Required by client/src/services/keycloak.service.js. Without these the SPA
+  # throws on login; local builds override them with the local hostnames.
+  VITE_KEYCLOAK_URL: ${{ vars.VITE_KEYCLOAK_URL || 'https://keycloak.deployserver.work' }}
+  VITE_KEYCLOAK_REALM: ${{ vars.VITE_KEYCLOAK_REALM || 'travelnest' }}
+  VITE_KEYCLOAK_CLIENT_ID: ${{ vars.VITE_KEYCLOAK_CLIENT_ID || 'travelnest-web' }}
 
 jobs:
   lint-and-build:
@@ -168,6 +173,9 @@ jobs:
           build-args: |
             VITE_SERVER_HOST=${{ env.VITE_SERVER_HOST }}
             VITE_MINIO_URL=${{ env.VITE_MINIO_URL }}
+            VITE_KEYCLOAK_URL=${{ env.VITE_KEYCLOAK_URL }}
+            VITE_KEYCLOAK_REALM=${{ env.VITE_KEYCLOAK_REALM }}
+            VITE_KEYCLOAK_CLIENT_ID=${{ env.VITE_KEYCLOAK_CLIENT_ID }}
           cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
           platforms: linux/amd64

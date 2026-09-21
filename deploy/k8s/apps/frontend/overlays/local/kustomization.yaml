@@ -7,4 +7,15 @@ resources:
 images:
   - name: travelnest-frontend
     newName: docker.io/leducphuong/travelnest-frontend
-    newTag: latest
+    # Locally built image (deploy/scripts/build-local-frontend.sh) with the
+    # cluster URLs baked in. The CI 'develop' image cannot be used here: it
+    # bakes https://api.deployserver.work into the bundle and would call prod.
+    newTag: local
+
+patches:
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent

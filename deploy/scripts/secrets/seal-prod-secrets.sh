@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 #
-# Render every deploy/k8s/**/secret.template.yaml with values from
-# deploy/k8s/.env.prod and write a SOPS-encrypted secret.enc.yaml next to it.
+# Render every PROD secret.template.yaml with values from deploy/k8s/.env.prod
+# and write a SOPS-encrypted secret.enc.yaml next to it.
+#
+# Local templates (deploy/k8s/local/** and **/overlays/local/**) are sealed by
+# seal-local-secrets.sh from .env.local and are deliberately excluded here so
+# the two environments can never overwrite each other's encrypted files.
 #
 # The encrypted files are safe to commit (public repo). Argo CD decrypts them
 # at sync time through the KSOPS plugin + the sops-age cluster Secret.
@@ -68,15 +72,22 @@ while IFS= read -r template; do
   mapfile -t vars < <(grep -oE '\$\{[A-Za-z0-9_]+\}' "$template" | tr -d '${}' | sort -u)
 
   missing=()
+  empty=()
   for v in "${vars[@]}"; do
     if [[ -z "${!v+x}" ]]; then
       missing+=("$v")
+    elif [[ -z "${!v}" ]]; then
+      empty+=("$v")
     fi
   done
   if (( ${#missing[@]} )); then
     echo "ERROR: $template references variables missing from $ENV_FILE: ${missing[*]}" >&2
     fail=1
     continue
+  fi
+  if (( ${#empty[@]} )); then
+    echo "WARNING: $template has empty values for: ${empty[*]}" >&2
+    echo "         Kubernetes drops empty stringData keys, which makes Argo CD report the Secret as permanently OutOfSync." >&2
   fi
 
   # Substitute only the variables this template declares, so values containing
@@ -104,7 +115,7 @@ while IFS= read -r template; do
     fail=1
   fi
   rm -f "$rendered"
-done < <(find "$ROOT/deploy/k8s" -name secret.template.yaml | sort)
+done < <(find "$ROOT/deploy/k8s" -name secret.template.yaml | grep -vE "($ROOT/deploy/k8s/local/|/overlays/local/)" | sort)
 
 if (( fail )); then
   echo "One or more templates failed. Nothing was partially written for those." >&2
