@@ -7,6 +7,11 @@ const {
   setPrimaryImage,
 } = require('@controllers/v1/image.controller');
 const upload = require('@config/multer.config');
+const { authenticate } = require('@middlewares/auth.middleware');
+const {
+  authorizeImageEntityWrite,
+  authorizeImageDelete,
+} = require('@middlewares/image-auth.middleware');
 
 // Root route: /api/v1/images
 
@@ -369,7 +374,13 @@ router.get('/:entityType/:entityId', getImages);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/:entityType/:entityId', upload.single('file'), uploadImage);
+router.post(
+  '/:entityType/:entityId',
+  authenticate,
+  authorizeImageEntityWrite,
+  upload.single('file'),
+  uploadImage
+);
 
 /**
  * @swagger
@@ -475,7 +486,12 @@ router.post('/:entityType/:entityId', upload.single('file'), uploadImage);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put('/:entityType/:entityId/primary/:imageId', setPrimaryImage);
+router.put(
+  '/:entityType/:entityId/primary/:imageId',
+  authenticate,
+  authorizeImageEntityWrite,
+  setPrimaryImage
+);
 
 /**
  * @swagger
@@ -557,6 +573,6 @@ router.put('/:entityType/:entityId/primary/:imageId', setPrimaryImage);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete('/:id', deleteImage);
+router.delete('/:id', authenticate, authorizeImageDelete, deleteImage);
 
 module.exports = router;

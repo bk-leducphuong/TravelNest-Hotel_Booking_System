@@ -12,12 +12,21 @@
 - [API Reference](API-Reference)
 - [Database Schema](Database-Schema)
 
+### 🧩 Architecture & Modules
+- [Modular Monolith](Modular-Monolith)
+- [Booking Admin](Module-Booking)
+- [Review & Moderation](Module-Review)
+- [Inventory Admin](Module-Inventory)
+- [Payment & Refunds](Module-Payment)
+- [Payout Admin](Module-Payout)
+
 ### 🚀 Operations
 - [Deployment](Deployment)
 - [CI/CD](CI-CD)
 
 ### 🧪 Quality
 - [Testing](Testing)
+- [Security](Security)
 
 ### 👥 Community
 - [Contributing](Contributing)

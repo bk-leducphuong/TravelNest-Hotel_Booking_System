@@ -6,7 +6,9 @@ const { requireInternalSuperadmin } = require('@middlewares/internal-superadmin.
 
 const router = express.Router();
 
-// router.use(requireInternalSuperadmin);
+// Auth is enforced for the whole router: either a configured internal token or
+// a Keycloak bearer token with the admin role.
+router.use(requireInternalSuperadmin);
 
 /**
  * @swagger

@@ -2,6 +2,7 @@
 import { useToast } from 'vue-toastification'
 import axios from 'axios'
 import { mapGetters } from 'vuex'
+import { goToAdminApp } from '@/utils/adminApp'
 
 export default {
   setup() {
@@ -166,7 +167,7 @@ export default {
           if (response.data.success) {
             this.toast.success('Join form submitted successfully')
             await this.uploadImage(response.data.hotel_id, response.data.room_id)
-            this.$router.replace('/admin/hotels-management')
+            goToAdminApp('/')
           }
         } catch (error) {
           this.toast.error('Error submitting join form')

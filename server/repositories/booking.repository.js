@@ -71,6 +71,21 @@ class BookingRepository {
     });
   }
 
+  /**
+   * Find a completed booking by code, buyer and hotel.
+   * Used by other modules (reviews) to verify a booking represents a real stay.
+   */
+  async findCompletedByCodeAndBuyer({ bookingCode, buyerId, hotelId }) {
+    return await Bookings.findOne({
+      where: {
+        booking_code: bookingCode,
+        buyer_id: buyerId,
+        hotel_id: hotelId,
+        status: 'completed',
+      },
+    });
+  }
+
   async findExpiredPending(options = {}) {
     const { limit = 100, order = [['expires_at', 'ASC']], ...queryOptions } = options;
 
@@ -156,6 +171,12 @@ class BookingRepository {
           as: 'hotel',
           attributes: ['id', 'timezone', 'check_in_time'],
         },
+        {
+          model: BookingRooms,
+          as: 'bookingRooms',
+          attributes: ['room_id', 'quantity'],
+          required: false,
+        },
       ],
     });
   }
@@ -163,11 +184,12 @@ class BookingRepository {
   /**
    * Update booking status
    */
-  async updateStatus(bookingId, status) {
+  async updateStatus(bookingId, status, options = {}) {
     return await Bookings.update(
       { status },
       {
         where: { id: bookingId },
+        ...options,
       }
     );
   }
@@ -344,6 +366,31 @@ class BookingRepository {
       where: { id: refundId },
       ...options,
     });
+  }
+
+  /**
+   * Find a refund by the payment provider's refund ID.
+   */
+  async findRefundByProviderRefundId(providerRefundId, options = {}) {
+    return await Refunds.findOne({
+      where: { provider_refund_id: providerRefundId },
+      ...options,
+    });
+  }
+
+  /**
+   * Sum of succeeded refunds for a transaction.
+   */
+  async sumSucceededRefunds(transactionId, options = {}) {
+    const { fn, col } = require('sequelize');
+    const result = await Refunds.findOne({
+      attributes: [[fn('SUM', col('amount')), 'total']],
+      where: { transaction_id: transactionId, status: 'succeeded' },
+      raw: true,
+      ...options,
+    });
+
+    return result?.total ? parseFloat(result.total) : 0;
   }
 
   /**

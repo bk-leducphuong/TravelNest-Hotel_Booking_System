@@ -7,7 +7,6 @@ const bookingSchema = require('./booking.schema');
 const dashboardSchema = require('./dashboard.schema');
 const hotelSchema = require('./hotel.schema');
 const notificationSchema = require('./notification.schema');
-const reviewSchema = require('./review.schema');
 const roomSchema = require('./room.schema');
 
 module.exports = {
@@ -15,6 +14,5 @@ module.exports = {
   dashboardSchema,
   hotelSchema,
   notificationSchema,
-  reviewSchema,
   roomSchema,
 };

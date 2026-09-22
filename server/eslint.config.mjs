@@ -88,6 +88,27 @@ export default [
   },
 
   {
+    // Enforce module boundaries: cross-module access must go through the
+    // target module's public index.js (e.g. `@modules/booking`), never its
+    // internals. Within a module, use relative paths.
+    files: ['modules/**/*.js'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@modules/*/*'],
+              message:
+                'Cross-module access must go through the target module public index.js (e.g. @modules/booking), not its internals.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
     files: ['**/*.test.js'],
     languageOptions: {
       globals: {
