@@ -1,0 +1,27 @@
+# external-dns values for the EKS prod cluster.
+#
+# provider, txtOwnerId, domainFilters and the IRSA role ARN are injected by
+# Terraform via `set`.
+#
+# Only Services are watched: the Traefik LoadBalancer Service carries a
+# wildcard hostname annotation (see traefik/values-aws-prod.yaml), which covers
+# deployserver.work, api., admin., keycloak., storage. and argocd. in one place.
+
+sources:
+  - service
+
+policy: sync
+registry: txt
+
+serviceAccount:
+  create: true
+  name: external-dns
+  annotations: {}
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 100Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi

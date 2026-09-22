@@ -1,0 +1,31 @@
+# kube-prometheus-stack values for the EKS prod cluster.
+# Disabled by default (enable_monitoring = false). Review before enabling in
+# production: set a Grafana admin password / SSO and an Alertmanager receiver.
+
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 50Gi
+
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+
+grafana:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 10Gi

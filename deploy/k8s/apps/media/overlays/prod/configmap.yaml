@@ -6,10 +6,6 @@ data:
   HTTP_ADDR: :8082
   DB_USER: travelnest
   DB_NAME: travelnest
-  MINIO_ENDPOINT: minio:9000
-  MINIO_BUCKET: uploads
-  MINIO_USE_SSL: "false"
-  PUBLIC_OBJECT_BASE_URL: https://storage.deployserver.work/uploads
   NATS_URL: nats://nats:4222
   NATS_STREAM: TRAVELNEST_MEDIA
   LOG_LEVEL: info

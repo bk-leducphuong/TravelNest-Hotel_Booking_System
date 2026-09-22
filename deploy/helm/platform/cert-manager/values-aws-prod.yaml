@@ -1,0 +1,22 @@
+# cert-manager values for the EKS prod cluster.
+#
+# The IRSA role ARN is injected by Terraform via `set` on
+# serviceAccount.annotations.eks.amazonaws.com/role-arn.
+# The Let's Encrypt ClusterIssuer (Route53 DNS-01) is created by Terraform.
+
+installCRDs: true
+
+serviceAccount:
+  create: true
+  name: cert-manager
+  annotations: {}
+
+# Spread controller/webhook for availability on 2+ nodes.
+webhook:
+  replicaCount: 1
+
+cainjector:
+  replicaCount: 1
+
+prometheus:
+  enabled: false

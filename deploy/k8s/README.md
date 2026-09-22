@@ -262,6 +262,20 @@ new cluster:
   `bootstrap/argocd/image-updater/`) to commit `sha-*` tags. A prod cluster
   without it will stay on the tag currently in the overlay.
 
+## AWS environment (managed data)
+
+`environments/prod` targets a managed AWS data tier: **RDS MySQL**,
+**ElastiCache Redis**, and **S3** replace the in-cluster `mysql`, `redis`, and
+`minio` workloads, which are intentionally absent from the prod
+`ApplicationSet`. Connection settings travel in the SOPS-sealed prod secrets
+(see `.env.prod.example`), so the committed manifests stay environment-agnostic.
+Terraform provisions the data tier, cluster, and platform add-ons — see
+[`../terraform/README.md`](../terraform/README.md).
+
+The `keycloak` database is created by
+`infra/keycloak/overlays/prod/db-init-job.yaml` (an Argo CD PreSync hook),
+because RDS cannot run the old in-cluster MySQL init ConfigMap.
+
 ## Before First Deploy
 
 - Point `MONGODB_URI` and Elasticsearch credentials at your cloud-managed services

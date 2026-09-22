@@ -1,0 +1,13 @@
+# metrics-server values for the EKS prod cluster.
+# Required for HorizontalPodAutoscaler metrics.
+
+args:
+  - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 100Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
