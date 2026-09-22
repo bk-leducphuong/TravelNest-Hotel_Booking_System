@@ -1,0 +1,25 @@
+# cluster-autoscaler values for the EKS prod cluster.
+# autoDiscovery.clusterName, awsRegion and the IRSA role ARN are injected by
+# Terraform via `set`.
+
+cloudProvider: aws
+
+rbac:
+  serviceAccount:
+    create: true
+    name: cluster-autoscaler
+
+extraArgs:
+  balance-similar-node-groups: "true"
+  skip-nodes-with-system-pods: "false"
+  expander: least-waste
+  scale-down-delay-after-add: 10m
+  scale-down-unneeded-time: 10m
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

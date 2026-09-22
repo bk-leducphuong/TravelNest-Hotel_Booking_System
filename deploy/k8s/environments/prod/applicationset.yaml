@@ -20,15 +20,9 @@ spec:
   generators:
     - list:
         elements:
-          - name: travelnest-mysql
-            path: deploy/k8s/infra/mysql/overlays/prod
-            wave: "10"
-          - name: travelnest-redis
-            path: deploy/k8s/infra/redis
-            wave: "10"
-          - name: travelnest-minio
-            path: deploy/k8s/infra/minio/overlays/prod
-            wave: "10"
+          # MySQL, Redis and MinIO are managed AWS services in this environment
+          # (RDS / ElastiCache / S3) and are intentionally NOT deployed here.
+          # Their connection settings arrive through the sealed prod secrets.
           - name: travelnest-nats
             path: deploy/k8s/infra/nats
             wave: "10"
