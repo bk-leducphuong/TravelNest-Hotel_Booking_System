@@ -52,6 +52,9 @@ module.exports = {
     '^@routes(.*)$': '<rootDir>/routes$1',
     '^@email-templates(.*)$': '<rootDir>/email-templates$1',
     '^@public(.*)$': '<rootDir>/public$1',
+    '^@modules(.*)$': '<rootDir>/modules$1',
+    '^@platform(.*)$': '<rootDir>/platform$1',
+    '^@bff(.*)$': '<rootDir>/bff$1',
   },
 
   // timeout

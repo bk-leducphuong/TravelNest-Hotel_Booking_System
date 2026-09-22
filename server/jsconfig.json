@@ -21,7 +21,10 @@
       "@helpers/*": ["helpers/*"],
       "@infra/*": ["infra/*"],
       "@queues/*": ["queues/*"],
-      "@workers/*": ["workers/*"]
+      "@workers/*": ["workers/*"],
+      "@modules/*": ["modules/*"],
+      "@platform/*": ["platform/*"],
+      "@bff/*": ["bff/*"]
     },
     "module": "commonjs",
     "target": "ES2020",
@@ -42,7 +45,10 @@
     "rabbitmq",
     "socket",
     "database",
-    "interfaces"
+    "interfaces",
+    "modules",
+    "platform",
+    "bff"
   ],
   "exclude": ["node_modules"]
 }

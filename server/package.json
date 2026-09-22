@@ -91,7 +91,10 @@
     "@interfaces": "interfaces",
     "@adapters": "adapters",
     "@helpers": "helpers",
-    "@constants": "constants"
+    "@constants": "constants",
+    "@modules": "modules",
+    "@platform": "platform",
+    "@bff": "bff"
   },
   "author": "Le Duc Phuong",
   "license": "ISC",

@@ -36,6 +36,7 @@
   import { mapActions, mapGetters } from 'vuex';
   import { useToast } from 'vue-toastification';
   import LoginHeader from '@/components/LoginHeader.vue';
+  import { adminAppUrl } from '@/utils/adminApp';
 
   export default {
     components: {
@@ -74,7 +75,9 @@
       ...mapActions('auth', ['login', 'register', 'resetPassword', 'checkAuth']),
       redirectAuthenticatedUser() {
         if (this.isAdminAuthenticated) {
-          this.$router.replace(this.$route.query.redirect || '/admin/hotels-management');
+          window.location.replace(
+            this.$route.query.redirect || adminAppUrl('/')
+          );
           return;
         }
 

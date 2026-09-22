@@ -1,55 +1,101 @@
 import { defineStore } from "pinia";
+import * as keycloak from "~/services/keycloak";
+import { fetchAdminMe, type AdminHotel, type AdminUser } from "~/services/api/me";
 
-interface AuthUser {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-}
-
-interface Session {
-  sessionId: string;
-  user: AuthUser;
-}
+const ACTIVE_HOTEL_KEY = "travelnest.admin.activeHotelId";
 
 interface AuthState {
-  session: Session | null;
+  initialized: boolean;
+  sessionLoaded: boolean;
+  authenticated: boolean;
+  user: AdminUser | null;
+  globalRoles: string[];
+  permissions: string[];
+  hotels: AdminHotel[];
+  activeHotelId: string | null;
 }
 
 export const useAuthStore = defineStore("auth", {
   state: (): AuthState => ({
-    session: null,
+    initialized: false,
+    sessionLoaded: false,
+    authenticated: false,
+    user: null,
+    globalRoles: [],
+    permissions: [],
+    hotels: [],
+    activeHotelId: null,
   }),
 
   getters: {
-    isAuthenticated: (state) => !!state.session,
-    user: (state) => state.session?.user ?? null,
+    isAuthenticated: (state) => state.authenticated,
+    activeHotel: (state) =>
+      state.hotels.find((hotel) => hotel.id === state.activeHotelId) ?? null,
+    hasHotels: (state) => state.hotels.length > 0,
   },
 
   actions: {
-    async login(email: string, password: string) {
-      const { data } = await useApiFetch<{
-        data: { session: Session; message: string };
-      }>("/auth/sessions", {
-        method: "POST",
-        body: {
-          email,
-          password,
-          userRole: "admin",
-        },
-      });
-
-      this.session = data.value?.data.session ?? null;
+    async ensureInitialized() {
+      if (this.initialized) {
+        return;
+      }
+      await keycloak.initializeKeycloak();
+      this.initialized = true;
+      this.authenticated = keycloak.isAuthenticated();
     },
 
-    clearSession() {
-      this.session = null;
+    async loadSession() {
+      const me = await fetchAdminMe();
+
+      this.user = me.user;
+      this.globalRoles = me.globalRoles;
+      this.permissions = me.permissions;
+      this.hotels = me.hotels;
+
+      const stored =
+        typeof localStorage !== "undefined" ? localStorage.getItem(ACTIVE_HOTEL_KEY) : null;
+      const preferred =
+        stored && me.hotels.some((hotel) => hotel.id === stored)
+          ? stored
+          : (me.hotels[0]?.id ?? null);
+
+      this.activeHotelId = preferred;
+      if (preferred) {
+        this.persistActiveHotel(preferred);
+      }
+
+      this.sessionLoaded = true;
+      this.authenticated = true;
     },
 
-    async logoutAndRedirect() {
-      this.clearSession();
-      await navigateTo("/login");
+    setActiveHotel(hotelId: string) {
+      this.activeHotelId = hotelId;
+      this.persistActiveHotel(hotelId);
+    },
+
+    persistActiveHotel(hotelId: string) {
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem(ACTIVE_HOTEL_KEY, hotelId);
+      }
+    },
+
+    reset() {
+      this.sessionLoaded = false;
+      this.authenticated = false;
+      this.user = null;
+      this.globalRoles = [];
+      this.permissions = [];
+      this.hotels = [];
+      this.activeHotelId = null;
+    },
+
+    async login(redirectPath?: string) {
+      await keycloak.login({ redirectPath });
+    },
+
+    async logout() {
+      this.reset();
+      await keycloak.logout();
     },
   },
 });

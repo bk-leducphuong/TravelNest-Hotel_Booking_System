@@ -273,8 +273,70 @@ describe('Auth Middleware', () => {
         role: 'owner',
         roleId: 'role-1',
         isPrimaryOwner: true,
+        isPlatformAdmin: false,
       });
       expect(next).toHaveBeenCalled();
+    });
+
+    it('grants a hotel member a permission from their hotel role', async () => {
+      req.user = {
+        roles: [{ role: { name: 'user', permissions: [{ name: 'booking.read' }] } }],
+        hotel_roles: [
+          {
+            hotel_id: 'hotel-1',
+            role_id: 'role-manager',
+            role: {
+              name: 'manager',
+              permissions: [{ name: 'room.manage_inventory' }],
+            },
+            is_primary_owner: false,
+          },
+        ],
+      };
+      req.auth = { roles: ['user'] };
+      req.get = jest.fn((header) =>
+        header.toLowerCase() === 'x-hotel-id' ? 'hotel-1' : undefined
+      );
+
+      const middleware = requirePermission('room.manage_inventory', {
+        requireHotelContext: true,
+      });
+      await middleware(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(req.hotelContext).toMatchObject({ hotelId: 'hotel-1', role: 'manager' });
+    });
+
+    it('denies a non-member even when they hold a global permission', async () => {
+      req.user = {
+        roles: [{ role: { name: 'user', permissions: [{ name: 'booking.read' }] } }],
+        hotel_roles: [],
+      };
+      req.auth = { roles: ['user'] };
+      req.params = { hotelId: 'hotel-other' };
+
+      const middleware = requirePermission('booking.read', { requireHotelContext: true });
+      await middleware(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('allows platform support staff to act without a hotel membership', async () => {
+      req.user = {
+        roles: [{ role: { name: 'support_agent', permissions: [{ name: 'review.moderate' }] } }],
+        hotel_roles: [],
+      };
+      req.auth = { roles: ['support_agent'] };
+      req.get = jest.fn((header) =>
+        header.toLowerCase() === 'x-hotel-id' ? 'hotel-1' : undefined
+      );
+
+      const middleware = requirePermission('review.moderate', { requireHotelContext: true });
+      await middleware(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(req.hotelContext).toMatchObject({ hotelId: 'hotel-1', isPlatformAdmin: true });
     });
   });
 });

@@ -550,6 +550,7 @@ class PaymentService {
       chargeId,
       refundId,
       refundAmount,
+      currency,
       bookingCode,
       bookedRooms,
       checkInDate,
@@ -574,39 +575,131 @@ class PaymentService {
         throw new Error(`Transaction not found for charge: ${chargeId}`);
       }
 
-      // Update booking status to cancelled
-      await bookingRepository.updateByBookingCode(
-        bookingCode,
-        { status: 'cancelled' },
-        { transaction }
-      );
+      const refundCurrency = currency || dbTransaction.currency || 'USD';
+      const amount = this.fromMinorUnits(refundAmount, refundCurrency);
 
-      // Release room inventory atomically with refund
-      if (
-        bookedRooms &&
-        Array.isArray(bookedRooms) &&
-        bookedRooms.length > 0 &&
-        checkInDate &&
-        checkOutDate
-      ) {
-        await inventoryService.releaseRooms(
+      // Idempotency: refunds initiated through the admin API are recorded and
+      // succeeded before Stripe's webhook arrives. Never process twice.
+      let refundRecord = await bookingRepository.findRefundByProviderRefundId(refundId, {
+        transaction,
+      });
+
+      if (refundRecord && refundRecord.status === 'succeeded') {
+        await transaction.commit();
+        logger.info('Refund already processed (idempotent)', { refundId });
+        return { success: true, alreadyProcessed: true };
+      }
+
+      if (!refundRecord) {
+        // Refund created outside the app (e.g. Stripe dashboard).
+        refundRecord = await bookingRepository.createRefund(
           {
-            bookedRooms,
-            checkInDate,
-            checkOutDate,
+            bookingId: dbTransaction.booking_id,
+            transactionId: dbTransaction.id,
+            buyerId: dbTransaction.buyer_id,
+            hotelId: dbTransaction.hotel_id,
+            providerRefundId: refundId,
+            amount,
+            currency: refundCurrency,
+            status: 'succeeded',
+            reason: 'customer_request',
+            eligibility: 'eligible',
+            processedAt: new Date(),
+            metadata: { source: 'stripe_webhook', booking_code: bookingCode },
+          },
+          { transaction }
+        );
+      } else {
+        await bookingRepository.updateRefund(
+          refundRecord.id,
+          {
+            status: 'succeeded',
+            processedAt: new Date(),
+            failureCode: null,
+            failureMessage: null,
           },
           { transaction }
         );
       }
+
+      const totalRefunded = await bookingRepository.sumSucceededRefunds(dbTransaction.id, {
+        transaction,
+      });
+      const isFullRefund = totalRefunded >= parseFloat(dbTransaction.amount) - 0.01;
+
+      await transactionRepository.update(
+        dbTransaction.id,
+        { status: isFullRefund ? 'refunded' : 'partially_refunded' },
+        { transaction }
+      );
+
+      // Only a full refund cancels the stay and releases inventory. Partial
+      // refunds are financial adjustments and must not cancel the booking.
+      if (isFullRefund) {
+        // Skip if the booking was already cancelled (e.g. an admin force-cancel
+        // already released inventory) to avoid a double release.
+        const existingBooking = bookingCode
+          ? await bookingRepository.findByBookingCode(bookingCode, { transaction })
+          : null;
+        const alreadyCancelled =
+          existingBooking && ['cancelled', 'expired'].includes(existingBooking.status);
+
+        if (!alreadyCancelled) {
+          await bookingRepository.updateByBookingCode(
+            bookingCode,
+            { status: 'cancelled' },
+            { transaction }
+          );
+
+          if (
+            bookedRooms &&
+            Array.isArray(bookedRooms) &&
+            bookedRooms.length > 0 &&
+            checkInDate &&
+            checkOutDate
+          ) {
+            await inventoryService.releaseRooms(
+              {
+                bookedRooms,
+                checkInDate,
+                checkOutDate,
+              },
+              { transaction }
+            );
+          }
+        }
+      }
+
+      const refundData = refundRecord.toJSON ? refundRecord.toJSON() : refundRecord;
+      await ledgerService.recordRefundSucceeded(
+        {
+          refund: {
+            ...refundData,
+            amount,
+            currency: refundCurrency,
+            status: 'succeeded',
+            provider_refund_id: refundId,
+            processed_at: refundData.processed_at || new Date(),
+          },
+          transaction: dbTransaction.toJSON ? dbTransaction.toJSON() : dbTransaction,
+        },
+        { transaction }
+      );
 
       await transaction.commit();
 
       logger.info('Refund succeeded processed successfully', {
         refundId,
         bookingCode,
+        fullRefund: isFullRefund,
       });
 
-      return { success: true };
+      return {
+        success: true,
+        refundId: refundRecord.id,
+        fullRefund: isFullRefund,
+        alreadyProcessed: false,
+      };
     } catch (error) {
       await transaction.rollback();
       logger.error('Error processing refund succeeded:', error);

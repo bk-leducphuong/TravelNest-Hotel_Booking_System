@@ -1,8 +1,12 @@
 <script>
 import LoginHeader from '@/components/LoginHeader.vue'
+import { goToAdminApp } from '@/utils/adminApp'
 export default {
   components: {
     LoginHeader
+  },
+  methods: {
+    goToAdminApp
   }
 }
 </script>
@@ -29,7 +33,7 @@ export default {
           <li>Chọn một trong hai cách nhận đơn đặt: xác nhận tức thì và xem trước để duyệt</li>
           <li>Chúng tôi xử lý thanh toán thay bạn</li>
         </ul>
-        <button class="get-started-button" @click="this.$router.push('/admin/login')">
+        <button class="get-started-button" @click="goToAdminApp('/login')">
           Bắt đầu ngay
         </button>
         <div class="login-text">

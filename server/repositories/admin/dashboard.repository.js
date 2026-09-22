@@ -144,9 +144,9 @@ class AdminDashboardRepository {
               [Op.notIn]: sequelize.literal(`
                 (SELECT DISTINCT buyer_id 
                 FROM bookings 
-                WHERE hotel_id = ${hotelId}
+                WHERE hotel_id = ${sequelize.escape(hotelId)}
                 AND status IN ('confirmed', 'checked_in', 'completed')
-                AND created_at < '${startDate}')
+                AND created_at < ${sequelize.escape(startDate)})
               `),
             },
           },
