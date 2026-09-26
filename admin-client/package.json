@@ -20,25 +20,25 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@nuxt/eslint": "^1.15.2",
+    "@nuxt/eslint": "^1.17.0",
     "@nuxtjs/tailwindcss": "^6.14.0",
     "@pinia/nuxt": "^0.11.3",
     "dotenv": "^17.3.1",
-    "nuxt": "^4.3.1",
+    "nuxt": "^4.5.2",
     "pinia": "^3.0.4",
-    "vue": "^3.5.28",
+    "vue": "^3.5.43",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
     "@element-plus/nuxt": "^1.1.5",
-    "@nuxt/test-utils": "^4.0.0",
-    "@playwright/test": "^1.58.2",
-    "@vue/test-utils": "^2.4.6",
-    "element-plus": "^2.13.2",
+    "@nuxt/test-utils": "^4.3.2",
+    "@playwright/test": "^1.63.0",
+    "@vue/test-utils": "^2.5.1",
+    "element-plus": "^2.14.6",
     "eslint-config-prettier": "^10.1.5",
-    "happy-dom": "^20.7.0",
-    "playwright-core": "^1.58.2",
-    "prettier": "^3.5.3",
+    "happy-dom": "^20.14.5",
+    "playwright-core": "^1.63.0",
+    "prettier": "^3.9.9",
     "vitest": "^4.0.18",
     "vue-tsc": "^2.2.0"
   }
