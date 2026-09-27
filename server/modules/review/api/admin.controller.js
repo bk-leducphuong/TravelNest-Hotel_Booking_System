@@ -7,7 +7,10 @@ const { replyToReview, updateReply, deleteReply } = require('../application/admi
 const { getReviewSummary } = require('../application/admin/getReviewSummary');
 
 const listReviewsHandler = asyncHandler(async (req, res) => {
-  const result = await listReviews({ ...req.query });
+  const result = await listReviews({
+    ...req.query,
+    hotelId: req.hotelContext?.hotelId || req.query.hotelId,
+  });
 
   res.status(200).json({
     data: result.reviews,

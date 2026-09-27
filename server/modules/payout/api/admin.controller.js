@@ -13,7 +13,10 @@ const { createAccountLink } = require('../application/admin/createAccountLink');
 const { syncConnectedAccount } = require('../application/admin/syncConnectedAccount');
 
 const listPayoutsHandler = asyncHandler(async (req, res) => {
-  const result = await listPayouts(req.query);
+  const result = await listPayouts({
+    ...req.query,
+    hotelId: req.hotelContext?.hotelId || req.query.hotelId,
+  });
 
   res.status(200).json({
     data: result.payouts,

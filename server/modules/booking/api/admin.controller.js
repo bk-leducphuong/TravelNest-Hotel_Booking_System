@@ -7,7 +7,10 @@ const { updateBookingStatus } = require('../application/admin/updateBookingStatu
 const { forceCancelBooking } = require('../application/admin/forceCancelBooking');
 
 const listBookingsHandler = asyncHandler(async (req, res) => {
-  const result = await listBookings(req.query);
+  const result = await listBookings({
+    ...req.query,
+    hotelId: req.hotelContext?.hotelId || req.query.hotelId,
+  });
 
   res.status(200).json({
     data: result.bookings,

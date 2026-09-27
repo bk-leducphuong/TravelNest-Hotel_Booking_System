@@ -20,6 +20,7 @@
     "keycloak:migrate-users": "cross-env NODE_ENV=development node scripts/keycloak/migrate-users.js",
     "keycloak:verify-users": "cross-env NODE_ENV=development node scripts/keycloak/verify-users.js",
     "seed:user": "cross-env NODE_ENV=development node seeders/database/user.seed.js",
+    "seed:hotel_staff": "cross-env NODE_ENV=development node seeders/database/hotel_staff.seed.js",
     "seed:amenity": "cross-env NODE_ENV=development node seeders/database/amenity.seed.js",
     "seed:hotel": "cross-env NODE_ENV=development node seeders/database/hotel.seed.js",
     "seed:hotel_amenity": "cross-env NODE_ENV=development node seeders/database/hotel_amenity.seed.js",

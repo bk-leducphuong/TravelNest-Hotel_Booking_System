@@ -67,3 +67,6 @@ deploy/k8s/.age/
 deploy/k8s/.env.prod
 deploy/k8s/.env.local
 
+
+# Playwright MCP session artifacts
+.playwright-mcp/

@@ -60,6 +60,8 @@ const createApp = async () => {
     process.env.ADMIN_CLIENT_HOST,
     'http://localhost:5173',
     'http://127.0.0.1:5173',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
     'http://localhost:3000',
   ]
     .map(normalizeOrigin)
@@ -76,7 +78,13 @@ const createApp = async () => {
         return callback(new Error(`Origin ${origin} is not allowed by CORS`));
       },
       methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE', 'PATCH'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'Idempotency-Key'],
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-CSRF-Token',
+        'Idempotency-Key',
+        'X-Hotel-Id',
+      ],
       credentials: true,
     })
   );

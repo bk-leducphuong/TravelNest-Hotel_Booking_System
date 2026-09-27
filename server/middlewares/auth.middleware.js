@@ -190,11 +190,14 @@ function requirePermission(permissionName, options = {}) {
         });
       }
 
+      // Hotel-scoped authorization is governed by the hotel role only. The
+      // caller's global permissions must NOT be OR-ed in here, otherwise a
+      // `staff` member would inherit e.g. `booking.cancel` from the global
+      // `user` role. Platform staff (admin/support_agent) are handled above.
       const hotelPermissions = collectPermissionNames([{ role: hotelUser.role }]);
       const hasHotelPermission =
         hotelRoleName === ROLES.OWNER ||
-        permissionNames.some((permission) => hotelPermissions.has(permission)) ||
-        permissionNames.some((permission) => globalPermissions.has(permission));
+        permissionNames.some((permission) => hotelPermissions.has(permission));
 
       if (!hasHotelPermission) {
         return res.status(403).json({

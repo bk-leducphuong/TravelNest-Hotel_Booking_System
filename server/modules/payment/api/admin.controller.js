@@ -9,7 +9,10 @@ const { getRefund } = require('../application/admin/getRefund');
 const { retryRefund } = require('../application/admin/retryRefund');
 
 const listTransactionsHandler = asyncHandler(async (req, res) => {
-  const result = await listTransactions(req.query);
+  const result = await listTransactions({
+    ...req.query,
+    hotelId: req.hotelContext?.hotelId || req.query.hotelId,
+  });
 
   res.status(200).json({
     data: result.transactions,
@@ -39,7 +42,10 @@ const initiateRefundHandler = asyncHandler(async (req, res) => {
 });
 
 const listRefundsHandler = asyncHandler(async (req, res) => {
-  const result = await listRefunds(req.query);
+  const result = await listRefunds({
+    ...req.query,
+    hotelId: req.hotelContext?.hotelId || req.query.hotelId,
+  });
 
   res.status(200).json({
     data: result.refunds,

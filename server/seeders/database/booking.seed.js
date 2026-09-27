@@ -18,9 +18,9 @@ const { bookings, hotels, rooms, users, room_inventory } = db;
 const BOOKING_STATUSES = [
   { status: 'completed', weight: 40 },
   { status: 'confirmed', weight: 30 },
-  { status: 'checked in', weight: 5 },
+  { status: 'checked_in', weight: 5 },
   { status: 'cancelled', weight: 20 },
-  { status: 'no show', weight: 5 },
+  { status: 'no_show', weight: 5 },
 ];
 
 /**
@@ -245,10 +245,11 @@ async function seedBookings(options = {}) {
       return;
     }
 
-    // Get all customers (users with role 'customer')
+    // Get candidate buyers (active users)
     const existingCustomers = await users.findAll({
-      where: { user_role: 'customer' },
+      where: { status: 'active' },
       attributes: ['id'],
+      limit: 500,
     });
 
     if (existingCustomers.length === 0) {
@@ -331,16 +332,13 @@ async function seedBookings(options = {}) {
     // Display summary
     const totalBookings = await bookings.count();
     const bookingsByHotel = await bookings.findAll({
-      attributes: [
-        'hotel_id',
-        [sequelize.fn('COUNT', sequelize.col('booking_id')), 'booking_count'],
-      ],
+      attributes: ['hotel_id', [sequelize.fn('COUNT', sequelize.col('id')), 'booking_count']],
       group: ['hotel_id'],
       raw: true,
     });
 
     const bookingsByStatus = await bookings.findAll({
-      attributes: ['status', [sequelize.fn('COUNT', sequelize.col('booking_id')), 'count']],
+      attributes: ['status', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
       group: ['status'],
       raw: true,
     });
@@ -394,10 +392,11 @@ async function seedBookingsForHotel(hotelId, count = 30, dateRange = {}) {
       throw new Error(`No rooms found for hotel ${hotelId}`);
     }
 
-    // Get customers
+    // Get candidate buyers (active users)
     const existingCustomers = await users.findAll({
-      where: { user_role: 'customer' },
-      attributes: ['user_id'],
+      where: { status: 'active' },
+      attributes: ['id'],
+      limit: 500,
     });
 
     if (existingCustomers.length === 0) {

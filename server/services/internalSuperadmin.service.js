@@ -12,6 +12,7 @@ const runningTasks = new Map();
 const DATABASE_SEEDERS = {
   all: 'seeders/database/seed-all.js',
   user: 'seeders/database/user.seed.js',
+  hotel_staff: 'seeders/database/hotel_staff.seed.js',
   amenity: 'seeders/database/amenity.seed.js',
   hotel: 'seeders/database/hotel.seed.js',
   hotel_amenity: 'seeders/database/hotel_amenity.seed.js',
