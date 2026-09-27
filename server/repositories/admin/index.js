@@ -7,7 +7,6 @@ const adminBookingRepository = require('./booking.repository');
 const adminDashboardRepository = require('./dashboard.repository');
 const adminHotelRepository = require('./hotel.repository');
 const adminNotificationRepository = require('./notification.repository');
-const adminReviewRepository = require('./review.repository');
 const adminRoomRepository = require('./room.repository');
 
 module.exports = {
@@ -15,6 +14,5 @@ module.exports = {
   adminDashboardRepository,
   adminHotelRepository,
   adminNotificationRepository,
-  adminReviewRepository,
   adminRoomRepository,
 };

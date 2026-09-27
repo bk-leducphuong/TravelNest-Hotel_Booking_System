@@ -6,6 +6,7 @@ const {
   AuthAccounts,
   Permissions,
   RolePermissions,
+  Hotels,
   sequelize,
 } = require('@models/index.js');
 const { Op } = require('sequelize');
@@ -42,6 +43,23 @@ const USER_CONTEXT_INCLUDE = [
         model: Roles,
         as: 'role',
         attributes: ['id', 'name', 'description'],
+        include: [
+          {
+            model: Permissions,
+            as: 'permissions',
+            through: {
+              model: RolePermissions,
+              attributes: [],
+            },
+            attributes: ['id', 'name', 'description'],
+          },
+        ],
+      },
+      {
+        model: Hotels,
+        as: 'hotel',
+        attributes: ['id', 'name'],
+        required: false,
       },
     ],
   },

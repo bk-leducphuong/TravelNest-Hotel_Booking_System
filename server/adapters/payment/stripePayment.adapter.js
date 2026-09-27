@@ -135,6 +135,36 @@ class StripePaymentAdapter extends PaymentProviderInterface {
   }
 
   /**
+   * Create a refund directly against a charge.
+   * Preferred for admin-initiated refunds: no extra payment-intent lookup.
+   */
+  async refundCharge(params) {
+    const { chargeId, amount, reason, metadata } = params;
+
+    try {
+      const refund = await this.stripe.refunds.create({
+        charge: chargeId,
+        amount: amount ? Math.round(amount) : undefined,
+        reason: reason || 'requested_by_customer',
+        metadata: metadata || {},
+      });
+
+      return {
+        id: refund.id,
+        chargeId,
+        amount: refund.amount,
+        currency: refund.currency,
+        status: this.normalizeRefundStatus(refund.status),
+        provider: 'stripe',
+        raw: refund,
+      };
+    } catch (error) {
+      logger.error('Stripe charge refund failed:', error);
+      throw this.normalizeError(error);
+    }
+  }
+
+  /**
    * Verify Stripe webhook signature
    */
   verifyWebhook(payload, signature) {

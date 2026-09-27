@@ -393,12 +393,38 @@ class BookingService {
       }
     }
 
-    // Update booking status to cancelled
-    const [updatedCount] = await bookingRepository.updateStatus(bookingId, 'cancelled');
+    const releaseRooms =
+      booking.bookingRooms && booking.bookingRooms.length > 0
+        ? booking.bookingRooms.map((room) => ({
+            room_id: room.room_id,
+            roomQuantity: room.quantity || 1,
+          }))
+        : booking.room_id
+          ? [{ room_id: booking.room_id, roomQuantity: booking.quantity || 1 }]
+          : [];
 
-    if (updatedCount === 0) {
-      throw new ApiError(500, 'UPDATE_FAILED', 'Failed to cancel booking');
-    }
+    // Release inventory and cancel atomically so cancelled bookings don't leave
+    // phantom reserved rooms behind.
+    await sequelize.transaction(async (transaction) => {
+      if (releaseRooms.length > 0) {
+        await inventoryService.releaseRooms(
+          {
+            bookedRooms: releaseRooms,
+            checkInDate: booking.check_in_date,
+            checkOutDate: booking.check_out_date,
+          },
+          { transaction }
+        );
+      }
+
+      const [updatedCount] = await bookingRepository.updateStatus(bookingId, 'cancelled', {
+        transaction,
+      });
+
+      if (updatedCount === 0) {
+        throw new ApiError(500, 'UPDATE_FAILED', 'Failed to cancel booking');
+      }
+    });
 
     return {
       bookingId,

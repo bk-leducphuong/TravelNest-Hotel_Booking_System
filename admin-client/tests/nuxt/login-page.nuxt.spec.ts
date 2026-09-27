@@ -1,36 +1,30 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mountSuspended, mockNuxtImport } from "@nuxt/test-utils/runtime";
+import { flushPromises } from "@vue/test-utils";
 import type { VueWrapper } from "@vue/test-utils";
 
-const {
-  useAuthStoreMock,
-  useRouterMock,
-  elMessageErrorMock,
-  elMessageInfoMock,
-} = vi.hoisted(() => {
-  const loginSpy = vi.fn().mockResolvedValue(undefined);
-  const pushSpy = vi.fn();
-
+const { loginSpy, useAuthStoreMock } = vi.hoisted(() => {
+  const login = vi.fn().mockResolvedValue(undefined);
+  const store = {
+    login,
+    logout: vi.fn(),
+    reset: vi.fn(),
+    ensureInitialized: vi.fn().mockResolvedValue(undefined),
+    loadSession: vi.fn().mockResolvedValue(undefined),
+    isAuthenticated: false,
+    sessionLoaded: true,
+    permissions: [],
+    hotels: [],
+    user: null,
+    activeHotelId: null,
+  };
   return {
-    useAuthStoreMock: vi.fn(() => ({
-      login: loginSpy,
-    })),
-    useRouterMock: vi.fn(() => ({
-      push: pushSpy,
-      afterEach: vi.fn(),
-      beforeResolve: vi.fn(),
-    })),
-    elMessageErrorMock: vi.fn(),
-    elMessageInfoMock: vi.fn(),
+    loginSpy: login,
+    useAuthStoreMock: vi.fn(() => store),
   };
 });
 
 mockNuxtImport("useAuthStore", () => useAuthStoreMock);
-mockNuxtImport("useRouter", () => useRouterMock);
-mockNuxtImport("ElMessage", () => ({
-  error: elMessageErrorMock,
-  info: elMessageInfoMock,
-}));
 
 describe("login page (Nuxt runtime)", () => {
   let component: VueWrapper<any>;
@@ -38,30 +32,18 @@ describe("login page (Nuxt runtime)", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     const mod = await import("~/pages/login.vue");
-    component = await mountSuspended(mod.default, { route: "/login" });
+    component = await mountSuspended(mod.default as any);
   });
 
-  it("renders email and password fields", () => {
-    expect(component.html()).toContain("Email");
-    expect(component.html()).toContain("Password");
+  it("renders the TravelNest sign-in call to action", () => {
+    expect(component.text()).toContain("TravelNest Admin");
+    expect(component.text()).toContain("Sign in with TravelNest");
   });
 
-  it("calls auth.login and router.push on successful submit", async () => {
-    const authInstance = useAuthStoreMock.mock.results[0].value;
-    const routerInstance = useRouterMock.mock.results[0].value;
+  it("starts the Keycloak login flow when clicked", async () => {
+    await component.get("button").trigger("click");
+    await flushPromises();
 
-    const emailInput = component.find("input[type='email']");
-    const passwordInput = component.find("input[type='password']");
-    const submitButton = component.find("button");
-
-    await emailInput.setValue("admin@example.com");
-    await passwordInput.setValue("password123");
-    await submitButton.trigger("click");
-
-    expect(authInstance.login).toHaveBeenCalledWith(
-      "admin@example.com",
-      "password123"
-    );
-    expect(routerInstance.push).toHaveBeenCalledWith("/");
+    expect(loginSpy).toHaveBeenCalledTimes(1);
   });
 });

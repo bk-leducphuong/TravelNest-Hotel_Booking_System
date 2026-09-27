@@ -12,9 +12,18 @@ COPY client/package.json client/
 COPY admin-client/ ./admin-client/
 RUN yarn workspaces focus @travelnest/admin-client
 
-# Nuxt reads NUXT_PUBLIC_API_BASE at build time (see nuxt.config.ts).
+# Nuxt reads NUXT_PUBLIC_* at build time (see nuxt.config.ts). The admin client
+# is a static SPA, so its public runtime config is baked during the build.
 ARG NUXT_PUBLIC_API_BASE
+ARG NUXT_PUBLIC_KEYCLOAK_URL
+ARG NUXT_PUBLIC_KEYCLOAK_REALM
+ARG NUXT_PUBLIC_KEYCLOAK_CLIENT_ID
+ARG NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI
 ENV NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE}
+ENV NUXT_PUBLIC_KEYCLOAK_URL=${NUXT_PUBLIC_KEYCLOAK_URL}
+ENV NUXT_PUBLIC_KEYCLOAK_REALM=${NUXT_PUBLIC_KEYCLOAK_REALM}
+ENV NUXT_PUBLIC_KEYCLOAK_CLIENT_ID=${NUXT_PUBLIC_KEYCLOAK_CLIENT_ID}
+ENV NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI=${NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI}
 
 RUN yarn workspace @travelnest/admin-client run build
 

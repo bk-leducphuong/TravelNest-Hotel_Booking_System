@@ -27,8 +27,13 @@ concurrency:
 
 env:
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/travelnest-admin
-  # nuxt.config.ts reads NUXT_PUBLIC_API_BASE (not ..._API_URL).
+  # nuxt.config.ts reads NUXT_PUBLIC_* at build time; the admin client is a
+  # static SPA so this public config is baked into the bundle.
   NUXT_PUBLIC_API_BASE: ${{ vars.NUXT_PUBLIC_API_BASE || 'https://api.deployserver.work/api/v1' }}
+  NUXT_PUBLIC_KEYCLOAK_URL: ${{ vars.NUXT_PUBLIC_KEYCLOAK_URL || 'https://auth.deployserver.work' }}
+  NUXT_PUBLIC_KEYCLOAK_REALM: ${{ vars.NUXT_PUBLIC_KEYCLOAK_REALM || 'travelnest' }}
+  NUXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${{ vars.NUXT_PUBLIC_KEYCLOAK_CLIENT_ID || 'travelnest-admin' }}
+  NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI: ${{ vars.NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI || 'https://admin.deployserver.work/silent-check-sso.html' }}
 
 jobs:
   lint-and-build:
@@ -60,6 +65,9 @@ jobs:
 
       - name: Install dependencies
         run: yarn install --immutable
+
+      - name: Run unit and Nuxt tests
+        run: yarn workspace @travelnest/admin-client run test:ci
 
       # TODO(quality-debt): pre-existing lint/format failures; advisory so
       # deploys are not blocked. Remove `continue-on-error` once cleared.
@@ -127,6 +135,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             NUXT_PUBLIC_API_BASE=${{ env.NUXT_PUBLIC_API_BASE }}
+            NUXT_PUBLIC_KEYCLOAK_URL=${{ env.NUXT_PUBLIC_KEYCLOAK_URL }}
+            NUXT_PUBLIC_KEYCLOAK_REALM=${{ env.NUXT_PUBLIC_KEYCLOAK_REALM }}
+            NUXT_PUBLIC_KEYCLOAK_CLIENT_ID=${{ env.NUXT_PUBLIC_KEYCLOAK_CLIENT_ID }}
+            NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI=${{ env.NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI }}
           cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
           platforms: linux/amd64

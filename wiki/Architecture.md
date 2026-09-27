@@ -1,5 +1,11 @@
 # Architecture
 
+> **Backend modularisation in progress:** the API is being organised into
+> bounded-context modules under `server/modules` with a thin admin BFF. See
+> **[Modular Monolith](Modular-Monolith)** for the pattern, and the per-feature docs
+> ([Review & Moderation](Module-Review), [Inventory Admin](Module-Inventory),
+> [Payment & Refunds](Module-Payment)).
+
 ## System Overview
 
 TravelNest follows a **monorepo architecture** with a Node.js/Express backend, two Vue 3 frontends, and evolving Go microservices. The system is migrating from a monolith to a microservices architecture using NATS JetStream as the event bus.

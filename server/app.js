@@ -22,6 +22,7 @@ const natsPublisher = require('@events/nats.publisher');
 const errorMiddleware = require('@middlewares/error.middleware.js');
 const limiter = require('@middlewares/rate-limitter.middleware');
 const requestLogger = require('@middlewares/request-logger.middleware');
+const bullBoardAuth = require('@middlewares/bull-board-auth.middleware');
 
 /** ********************* Routes ************************ */
 const v1Routes = require('@routes/v1/index.js');
@@ -59,6 +60,8 @@ const createApp = async () => {
     process.env.ADMIN_CLIENT_HOST,
     'http://localhost:5173',
     'http://127.0.0.1:5173',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
     'http://localhost:3000',
   ]
     .map(normalizeOrigin)
@@ -75,7 +78,13 @@ const createApp = async () => {
         return callback(new Error(`Origin ${origin} is not allowed by CORS`));
       },
       methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE', 'PATCH'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'Idempotency-Key'],
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-CSRF-Token',
+        'Idempotency-Key',
+        'X-Hotel-Id',
+      ],
       credentials: true,
     })
   );
@@ -94,8 +103,20 @@ const createApp = async () => {
 
   app.use(cookieParser());
 
-  // Rate limiter
-  // app.use(limiter);
+  // Rate limiter (respect X-Forwarded-For only when a trusted proxy is configured)
+  if (process.env.TRUST_PROXY) {
+    const rawTrustProxy = process.env.TRUST_PROXY;
+    const parsedTrustProxy = Number(rawTrustProxy);
+    app.set(
+      'trust proxy',
+      rawTrustProxy === 'true'
+        ? 1
+        : Number.isNaN(parsedTrustProxy)
+          ? rawTrustProxy
+          : parsedTrustProxy
+    );
+  }
+  app.use(limiter);
 
   // Swagger API documentation (before routes)
   setupSwagger(app);
@@ -114,11 +135,13 @@ const createApp = async () => {
     serverAdapter,
   });
 
-  // TODO: Add authentication middleware for production
-  // app.use('/admin/queues', authMiddleware.requireAdmin, serverAdapter.getRouter());
-  app.use('/admin/queues', serverAdapter.getRouter());
+  app.use('/admin/queues', bullBoardAuth, serverAdapter.getRouter());
 
-  logger.info('Bull Board dashboard available at /admin/queues');
+  logger.info(
+    process.env.ENABLE_BULL_BOARD === 'true'
+      ? 'Bull Board dashboard enabled at /admin/queues (Basic auth required)'
+      : 'Bull Board dashboard disabled (set ENABLE_BULL_BOARD=true to enable)'
+  );
 
   // Health check routes (root-level)
   app.use('/health', healthRoutes);

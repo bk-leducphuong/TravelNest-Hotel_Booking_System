@@ -20,6 +20,7 @@ const { seedRoomInventory } = require('./room_inventory.seed');
 const { seedReviews } = require('./review.seed');
 const { seedNotifications } = require('./notification.seed');
 const { seedPermissions } = require('./permission.seed');
+const { seedHotelStaff } = require('./hotel_staff.seed');
 const { rebuildAllSnapshots } = require('./hotel_search_snapshot.seed');
 const { seedCountries } = require('./country.seed');
 const { seedCities } = require('./city.seed');
@@ -33,6 +34,7 @@ function parseArgs() {
     clearExisting: args.includes('--clear'),
     skipImages: args.includes('--skip-images'),
     skipSnapshots: args.includes('--skip-snapshots'),
+    skipKeycloak: args.includes('--skip-keycloak'),
     quick: args.includes('--quick'), // Reduced counts for faster seeding
   };
   return options;
@@ -201,6 +203,17 @@ async function seedAll() {
       await executeSeed('Rooms', seedRooms, {
         roomsPerHotel: options.quick ? { min: 3, max: 5 } : { min: 3, max: 8 },
         clearExisting: options.clearExisting,
+      })
+    );
+
+    // 9b. Seed Admin/Owner/Manager/Staff accounts + hotel memberships.
+    // Uses the oldest hotel (or SEED_HOTEL_ID) and provisions matching Keycloak
+    // accounts when Keycloak admin credentials are configured.
+    results.push(
+      await executeSeed('Admin & Hotel Staff', seedHotelStaff, {
+        hotelId: process.env.SEED_HOTEL_ID || undefined,
+        password: process.env.SEED_TEST_PASSWORD || undefined,
+        syncKeycloak: !options.skipKeycloak,
       })
     );
 

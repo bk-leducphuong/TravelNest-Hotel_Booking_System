@@ -136,7 +136,7 @@ export default {
 
   async loginAdmin(_, { redirectRoute } = {}) {
     return AuthService.loginAdmin({
-      redirectPath: redirectRoute || '/admin/hotels-management',
+      redirectPath: redirectRoute || '/',
     })
   },
 

@@ -50,6 +50,19 @@ class PaymentProviderInterface {
   }
 
   /**
+   * Create a refund directly against a charge.
+   * @param {Object} params
+   * @param {string} params.chargeId - Provider charge ID
+   * @param {number} params.amount - Amount in minor units (optional, full refund if omitted)
+   * @param {string} params.reason - Provider refund reason
+   * @param {Object} params.metadata - Additional metadata
+   * @returns {Promise<Object>} Refund details
+   */
+  async refundCharge(params) {
+    throw new Error('Method refundCharge() must be implemented');
+  }
+
+  /**
    * Verify webhook signature
    * @param {string|Buffer} payload - Raw webhook payload
    * @param {string} signature - Signature from webhook headers
