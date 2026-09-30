@@ -1,4 +1,4 @@
-const paymentService = require('@services/payment.service');
+const paymentModule = require('@modules/payment');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 const StripeWebhookAdapter = require('@adapters/webhooks/stripeWebhook.adapter');
 const webhookEventLogRepository = require('@repositories/webhook_event_log.repository');
@@ -95,7 +95,7 @@ async function handlePaymentSucceeded(event) {
     let context = webhookAdapter.extractPaymentSucceededContext(event);
     context = await webhookAdapter.enrichWithPaymentMethod(context);
 
-    const result = await paymentService.handlePaymentSucceeded(context);
+    const result = await paymentModule.handlePaymentSucceeded(context);
 
     if (!result.alreadyProcessed) {
       // Enqueue email and notification in parallel (independent queues)
@@ -131,7 +131,7 @@ async function handlePaymentFailed(event) {
     let context = webhookAdapter.extractPaymentFailedContext(event);
     context = await webhookAdapter.enrichWithPaymentMethod(context);
 
-    await paymentService.handlePaymentFailed(context);
+    await paymentModule.handlePaymentFailed(context);
 
     if (context.receiptEmail) {
       await emailPublisher.publishPaymentFailure(context, {
@@ -155,7 +155,7 @@ async function handleChargeRefunded(event) {
   try {
     const context = webhookAdapter.extractRefundContext(event);
 
-    await paymentService.handleRefundSucceeded(context);
+    await paymentModule.handleRefundSucceeded(context);
 
     await notificationPublisher.publishRefundCreated(context, {
       sourceEventId: event.id,

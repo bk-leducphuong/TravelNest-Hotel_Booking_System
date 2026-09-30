@@ -15,7 +15,6 @@
       "@services/*": ["services/*"],
       "@socket/*": ["socket/*"],
       "@utils/*": ["utils/*"],
-      "@interfaces/*": ["interfaces/*"],
       "@adapters/*": ["adapters/*"],
       "@constants/*": ["constants/*"],
       "@helpers/*": ["helpers/*"],
@@ -45,7 +44,6 @@
     "rabbitmq",
     "socket",
     "database",
-    "interfaces",
     "modules",
     "platform",
     "bff"

@@ -1,16 +1,15 @@
-const PaymentProviderInterface = require('@interfaces/paymentProvider.interface');
 const stripeConfig = require('@config/stripe.config');
 const logger = require('@config/logger.config');
 
 /**
- * Stripe Payment Adapter
+ * Stripe payment adapter.
  *
- * Implements the payment provider interface for Stripe.
- * Isolates Stripe-specific logic from business logic.
+ * Stripe is the only payment provider; this simply wraps the Stripe SDK so the
+ * SDK specifics (amount units, status strings, error shapes) don't leak into
+ * business code.
  */
-class StripePaymentAdapter extends PaymentProviderInterface {
+class StripePaymentAdapter {
   constructor() {
-    super();
     this.stripe = stripeConfig.client;
     this.webhookSecret = stripeConfig.webhookSecret;
   }
@@ -188,13 +187,6 @@ class StripePaymentAdapter extends PaymentProviderInterface {
       logger.error('Stripe webhook verification failed:', error);
       throw new Error('Webhook signature verification failed');
     }
-  }
-
-  /**
-   * Get provider name
-   */
-  getProviderName() {
-    return 'stripe';
   }
 
   /**

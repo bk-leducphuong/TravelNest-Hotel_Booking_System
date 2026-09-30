@@ -13,7 +13,7 @@ const {
   round2,
 } = require('../../domain/refund-rules');
 
-const paymentProvider = new StripePaymentAdapter();
+const stripeAdapter = new StripePaymentAdapter();
 
 /**
  * Perform a single refund attempt against Stripe and reconcile local state.
@@ -24,7 +24,7 @@ async function processRefundAttempt({ refund, transaction, reason, actorUserId, 
   const bookingCode = transaction.booking?.booking_code || null;
 
   try {
-    const stripeRefund = await paymentProvider.refundCharge({
+    const stripeRefund = await stripeAdapter.refundCharge({
       chargeId: transaction.stripe_charge_id,
       amount: toMinorUnits(refund.amount),
       reason: toStripeReason(reason),

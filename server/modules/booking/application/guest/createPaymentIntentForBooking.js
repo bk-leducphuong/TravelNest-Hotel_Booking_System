@@ -5,7 +5,7 @@ const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 
 const { toMinorUnits } = require('../../domain/money');
 
-const paymentProvider = new StripePaymentAdapter();
+const stripeAdapter = new StripePaymentAdapter();
 
 /**
  * Create (or reuse) the Stripe PaymentIntent for a pending-payment booking.
@@ -41,7 +41,7 @@ async function createPaymentIntentForBooking(bookingId, userId, data = {}) {
   }
 
   if (dbTransaction.stripe_payment_intent_id) {
-    const payment = await paymentProvider.getPayment(dbTransaction.stripe_payment_intent_id);
+    const payment = await stripeAdapter.getPayment(dbTransaction.stripe_payment_intent_id);
     return {
       clientSecret: payment.raw?.client_secret,
       paymentIntentId: payment.id,
@@ -51,7 +51,7 @@ async function createPaymentIntentForBooking(bookingId, userId, data = {}) {
     };
   }
 
-  const payment = await paymentProvider.createPayment({
+  const payment = await stripeAdapter.createPayment({
     amount: toMinorUnits(bookingData.total_price, 'USD'),
     currency: 'USD',
     paymentMethodId: data.paymentMethodId,

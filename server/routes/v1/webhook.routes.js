@@ -8,10 +8,4 @@ const { handleStripeWebhook } = require('@controllers/v1/stripeWebhook.controlle
  */
 router.post('/stripe', handleStripeWebhook);
 
-/**
- * POST /api/webhooks/paypal
- * PayPal webhook endpoint
- */
-// router.post('/paypal', handlePayPalWebhook);
-
 module.exports = router;

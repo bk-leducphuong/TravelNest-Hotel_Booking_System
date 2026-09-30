@@ -1,4 +1,4 @@
-const paymentService = require('@services/payment.service');
+const paymentModule = require('@modules/payment');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 
@@ -19,7 +19,7 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { paymentMethodId, currency } = req.body;
 
-  const result = await paymentService.createPaymentIntent(userId, {
+  const result = await paymentModule.createPaymentIntent(userId, {
     paymentMethodId,
     currency,
   });
@@ -37,7 +37,7 @@ const getUserPayments = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { page, limit } = req.query;
 
-  const result = await paymentService.getUserPayments(userId, {
+  const result = await paymentModule.getUserPayments(userId, {
     page: page ? parseInt(page, 10) : 1,
     limit: limit ? parseInt(limit, 10) : 20,
   });
@@ -60,7 +60,7 @@ const getPaymentByBookingId = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { bookingId } = req.params;
 
-  const payment = await paymentService.getPaymentByBookingId(bookingId, userId);
+  const payment = await paymentModule.getPaymentByBookingId(bookingId, userId);
 
   res.status(200).json({
     data: payment,
@@ -75,7 +75,7 @@ const getPaymentByTransactionId = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { transactionId } = req.params;
 
-  const payment = await paymentService.getPaymentByTransactionId(
+  const payment = await paymentModule.getPaymentByTransactionId(
     parseInt(transactionId, 10),
     userId
   );

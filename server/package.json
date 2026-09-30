@@ -93,7 +93,6 @@
     "@events": "events",
     "@socket": "socket",
     "@utils": "utils",
-    "@interfaces": "interfaces",
     "@adapters": "adapters",
     "@helpers": "helpers",
     "@constants": "constants",

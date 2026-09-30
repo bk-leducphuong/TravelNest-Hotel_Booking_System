@@ -24,7 +24,7 @@ module.exports = function (sequelize, DataTypes) {
       provider: {
         type: DataTypes.STRING(50),
         allowNull: false,
-        comment: 'Payment provider (stripe, paypal, etc.)',
+        comment: 'Payment provider (stripe)',
       },
       payload: {
         type: DataTypes.TEXT('long'),

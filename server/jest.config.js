@@ -44,7 +44,6 @@ module.exports = {
     '^@validators(.*)$': '<rootDir>/validators$1',
     '^@constants(.*)$': '<rootDir>/constants$1',
     '^@adapters(.*)$': '<rootDir>/adapters$1',
-    '^@interfaces(.*)$': '<rootDir>/interfaces$1',
     '^@queues(.*)$': '<rootDir>/queues$1',
     '^@workers(.*)$': '<rootDir>/workers$1',
     '^@events(.*)$': '<rootDir>/events$1',
