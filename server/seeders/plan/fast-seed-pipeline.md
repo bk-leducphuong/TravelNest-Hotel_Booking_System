@@ -587,3 +587,10 @@ legacy run** went into two tables. `seed:all` (fast) does the same work in
 
 Adding images on top of the fast run: 183–198 s for ~75k image rows / 302k
 objects, so a full `seed:all --quick` is ~250 s versus ~18 minutes for legacy.
+
+Final integrated run after folding city images + Elasticsearch into `seed:all`
+(`--quick --skip-keycloak`, ES down): **23/23 steps, 266.73 s**. Images were
+75,474 rows (15,120 hotel + 60,291 room + 63 city) in 197.95 s, `image_variants`
+exactly 1:1, zero entities with a wrong number of active primaries, zero cities
+without an image, zero snapshots missing `primary_image_url`, and the
+Elasticsearch step skipped with its warning as designed.
