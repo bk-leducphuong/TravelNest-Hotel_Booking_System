@@ -13,7 +13,6 @@
     "services/health.service.js": 444,
     "services/hotel.service.js": 554,
     "services/internalSuperadmin.service.js": 415,
-    "services/inventory.service.js": 415,
     "services/notification.service.js": 466,
     "services/payment.service.js": 782,
     "services/search.service.js": 946,

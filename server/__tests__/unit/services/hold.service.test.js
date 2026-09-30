@@ -6,7 +6,7 @@ jest.mock('@repositories/hold.repository', () => ({
   updateStatus: jest.fn(),
   findExpiredActive: jest.fn(),
 }));
-jest.mock('@services/inventory.service', () => ({
+jest.mock('@modules/inventory', () => ({
   checkAvailabilityForHold: jest.fn(),
   holdRooms: jest.fn(),
   releaseHoldRooms: jest.fn(),
@@ -31,7 +31,7 @@ jest.mock('@config/database.config', () => ({
 
 const holdService = require('@services/hold.service');
 const holdRepository = require('@repositories/hold.repository');
-const inventoryService = require('@services/inventory.service');
+const inventoryService = require('@modules/inventory');
 const roomInventoryRepository = require('@repositories/room_inventory.repository');
 const sequelize = require('@config/database.config');
 

@@ -3,7 +3,7 @@ const bookingRepository = require('@repositories/booking.repository');
 const transactionRepository = require('@repositories/transaction.repository');
 const holdRepository = require('@repositories/hold.repository');
 const holdService = require('@services/hold.service');
-const inventoryService = require('@services/inventory.service');
+const inventoryModule = require('@modules/inventory');
 const ApiError = require('@utils/ApiError');
 const logger = require('@config/logger.config');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
@@ -102,7 +102,7 @@ class PaymentService {
       }));
 
       // 3. Reserve rooms for the booking
-      await inventoryService.reserveRooms(
+      await inventoryModule.reserveRooms(
         {
           bookedRooms,
           checkInDate,
@@ -658,7 +658,7 @@ class PaymentService {
             checkInDate &&
             checkOutDate
           ) {
-            await inventoryService.releaseRooms(
+            await inventoryModule.releaseRooms(
               {
                 bookedRooms,
                 checkInDate,

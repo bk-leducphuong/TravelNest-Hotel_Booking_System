@@ -1,5 +1,5 @@
 const holdRepository = require('@repositories/hold.repository');
-const inventoryService = require('@services/inventory.service');
+const inventoryModule = require('@modules/inventory');
 const sequelize = require('@config/database.config');
 const { Transaction } = require('sequelize');
 const logger = require('@config/logger.config');
@@ -52,7 +52,7 @@ class HoldService {
     //   );
 
     // Check room availability (total_rooms - booked_rooms - held_rooms >= quantity)
-    const available = await inventoryService.checkAvailabilityForHold({
+    const available = await inventoryModule.checkAvailabilityForHold({
       rooms,
       checkInDate,
       checkOutDate,
@@ -103,7 +103,7 @@ class HoldService {
         { transaction }
       );
 
-      await inventoryService.holdRooms(
+      await inventoryModule.holdRooms(
         {
           rooms: holdRooms.map((hr) => ({
             roomId: hr.room_id,
@@ -224,7 +224,7 @@ class HoldService {
     const transaction = options.transaction || (await sequelize.transaction());
 
     try {
-      await inventoryService.releaseHoldRooms(
+      await inventoryModule.releaseHoldRooms(
         {
           rooms: (hold.holdRooms || []).map((hr) => ({
             roomId: hr.room_id,
@@ -281,7 +281,7 @@ class HoldService {
         return null;
       }
 
-      await inventoryService.releaseHoldRooms(
+      await inventoryModule.releaseHoldRooms(
         {
           rooms: (hold.holdRooms || []).map((hr) => ({
             roomId: hr.room_id,
