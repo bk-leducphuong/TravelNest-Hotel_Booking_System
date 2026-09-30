@@ -1,4 +1,4 @@
-const healthService = require('@services/health.service');
+const health = require('@platform/health');
 const logger = require('@config/logger.config');
 
 /**
@@ -12,7 +12,7 @@ class HealthController {
    */
   async getHealth(req, res, next) {
     try {
-      const healthStatus = await healthService.getHealthStatus();
+      const healthStatus = await health.getHealthStatus();
 
       // Set appropriate HTTP status code based on health
       const statusCode = healthStatus.status === 'healthy' ? 200 : 503;
@@ -34,7 +34,7 @@ class HealthController {
    */
   async getLiveness(req, res, next) {
     try {
-      const liveness = healthService.getLiveness();
+      const liveness = health.getLiveness();
       res.status(200).json({
         success: true,
         data: liveness,
@@ -52,7 +52,7 @@ class HealthController {
    */
   async getReadiness(req, res, next) {
     try {
-      const readiness = await healthService.getReadiness();
+      const readiness = await health.getReadiness();
 
       // Set appropriate HTTP status code based on readiness
       const statusCode = readiness.status === 'ready' ? 200 : 503;

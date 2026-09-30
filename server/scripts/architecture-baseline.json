@@ -3,14 +3,13 @@
   "layerLeaks": {
     "controllers -> @models|@repositories": 1,
     "services -> @models": 1,
-    "services -> @config/database.config": 3
+    "services -> @config/database.config": 2
   },
   "godFiles": {
     "repositories/booking.repository.js": 511,
     "repositories/hotel.repository.js": 454,
     "repositories/room_inventory.repository.js": 522,
     "repositories/transaction.repository.js": 406,
-    "services/health.service.js": 444,
     "services/internalSuperadmin.service.js": 415,
     "socket/controllers/admin.controller.js": 419,
     "socket/controllers/property.controller.js": 447
