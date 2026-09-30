@@ -10,7 +10,6 @@
     "repositories/hotel.repository.js": 454,
     "repositories/room_inventory.repository.js": 522,
     "repositories/transaction.repository.js": 406,
-    "services/internalSuperadmin.service.js": 415,
     "socket/controllers/admin.controller.js": 419,
     "socket/controllers/property.controller.js": 447
   }

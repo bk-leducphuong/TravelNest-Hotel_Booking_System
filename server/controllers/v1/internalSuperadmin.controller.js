@@ -1,15 +1,15 @@
-const internalSuperadminService = require('@services/internalSuperadmin.service');
+const internal = require('@platform/internal');
 const notificationTestService = require('@services/notificationTest.service');
 
 async function listTasks(req, res) {
   res.status(200).json({
     success: true,
-    data: internalSuperadminService.listTasks(),
+    data: internal.listTasks(),
   });
 }
 
 async function initDatabase(req, res) {
-  const result = await internalSuperadminService.initDatabase(req.body);
+  const result = await internal.initDatabase(req.body);
 
   res.status(200).json({
     success: true,
@@ -18,7 +18,7 @@ async function initDatabase(req, res) {
 }
 
 async function runDatabaseSeeder(req, res) {
-  const result = await internalSuperadminService.runDatabaseSeeder(req.params.seeder, req.body);
+  const result = await internal.runDatabaseSeeder(req.params.seeder, req.body);
 
   res.status(200).json({
     success: true,
@@ -27,7 +27,7 @@ async function runDatabaseSeeder(req, res) {
 }
 
 async function runImageSeeder(req, res) {
-  const result = await internalSuperadminService.runImageSeeder(req.body);
+  const result = await internal.runImageSeeder(req.body);
 
   res.status(200).json({
     success: true,
@@ -36,7 +36,7 @@ async function runImageSeeder(req, res) {
 }
 
 async function runCityImageSeeder(req, res) {
-  const result = await internalSuperadminService.runCityImageSeeder(req.body);
+  const result = await internal.runCityImageSeeder(req.body);
 
   res.status(200).json({
     success: true,
@@ -45,7 +45,7 @@ async function runCityImageSeeder(req, res) {
 }
 
 async function setupElasticsearch(req, res) {
-  const result = await internalSuperadminService.setupElasticsearch(req.params.target, req.body);
+  const result = await internal.setupElasticsearch(req.params.target, req.body);
 
   res.status(200).json({
     success: true,
@@ -54,10 +54,7 @@ async function setupElasticsearch(req, res) {
 }
 
 async function runElasticsearchSeeder(req, res) {
-  const result = await internalSuperadminService.runElasticsearchSeeder(
-    req.params.target,
-    req.body
-  );
+  const result = await internal.runElasticsearchSeeder(req.params.target, req.body);
 
   res.status(200).json({
     success: true,
@@ -66,7 +63,7 @@ async function runElasticsearchSeeder(req, res) {
 }
 
 async function runMongodbSeeder(req, res) {
-  const result = await internalSuperadminService.runMongodbSeeder(req.params.target, req.body);
+  const result = await internal.runMongodbSeeder(req.params.target, req.body);
 
   res.status(200).json({
     success: true,
