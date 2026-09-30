@@ -2,7 +2,7 @@ require('../register-aliases');
 const { Worker } = require('bullmq');
 const config = require('@config/bullmq.config');
 const logger = require('@config/logger.config');
-const bookingService = require('@services/booking.service');
+const bookingModule = require('@modules/booking');
 const notificationPublisher = require('@events/notification.publisher');
 
 const queueName = 'bookingExpiry';
@@ -13,7 +13,7 @@ async function processBookingExpiryJob(job) {
   }
 
   const limit = parseInt(process.env.BOOKING_EXPIRY_SCAN_LIMIT || '100', 10);
-  const result = await bookingService.expirePendingBookings({ limit });
+  const result = await bookingModule.expirePendingBookings({ limit });
 
   await Promise.all(
     result.expiredBookings.map((booking) => notificationPublisher.publishBookingExpired(booking))

@@ -6,6 +6,11 @@ const { getUserBookings } = require('./application/guest/getUserBookings');
 const { getBookingById } = require('./application/guest/getBookingById');
 const { getBookingByCode } = require('./application/guest/getBookingByCode');
 const { cancelBooking } = require('./application/guest/cancelBooking');
+const { createBookingFromHold } = require('./application/guest/createBookingFromHold');
+const {
+  createPaymentIntentForBooking,
+} = require('./application/guest/createPaymentIntentForBooking');
+const { expirePendingBookings } = require('./application/expiry/expirePendingBookings');
 
 // Register once per process (guarded).
 registerBookingSubscribers();
@@ -39,4 +44,9 @@ module.exports = {
   getBookingById,
   getBookingByCode,
   cancelBooking,
+  createBookingFromHold,
+  createPaymentIntentForBooking,
+
+  // Background expiry (worker entrypoint).
+  expirePendingBookings,
 };

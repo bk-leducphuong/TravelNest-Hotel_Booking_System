@@ -25,4 +25,28 @@ function formatRoom(room) {
   };
 }
 
-module.exports = { formatHotelForLegacyClients, formatRoom };
+/**
+ * Shape the booking-creation response. Shared by the create use-case and the
+ * idempotent replay path, so the two can never drift.
+ */
+function formatBookingResponse({ booking, transaction, quote }) {
+  return {
+    bookingId: booking.id,
+    bookingCode: booking.booking_code,
+    status: booking.status,
+    paymentDueAt: booking.payment_due_at,
+    transactionId: transaction.id,
+    price: {
+      subtotal: quote.subtotal,
+      taxAmount: quote.taxAmount,
+      serviceFeeAmount: quote.serviceFeeAmount,
+      platformCommissionAmount: quote.platformCommissionAmount,
+      totalPrice: quote.totalPrice,
+      currency: quote.currency,
+    },
+    rooms: quote.rooms,
+    cancellationPolicy: quote.cancellationPolicy,
+  };
+}
+
+module.exports = { formatHotelForLegacyClients, formatRoom, formatBookingResponse };

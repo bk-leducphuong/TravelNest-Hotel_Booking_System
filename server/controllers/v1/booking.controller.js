@@ -1,6 +1,3 @@
-const bookingService = require('@services/booking.service');
-// Guest reads have been migrated into the Booking module; writes (create,
-// payment intent, cancel) still live in the legacy service until the next slice.
 const bookingModule = require('@modules/booking');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
@@ -39,7 +36,7 @@ const createBooking = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const idempotencyKey = req.headers['idempotency-key'];
 
-  const booking = await bookingService.createBookingFromHold(userId, req.body, idempotencyKey);
+  const booking = await bookingModule.createBookingFromHold(userId, req.body, idempotencyKey);
 
   res.status(201).json({
     data: booking,
@@ -54,7 +51,7 @@ const createBookingPaymentIntent = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { bookingId } = req.params;
 
-  const result = await bookingService.createPaymentIntentForBooking(bookingId, userId, req.body);
+  const result = await bookingModule.createPaymentIntentForBooking(bookingId, userId, req.body);
 
   res.status(201).json({
     data: result,
