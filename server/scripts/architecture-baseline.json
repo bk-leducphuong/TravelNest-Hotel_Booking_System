@@ -6,7 +6,6 @@
     "services -> @config/database.config": 2
   },
   "godFiles": {
-    "repositories/booking.repository.js": 511,
     "repositories/hotel.repository.js": 454,
     "repositories/transaction.repository.js": 406,
     "socket/controllers/admin.controller.js": 419,
