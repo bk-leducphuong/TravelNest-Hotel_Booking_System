@@ -8,6 +8,20 @@ import boundariesPlugin from 'eslint-plugin-boundaries';
 import globals from 'globals';
 
 export default [
+  {
+    // `.eslintignore` is no longer read by ESLint 9, so keep the intended
+    // ignores (plus local service data dirs) here.
+    ignores: [
+      'node_modules/**',
+      'coverage/**',
+      'dist/**',
+      'logs/**',
+      'infra/minio-data/**',
+      'infra/minio-data-test/**',
+      'infra/elasticsearch/data/**',
+    ],
+  },
+
   js.configs.recommended,
 
   {
