@@ -21,7 +21,7 @@ function parsePositiveInt(value, flag) {
 }
 
 function parseArgs(argv) {
-  const options = { help: false, replace: true };
+  const options = { help: false, replace: true, entityTypes: ['hotel', 'room', 'city'] };
 
   for (const arg of argv) {
     if (arg === '--help' || arg === '-h') {
@@ -30,6 +30,10 @@ function parseArgs(argv) {
       options.entityTypes = ['hotel'];
     } else if (arg === '--rooms-only') {
       options.entityTypes = ['room'];
+    } else if (arg === '--cities-only') {
+      options.entityTypes = ['city'];
+    } else if (arg === '--no-cities') {
+      options.entityTypes = ['hotel', 'room'];
     } else if (arg === '--no-replace') {
       options.replace = false;
     } else if (arg.startsWith('--limit=')) {
@@ -58,6 +62,8 @@ Usage:
 Options:
   --hotels-only          Only seed hotel images
   --rooms-only           Only seed room images
+  --cities-only          Only seed city images
+  --no-cities            Skip city images (hotels + rooms only)
   --limit=N              Max entities per type (smoke testing)
   --concurrency=N        Parallel MinIO PUTs (default: 32)
   --entity-batch=N       Entities processed per batch (default: 200)

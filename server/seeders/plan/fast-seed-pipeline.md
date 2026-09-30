@@ -493,3 +493,97 @@ because `images/rooms/room_3.avif` is ~980 KB and is uploaded to every room
 GB. Options if that matters: shrink the room source fixtures, add a
 max-bytes downscale/skip rule, or seed hotel images only.
 
+
+## 15. Seeder coverage audit — is `seed:all` self-sufficient?
+
+Every seeding entry point in the repo was reviewed against `seed:all`:
+
+| Seeder | npm script | In `seed:all`? |
+|--------|-----------|---------------|
+| `database/seed-all.js` | `seed:all` | — (the orchestrator) |
+| `seed-all.legacy.js` | `seed:all:legacy` | reference baseline |
+| `database/seed-images.js` | `seed:images` | ✅ step *Images* (now hotel + room + **city**) |
+| `mongodb/search_logs.seed.js` | `seed:search_logs` | ✅ step *MongoDB Search Logs* |
+| `mongodb/hotel_view_events.seed.js` | `seed:hotel_view_events` | ✅ step *MongoDB Hotel View Events* |
+| `elasticsearch/destinations_index.seed.js` | `es:seed-destinations` | ✅ step *Elasticsearch Search Indices* (new) |
+| `elasticsearch/hotels_index.seed.js` | `es:seed-hotels` | ✅ step *Elasticsearch Search Indices* (new) |
+| `database/city_images.seed.js` | `seed:city_images` | ✅ superseded — city images now go through the fast direct-MinIO path |
+| `scripts/backfill-snapshot-primary-images.js` | `seed:snapshot-images` | ❌ deliberately not needed (see below) |
+| reference seeders (countries, cities, destinations, users, amenities, hotel_staff, permissions) | `seed:*` | ✅ steps *Countries*, *Cities*, *Destinations*, *Users*, *Amenities*, *Admin & Hotel Staff*, *Permissions* |
+
+### 15.1 City images folded in
+
+`seed:city_images` uploaded city photos through the HTTP API → media service →
+MinIO pipeline, so it required a running server. The fast image runner now
+handles the `city` entity type:
+
+* source fixtures: `seeders/database/images/city/vietnam/*.avif` (62 files)
+* one **primary** image per city (not an album), matched by city name first
+  (`Hà Nội.avif` → city `Hà Nội`) with a round-robin fallback for the one
+  unmatched city
+* a real WebP variant is written alongside each original, exactly like
+  hotels/rooms
+
+`selectAlbum()` in `seeders/lib/images.js` decides between whole-album cycling
+(hotels/rooms) and name-matched single images (cities).
+
+### 15.2 Elasticsearch indices folded in (optional, best effort)
+
+`seed:all` now also syncs the `destinations` and `hotels` search indices, so
+search works after a single command. `seeders/lib/elasticsearch.js`:
+
+1. `ping()` the client — **if Elasticsearch is not reachable the step logs a
+   warning and is marked skipped**, it does not fail the seed, and prints the
+   `npm run es:seed-*` fallback. A developer without ES running is never blocked.
+2. Create `hotels` / `destinations` from `infra/elasticsearch/mapping/*.json`
+   when they do not exist, then run the two existing seeders.
+
+Indices are created with the shared client instead of
+`infra/elasticsearch/setup-*.js` because those scripts call `process.exit()` and
+cannot be required in-process.
+
+`--skip-elasticsearch` forces the step off.
+
+### 15.3 `seed:snapshot-images` is now redundant
+
+`scripts/backfill-snapshot-primary-images.js` exists to fill
+`hotel_search_snapshots.primary_image_url`. The set-based snapshot rebuild in
+`seeders/lib/snapshots.js` derives that column from the `images` table at build
+time, so the backfill has nothing left to do (verified: 5,040/5,040 snapshots
+have `primary_image_url`). It is intentionally **not** called from `seed:all`;
+keep the script for repairing older/partial databases.
+
+## 16. Benchmark: legacy vs fast (`--quick`, no images, no Keycloak)
+
+Both runs used identical reduced counts against isolated throwaway databases
+(`travelnest_seedtest` vs `travelnest_seedtest_legacy`).
+
+| Step | Legacy | Fast | Speed-up |
+|------|-------:|-----:|---------:|
+| Countries | 0.01s | 0.03s | — |
+| Cities | 0.38s | 0.54s | — |
+| Destinations | 0.29s | 0.53s | — |
+| Users | 2.43s | 2.77s | — |
+| Amenities | 0.29s | 0.29s | — |
+| Hotels | 0.59s | 0.72s | — |
+| **Hotel Amenities** | **247.25s** | **7.70s** | **32×** |
+| Hotel Policies | 1.83s | 0.71s | 2.6× |
+| Hotel Cancellation Rules | 0.39s | 0.28s | 1.4× |
+| Nearby Places | 8.49s | 4.50s | 1.9× |
+| Rooms | 1.00s | 1.50s | — |
+| **Room Amenities** | **717.23s** | **7.12s** | **101×** |
+| Room Inventory | 29.22s | 20.93s | 1.4× |
+| Bookings | — (seeded by room-inventory step) | 6.74s | — |
+| Reviews | 4.88s | 2.67s | 1.8× |
+| Notifications | 11.97s | 0.30s | 40× |
+| Permissions | 2.26s | 2.11s | — |
+| Hotel Search Snapshots | 53.05s | 3.65s | 15× |
+| **Total** | **1082.00s (18m 02s)** | **80.22s** | **13.5×** |
+
+The two legacy killers were the row-by-row amenity inserts (`buildBulkCreate`
+`include`s inside a loop): 964 s of the 1082 s total, i.e. **89% of the whole
+legacy run** went into two tables. `seed:all` (fast) does the same work in
+~15 s.
+
+Adding images on top of the fast run: 183–198 s for ~75k image rows / 302k
+objects, so a full `seed:all --quick` is ~250 s versus ~18 minutes for legacy.

@@ -18,6 +18,7 @@ const {
 } = require('./minio-objects');
 const { insertRows, streamQuery } = require('./bulk');
 const {
+  CITY_DIR,
   HOTEL_DIR,
   IMAGE_COLUMNS,
   ROOM_DIR,
@@ -35,14 +36,50 @@ const ENTITY_TYPES = {
     dir: ROOM_DIR,
     sql: "SELECT `id` FROM `rooms` WHERE `status` = 'active' ORDER BY `id` ASC",
   },
+  city: {
+    dir: CITY_DIR,
+    sql: 'SELECT `id`, `name` FROM `cities` ORDER BY `name` ASC',
+  },
 };
+
+/**
+ * Pick the album of source images for one entity.
+ *
+ * Hotels/rooms cycle through whole albums. Cities get a single primary image,
+ * matched by city name when a file of that name exists, otherwise round-robin.
+ */
+function selectAlbum(entityType, albums, index, entity) {
+  if (albums.length === 0) {
+    return [];
+  }
+
+  if (entityType === 'city') {
+    const pool = albums[0] || [];
+    if (pool.length === 0) {
+      return [];
+    }
+    const wanted = String(entity.name || '')
+      .trim()
+      .toLowerCase();
+    const match = pool.find(
+      (source) =>
+        source.filename
+          .replace(/\.[^.]+$/, '')
+          .trim()
+          .toLowerCase() === wanted
+    );
+    return [match || pool[index % pool.length]];
+  }
+
+  return albums[index % albums.length];
+}
 
 const CLEANUP_BATCH = 1000;
 const DEFAULT_OPTIONS = {
   concurrency: 32,
   entityBatch: 200,
   batchSize: 2000,
-  entityTypes: ['hotel', 'room'],
+  entityTypes: ['hotel', 'room', 'city'],
   limit: null,
   replace: true,
 };
@@ -174,8 +211,11 @@ async function runImages({ writer, reader, options = {} }) {
       const variantRows = [];
 
       for (const entity of entities) {
-        const album = albums[albumIndex % albums.length];
+        const album = selectAlbum(entityType, albums, albumIndex, entity);
         albumIndex += 1;
+        if (album.length === 0) {
+          continue;
+        }
 
         const built = buildRows({ entityType, entityId: entity.id, album, bucketName });
         for (const upload of built.uploads) {

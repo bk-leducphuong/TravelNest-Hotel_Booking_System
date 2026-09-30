@@ -16,6 +16,7 @@ const { uuidv7 } = require('uuidv7');
 
 const HOTEL_DIR = path.join(__dirname, '..', 'database', 'images', 'hotels');
 const ROOM_DIR = path.join(__dirname, '..', 'database', 'images', 'rooms');
+const CITY_DIR = path.join(__dirname, '..', 'database', 'images', 'city', 'vietnam');
 
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif']);
 const MIME_BY_EXT = {
@@ -252,6 +253,7 @@ function buildRows({ entityType, entityId, album, bucketName, now = new Date() }
 }
 
 module.exports = {
+  CITY_DIR,
   HOTEL_DIR,
   IMAGE_COLUMNS,
   ROOM_DIR,

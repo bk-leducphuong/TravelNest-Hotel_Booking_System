@@ -19,6 +19,7 @@ const sequelize = require('../../config/database.config');
 const db = require('../../models');
 const { runImages } = require('../lib/images');
 const { resetTmpDir } = require('../lib/parent-index');
+const elasticsearch = require('../lib/elasticsearch');
 const pipeline = require('../lib/pipeline');
 
 // Legacy seeders (reference / small tables)
@@ -45,6 +46,7 @@ function parseArgs() {
       Number.isInteger(imagesConcurrency) && imagesConcurrency > 0 ? imagesConcurrency : undefined,
     skipImages: args.includes('--skip-images'),
     skipMongo: args.includes('--skip-mongo'),
+    skipElasticsearch: args.includes('--skip-elasticsearch'),
     skipSnapshots: args.includes('--skip-snapshots'),
     skipKeycloak: args.includes('--skip-keycloak'),
     keepIndexes: args.includes('--keep-indexes'),
@@ -305,6 +307,37 @@ async function seedAll() {
       console.log('\n⚠️  Skipping Hotel Search Snapshots as per --skip-snapshots flag');
       results.push({ name: 'Hotel Search Snapshots', success: true, duration: 0, skipped: true });
     }
+
+    // ── Elasticsearch search indices (optional, best effort) ───────────────
+    if (options.skipElasticsearch) {
+      console.log('\n⚠️  Skipping Elasticsearch indexing as per --skip-elasticsearch flag');
+      results.push({
+        name: 'Elasticsearch Search Indices',
+        success: true,
+        duration: 0,
+        skipped: true,
+      });
+    } else if (!(await elasticsearch.isAvailable())) {
+      console.log(
+        '\n⚠️  Elasticsearch is not reachable — skipping search index seeding.\n' +
+          '    Start it (docker compose up -d elasticsearch) then run:\n' +
+          '      npm run es:seed-destinations && npm run es:seed-hotels'
+      );
+      results.push({
+        name: 'Elasticsearch Search Indices',
+        success: true,
+        duration: 0,
+        skipped: true,
+      });
+    } else {
+      results.push(
+        await executeSeed(
+          'Elasticsearch Search Indices',
+          () => elasticsearch.seedSearchIndices({ batchSize: options.quick ? 200 : 500 }),
+          {}
+        )
+      );
+    }
   } catch (error) {
     console.error('\n❌ Fatal error during seeding:', error);
     if (fastCtx) {
@@ -317,6 +350,7 @@ async function seedAll() {
   if (fastCtx) {
     await fastCtx.close();
   }
+  await elasticsearch.close();
   await db.sequelize.close();
   console.log('\n✅ Database connection closed');
 
