@@ -119,7 +119,14 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./mysql-init:/docker-entrypoint-initdb.d:ro
-    command: --default-authentication-plugin=mysql_native_password
+    # Dev-only tuning for the fast seed pipeline (LOAD DATA LOCAL INFILE).
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --local-infile=1
+      - --max-allowed-packet=1G
+      - --innodb-flush-log-at-trx-commit=2
+      - --innodb-log-file-size=512M
+      - --innodb-buffer-pool-size=1G
     networks:
       - travelnest-net
     healthcheck:
