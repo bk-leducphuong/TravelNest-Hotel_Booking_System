@@ -14,7 +14,6 @@
     "services/internalSuperadmin.service.js": 415,
     "services/notification.service.js": 466,
     "services/payment.service.js": 782,
-    "services/search.service.js": 946,
     "socket/controllers/admin.controller.js": 419,
     "socket/controllers/property.controller.js": 447
   }

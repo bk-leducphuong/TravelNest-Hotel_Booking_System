@@ -1,4 +1,4 @@
-const searchService = require('@services/search.service');
+const searchModule = require('@modules/search');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 const { getAuthenticatedUserId } = require('@helpers/auth-context.helper');
@@ -78,7 +78,7 @@ const searchHotels = asyncHandler(async (req, res) => {
   };
 
   const userId = getAuthenticatedUserId(req);
-  const { destination, searchResults } = await searchService.searchHotels(searchParams, userId);
+  const { destination, searchResults } = await searchModule.searchHotels(searchParams, userId);
 
   // Publish search analytics asynchronously (don't wait)
   const analyticsData = {
@@ -89,12 +89,12 @@ const searchHotels = asyncHandler(async (req, res) => {
   };
   if (userId) {
     // 1) Store recent search in Redis
-    searchService
+    searchModule
       .recordRecentSearch(userId, searchParams)
       .catch((err) => logger.error({ err: err.message }, 'Failed to store recent search in Redis'));
 
     // 2) Publish analytics log
-    searchService
+    searchModule
       .saveSearchLog(analyticsData, userId, {
         resultCount: searchResults?.data?.pagination?.total || 0,
         searchTimeMs: searchResults?.data?.search_metadata?.search_time_ms || 0,
@@ -104,7 +104,7 @@ const searchHotels = asyncHandler(async (req, res) => {
       });
   } else {
     // Anonymous users: analytics only, no per-user history
-    searchService
+    searchModule
       .saveSearchLog(analyticsData, null, {
         resultCount: searchResults?.data?.pagination?.total || 0,
         searchTimeMs: searchResults?.data?.search_metadata?.search_time_ms || 0,
@@ -134,7 +134,7 @@ const getHotelAvailability = asyncHandler(async (req, res) => {
     rooms: req.query.rooms ? parseInt(req.query.rooms, 10) : undefined,
   };
 
-  const result = await searchService.getHotelAvailability(hotelId, params);
+  const result = await searchModule.getHotelAvailability(hotelId, params);
 
   res.status(200).json(result);
 });
@@ -148,7 +148,7 @@ const getHotelAvailability = asyncHandler(async (req, res) => {
 const getAutocompleteSuggestions = asyncHandler(async (req, res) => {
   const { query, limit } = req.query;
 
-  const result = await searchService.getAutocompleteSuggestions(
+  const result = await searchModule.getAutocompleteSuggestions(
     query,
     limit ? parseInt(limit, 10) : 10
   );
@@ -165,7 +165,7 @@ const getAutocompleteSuggestions = asyncHandler(async (req, res) => {
 const getDestinationAutocomplete = asyncHandler(async (req, res) => {
   const { query, limit } = req.query;
 
-  const result = await searchService.getDestinationAutocomplete(
+  const result = await searchModule.getDestinationAutocomplete(
     query,
     limit ? parseInt(limit, 10) : 10
   );
@@ -181,7 +181,7 @@ const saveSearchInformation = asyncHandler(async (req, res) => {
   const userId = getAuthenticatedUserId(req);
   const searchData = req.body;
 
-  const result = await searchService.saveSearchLog(searchData, userId, req.body.metadata || {});
+  const result = await searchModule.saveSearchLog(searchData, userId, req.body.metadata || {});
 
   res.status(201).json({
     success: true,
@@ -199,7 +199,7 @@ const saveSearchInformation = asyncHandler(async (req, res) => {
 const getTrendingDestinations = asyncHandler(async (req, res) => {
   const { limit, days } = req.query;
 
-  const destinations = await searchService.getTrendingDestinations({
+  const destinations = await searchModule.getTrendingDestinations({
     limit: limit ? parseInt(limit, 10) : 5,
     days: days ? parseInt(days, 10) : 30,
   });
@@ -220,7 +220,7 @@ const getRecentSearches = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { limit } = req.query;
 
-  const searches = await searchService.getRecentSearches(userId, limit ? parseInt(limit, 10) : 10);
+  const searches = await searchModule.getRecentSearches(userId, limit ? parseInt(limit, 10) : 10);
 
   res.status(200).json({
     success: true,
