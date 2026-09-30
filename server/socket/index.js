@@ -9,7 +9,7 @@ const publicController = require('./controllers/public.controller');
 const userController = require('./controllers/user.controller');
 const propertyController = require('./controllers/property');
 const supportController = require('./controllers/support.controller');
-const adminController = require('./controllers/admin.controller');
+const adminController = require('./controllers/admin');
 
 let io;
 

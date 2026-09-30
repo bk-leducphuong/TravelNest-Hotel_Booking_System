@@ -5,7 +5,5 @@
     "services -> @models": 1,
     "services -> @config/database.config": 2
   },
-  "godFiles": {
-    "socket/controllers/admin.controller.js": 419
-  }
+  "godFiles": {}
 }
