@@ -30,7 +30,6 @@ module.exports = function (sequelize, DataTypes) {
       slug: {
         type: DataTypes.STRING(200),
         allowNull: false,
-        unique: true,
         comment: 'SEO-friendly slug, unique per city',
       },
       latitude: {

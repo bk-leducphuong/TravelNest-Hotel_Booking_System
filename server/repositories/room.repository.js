@@ -44,7 +44,10 @@ class RoomRepository {
     const roomPriceMap = new Map(
       inventoryResult.map((r) => [
         r.room_id,
-        { price_per_night: Number(r.price_per_night) || 0, available_rooms: Number(r.available_rooms) || 0 },
+        {
+          price_per_night: Number(r.price_per_night) || 0,
+          available_rooms: Number(r.available_rooms) || 0,
+        },
       ])
     );
 

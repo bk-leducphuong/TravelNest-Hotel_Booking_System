@@ -9,10 +9,11 @@ jest.mock('@utils/jwt.util', () => ({
   verifyJwt: jest.fn(),
 }));
 
-const authRoutes = require('../../../routes/v1/auth.routes');
-const errorMiddleware = require('../../../middlewares/error.middleware');
 const identityService = require('@services/identity.service');
 const { verifyJwt } = require('@utils/jwt.util');
+
+const authRoutes = require('../../../routes/v1/auth.routes');
+const errorMiddleware = require('../../../middlewares/error.middleware');
 
 describe('Auth API Integration Tests', () => {
   let app;

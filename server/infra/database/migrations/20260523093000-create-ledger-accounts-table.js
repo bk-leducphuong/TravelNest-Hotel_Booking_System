@@ -1,9 +1,6 @@
 'use strict';
 
-const {
-  addIndexIfMissing,
-  createTableIfMissing,
-} = require('../migration-utils/schema');
+const { addIndexIfMissing, createTableIfMissing } = require('../migration-utils/schema');
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {

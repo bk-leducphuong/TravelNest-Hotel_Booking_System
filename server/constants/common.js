@@ -1,6 +1,4 @@
-const CURRENCIES = [
-  'USD',
-];
+const CURRENCIES = ['USD'];
 
 function isValidCurrency(currency) {
   return CURRENCIES.includes(currency);

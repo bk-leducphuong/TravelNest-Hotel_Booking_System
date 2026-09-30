@@ -12,3 +12,31 @@ data:
     GRANT ALL PRIVILEGES ON \`${KEYCLOAK_DB_NAME}\`.* TO '${KEYCLOAK_DB_USER}'@'%';
     FLUSH PRIVILEGES;
     SQL
+
+  # Least-privilege accounts for the extracted Go services. They reuse the
+  # application password (MYSQL_PASSWORD) so no extra secret is required; the
+  # point is to restrict *which tables* each service may touch. See
+  # wiki/Table-Ownership.md. Only runs on first initialization - on an existing
+  # cluster create the users with deploy/k8s/infra/mysql/app-users.sql.
+  02-app-users.sh: |
+    #!/bin/sh
+    set -eu
+    mysql -u root -p"${MYSQL_ROOT_PASSWORD}" <<SQL
+    CREATE USER IF NOT EXISTS 'travelnest_media'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+    CREATE USER IF NOT EXISTS 'travelnest_notification'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+
+    -- media owns images / image_variants; it may only read users/rooms.
+    GRANT SELECT, INSERT, UPDATE ON \`${MYSQL_DATABASE}\`.\`images\` TO 'travelnest_media'@'%';
+    GRANT SELECT, INSERT, UPDATE ON \`${MYSQL_DATABASE}\`.\`image_variants\` TO 'travelnest_media'@'%';
+    GRANT SELECT, UPDATE ON \`${MYSQL_DATABASE}\`.\`users\` TO 'travelnest_media'@'%';
+    GRANT SELECT, UPDATE ON \`${MYSQL_DATABASE}\`.\`rooms\` TO 'travelnest_media'@'%';
+
+    -- notification owns notifications; everything else is read-only.
+    GRANT SELECT, INSERT, UPDATE ON \`${MYSQL_DATABASE}\`.\`notifications\` TO 'travelnest_notification'@'%';
+    GRANT SELECT ON \`${MYSQL_DATABASE}\`.\`hotels\` TO 'travelnest_notification'@'%';
+    GRANT SELECT ON \`${MYSQL_DATABASE}\`.\`hotel_users\` TO 'travelnest_notification'@'%';
+    GRANT SELECT ON \`${MYSQL_DATABASE}\`.\`user_roles\` TO 'travelnest_notification'@'%';
+    GRANT SELECT ON \`${MYSQL_DATABASE}\`.\`roles\` TO 'travelnest_notification'@'%';
+    GRANT SELECT ON \`${MYSQL_DATABASE}\`.\`users\` TO 'travelnest_notification'@'%';
+    FLUSH PRIVILEGES;
+    SQL

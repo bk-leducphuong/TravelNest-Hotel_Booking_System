@@ -131,7 +131,7 @@ module.exports = function (sequelize, DataTypes) {
     });
     // Many-to-many relationship with amenities through room_amenities
     Room.belongsToMany(models.amenities, {
-      through: models.room_amenities,
+      through: { model: models.room_amenities, unique: false },
       foreignKey: 'room_id',
       otherKey: 'amenity_id',
       as: 'amenities',

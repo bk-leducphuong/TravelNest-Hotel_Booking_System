@@ -46,7 +46,6 @@ cp .env.format .env.development
 # Edit .env.development with your local settings
 
 # Create database and run migrations
-npm run db:init
 npm run migrate
 
 # Seed development data

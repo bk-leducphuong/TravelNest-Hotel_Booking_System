@@ -14,7 +14,6 @@ module.exports = function (sequelize, DataTypes) {
       event_id: {
         type: DataTypes.STRING(255),
         allowNull: false,
-        unique: true,
         comment: 'Unique event ID from payment provider (e.g., Stripe event ID)',
       },
       event_type: {

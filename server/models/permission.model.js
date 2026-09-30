@@ -14,7 +14,6 @@ module.exports = function (sequelize, DataTypes) {
       name: {
         type: DataTypes.STRING(100),
         allowNull: false,
-        unique: true,
         validate: {
           is: {
             args: /^[a-z_]+(\.[a-z_]+)+$/,
@@ -71,7 +70,7 @@ module.exports = function (sequelize, DataTypes) {
 
   Permission.associate = function (models) {
     Permission.belongsToMany(models.roles, {
-      through: models.role_permissions,
+      through: { model: models.role_permissions, unique: false },
       foreignKey: 'permission_id',
       otherKey: 'role_id',
       as: 'roles',

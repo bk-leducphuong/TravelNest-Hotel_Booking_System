@@ -1,4 +1,7 @@
 const bookingService = require('@services/booking.service');
+// Guest reads have been migrated into the Booking module; writes (create,
+// payment intent, cancel) still live in the legacy service until the next slice.
+const bookingModule = require('@modules/booking');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 
@@ -19,7 +22,7 @@ const getUserBookings = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { includeCancelled } = req.query;
 
-  const bookings = await bookingService.getUserBookings(userId, {
+  const bookings = await bookingModule.getUserBookings(userId, {
     includeCancelled: includeCancelled === 'true',
   });
 
@@ -66,7 +69,7 @@ const getBookingById = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { bookingId } = req.params;
 
-  const booking = await bookingService.getBookingById(bookingId, userId);
+  const booking = await bookingModule.getBookingById(bookingId, userId);
 
   res.status(200).json({
     data: booking,
@@ -81,7 +84,7 @@ const getBookingByCode = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { bookingCode } = req.params;
 
-  const booking = await bookingService.getBookingByCode(bookingCode, userId);
+  const booking = await bookingModule.getBookingByCode(bookingCode, userId);
 
   res.status(200).json({
     data: booking,
@@ -97,7 +100,7 @@ const cancelBooking = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
   const { processRefund } = req.query;
 
-  const result = await bookingService.cancelBooking(bookingId, userId, {
+  const result = await bookingModule.cancelBooking(bookingId, userId, {
     processRefund: processRefund === 'true',
   });
 

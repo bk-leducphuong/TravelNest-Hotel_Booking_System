@@ -51,7 +51,6 @@ module.exports = function (sequelize, DataTypes) {
       slug: {
         type: DataTypes.STRING(200),
         allowNull: false,
-        unique: true,
         comment: 'SEO-friendly slug for URLs',
       },
       country_name: {
@@ -137,4 +136,3 @@ module.exports = function (sequelize, DataTypes) {
 
   return Destination;
 };
-

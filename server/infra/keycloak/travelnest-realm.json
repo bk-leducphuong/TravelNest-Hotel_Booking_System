@@ -48,23 +48,13 @@
     "clientRole": false,
     "containerId": "travelnest",
     "composites": {
-      "realm": [
-        "offline_access",
-        "uma_authorization",
-        "user"
-      ],
+      "realm": ["offline_access", "uma_authorization", "user"],
       "client": {
-        "account": [
-          "manage-account",
-          "manage-account-links",
-          "view-profile"
-        ]
+        "account": ["manage-account", "manage-account-links", "view-profile"]
       }
     }
   },
-  "requiredCredentials": [
-    "password"
-  ],
+  "requiredCredentials": ["password"],
   "users": [],
   "groups": [],
   "defaultGroups": [],
@@ -79,14 +69,8 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "redirectUris": [
-        "http://localhost:5173/*",
-        "http://travelnest.local/*"
-      ],
-      "webOrigins": [
-        "http://localhost:5173",
-        "http://travelnest.local"
-      ],
+      "redirectUris": ["http://localhost:5173/*", "http://travelnest.local/*"],
+      "webOrigins": ["http://localhost:5173", "http://travelnest.local"],
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,
@@ -111,12 +95,7 @@
         "email",
         "travelnest-claims"
       ],
-      "optionalClientScopes": [
-        "address",
-        "phone",
-        "offline_access",
-        "microprofile-jwt"
-      ],
+      "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"],
       "protocolMappers": [
         {
           "name": "audience-travelnest-web",
@@ -141,14 +120,8 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "redirectUris": [
-        "http://localhost:8000/*",
-        "http://admin.travelnest.local/*"
-      ],
-      "webOrigins": [
-        "http://localhost:8000",
-        "http://admin.travelnest.local"
-      ],
+      "redirectUris": ["http://localhost:8000/*", "http://admin.travelnest.local/*"],
+      "webOrigins": ["http://localhost:8000", "http://admin.travelnest.local"],
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,
@@ -173,12 +146,7 @@
         "email",
         "travelnest-claims"
       ],
-      "optionalClientScopes": [
-        "address",
-        "phone",
-        "offline_access",
-        "microprofile-jwt"
-      ],
+      "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"],
       "protocolMappers": [
         {
           "name": "audience-travelnest-web",

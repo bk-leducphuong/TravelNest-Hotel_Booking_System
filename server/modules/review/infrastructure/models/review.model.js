@@ -140,6 +140,12 @@ module.exports = function (sequelize, DataTypes) {
           using: 'BTREE',
           fields: [{ name: 'created_at' }],
         },
+        {
+          name: 'idx_reviews_status_created_at',
+          using: 'BTREE',
+          fields: [{ name: 'status' }, { name: 'created_at' }],
+          comment: 'For the global moderation queue sorted by status + created_at',
+        },
       ],
     }
   );

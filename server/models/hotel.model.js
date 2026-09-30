@@ -233,7 +233,7 @@ module.exports = function (sequelize, DataTypes) {
       as: 'viewed_hotels',
     });
     Hotel.belongsToMany(models.amenities, {
-      through: models.hotel_amenities,
+      through: { model: models.hotel_amenities, unique: false },
       foreignKey: 'hotel_id',
       otherKey: 'amenity_id',
       as: 'amenities',

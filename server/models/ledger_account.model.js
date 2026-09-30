@@ -17,7 +17,6 @@ module.exports = function (sequelize, DataTypes) {
       account_key: {
         type: DataTypes.STRING(255),
         allowNull: false,
-        unique: true,
         comment: 'Deterministic unique key for account type, owner, and currency',
       },
       account_type: {
@@ -61,7 +60,7 @@ module.exports = function (sequelize, DataTypes) {
       updated_at: {
         type: DataTypes.DATE,
         allowNull: false,
-        defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
       },
     },
     {

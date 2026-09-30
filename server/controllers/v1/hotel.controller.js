@@ -3,10 +3,7 @@ const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 const { computeNumberOfNights } = require('@helpers/hotel.helpers');
 const hotelViewEventService = require('@services/hotelViewEvent.service');
-const {
-  getAuthenticatedUserId,
-  getTrackingSessionId,
-} = require('@helpers/auth-context.helper');
+const { getAuthenticatedUserId, getTrackingSessionId } = require('@helpers/auth-context.helper');
 
 /**
  * GET /api/hotels/:hotelId

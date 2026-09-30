@@ -77,4 +77,3 @@ class DestinationElasticsearchHelper {
 }
 
 module.exports = new DestinationElasticsearchHelper();
-

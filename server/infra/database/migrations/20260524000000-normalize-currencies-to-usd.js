@@ -18,9 +18,7 @@ const CURRENCY_COLUMNS = [
 module.exports = {
   up: async (queryInterface) => {
     for (const [tableName, columnName] of CURRENCY_COLUMNS) {
-      const table = await queryInterface
-        .describeTable(tableName)
-        .catch(() => null);
+      const table = await queryInterface.describeTable(tableName).catch(() => null);
 
       if (table?.[columnName]) {
         await queryInterface.bulkUpdate(tableName, { [columnName]: 'USD' }, {});

@@ -66,4 +66,3 @@ class DestinationRepository {
 }
 
 module.exports = new DestinationRepository();
-

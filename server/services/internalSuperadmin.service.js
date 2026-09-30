@@ -329,7 +329,9 @@ function buildMongodbSeedArgs(target, body = {}) {
 async function initDatabase(body = {}) {
   const args = [];
 
-  return runScript('database:init', 'infra/database/init.js', args, {
+  // Runs migrations (the baseline migration creates the full schema). The old
+  // `infra/database/init.js` (sequelize.sync) is no longer used here.
+  return runScript('database:init', 'infra/database/migrate.js', args, {
     timeoutMs: body.timeoutMs,
   });
 }

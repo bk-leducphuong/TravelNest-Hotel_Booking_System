@@ -30,7 +30,6 @@ module.exports = function (sequelize, DataTypes) {
       invoice_number: {
         type: DataTypes.STRING(100),
         allowNull: false,
-        unique: true,
         comment: 'Human-readable invoice number',
       },
       amount: {
@@ -97,7 +96,7 @@ module.exports = function (sequelize, DataTypes) {
       updated_at: {
         type: DataTypes.DATE,
         allowNull: false,
-        defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
       },
     },
     {

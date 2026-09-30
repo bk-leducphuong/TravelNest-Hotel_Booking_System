@@ -96,9 +96,7 @@ class SearchService {
       })
       .filter(Boolean);
 
-    const cityIds = [
-      ...new Set(searches.map((s) => s.cityId).filter(Boolean)),
-    ];
+    const cityIds = [...new Set(searches.map((s) => s.cityId).filter(Boolean))];
 
     if (cityIds.length > 0) {
       const imagesByCityId = await imageRepository.getCityImagesByCityIds(cityIds);
@@ -107,12 +105,9 @@ class SearchService {
         if (!search.cityId) continue;
 
         const cityImages = imagesByCityId.get(search.cityId) || [];
-        const primaryImage =
-          cityImages.find((img) => img.isPrimary) || cityImages[0] || null;
+        const primaryImage = cityImages.find((img) => img.isPrimary) || cityImages[0] || null;
 
-        search.image = primaryImage
-          ? { objectKey: primaryImage.objectKey }
-          : null;
+        search.image = primaryImage ? { objectKey: primaryImage.objectKey } : null;
       }
     }
 

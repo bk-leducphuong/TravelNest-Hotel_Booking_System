@@ -22,7 +22,6 @@ module.exports = function (sequelize, DataTypes) {
           'staff'
         ),
         allowNull: false,
-        unique: true,
         comment:
           'Role identifier. Includes global roles (guest, admin, etc.) and hotel-specific roles (owner, manager, staff).',
       },
@@ -79,7 +78,7 @@ module.exports = function (sequelize, DataTypes) {
     });
 
     Role.belongsToMany(models.permissions, {
-      through: models.role_permissions,
+      through: { model: models.role_permissions, unique: false },
       foreignKey: 'role_id',
       otherKey: 'permission_id',
       as: 'permissions',

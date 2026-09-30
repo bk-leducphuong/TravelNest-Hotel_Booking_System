@@ -56,13 +56,11 @@ module.exports = function (sequelize, DataTypes) {
       provider_payout_id: {
         type: DataTypes.STRING(255),
         allowNull: true,
-        unique: true,
         comment: 'External provider payout ID, if provider creates a payout object',
       },
       provider_transfer_id: {
         type: DataTypes.STRING(255),
         allowNull: true,
-        unique: true,
         comment: 'External provider transfer ID to the connected account',
       },
       amount: {
@@ -124,7 +122,7 @@ module.exports = function (sequelize, DataTypes) {
       updated_at: {
         type: DataTypes.DATE,
         allowNull: false,
-        defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
       },
     },
     {

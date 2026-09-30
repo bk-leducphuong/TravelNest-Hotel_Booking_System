@@ -136,7 +136,6 @@ module.exports = function (sequelize, DataTypes) {
       idempotency_key: {
         type: DataTypes.STRING(255),
         allowNull: false,
-        unique: true,
       },
       description: {
         type: DataTypes.STRING(500),

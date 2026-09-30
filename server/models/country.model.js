@@ -14,13 +14,11 @@ module.exports = function (sequelize, DataTypes) {
       name: {
         type: DataTypes.STRING(150),
         allowNull: false,
-        unique: true,
         comment: 'Country display name',
       },
       iso_code: {
         type: DataTypes.STRING(3),
         allowNull: false,
-        unique: true,
         comment: 'ISO 3166-1 alpha-2 or alpha-3 code',
       },
       created_at: {

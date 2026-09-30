@@ -140,7 +140,6 @@ Prefer read-only SQL/queries while debugging. For destructive commands, state th
 Common setup commands from `server/`:
 
 ```bash
-npm run db:init
 npm run migrate
 npm run seed:all:quick
 npm run es:setup-hotels

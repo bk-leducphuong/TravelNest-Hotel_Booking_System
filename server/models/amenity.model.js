@@ -16,7 +16,6 @@ module.exports = function (sequelize, DataTypes) {
       code: {
         type: DataTypes.STRING(50),
         allowNull: false,
-        unique: true,
         validate: {
           isIn: [[...AMENITY_CODES]],
         },
@@ -115,13 +114,13 @@ module.exports = function (sequelize, DataTypes) {
 
   Amenity.associate = function (models) {
     Amenity.belongsToMany(models.rooms, {
-      through: models.room_amenities,
+      through: { model: models.room_amenities, unique: false },
       foreignKey: 'amenity_id',
       otherKey: 'room_id',
       as: 'rooms',
     });
     Amenity.belongsToMany(models.hotels, {
-      through: models.hotel_amenities,
+      through: { model: models.hotel_amenities, unique: false },
       foreignKey: 'amenity_id',
       otherKey: 'hotel_id',
       as: 'hotels',

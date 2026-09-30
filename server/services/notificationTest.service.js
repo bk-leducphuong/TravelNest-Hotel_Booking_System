@@ -13,7 +13,11 @@ const MAX_LIMIT = 100;
 const PREVIEW_SAMPLE_SIZE = 10;
 
 function normalizePriority(value) {
-  switch (String(value || '').trim().toLowerCase()) {
+  switch (
+    String(value || '')
+      .trim()
+      .toLowerCase()
+  ) {
     case 'low':
       return 'low';
     case 'high':

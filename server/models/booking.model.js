@@ -48,7 +48,6 @@ module.exports = function (sequelize, DataTypes) {
       booking_code: {
         type: DataTypes.STRING(100),
         allowNull: false,
-        unique: true,
       },
       check_in_date: {
         type: DataTypes.DATEONLY,
@@ -153,7 +152,7 @@ module.exports = function (sequelize, DataTypes) {
       updated_at: {
         type: DataTypes.DATE,
         allowNull: false,
-        defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
       },
       deleted_at: {
         type: DataTypes.DATE,
@@ -202,6 +201,12 @@ module.exports = function (sequelize, DataTypes) {
           name: 'check_in_date',
           using: 'BTREE',
           fields: [{ name: 'check_in_date' }],
+        },
+        {
+          name: 'idx_bookings_status_expires_at',
+          using: 'BTREE',
+          fields: [{ name: 'status' }, { name: 'expires_at' }],
+          comment: 'For finding expirable bookings by status',
         },
       ],
     }

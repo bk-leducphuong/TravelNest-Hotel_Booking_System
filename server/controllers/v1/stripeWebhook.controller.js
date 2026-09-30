@@ -48,7 +48,7 @@ const handleStripeWebhook = async (req, res) => {
     }
 
     if (error.eventId) {
-      await webhookEventLogRepository.updateStatus(event.eventId, 'failed', error.message);
+      await webhookEventLogRepository.updateStatus(error.eventId, 'failed', error.message);
     }
 
     res.status(500).json({ error: 'Webhook processing failed' });

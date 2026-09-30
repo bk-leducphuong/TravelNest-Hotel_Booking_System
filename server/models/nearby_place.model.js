@@ -79,7 +79,6 @@ module.exports = function (sequelize, DataTypes) {
       google_place_id: {
         type: DataTypes.STRING(255),
         allowNull: true,
-        unique: true,
         comment: 'Google Places API place ID for integration',
       },
       website_url: {

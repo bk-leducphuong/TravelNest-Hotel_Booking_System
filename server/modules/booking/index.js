@@ -2,6 +2,10 @@ const bookingRepository = require('@repositories/booking.repository');
 
 const adminRoutes = require('./api/admin.routes');
 const { registerBookingSubscribers } = require('./events/subscribers');
+const { getUserBookings } = require('./application/guest/getUserBookings');
+const { getBookingById } = require('./application/guest/getBookingById');
+const { getBookingByCode } = require('./application/guest/getBookingByCode');
+const { cancelBooking } = require('./application/guest/cancelBooking');
 
 // Register once per process (guarded).
 registerBookingSubscribers();
@@ -29,4 +33,10 @@ async function getCompletedBookingForReview({ bookingCode, buyerId, hotelId }) {
 module.exports = {
   adminRoutes,
   getCompletedBookingForReview,
+
+  // Guest channel (migrated out of services/booking.service.js).
+  getUserBookings,
+  getBookingById,
+  getBookingByCode,
+  cancelBooking,
 };

@@ -1,52 +1,8 @@
-const path = require('path');
+// sequelize-cli configuration.
+//
+// Delegates entirely to `config/database.options.js`, which is also used by the
+// application runtime. This guarantees `db:migrate` targets the same database,
+// host, credentials and pool settings as the running API.
+const { getCliConfig } = require('./database.options');
 
-const nodeEnv = process.env.NODE_ENV || 'development';
-
-require('dotenv').config({
-  path: path.resolve(__dirname, '..', `.env.${nodeEnv}`),
-});
-
-module.exports = {
-  development: {
-    username: process.env.DB_USER || 'user',
-    password: process.env.DB_PASSWORD || '123',
-    database: process.env.DB_NAME || 'travelnest',
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT) || 3306,
-    dialect: 'mysql',
-    logging: process.env.DB_LOGGING === 'true' ? console.log : false,
-    pool: {
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 10000,
-    },
-  },
-  test: {
-    username: process.env.DB_USER || 'user',
-    password: process.env.DB_PASSWORD || '123',
-    database: process.env.DB_NAME ? `${process.env.DB_NAME}_test` : 'travelnest_test',
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT) || 3306,
-    dialect: 'mysql',
-    logging: false,
-  },
-  production: {
-    username: process.env.DB_USER || 'user',
-    password: process.env.DB_PASSWORD || '123',
-    // Must match the runtime connection in database.config.js and the
-    // DB_NAME set by the api ConfigMap, otherwise `sequelize-cli db:migrate`
-    // would target a different database than the application.
-    database: process.env.DB_NAME || 'travelnest',
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT) || 3306,
-    dialect: 'mysql',
-    logging: false,
-    pool: {
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 10000,
-    },
-  },
-};
+module.exports = getCliConfig();

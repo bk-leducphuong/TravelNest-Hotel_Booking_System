@@ -315,11 +315,7 @@ describe('AuthService', () => {
         last_name: lastName,
         status: 'active',
       });
-      expect(authRepository.createLocalAuthAccount).toHaveBeenCalledWith(
-        1,
-        email,
-        hashedPassword
-      );
+      expect(authRepository.createLocalAuthAccount).toHaveBeenCalledWith(1, email, hashedPassword);
       expect(authRepository.assignRoleToUser).toHaveBeenCalledWith(1, 1);
     });
 
