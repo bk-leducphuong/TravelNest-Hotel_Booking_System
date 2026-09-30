@@ -2,10 +2,8 @@ const http = require('http');
 
 const { Server } = require('socket.io');
 const Client = require('socket.io-client');
-const notificationService = require('@services/notification.service');
 
 // Mock dependencies
-jest.mock('@services/notification.service');
 jest.mock('@config/logger.config', () => ({
   info: jest.fn(),
   warn: jest.fn(),

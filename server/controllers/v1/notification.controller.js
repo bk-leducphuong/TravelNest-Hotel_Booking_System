@@ -1,4 +1,4 @@
-const notificationService = require('@services/notification.service');
+const notificationModule = require('@modules/notification');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 
@@ -15,7 +15,7 @@ const getNotifications = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { page, limit, unreadOnly } = req.query;
 
-  const result = await notificationService.getNotifications(userId, {
+  const result = await notificationModule.getNotifications(userId, {
     page: page ? parseInt(page, 10) : 1,
     limit: limit ? parseInt(limit, 10) : 20,
     unreadOnly: unreadOnly === 'true',
@@ -39,7 +39,7 @@ const markNotificationAsRead = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { notificationId } = req.params;
 
-  await notificationService.markNotificationAsRead(notificationId, userId);
+  await notificationModule.markNotificationAsRead(notificationId, userId);
 
   res.status(200).json({
     data: {
@@ -55,7 +55,7 @@ const markNotificationAsRead = asyncHandler(async (req, res) => {
 const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
-  const updatedCount = await notificationService.markAllNotificationsAsRead(userId);
+  const updatedCount = await notificationModule.markAllNotificationsAsRead(userId);
 
   res.status(200).json({
     data: {
@@ -72,7 +72,7 @@ const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
 const getUnreadCount = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
-  const count = await notificationService.getUnreadCount(userId);
+  const count = await notificationModule.getUnreadCount(userId);
 
   res.status(200).json({
     data: {

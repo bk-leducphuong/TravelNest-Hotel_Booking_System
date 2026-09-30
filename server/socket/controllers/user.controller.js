@@ -1,5 +1,4 @@
 const logger = require('@config/logger.config');
-const notificationService = require('@services/notification.service');
 
 /**
  * User Namespace Controller (/user)

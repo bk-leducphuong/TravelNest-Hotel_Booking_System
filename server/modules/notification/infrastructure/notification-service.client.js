@@ -1,11 +1,16 @@
 const axios = require('axios');
+
 const ApiError = require('@utils/ApiError');
 
 const NOTIFICATION_SERVICE_URL = (
   process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:8083'
 ).replace(/\/$/, '');
 
-class NotificationProxyService {
+/**
+ * HTTP client for the Go notification service, which owns the notifications
+ * table. The Node API proxies guest notification reads here.
+ */
+class NotificationServiceClient {
   constructor() {
     this.client = axios.create({
       baseURL: NOTIFICATION_SERVICE_URL,
@@ -83,4 +88,6 @@ class NotificationProxyService {
   }
 }
 
-module.exports = new NotificationProxyService();
+const notificationServiceClient = new NotificationServiceClient();
+
+module.exports = { notificationServiceClient };

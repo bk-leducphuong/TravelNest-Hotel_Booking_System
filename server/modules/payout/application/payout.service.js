@@ -1,6 +1,6 @@
 const sequelize = require('@config/database.config');
 const logger = require('@config/logger.config');
-const notificationService = require('@services/notification.service');
+const notificationModule = require('@modules/notification');
 const ledgerService = require('@services/ledger.service');
 
 const transactionRepository = require('@repositories/transaction.repository');
@@ -223,7 +223,7 @@ class PayoutService {
         },
       });
 
-      await notificationService.sendPayoutNotification({
+      await notificationModule.sendPayoutNotification({
         hotelId: payout.hotel_id,
         ownerId: payout.owner_id,
         payoutId: payout.id,
@@ -241,7 +241,7 @@ class PayoutService {
         failureMessage: error.message,
       });
 
-      await notificationService.sendPayoutNotification({
+      await notificationModule.sendPayoutNotification({
         hotelId: payout.hotel_id,
         ownerId: payout.owner_id,
         payoutId: payout.id,

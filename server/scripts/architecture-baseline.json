@@ -12,7 +12,6 @@
     "repositories/transaction.repository.js": 406,
     "services/health.service.js": 444,
     "services/internalSuperadmin.service.js": 415,
-    "services/notification.service.js": 466,
     "socket/controllers/admin.controller.js": 419,
     "socket/controllers/property.controller.js": 447
   }
