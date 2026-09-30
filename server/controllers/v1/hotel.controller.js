@@ -1,4 +1,4 @@
-const hotelService = require('@services/hotel.service');
+const hotelModule = require('@modules/catalog');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 const { computeNumberOfNights } = require('@helpers/hotel.helpers');
@@ -23,7 +23,7 @@ const getHotelDetails = asyncHandler(async (req, res) => {
     numberOfGuests: numberOfGuests ? parseInt(numberOfGuests, 10) : undefined,
   };
 
-  const result = await hotelService.getHotelDetails(hotelId, options);
+  const result = await hotelModule.getHotelDetails(hotelId, options);
 
   // Emit view event asynchronously (deduped via Redis)
   const userId = getAuthenticatedUserId(req);
@@ -41,7 +41,7 @@ const getHotelDetails = asyncHandler(async (req, res) => {
 
   // Track "recently viewed" for authenticated users (Redis)
   if (userId) {
-    hotelService
+    hotelModule
       .recordRecentlyViewedHotel(userId, hotelId)
       .catch((err) => logger.error({ err: err.message }, 'Failed to record recently viewed hotel'));
   }
@@ -71,7 +71,7 @@ const searchRooms = asyncHandler(async (req, res) => {
     limit: limit ? parseInt(limit, 10) : 20,
   };
 
-  const result = await hotelService.searchRooms(hotelId, searchParams);
+  const result = await hotelModule.searchRooms(hotelId, searchParams);
 
   res.status(200).json({
     data: result.rooms,
@@ -85,7 +85,7 @@ const searchRooms = asyncHandler(async (req, res) => {
 
 const getHotelPolicies = asyncHandler(async (req, res) => {
   const { hotelId } = req.params;
-  const policies = await hotelService.getHotelPolicies(hotelId);
+  const policies = await hotelModule.getHotelPolicies(hotelId);
   res.status(200).json({ data: policies });
 });
 
@@ -97,7 +97,7 @@ const getNearbyPlaces = asyncHandler(async (req, res) => {
   const { hotelId } = req.params;
   const { category, limit } = req.query;
 
-  const places = await hotelService.getNearbyPlaces(hotelId, {
+  const places = await hotelModule.getNearbyPlaces(hotelId, {
     category,
     limit: limit ? parseInt(limit, 10) : 20,
   });
@@ -113,7 +113,7 @@ const getRecentlyViewedHotels = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { limit } = req.query;
 
-  const hotels = await hotelService.getRecentlyViewedHotels(
+  const hotels = await hotelModule.getRecentlyViewedHotels(
     userId,
     limit ? parseInt(limit, 10) : 10
   );
@@ -128,7 +128,7 @@ const getRecentlyViewedHotels = asyncHandler(async (req, res) => {
 const getTrendingHotels = asyncHandler(async (req, res) => {
   const { limit, days } = req.query;
 
-  const hotels = await hotelService.getTrendingHotels({
+  const hotels = await hotelModule.getTrendingHotels({
     limit: limit ? parseInt(limit, 10) : 10,
     days: days ? parseInt(days, 10) : 2,
   });
@@ -147,7 +147,7 @@ const getHotelsByIds = asyncHandler(async (req, res) => {
     return res.status(200).json({ data: [] });
   }
 
-  const hotels = await hotelService.getHotelsByIds(ids.slice(0, 50));
+  const hotels = await hotelModule.getHotelsByIds(ids.slice(0, 50));
   res.status(200).json({ data: hotels });
 });
 

@@ -1,5 +1,5 @@
 const hotelController = require('@controllers/v1/hotel.controller');
-const hotelService = require('@services/hotel.service');
+const hotelService = require('@modules/catalog');
 const ApiError = require('@utils/ApiError');
 
 const {
@@ -9,7 +9,7 @@ const {
 } = require('../../../fixtures/hotel.fixtures');
 
 // Mock the service
-jest.mock('@services/hotel.service');
+jest.mock('@modules/catalog');
 
 describe('HotelController', () => {
   describe('test', () => {

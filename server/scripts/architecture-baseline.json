@@ -11,7 +11,6 @@
     "repositories/room_inventory.repository.js": 522,
     "repositories/transaction.repository.js": 406,
     "services/health.service.js": 444,
-    "services/hotel.service.js": 554,
     "services/internalSuperadmin.service.js": 415,
     "services/notification.service.js": 466,
     "services/payment.service.js": 782,
