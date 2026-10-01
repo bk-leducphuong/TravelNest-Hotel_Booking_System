@@ -1,7 +1,7 @@
 const logger = require('@config/logger.config');
 const redisClient = require('@config/redis.config');
 const { v4: uuidv4 } = require('uuid');
-const natsPublisher = require('@events/nats.publisher');
+const { publish, INTEGRATION_EVENTS } = require('@platform/events');
 
 const DEFAULT_DEDUP_WINDOW_SECONDS = parseInt(
   process.env.HOTEL_VIEW_DEDUP_WINDOW_SECONDS || '600',
@@ -55,8 +55,8 @@ class HotelViewEventService {
         userAgent,
       };
 
-      await natsPublisher.publish(
-        'analytics.hotel.viewed.v1',
+      await publish(
+        INTEGRATION_EVENTS.HOTEL_VIEWED,
         {
           hotelId,
           userId,

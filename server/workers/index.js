@@ -2,6 +2,8 @@ require('../register-aliases');
 
 const http = require('http');
 const logger = require('@config/logger.config');
+const { registerTransport } = require('@platform/events');
+const natsTransport = require('@events/nats.adapter');
 const { scheduleHoldExpiryScanner } = require('@queues/holdExpiry.queue');
 const { scheduleBookingExpiryScanner } = require('@queues/bookingExpiry.queue');
 
@@ -41,6 +43,9 @@ function startHealthServer() {
 
 async function startWorkers() {
   try {
+    registerTransport(natsTransport);
+    await natsTransport.connect();
+
     await scheduleHoldExpiryScanner();
     await scheduleBookingExpiryScanner();
 
@@ -83,6 +88,8 @@ async function shutdownWorkers() {
       await new Promise((resolve) => healthServer.close(resolve));
       logger.info('BullMQ worker health server closed');
     }
+
+    await natsTransport.close();
 
     logger.info('All workers shut down successfully');
   } catch (error) {

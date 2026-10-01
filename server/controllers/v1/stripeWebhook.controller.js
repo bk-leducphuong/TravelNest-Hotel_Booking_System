@@ -2,8 +2,8 @@ const paymentModule = require('@modules/payment');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 const StripeWebhookAdapter = require('@adapters/webhooks/stripeWebhook.adapter');
 const webhookEventLogRepository = require('@repositories/webhook_event_log.repository');
-const emailPublisher = require('@events/email.publisher');
-const notificationPublisher = require('@events/notification.publisher');
+const emailPublisher = require('@platform/events/producers/email');
+const notificationPublisher = require('@platform/events/producers/notification');
 const logger = require('@config/logger.config');
 
 // Initialize adapters

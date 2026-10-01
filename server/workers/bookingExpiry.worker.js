@@ -3,7 +3,7 @@ const { Worker } = require('bullmq');
 const config = require('@config/bullmq.config');
 const logger = require('@config/logger.config');
 const bookingModule = require('@modules/booking');
-const notificationPublisher = require('@events/notification.publisher');
+const notificationPublisher = require('@platform/events/producers/notification');
 
 const queueName = 'bookingExpiry';
 

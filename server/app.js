@@ -16,7 +16,8 @@ const { startHoldExpirySubscriber } = require('@events/holdExpiry.subscriber');
 const { startNotificationRealtimeSubscriber } = require('@events/notificationRealtime.subscriber');
 const { initBucket } = require('@config/minio.config');
 const { setupSwagger } = require('@config/swagger.config');
-const natsPublisher = require('@events/nats.publisher');
+const { registerTransport } = require('@platform/events');
+const natsTransport = require('@events/nats.adapter');
 
 /** ********************* Middlewares ************************ */
 const errorMiddleware = require('@middlewares/error.middleware.js');
@@ -37,7 +38,8 @@ const createApp = async () => {
   require('@models/index.js');
   logger.info('Database connected successfully');
 
-  await natsPublisher.connect();
+  registerTransport(natsTransport);
+  await natsTransport.connect();
 
   const app = express();
 

@@ -9,7 +9,7 @@ async function notifyRefundSucceeded(payload) {
   }
 
   try {
-    const notificationPublisher = require('@events/notification.publisher');
+    const notificationPublisher = require('@platform/events/producers/notification');
     await notificationPublisher.publishRefundCreated(
       {
         buyerId: payload.buyerId,

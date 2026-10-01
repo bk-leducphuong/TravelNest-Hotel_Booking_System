@@ -1,8 +1,10 @@
 const { connect, StringCodec } = require('nats');
-const { v4: uuidv4 } = require('uuid');
+
 const logger = require('@config/logger.config');
+const { INTEGRATION_TOPICS } = require('@platform/events');
 
 const sc = StringCodec();
+
 const DEFAULT_STREAM = process.env.NATS_STREAM || 'TRAVELNEST_ANALYTICS';
 const ANALYTICS_SUBJECTS = ['analytics.>'];
 const DOMAIN_SUBJECTS = ['booking.>', 'payment.>', 'notification.>'];
@@ -12,11 +14,27 @@ const STREAM_SUBJECTS = {
   TRAVELNEST_EVENTS: DOMAIN_SUBJECTS,
 };
 
-class NatsPublisher {
+/**
+ * NATS transport adapter.
+ *
+ * The one place that knows about NATS. It implements the EventPublisher
+ * transport contract (`handles` + `publish`) and is registered with
+ * `@platform/events` at the process composition root; nothing else imports it.
+ *
+ * Owns the JetStream connection, the stream/subject topology and the envelope
+ * encoding. Integration topics are already NATS subjects, so `topic === subject`.
+ */
+class NatsTransport {
   constructor() {
+    this.name = 'nats';
     this.connection = null;
     this.jetstream = null;
     this.connecting = null;
+  }
+
+  /** Only integration (cross-service) topics are published to NATS. */
+  handles(topic) {
+    return INTEGRATION_TOPICS.has(topic);
   }
 
   async connect() {
@@ -52,10 +70,10 @@ class NatsPublisher {
           logger.error({ error: error.message }, 'Failed while closing NATS connection');
         });
 
-      logger.info('NATS publisher connected');
+      logger.info('NATS transport connected');
       return this.jetstream;
     } catch (error) {
-      logger.warn({ error: error.message }, 'NATS publisher unavailable');
+      logger.warn({ error: error.message }, 'NATS transport unavailable');
       this.connection = null;
       this.jetstream = null;
       return null;
@@ -86,29 +104,23 @@ class NatsPublisher {
     }
   }
 
-  async publish(subject, payload, options = {}) {
+  /**
+   * @param {string} topic - Integration topic (=== NATS subject).
+   * @param {object} envelope - Pre-built event envelope.
+   * @returns {Promise<{eventId: string, stream: string, seq: number}|null>}
+   */
+  async publish(topic, envelope) {
     const js = await this.connect();
     if (!js) return null;
 
-    const event = {
-      eventId: options.eventId || uuidv4(),
-      eventType: subject,
-      version: options.version || 1,
-      occurredAt: (options.occurredAt || new Date()).toISOString(),
-      producer: options.producer || 'travelnest-api',
-      correlationId: options.correlationId || null,
-      idempotencyKey: options.idempotencyKey || null,
-      payload,
-    };
-
     try {
-      const ack = await js.publish(subject, sc.encode(JSON.stringify(event)), {
-        msgID: event.eventId,
+      const ack = await js.publish(topic, sc.encode(JSON.stringify(envelope)), {
+        msgID: envelope.eventId,
       });
-      return { eventId: event.eventId, stream: ack.stream, seq: Number(ack.seq) };
+      return { eventId: envelope.eventId, stream: ack.stream, seq: Number(ack.seq) };
     } catch (error) {
       logger.warn(
-        { error: error.message, subject, eventId: event.eventId },
+        { error: error.message, subject: topic, eventId: envelope.eventId },
         'Failed to publish NATS event'
       );
       return null;
@@ -121,4 +133,4 @@ class NatsPublisher {
   }
 }
 
-module.exports = new NatsPublisher();
+module.exports = new NatsTransport();

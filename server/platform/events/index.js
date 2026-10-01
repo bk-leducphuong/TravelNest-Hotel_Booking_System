@@ -1,5 +1,17 @@
 const eventBus = require('./event-bus');
+const {
+  publish,
+  subscribe,
+  registerTransport,
+  getTransports,
+  resetTransports,
+} = require('./publisher');
+const { INTEGRATION_EVENTS, INTEGRATION_TOPICS } = require('./topics');
 
+/**
+ * In-process domain event names. These are delivered locally only; cross-service
+ * events live in `INTEGRATION_EVENTS` and go through a transport adapter.
+ */
 const DOMAIN_EVENTS = {
   REVIEW_CREATED: 'review.created',
   REVIEW_PUBLISHED: 'review.published',
@@ -20,6 +32,16 @@ const DOMAIN_EVENTS = {
 };
 
 module.exports = {
+  // In-process bus + local delivery.
   eventBus,
+  subscribe,
   DOMAIN_EVENTS,
+  // EventPublisher port + transport registry.
+  publish,
+  registerTransport,
+  getTransports,
+  resetTransports,
+  // Cross-service event catalog.
+  INTEGRATION_EVENTS,
+  INTEGRATION_TOPICS,
 };

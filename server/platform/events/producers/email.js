@@ -1,8 +1,15 @@
 const logger = require('@config/logger.config');
-const natsPublisher = require('@events/nats.publisher');
+const { publish, INTEGRATION_EVENTS } = require('@platform/events');
+
+/**
+ * Email (and email test-broadcast) integration event producers.
+ *
+ * Emit through the EventPublisher port so the transport stays an adapter
+ * detail.
+ */
 
 async function publishBookingConfirmation(context, options = {}) {
-  return publish(
+  return emit(
     'booking_confirmation',
     {
       email: context.receiptEmail,
@@ -21,7 +28,7 @@ async function publishBookingConfirmation(context, options = {}) {
 }
 
 async function publishPaymentFailure(context, options = {}) {
-  return publish(
+  return emit(
     'payment_failure',
     {
       email: context.receiptEmail,
@@ -34,7 +41,7 @@ async function publishPaymentFailure(context, options = {}) {
 }
 
 async function publishTestBroadcast(context, options = {}) {
-  return publish(
+  return emit(
     'test_broadcast',
     {
       email: context.email,
@@ -48,15 +55,17 @@ async function publishTestBroadcast(context, options = {}) {
   );
 }
 
-async function publish(type, data, baseID) {
-  const result = await natsPublisher.publish(
-    'notification.email.requested.v1',
+async function emit(type, data, baseID) {
+  const outcome = await publish(
+    INTEGRATION_EVENTS.EMAIL_REQUESTED,
     { type, data },
     {
       eventId: `${baseID}-email-${type}`,
       correlationId: baseID,
     }
   );
+
+  const result = outcome.responses[0]?.result ?? null;
   if (!result) {
     logger.warn({ type, data }, 'Failed to publish email request event');
   }

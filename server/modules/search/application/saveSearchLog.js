@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 
-const natsPublisher = require('@events/nats.publisher');
+const { publish, INTEGRATION_EVENTS } = require('@platform/events');
 const logger = require('@config/logger.config');
 
 /**
@@ -12,8 +12,8 @@ async function saveSearchLog(searchData, userId = null, metadata = {}) {
     const eventId = uuidv4();
     const occurredAt = new Date();
 
-    await natsPublisher.publish(
-      'analytics.search.performed.v1',
+    await publish(
+      INTEGRATION_EVENTS.SEARCH_PERFORMED,
       {
         userId,
         destinationId: searchData.destinationId || null,

@@ -4,8 +4,8 @@ const { v4: uuidv4 } = require('uuid');
 const logger = require('@config/logger.config');
 const { VALID_ROLES } = require('@constants/roles');
 const ApiError = require('@utils/ApiError');
-const notificationPublisher = require('@events/notification.publisher');
-const emailPublisher = require('@events/email.publisher');
+const notificationPublisher = require('@platform/events/producers/notification');
+const emailPublisher = require('@platform/events/producers/email');
 const { Users, UserRoles, Roles } = require('@models/index.js');
 
 const DEFAULT_LIMIT = 20;

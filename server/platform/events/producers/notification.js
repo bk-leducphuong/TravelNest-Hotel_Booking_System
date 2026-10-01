@@ -1,9 +1,16 @@
 const logger = require('@config/logger.config');
-const natsPublisher = require('@events/nats.publisher');
+const { publish, INTEGRATION_EVENTS } = require('@platform/events');
+
+/**
+ * Notification integration event producers.
+ *
+ * Build the domain payloads the notification service (Go) consumes and emit
+ * them through the EventPublisher port - never through a transport directly.
+ */
 
 async function publishPaymentSucceeded(context, options = {}) {
-  return publish(
-    'payment.payment.succeeded.v1',
+  return emit(
+    INTEGRATION_EVENTS.PAYMENT_SUCCEEDED,
     {
       buyerId: context.buyerId,
       hotelId: context.hotelId,
@@ -24,8 +31,8 @@ async function publishPaymentSucceeded(context, options = {}) {
 }
 
 async function publishRefundCreated(context, options = {}) {
-  return publish(
-    'payment.refund.created.v1',
+  return emit(
+    INTEGRATION_EVENTS.REFUND_CREATED,
     {
       buyerId: context.buyerId,
       hotelId: context.hotelId,
@@ -41,16 +48,16 @@ async function publishRefundCreated(context, options = {}) {
 }
 
 async function publishPayoutCompleted(context, options = {}) {
-  return publishPayout('payment.payout.completed.v1', 'completed', context, options);
+  return publishPayout(INTEGRATION_EVENTS.PAYOUT_COMPLETED, 'completed', context, options);
 }
 
 async function publishPayoutFailed(context, options = {}) {
-  return publishPayout('payment.payout.failed.v1', 'failed', context, options);
+  return publishPayout(INTEGRATION_EVENTS.PAYOUT_FAILED, 'failed', context, options);
 }
 
 async function publishBookingExpired(booking, options = {}) {
-  return publish(
-    'booking.booking.expired.v1',
+  return emit(
+    INTEGRATION_EVENTS.BOOKING_EXPIRED,
     {
       buyerId: booking.buyerId,
       hotelId: booking.hotelId,
@@ -69,8 +76,8 @@ async function publishBookingExpired(booking, options = {}) {
 }
 
 async function publishTestInAppRequested(context, options = {}) {
-  return publish(
-    'notification.test.inapp.requested.v1',
+  return emit(
+    INTEGRATION_EVENTS.IN_APP_REQUESTED,
     {
       receiverIds: context.receiverIds,
       title: context.title,
@@ -90,9 +97,9 @@ async function publishTestInAppRequested(context, options = {}) {
   );
 }
 
-async function publishPayout(subject, status, context, options = {}) {
-  return publish(
-    subject,
+async function publishPayout(topic, status, context, options = {}) {
+  return emit(
+    topic,
     {
       hotelId: context.hotelId,
       transactionId: context.transactionId,
@@ -109,10 +116,11 @@ async function publishPayout(subject, status, context, options = {}) {
   );
 }
 
-async function publish(subject, payload, options = {}) {
-  const result = await natsPublisher.publish(subject, payload, options);
+async function emit(topic, payload, meta = {}) {
+  const outcome = await publish(topic, payload, meta);
+  const result = outcome.responses[0]?.result ?? null;
   if (!result) {
-    logger.warn({ subject, payload }, 'Failed to publish notification event');
+    logger.warn({ topic, payload }, 'Failed to publish notification event');
   }
   return result;
 }
