@@ -1,5 +1,5 @@
 const ApiError = require('@utils/ApiError');
-const { eventBus, DOMAIN_EVENTS } = require('@platform/events');
+const { publish, DOMAIN_EVENTS } = require('@platform/events');
 const bookingModule = require('@modules/booking');
 
 const reviewRepository = require('../infrastructure/review.repository');
@@ -66,7 +66,7 @@ async function createReview(userId, { hotelId, bookingCode, ratings, title, comm
     isVerified: true,
   });
 
-  await eventBus.publish(DOMAIN_EVENTS.REVIEW_CREATED, {
+  await publish(DOMAIN_EVENTS.REVIEW_CREATED, {
     reviewId: review.id,
     hotelId,
     userId,

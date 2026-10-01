@@ -1,5 +1,5 @@
 const ApiError = require('@utils/ApiError');
-const { eventBus, DOMAIN_EVENTS } = require('@platform/events');
+const { publish, DOMAIN_EVENTS } = require('@platform/events');
 const { auditService } = require('@platform/audit');
 
 const reviewRepository = require('../../infrastructure/review.repository');
@@ -45,7 +45,7 @@ async function replyToReview(reviewId, { reply, actorUserId, requestId }) {
     requestId,
   });
 
-  await eventBus.publish(DOMAIN_EVENTS.REVIEW_REPLIED, {
+  await publish(DOMAIN_EVENTS.REVIEW_REPLIED, {
     reviewId,
     hotelId: review.hotel_id,
   });

@@ -1,6 +1,6 @@
 const ApiError = require('@utils/ApiError');
 const { auditService } = require('@platform/audit');
-const { eventBus, DOMAIN_EVENTS } = require('@platform/events');
+const { publish, DOMAIN_EVENTS } = require('@platform/events');
 
 const payoutRepository = require('../../infrastructure/payout.repository');
 const payoutService = require('../payout.service');
@@ -39,7 +39,7 @@ async function processPayout(payoutId, { actorUserId, requestId } = {}) {
       requestId,
     });
 
-    await eventBus.publish(DOMAIN_EVENTS.PAYOUT_PAID, {
+    await publish(DOMAIN_EVENTS.PAYOUT_PAID, {
       payoutId,
       hotelId: payout.hotel_id,
       ownerId: payout.owner_id,
@@ -60,7 +60,7 @@ async function processPayout(payoutId, { actorUserId, requestId } = {}) {
       requestId,
     });
 
-    await eventBus.publish(DOMAIN_EVENTS.PAYOUT_FAILED, {
+    await publish(DOMAIN_EVENTS.PAYOUT_FAILED, {
       payoutId,
       hotelId: payout.hotel_id,
       ownerId: payout.owner_id,

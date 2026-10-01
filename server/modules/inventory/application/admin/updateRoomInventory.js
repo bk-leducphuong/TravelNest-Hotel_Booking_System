@@ -1,5 +1,5 @@
 const ApiError = require('@utils/ApiError');
-const { eventBus, DOMAIN_EVENTS } = require('@platform/events');
+const { publish, DOMAIN_EVENTS } = require('@platform/events');
 const { auditService } = require('@platform/audit');
 const sequelize = require('@config/database.config');
 const catalog = require('@modules/catalog');
@@ -167,7 +167,7 @@ async function updateRoomInventory(roomId, payload = {}, { actorUserId, requestI
     }
   });
 
-  await eventBus.publish(DOMAIN_EVENTS.INVENTORY_CHANGED, {
+  await publish(DOMAIN_EVENTS.INVENTORY_CHANGED, {
     hotelId: room.hotel_id,
     roomId,
     dates,

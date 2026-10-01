@@ -1,4 +1,4 @@
-const { eventBus, DOMAIN_EVENTS } = require('@platform/events');
+const { subscribe, DOMAIN_EVENTS } = require('@platform/events');
 const logger = require('@config/logger.config');
 
 let registered = false;
@@ -28,7 +28,7 @@ function registerInventorySubscribers() {
   }
   registered = true;
 
-  eventBus.subscribe(DOMAIN_EVENTS.INVENTORY_CHANGED, refreshHotelSearchSnapshot);
+  subscribe(DOMAIN_EVENTS.INVENTORY_CHANGED, refreshHotelSearchSnapshot);
 
   logger.info('Inventory module event subscribers registered');
 }

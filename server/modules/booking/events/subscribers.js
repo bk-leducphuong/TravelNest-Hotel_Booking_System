@@ -1,4 +1,4 @@
-const { eventBus, DOMAIN_EVENTS } = require('@platform/events');
+const { subscribe, DOMAIN_EVENTS } = require('@platform/events');
 const logger = require('@config/logger.config');
 
 let registered = false;
@@ -28,7 +28,7 @@ function registerBookingSubscribers() {
   }
   registered = true;
 
-  eventBus.subscribe(DOMAIN_EVENTS.BOOKING_COMPLETED, refreshHotelSnapshot);
+  subscribe(DOMAIN_EVENTS.BOOKING_COMPLETED, refreshHotelSnapshot);
 
   logger.info('Booking module event subscribers registered');
 }

@@ -1,5 +1,5 @@
 const ApiError = require('@utils/ApiError');
-const { eventBus, DOMAIN_EVENTS } = require('@platform/events');
+const { publish, DOMAIN_EVENTS } = require('@platform/events');
 const { auditService } = require('@platform/audit');
 
 const bookingRepository = require('../../infrastructure/booking-admin.repository');
@@ -46,7 +46,7 @@ async function updateBookingStatus(bookingId, { status, actorUserId, requestId }
     requestId,
   });
 
-  await eventBus.publish(DOMAIN_EVENTS.BOOKING_STATUS_CHANGED, {
+  await publish(DOMAIN_EVENTS.BOOKING_STATUS_CHANGED, {
     bookingId,
     hotelId: booking.hotel_id,
     from: previousStatus,
@@ -54,7 +54,7 @@ async function updateBookingStatus(bookingId, { status, actorUserId, requestId }
   });
 
   if (status === BOOKING_STATUS.COMPLETED) {
-    await eventBus.publish(DOMAIN_EVENTS.BOOKING_COMPLETED, {
+    await publish(DOMAIN_EVENTS.BOOKING_COMPLETED, {
       bookingId,
       hotelId: booking.hotel_id,
     });

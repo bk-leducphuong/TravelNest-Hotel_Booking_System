@@ -1,4 +1,4 @@
-const { eventBus, DOMAIN_EVENTS } = require('@platform/events');
+const { subscribe, DOMAIN_EVENTS } = require('@platform/events');
 const logger = require('@config/logger.config');
 
 const { recomputeHotelRatingSummary } = require('../application/recomputeHotelRatingSummary');
@@ -34,9 +34,9 @@ function registerReviewSubscribers() {
   }
   registered = true;
 
-  eventBus.subscribe(DOMAIN_EVENTS.REVIEW_CREATED, refreshHotelReadModels);
-  eventBus.subscribe(DOMAIN_EVENTS.REVIEW_STATUS_CHANGED, refreshHotelReadModels);
-  eventBus.subscribe(DOMAIN_EVENTS.REVIEW_DELETED, refreshHotelReadModels);
+  subscribe(DOMAIN_EVENTS.REVIEW_CREATED, refreshHotelReadModels);
+  subscribe(DOMAIN_EVENTS.REVIEW_STATUS_CHANGED, refreshHotelReadModels);
+  subscribe(DOMAIN_EVENTS.REVIEW_DELETED, refreshHotelReadModels);
 
   logger.info('Review module event subscribers registered');
 }

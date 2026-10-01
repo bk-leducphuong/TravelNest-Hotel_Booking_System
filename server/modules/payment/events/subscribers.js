@@ -1,4 +1,4 @@
-const { eventBus, DOMAIN_EVENTS } = require('@platform/events');
+const { subscribe, DOMAIN_EVENTS } = require('@platform/events');
 const logger = require('@config/logger.config');
 
 let registered = false;
@@ -38,7 +38,7 @@ function registerPaymentSubscribers() {
   }
   registered = true;
 
-  eventBus.subscribe(DOMAIN_EVENTS.PAYMENT_REFUND_SUCCEEDED, notifyRefundSucceeded);
+  subscribe(DOMAIN_EVENTS.PAYMENT_REFUND_SUCCEEDED, notifyRefundSucceeded);
 
   logger.info('Payment module event subscribers registered');
 }
