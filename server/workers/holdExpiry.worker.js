@@ -3,7 +3,7 @@ const { Worker } = require('bullmq');
 const config = require('@config/bullmq.config');
 const logger = require('@config/logger.config');
 const holdService = require('@services/hold.service');
-const { publishHoldExpired } = require('@events/holdExpiry.publisher');
+const { publish, HOLD_EVENTS } = require('@platform/events');
 
 const queueName = 'holdExpiry';
 
@@ -17,7 +17,7 @@ async function processHoldExpiryJob(job) {
 
   await Promise.all(
     result.expiredHolds.map((hold) =>
-      publishHoldExpired({
+      publish(HOLD_EVENTS.HOLD_EXPIRED, {
         holdId: hold.holdId,
         userId: hold.userId,
         hotelId: hold.hotelId,

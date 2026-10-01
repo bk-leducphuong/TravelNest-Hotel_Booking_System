@@ -23,6 +23,8 @@ const STREAM_SUBJECTS = {
  *
  * Owns the JetStream connection, the stream/subject topology and the envelope
  * encoding. Integration topics are already NATS subjects, so `topic === subject`.
+ * Also handles inbound NATS subscriptions, so it is the single NATS entry point
+ * in both directions.
  */
 class NatsTransport {
   constructor() {
@@ -102,6 +104,39 @@ class NatsTransport {
     for (const [streamName, subjects] of streams.entries()) {
       await this.ensureStream(streamName, subjects);
     }
+  }
+
+  /**
+   * Subscribe to an inbound NATS subject (core NATS, fire-and-forget). The
+   * handler receives the decoded JSON envelope.
+   *
+   * @param {string} subject
+   * @param {(envelope: object, message: object) => void} handler
+   * @returns {Promise<object|null>} the NATS subscription, or null if unavailable
+   */
+  async subscribe(subject, handler) {
+    await this.connect();
+    if (!this.connection) {
+      logger.warn({ subject }, 'NATS transport unavailable; inbound subscription skipped');
+      return null;
+    }
+
+    const subscription = this.connection.subscribe(subject);
+
+    (async () => {
+      for await (const message of subscription) {
+        try {
+          handler(JSON.parse(sc.decode(message.data)), message);
+        } catch (error) {
+          logger.error({ error: error.message, subject }, 'Failed to handle NATS message');
+        }
+      }
+    })().catch((error) => {
+      logger.error({ error: error.message, subject }, 'NATS subscription loop failed');
+    });
+
+    logger.info({ subject }, 'NATS inbound subscription started');
+    return subscription;
   }
 
   /**

@@ -6,7 +6,7 @@ const {
   getTransports,
   resetTransports,
 } = require('./publisher');
-const { INTEGRATION_EVENTS, INTEGRATION_TOPICS } = require('./topics');
+const { INTEGRATION_EVENTS, INTEGRATION_TOPICS, INBOUND_EVENTS, HOLD_EVENTS } = require('./topics');
 
 /**
  * In-process domain event names. These are delivered locally only; cross-service
@@ -44,4 +44,6 @@ module.exports = {
   // Cross-service event catalog.
   INTEGRATION_EVENTS,
   INTEGRATION_TOPICS,
+  INBOUND_EVENTS,
+  HOLD_EVENTS,
 };

@@ -12,12 +12,13 @@ const cookieParser = require('cookie-parser');
 const logger = require('@config/logger.config');
 const db = require('@models');
 const { initSocket } = require('@socket/index');
-const { startHoldExpirySubscriber } = require('@events/holdExpiry.subscriber');
-const { startNotificationRealtimeSubscriber } = require('@events/notificationRealtime.subscriber');
 const { initBucket } = require('@config/minio.config');
 const { setupSwagger } = require('@config/swagger.config');
-const { registerTransport } = require('@platform/events');
+const { registerTransport, INBOUND_EVENTS, HOLD_EVENTS } = require('@platform/events');
 const natsTransport = require('@events/nats.adapter');
+const redisHoldTransport = require('@platform/events/transports/redis-hold');
+const { handleRealtimeNotification } = require('@platform/events/consumers/realtimeNotification');
+const { handleHoldExpired } = require('@platform/events/consumers/holdExpiry');
 
 /** ********************* Middlewares ************************ */
 const errorMiddleware = require('@middlewares/error.middleware.js');
@@ -39,6 +40,7 @@ const createApp = async () => {
   logger.info('Database connected successfully');
 
   registerTransport(natsTransport);
+  registerTransport(redisHoldTransport);
   await natsTransport.connect();
 
   const app = express();
@@ -52,9 +54,11 @@ const createApp = async () => {
   // Socket io
   const server = http.createServer(app);
   initSocket(server);
-  await startHoldExpirySubscriber();
-  await startNotificationRealtimeSubscriber();
   app.set('httpServer', server);
+
+  // Inbound events: transport adapters deliver to the socket consumers.
+  await natsTransport.subscribe(INBOUND_EVENTS.REALTIME_DISPATCH, handleRealtimeNotification);
+  await redisHoldTransport.subscribe(HOLD_EVENTS.HOLD_EXPIRED, handleHoldExpired);
 
   const normalizeOrigin = (origin) => origin && origin.replace(/\/$/, '');
   const allowedOrigins = [

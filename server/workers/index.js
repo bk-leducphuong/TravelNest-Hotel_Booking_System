@@ -4,6 +4,7 @@ const http = require('http');
 const logger = require('@config/logger.config');
 const { registerTransport } = require('@platform/events');
 const natsTransport = require('@events/nats.adapter');
+const redisHoldTransport = require('@platform/events/transports/redis-hold');
 const { scheduleHoldExpiryScanner } = require('@queues/holdExpiry.queue');
 const { scheduleBookingExpiryScanner } = require('@queues/bookingExpiry.queue');
 
@@ -44,6 +45,7 @@ function startHealthServer() {
 async function startWorkers() {
   try {
     registerTransport(natsTransport);
+    registerTransport(redisHoldTransport);
     await natsTransport.connect();
 
     await scheduleHoldExpiryScanner();
