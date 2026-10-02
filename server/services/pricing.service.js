@@ -1,4 +1,4 @@
-const roomInventoryRepository = require('@repositories/room_inventory.repository');
+const inventoryModule = require('@modules/inventory');
 const ApiError = require('@utils/ApiError');
 
 class PricingService {
@@ -12,7 +12,7 @@ class PricingService {
       rooms.map((room) => [room.roomId || room.room_id, room.quantity || room.roomQuantity || 1])
     );
 
-    const inventories = await roomInventoryRepository.findByRoomsAndDateRange(
+    const inventories = await inventoryModule.getInventoryForDateRange(
       roomIds,
       checkInDate,
       checkOutDate

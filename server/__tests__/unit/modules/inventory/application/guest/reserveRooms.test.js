@@ -1,9 +1,9 @@
-jest.mock('@repositories/room_inventory.repository', () => ({
+jest.mock('@modules/inventory/infrastructure/room_inventory.repository', () => ({
   batchIncrementReserved: jest.fn(),
 }));
 
 const ApiError = require('@utils/ApiError');
-const roomInventoryRepository = require('@repositories/room_inventory.repository');
+const roomInventoryRepository = require('@modules/inventory/infrastructure/room_inventory.repository');
 const { reserveRooms } = require('@modules/inventory/application/guest/reserveRooms');
 
 const data = {

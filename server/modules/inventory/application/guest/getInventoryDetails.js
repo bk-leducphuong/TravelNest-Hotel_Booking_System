@@ -1,6 +1,6 @@
 const logger = require('@config/logger.config');
 const ApiError = require('@utils/ApiError');
-const roomInventoryRepository = require('@repositories/room_inventory.repository');
+const roomInventoryRepository = require('../../infrastructure/room_inventory.repository');
 
 const { assertNonEmptyArray, toDateOnlyString } = require('./input');
 

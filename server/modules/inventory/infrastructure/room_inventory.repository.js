@@ -5,10 +5,10 @@ const held = require('./room_inventory/held');
 const availability = require('./room_inventory/availability');
 
 /**
- * Room Inventory Repository (aggregate).
+ * Inventory room-inventory repository (aggregate).
  *
- * The implementation is split by concern under ./room_inventory/; this barrel
- * keeps the public path `@repositories/room_inventory.repository` stable.
+ * The implementation is split by concern under ./room_inventory/. Inventory
+ * owns the room_inventory table; other contexts reach it via @modules/inventory.
  */
 module.exports = {
   ...find,

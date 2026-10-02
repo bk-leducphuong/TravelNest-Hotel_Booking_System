@@ -1,8 +1,8 @@
-jest.mock('@repositories/room_inventory.repository', () => ({
+jest.mock('@modules/inventory/infrastructure/room_inventory.repository', () => ({
   batchIncrementHeld: jest.fn(),
 }));
 
-const roomInventoryRepository = require('@repositories/room_inventory.repository');
+const roomInventoryRepository = require('@modules/inventory/infrastructure/room_inventory.repository');
 const { holdRooms } = require('@modules/inventory/application/guest/holdRooms');
 
 const data = {

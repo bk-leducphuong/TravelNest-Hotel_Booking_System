@@ -1,4 +1,4 @@
-const inventoryRepository = require('../../infrastructure/inventory.repository');
+const inventoryRepository = require('../../infrastructure/inventory-admin.repository');
 const { resolveDateRange } = require('../../domain/inventory-rules');
 const { num, round2 } = require('../format');
 

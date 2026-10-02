@@ -4,7 +4,7 @@ const { auditService } = require('@platform/audit');
 const sequelize = require('@config/database.config');
 const catalog = require('@modules/catalog');
 
-const inventoryRepository = require('../../infrastructure/inventory.repository');
+const inventoryRepository = require('../../infrastructure/inventory-admin.repository');
 const {
   enumerateDates,
   toDateOnly,

@@ -3,7 +3,7 @@ const {
   toDateObject,
   enumerateDateObjects,
   enumerateDateStrings,
-} = require('@repositories/room_inventory/dates');
+} = require('@modules/inventory/infrastructure/room_inventory/dates');
 
 describe('repositories/room_inventory/dates', () => {
   it('normalizes strings and Dates to YYYY-MM-DD', () => {

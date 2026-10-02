@@ -10,15 +10,7 @@ jest.mock('@modules/inventory', () => ({
   checkAvailabilityForHold: jest.fn(),
   holdRooms: jest.fn(),
   releaseHoldRooms: jest.fn(),
-}));
-jest.mock('@repositories/room_inventory.repository', () => ({
-  findByRoomsAndDateRange: jest.fn(),
-  batchIncrementReserved: jest.fn(),
-  batchDecrementReserved: jest.fn(),
-  checkAvailability: jest.fn(),
-  checkAvailabilityForHold: jest.fn(),
-  batchIncrementHeld: jest.fn(),
-  batchDecrementHeld: jest.fn(),
+  getInventoryForDateRange: jest.fn(),
 }));
 jest.mock('@config/database.config', () => ({
   transaction: jest.fn(() =>
@@ -32,7 +24,6 @@ jest.mock('@config/database.config', () => ({
 const holdService = require('@services/hold.service');
 const holdRepository = require('@repositories/hold.repository');
 const inventoryService = require('@modules/inventory');
-const roomInventoryRepository = require('@repositories/room_inventory.repository');
 const sequelize = require('@config/database.config');
 
 const {
@@ -65,7 +56,7 @@ describe('HoldService', () => {
       });
 
       inventoryService.checkAvailabilityForHold.mockResolvedValue(true);
-      roomInventoryRepository.findByRoomsAndDateRange.mockResolvedValue([
+      inventoryService.getInventoryForDateRange.mockResolvedValue([
         { room_id: payload.rooms[0].roomId, date: payload.checkInDate, price_per_night: 100 },
         { room_id: payload.rooms[0].roomId, date: payload.checkOutDate, price_per_night: 100 },
         { room_id: payload.rooms[1].roomId, date: payload.checkInDate, price_per_night: 150 },

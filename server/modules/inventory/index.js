@@ -1,4 +1,5 @@
 const adminRoutes = require('./api/admin.routes');
+const roomInventoryRepository = require('./infrastructure/room_inventory.repository');
 const { registerInventorySubscribers } = require('./events/subscribers');
 const { reserveRooms } = require('./application/guest/reserveRooms');
 const { releaseRooms } = require('./application/guest/releaseRooms');
@@ -10,6 +11,13 @@ const { releaseHoldRooms } = require('./application/guest/releaseHoldRooms');
 
 // Register once per process (guarded).
 registerInventorySubscribers();
+
+/**
+ * Read raw inventory rows for rooms over a date range (used by pricing).
+ */
+async function getInventoryForDateRange(roomIds, startDate, endDate) {
+  return await roomInventoryRepository.findByRoomsAndDateRange(roomIds, startDate, endDate);
+}
 
 /**
  * Inventory module - public interface.
@@ -27,4 +35,5 @@ module.exports = {
   checkAvailabilityForHold,
   holdRooms,
   releaseHoldRooms,
+  getInventoryForDateRange,
 };
