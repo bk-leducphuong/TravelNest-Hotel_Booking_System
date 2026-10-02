@@ -1,5 +1,5 @@
 const ApiError = require('@utils/ApiError');
-const roomRepository = require('@repositories/room.repository');
+const roomRepository = require('../../infrastructure/room.repository');
 const hotelRepository = require('../../infrastructure/hotel.repository');
 
 const {

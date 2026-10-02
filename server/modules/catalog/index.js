@@ -1,4 +1,4 @@
-const roomRepository = require('./infrastructure/room.repository');
+const roomRepository = require('./infrastructure/room-admin.repository');
 const { getHotelDetails } = require('./application/guest/getHotelDetails');
 const { searchRooms } = require('./application/guest/searchRooms');
 const { getHotelPolicies } = require('./application/guest/getHotelPolicies');
