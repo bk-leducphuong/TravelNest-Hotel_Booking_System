@@ -1,4 +1,4 @@
-const paymentRepository = require('@repositories/payment.repository');
+const paymentRepository = require('../../infrastructure/payment.repository');
 
 /**
  * Get a paginated list of a user's payments.

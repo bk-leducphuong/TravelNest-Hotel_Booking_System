@@ -1,9 +1,9 @@
 const Sequelize = require('sequelize');
 const { uuidv7 } = require('uuidv7');
 
-const { CURRENCIES } = require('../constants/common');
-const { LEDGER_ENTRY_DIRECTIONS, LEDGER_EVENT_TYPES } = require('../constants/ledger');
-const { PAYMENT_ACCOUNT_PROVIDERS } = require('../constants/payment');
+const { CURRENCIES } = require('../../../../constants/common');
+const { LEDGER_ENTRY_DIRECTIONS, LEDGER_EVENT_TYPES } = require('../../../../constants/ledger');
+const { PAYMENT_ACCOUNT_PROVIDERS } = require('../../../../constants/payment');
 
 module.exports = function (sequelize, DataTypes) {
   const LedgerEntry = sequelize.define(

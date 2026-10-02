@@ -4,10 +4,10 @@ const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
 const bookingRepository = require('@repositories/booking.repository');
 const transactionRepository = require('@repositories/transaction.repository');
-const paymentRepository = require('@repositories/payment.repository');
 const ledgerService = require('@services/ledger.service');
 
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
+const paymentRepository = require('../../infrastructure/payment.repository');
 
 const { fromMinorUnits } = require('../../domain/money');
 

@@ -1,12 +1,12 @@
 const Sequelize = require('sequelize');
 const { uuidv7 } = require('uuidv7');
 
-const { CURRENCIES } = require('../constants/common');
+const { CURRENCIES } = require('../../../../constants/common');
 const {
   PAYMENT_ACCOUNT_ONBOARDING_STATUSES,
   PAYMENT_ACCOUNT_PROVIDERS,
   PAYMENT_ACCOUNT_TYPES,
-} = require('../constants/payment');
+} = require('../../../../constants/payment');
 
 module.exports = function (sequelize, DataTypes) {
   const ConnectedPaymentAccount = sequelize.define(

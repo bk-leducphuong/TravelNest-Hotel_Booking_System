@@ -1,8 +1,8 @@
 const Sequelize = require('sequelize');
 const { uuidv7 } = require('uuidv7');
 
-const { CURRENCIES } = require('../constants/common');
-const { LEDGER_ACCOUNT_TYPES, LEDGER_OWNER_TYPES } = require('../constants/ledger');
+const { CURRENCIES } = require('../../../../constants/common');
+const { LEDGER_ACCOUNT_TYPES, LEDGER_OWNER_TYPES } = require('../../../../constants/ledger');
 
 module.exports = function (sequelize, DataTypes) {
   const LedgerAccount = sequelize.define(

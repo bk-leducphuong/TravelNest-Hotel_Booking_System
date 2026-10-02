@@ -1,6 +1,8 @@
-jest.mock('@repositories/payment.repository', () => ({ findPaymentByBookingId: jest.fn() }));
+jest.mock('@modules/payment/infrastructure/payment.repository', () => ({
+  findPaymentByBookingId: jest.fn(),
+}));
 
-const paymentRepository = require('@repositories/payment.repository');
+const paymentRepository = require('@modules/payment/infrastructure/payment.repository');
 const {
   getPaymentByBookingId,
 } = require('@modules/payment/application/guest/getPaymentByBookingId');

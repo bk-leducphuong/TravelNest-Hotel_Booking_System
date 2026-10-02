@@ -1,5 +1,5 @@
 const ApiError = require('@utils/ApiError');
-const paymentRepository = require('@repositories/payment.repository');
+const paymentRepository = require('../../infrastructure/payment.repository');
 
 /**
  * Get payment information for a booking, scoped to its buyer.
