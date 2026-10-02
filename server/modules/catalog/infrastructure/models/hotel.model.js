@@ -6,7 +6,7 @@ const {
   HOTEL_CHECK_IN_POLICIES,
   HOTEL_CHECK_OUT_POLICIES,
   IANA_TIMEZONES,
-} = require('../constants/hotels');
+} = require('../../../../constants/hotels');
 module.exports = function (sequelize, DataTypes) {
   const Hotel = sequelize.define(
     'hotels',

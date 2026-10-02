@@ -1,6 +1,6 @@
-jest.mock('@repositories/hotel.repository');
+jest.mock('@modules/catalog/infrastructure/hotel.repository');
 
-const hotelRepository = require('@repositories/hotel.repository');
+const hotelRepository = require('@modules/catalog/infrastructure/hotel.repository');
 const { enrichHotelCardsByIds } = require('@modules/catalog/application/guest/hotel-cards');
 
 describe('catalog/application/guest/hotel-cards', () => {

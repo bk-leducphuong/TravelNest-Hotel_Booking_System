@@ -1,7 +1,7 @@
 const Sequelize = require('sequelize');
 const { uuidv7 } = require('uuidv7');
 
-const { PLACE_CATEGORIES } = require('../constants/hotels');
+const { PLACE_CATEGORIES } = require('../../../../constants/hotels');
 
 module.exports = function (sequelize, DataTypes) {
   const NearbyPlace = sequelize.define(

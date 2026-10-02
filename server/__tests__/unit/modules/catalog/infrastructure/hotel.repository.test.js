@@ -1,4 +1,4 @@
-const hotelRepository = require('@repositories/hotel.repository');
+const hotelRepository = require('@modules/catalog/infrastructure/hotel.repository');
 const { Hotels, Rooms, NearbyPlaces } = require('@models/index.js');
 
 // Mock the models

@@ -1,4 +1,4 @@
-const hotelRepository = require('@repositories/hotel.repository');
+const hotelRepository = require('../../infrastructure/hotel.repository');
 
 /**
  * Build the lightweight "hotel card" shape used by trending / recently-viewed /

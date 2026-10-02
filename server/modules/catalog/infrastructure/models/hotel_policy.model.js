@@ -1,7 +1,7 @@
 const Sequelize = require('sequelize');
 const { uuidv7 } = require('uuidv7');
 
-const { POLICY_TYPES } = require('../constants/hotels');
+const { POLICY_TYPES } = require('../../../../constants/hotels');
 
 module.exports = function (sequelize, DataTypes) {
   const HotelPolicy = sequelize.define(
