@@ -33,8 +33,29 @@ const { seedDestinations } = require('./destinations.seed');
 const seedSearchLogs = require('../mongodb/search_logs.seed');
 const seedHotelViewEvents = require('../mongodb/hotel_view_events.seed');
 
+const USAGE = `
+Usage: npm run seed:all -- [options]
+
+  --quick                  Reduced row counts for faster seeding
+  --clear                  Truncate each table before seeding (use on re-runs)
+  --with-finance           Also seed transactions / payments / invoices
+  --skip-images            Skip the MinIO image upload step
+  --skip-mongo             Skip MongoDB analytics seeding
+  --skip-elasticsearch     Skip the Elasticsearch index sync
+  --skip-snapshots         Skip hotel_search_snapshots rebuild
+  --skip-keycloak          Do not provision Keycloak accounts
+  --images-concurrency=N   MinIO upload concurrency (default 32)
+  --keep-indexes           Do not drop/rebuild secondary indexes
+`;
+
 function parseArgs() {
   const args = process.argv.slice(2);
+
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(USAGE);
+    process.exit(0);
+  }
+
   const concurrencyArg = args.find((arg) => arg.startsWith('--images-concurrency='));
   const imagesConcurrency = concurrencyArg
     ? Number.parseInt(concurrencyArg.split('=')[1], 10)
@@ -51,6 +72,7 @@ function parseArgs() {
     skipKeycloak: args.includes('--skip-keycloak'),
     keepIndexes: args.includes('--keep-indexes'),
     refreshManifests: args.includes('--refresh-manifests'),
+    withFinance: args.includes('--with-finance'),
     quick: args.includes('--quick'), // Reduced counts for faster seeding
   };
 }
@@ -173,6 +195,10 @@ async function seedAll() {
     bookingsPerHotel: options.quick ? { min: 10, max: 20 } : { min: 20, max: 50 },
     reviewsPerHotel: options.quick ? { min: 5, max: 15 } : { min: 10, max: 30 },
     notificationsPerUser: options.quick ? { min: 2, max: 5 } : { min: 3, max: 10 },
+    reviewReplyRatio: 0.35,
+    reviewMediaRatio: 0.3,
+    maxVotesPerReview: 6,
+    savedHotelsPerUser: options.quick ? { min: 2, max: 10 } : { min: 2, max: 18 },
   };
 
   const results = [];
@@ -241,7 +267,38 @@ async function seedAll() {
 
     // ── Activity data (fast) ──────────────────────────────────────────────
     results.push(await executeFastSeed(fastCtx, 'Bookings', 'bookings', fastOptions));
+
+    // Booking line items. Must follow bookings and precede the booked_rooms
+    // backfill, which reads the same stays.
+    results.push(await executeFastSeed(fastCtx, 'Booking Rooms', 'booking_rooms', fastOptions));
+
+    // Recompute availability from the bookings just written.
+    results.push(await executeFastSeed(fastCtx, 'Booked Rooms', 'booked_rooms', fastOptions));
+
     results.push(await executeFastSeed(fastCtx, 'Reviews', 'reviews', fastOptions));
+
+    // ── Finance chain (derived from bookings/transactions) ─────────────────
+    // Skipped by default: it is ~3x the row count of bookings and only matters
+    // for the admin payments/dashboard screens. Use --with-finance to include.
+    if (options.withFinance) {
+      results.push(await executeFastSeed(fastCtx, 'Transactions', 'transactions', fastOptions));
+      results.push(await executeFastSeed(fastCtx, 'Payments', 'payments', fastOptions));
+      results.push(await executeFastSeed(fastCtx, 'Invoices', 'invoices', fastOptions));
+    } else {
+      console.log('\n⚠️  Skipping transactions/payments/invoices (pass --with-finance to seed)');
+      for (const name of ['Transactions', 'Payments', 'Invoices']) {
+        results.push({ name, success: true, duration: 0, skipped: true });
+      }
+    }
+
+    // ── Review engagement (derived from reviews) ───────────────────────────
+    results.push(await executeFastSeed(fastCtx, 'Review Replies', 'review_replies', fastOptions));
+    results.push(
+      await executeFastSeed(fastCtx, 'Review Helpful Votes', 'review_helpful_votes', fastOptions)
+    );
+
+    // ── Wishlists (needs hotels + users) ───────────────────────────────────
+    results.push(await executeFastSeed(fastCtx, 'Saved Hotels', 'saved_hotels', fastOptions));
 
     // ── Images (fast: direct MinIO upload + bulk metadata) ────────────────
     if (!options.skipImages) {
@@ -254,6 +311,9 @@ async function seedAll() {
       console.log('\n⚠️  Skipping Images as per --skip-images flag');
       results.push({ name: 'Images', success: true, duration: 0, skipped: true });
     }
+
+    // Guest photos on reviews, pointing at objects uploaded above.
+    results.push(await executeFastSeed(fastCtx, 'Review Media', 'review_media', fastOptions));
 
     results.push(await executeFastSeed(fastCtx, 'Notifications', 'notifications', fastOptions));
 
@@ -292,6 +352,18 @@ async function seedAll() {
         skipped: true,
       });
     }
+
+    // ── Rating summaries (set-based, must precede snapshots) ──────────────
+    // The only rating source in the schema; snapshots LEFT JOIN it for
+    // avg_rating, so an empty table renders every hotel as a 0 score.
+    results.push(
+      await executeFastSeed(
+        fastCtx,
+        'Hotel Rating Summaries',
+        'hotel_rating_summaries',
+        fastOptions
+      )
+    );
 
     // ── Search snapshots (fast, set-based) ────────────────────────────────
     if (!options.skipSnapshots) {

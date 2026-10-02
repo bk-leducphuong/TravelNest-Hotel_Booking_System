@@ -7,17 +7,25 @@
  * parent queries stay warm.
  */
 
+const bookingRoomsGenerator = require('../generate/booking_rooms.gen');
 const bookingsGenerator = require('../generate/bookings.gen');
 const hotelAmenitiesGenerator = require('../generate/hotel_amenities.gen');
 const hotelCancellationRulesGenerator = require('../generate/hotel_cancellation_rules.gen');
 const hotelPoliciesGenerator = require('../generate/hotel_policies.gen');
 const hotelsGenerator = require('../generate/hotels.gen');
+const invoicesGenerator = require('../generate/invoices.gen');
 const nearbyPlacesGenerator = require('../generate/nearby_places.gen');
 const notificationsGenerator = require('../generate/notifications.gen');
+const paymentsGenerator = require('../generate/payments.gen');
+const reviewHelpfulVotesGenerator = require('../generate/review_helpful_votes.gen');
+const reviewMediaGenerator = require('../generate/review_media.gen');
+const reviewRepliesGenerator = require('../generate/review_replies.gen');
 const reviewsGenerator = require('../generate/reviews.gen');
 const roomAmenitiesGenerator = require('../generate/room_amenities.gen');
 const roomInventoryGenerator = require('../generate/room_inventory.gen');
 const roomsGenerator = require('../generate/rooms.gen');
+const savedHotelsGenerator = require('../generate/saved_hotels.gen');
+const transactionsGenerator = require('../generate/transactions.gen');
 const {
   applyBulkSession,
   createConnection,
@@ -28,22 +36,75 @@ const {
   streamQuery,
   truncateTables,
 } = require('./bulk');
+const { backfillBookedRooms } = require('./booked-rooms');
+const { syncHelpfulCounts } = require('./helpful-counts');
 const { loadFaker } = require('./faker');
 const { cleanupShards, generateShards } = require('./generator-pool');
 const { createIdSampler, manifestExists, writeManifest } = require('./parent-index');
+const { rebuildHotelRatingSummaries } = require('./rating-summaries');
 const { rebuildHotelSearchSnapshots } = require('./snapshots');
 
 // Parent-id manifests required before a table's runner can sample ids.
 const REQUIRED_MANIFESTS = {
   bookings: ['rooms', 'users'],
-  reviews: ['users'],
+  booking_rooms: [],
+  invoices: [],
   notifications: ['users'],
+  payments: [],
+  refund: ['users'],
+  review_helpful_votes: ['users'],
+  review_media: [],
+  review_replies: ['hotel_staff'],
+  reviews: ['users'],
+  saved_hotels: ['hotels'],
+  transactions: [],
 };
 
 const MANIFEST_SOURCES = {
   users: { column: 'id', sql: 'SELECT `id` FROM `users`' },
   hotels: { column: 'id', sql: 'SELECT `id` FROM `hotels`' },
   rooms: { column: 'id', sql: 'SELECT `id` FROM `rooms`' },
+  // Owner/manager accounts created by the Admin & Hotel Staff step. Used as the
+  // authors of `review_replies` so replies are attributed to staff, not guests.
+  hotel_staff: {
+    column: 'user_id',
+    sql: 'SELECT DISTINCT `user_id` FROM `hotel_users`',
+  },
+};
+
+/** Columns streamed from a parent table for a child generator. */
+const CHILD_SOURCES = {
+  bookings: {
+    sql:
+      'SELECT `id`, `buyer_id`, `hotel_id`, `room_id`, `booking_code`, `check_in_date`, ' +
+      '`check_out_date`, `number_of_guests`, `quantity`, `subtotal`, `tax_amount`, ' +
+      '`service_fee_amount`, `platform_commission_amount`, `total_price`, `currency`, ' +
+      '`price_breakdown`, `status`, `created_at`, `updated_at` FROM `bookings` ORDER BY `id`',
+  },
+  transactions: {
+    sql:
+      'SELECT `id`, `booking_id`, `buyer_id`, `hotel_id`, `amount`, `currency`, `status`, ' +
+      '`transaction_type`, `payment_method`, `completed_at`, `metadata`, `created_at`, ' +
+      '`updated_at` FROM `transactions` ORDER BY `id`',
+  },
+  published_reviews: {
+    sql:
+      'SELECT `id`, `hotel_id`, `status`, `created_at`, `updated_at` FROM `reviews` ' +
+      "WHERE `status` = 'published' ORDER BY `id`",
+  },
+  /**
+   * Reviews plus one of the hotel's active image keys, used as the guest photo
+   * URL. Correlated subquery rather than a join so it stays a single streaming
+   * query with one row per review.
+   */
+  reviews_with_media: {
+    sql:
+      'SELECT r.`id`, r.`hotel_id`, r.`status`, r.`created_at`, r.`updated_at`, ' +
+      '(SELECT i.`object_key` FROM `images` i ' +
+      "WHERE i.`entity_type` = 'hotel' AND i.`entity_id` = r.`hotel_id` " +
+      "AND i.`status` = 'active' ORDER BY i.`id` LIMIT 1) AS `image_url` " +
+      'FROM `reviews` r ORDER BY r.`id`',
+  },
 };
 
 /**
@@ -300,6 +361,185 @@ async function runReviews({ writer, reader, faker }, options) {
   });
 }
 
+/**
+ * `booking_rooms` line items, derived from the bookings just written.
+ *
+ * `booking.repository.js` always includes this table when loading a booking, so
+ * an empty table renders bookings with no rooms at all.
+ */
+async function runBookingRooms({ writer, reader, faker }, options) {
+  const bookings = streamQuery(reader, CHILD_SOURCES.bookings.sql, []);
+
+  return loadTable(writer, {
+    table: bookingRoomsGenerator.TABLE,
+    columns: bookingRoomsGenerator.COLUMNS,
+    rows: bookingRoomsGenerator.createRows({ faker, bookings }),
+    manageIndexes: !options.keepIndexes,
+  });
+}
+
+/**
+ * `transactions` derived from bookings (one per booking, as checkout writes it).
+ */
+async function runTransactions({ writer, reader, faker }, options) {
+  const bookings = streamQuery(reader, CHILD_SOURCES.bookings.sql, []);
+
+  return loadTable(writer, {
+    table: transactionsGenerator.TABLE,
+    columns: transactionsGenerator.COLUMNS,
+    rows: transactionsGenerator.createRows({ faker, bookings }),
+    manageIndexes: !options.keepIndexes,
+  });
+}
+
+/** `payments`, one per transaction. */
+async function runPayments({ writer, reader, faker }, options) {
+  const transactions = streamQuery(reader, CHILD_SOURCES.transactions.sql, []);
+
+  return loadTable(writer, {
+    table: paymentsGenerator.TABLE,
+    columns: paymentsGenerator.COLUMNS,
+    rows: paymentsGenerator.createRows({ faker, transactions }),
+    manageIndexes: !options.keepIndexes,
+  });
+}
+
+/**
+ * `invoices`, one per captured transaction.
+ *
+ * The admin dashboard sums `invoices.amount` for revenue, so an empty table
+ * reports $0 no matter how many bookings exist.
+ */
+async function runInvoices({ writer, reader, faker }, options) {
+  const transactions = streamQuery(reader, CHILD_SOURCES.transactions.sql, []);
+
+  return loadTable(writer, {
+    table: invoicesGenerator.TABLE,
+    columns: invoicesGenerator.COLUMNS,
+    rows: invoicesGenerator.createRows({ faker, transactions }),
+    manageIndexes: !options.keepIndexes,
+  });
+}
+
+/** Owner replies on a share of published reviews. */
+async function runReviewReplies({ writer, reader, faker }, options) {
+  const ownerSampler = await createIdSampler('hotel_staff');
+  if (ownerSampler.size === 0) {
+    console.log('   ⚠️  No hotel staff accounts found — skipping review replies');
+    return { table: reviewRepliesGenerator.TABLE, affectedRows: 0, ms: 0 };
+  }
+
+  const reviews = streamQuery(reader, CHILD_SOURCES.published_reviews.sql, []);
+
+  return loadTable(writer, {
+    table: reviewRepliesGenerator.TABLE,
+    columns: reviewRepliesGenerator.COLUMNS,
+    rows: reviewRepliesGenerator.createRows({
+      faker,
+      reviews,
+      ownerIds: ownerSampler.all(),
+      replyRatio: options.reviewReplyRatio,
+    }),
+    manageIndexes: !options.keepIndexes,
+  });
+}
+
+/**
+ * Helpful votes, then `reviews.helpful_count` is recomputed from them.
+ *
+ * The reviews generator seeds `helpful_count` as a random number; left alone it
+ * would contradict the votes table, so it is resynced once the votes exist.
+ */
+async function runReviewHelpfulVotes({ writer, reader, faker }, options) {
+  const userSampler = await createIdSampler('users');
+  if (userSampler.size === 0) {
+    console.log('   ⚠️  No users found — skipping review helpful votes');
+    return { table: reviewHelpfulVotesGenerator.TABLE, affectedRows: 0, ms: 0 };
+  }
+
+  const reviews = streamQuery(reader, CHILD_SOURCES.published_reviews.sql, []);
+
+  const result = await loadTable(writer, {
+    table: reviewHelpfulVotesGenerator.TABLE,
+    columns: reviewHelpfulVotesGenerator.COLUMNS,
+    rows: reviewHelpfulVotesGenerator.createRows({
+      faker,
+      reviews,
+      userSampler,
+      maxVotesPerReview: options.maxVotesPerReview,
+    }),
+    manageIndexes: !options.keepIndexes,
+  });
+
+  const synced = await syncHelpfulCounts(writer);
+  console.log(`   🔄 Resynced helpful_count on ${synced.affectedRows} review(s)`);
+
+  return { ...result, affectedRows: result.affectedRows + synced.affectedRows };
+}
+
+/**
+ * Guest photos on reviews.
+ *
+ * URLs point at objects the image step already uploaded, so this must run after
+ * images; reviews whose hotel has no image are skipped (`url` is NOT NULL).
+ */
+async function runReviewMedia({ writer, reader, faker }, options) {
+  const reviews = streamQuery(reader, CHILD_SOURCES.reviews_with_media.sql, []);
+
+  return loadTable(writer, {
+    table: reviewMediaGenerator.TABLE,
+    columns: reviewMediaGenerator.COLUMNS,
+    rows: reviewMediaGenerator.createRows({ faker, reviews, mediaRatio: options.reviewMediaRatio }),
+    manageIndexes: !options.keepIndexes,
+  });
+}
+
+/** Wishlist rows for every user. */
+async function runSavedHotels({ writer, reader, faker }, options) {
+  const hotelSampler = await createIdSampler('hotels');
+  if (hotelSampler.size === 0) {
+    console.log('   ⚠️  No hotels found — skipping saved hotels');
+    return { table: savedHotelsGenerator.TABLE, affectedRows: 0, ms: 0 };
+  }
+
+  const userIds = streamColumn(reader, 'SELECT `id` FROM `users`', 'id');
+
+  return loadTable(writer, {
+    table: savedHotelsGenerator.TABLE,
+    columns: savedHotelsGenerator.COLUMNS,
+    rows: savedHotelsGenerator.createRows({
+      faker,
+      userIds,
+      hotelSampler,
+      savedPerUser: options.savedHotelsPerUser,
+    }),
+    manageIndexes: !options.keepIndexes,
+  });
+}
+
+/**
+ * `hotel_rating_summaries`, rebuilt from published reviews.
+ *
+ * Runs after reviews and before snapshots: the summary is the only rating source
+ * in the project, and `snapshots.js` LEFT JOINs it to fill `avg_rating`.
+ */
+async function runRatingSummaries({ writer }, options) {
+  return rebuildHotelRatingSummaries(writer, {
+    clear: true,
+    manageIndexes: !options.keepIndexes,
+  });
+}
+
+/**
+ * Recompute `room_inventory.booked_rooms` from the seeded bookings.
+ *
+ * `reserveRooms`/`releaseRooms` own this column at runtime; without the backfill
+ * availability always reads "everything free".
+ */
+async function runBookedRooms({ writer }, options) {
+  return backfillBookedRooms(writer);
+}
+
 async function runNotifications({ writer, reader, faker }, options) {
   const userSampler = await createIdSampler('users');
   if (userSampler.size === 0) {
@@ -329,18 +569,28 @@ async function runSnapshots({ writer }, options) {
 }
 
 const RUNNERS = {
+  booking_rooms: runBookingRooms,
   bookings: runBookings,
+  booked_rooms: runBookedRooms,
   hotel_amenities: runHotelAmenities,
   hotel_cancellation_rules: runHotelCancellationRules,
   hotel_policies: runHotelPolicies,
+  hotel_rating_summaries: runRatingSummaries,
   hotel_search_snapshots: runSnapshots,
   hotels: runHotels,
+  invoices: runInvoices,
   nearby_places: runNearbyPlaces,
   notifications: runNotifications,
+  payments: runPayments,
+  review_helpful_votes: runReviewHelpfulVotes,
+  review_media: runReviewMedia,
+  review_replies: runReviewReplies,
   reviews: runReviews,
   room_amenities: runRoomAmenities,
   room_inventory: runRoomInventory,
   rooms: runRooms,
+  saved_hotels: runSavedHotels,
+  transactions: runTransactions,
 };
 
 async function getSeedLocations(reader, countryIsoCode) {
@@ -392,6 +642,12 @@ async function createFastContext({ log = console.log } = {}) {
 }
 
 /**
+ * Registered table keys that are post-processing steps over other tables rather
+ * than tables of their own, so `--clear` must not try to TRUNCATE them.
+ */
+const POST_PROCESSING_STEPS = new Set(['booked_rooms']);
+
+/**
  * Run a single fast table. When `options.clear` is set, truncate just that table.
  */
 async function runFastTable(ctx, table, options = {}) {
@@ -400,7 +656,7 @@ async function runFastTable(ctx, table, options = {}) {
     throw new Error(`No fast generator registered for "${table}"`);
   }
 
-  if (options.clear) {
+  if (options.clear && !POST_PROCESSING_STEPS.has(table)) {
     await truncateTables(ctx.writer, [table]);
   }
 
@@ -408,6 +664,7 @@ async function runFastTable(ctx, table, options = {}) {
 }
 
 module.exports = {
+  CHILD_SOURCES,
   MANIFEST_SOURCES,
   REQUIRED_MANIFESTS,
   RUNNERS,

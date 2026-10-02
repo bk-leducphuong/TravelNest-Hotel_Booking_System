@@ -553,6 +553,63 @@ time, so the backfill has nothing left to do (verified: 5,040/5,040 snapshots
 have `primary_image_url`). It is intentionally **not** called from `seed:all`;
 keep the script for repairing older/partial databases.
 
+## 17. Unseeded-table audit
+
+Every table in the migrated schema was checked for row count after a `seed:all` run, then each empty table was traced to its read path. Two genuine bugs surfaced, not just missing seeders.
+
+### 17.1 Bugs found
+
+**Hotel ratings were completely absent.** `hotels` has no rating columns; the only rating source is `hotel_rating_summaries`, and `snapshots.js` LEFT JOINs it for `avg_rating`. The review module maintains it through `recomputeHotelRatingSummary`, driven by NATS events on review create — which bulk `LOAD DATA` bypasses. Result: **all 5,040 snapshots had `avg_rating = 0` and `review_count = 0` despite 50,689 reviews**, and since the client renders `{{ hotel.avg_rating ?? '—' }}`, `0` displayed as a literal zero rather than the em-dash fallback.
+
+**`room_inventory.booked_rooms` was 0 across all ~600k rows.** Availability is `total_rooms - booked_rooms - held_rooms`, and only `reserveRooms` (called from `createPaymentIntent`) ever increments it. Seeding bookings directly left every date showing "everything free" and defeated the `booked_rooms < total_rooms` filter in `hotel_search_snapshot.repository.js`.
+
+**Bookings had no rooms.** `booking.repository.js` always includes `BookingRooms`, and the checkout path always writes it, so 75k bookings rendered with empty room lists.
+
+**Admin dashboard revenue was $0.** `admin/dashboard.repository.js` computes revenue with `Invoices.sum('amount')`.
+
+### 17.2 Tables now seeded
+
+| Table | Why | Approach |
+|-------|-----|----------|
+| `hotel_rating_summaries` | only rating source; drives `avg_rating` | set-based rebuild (`lib/rating-summaries.js`), mirrors `review/domain/rating-summary.js` bucket semantics |
+| `room_inventory.booked_rooms` | availability + search filter | recursive-CTE backfill (`lib/booked-rooms.js`), clamped to `total_rooms` |
+| `booking_rooms` | included on every booking read | derived from `bookings.price_breakdown` |
+| `transactions` | booking payment context, admin `/payments` | derived from bookings (opt-in) |
+| `payments` | admin `/payments`, booking detail | derived from transactions (opt-in) |
+| `invoices` | **admin dashboard revenue** | derived from captured transactions (opt-in) |
+| `review_replies` | hotel detail reply, `hasReply` filter | staff-authored, one per review (UNIQUE) |
+| `review_media` | hotel detail guest photos | URLs reuse already-uploaded hotel images |
+| `review_helpful_votes` | backs `reviews.helpful_count` | plus `lib/helpful-counts.js` to resync the counter |
+| `saved_hotels` | wishlist page + heart icons | per-user sampling, deduped |
+
+`bookings.gen.js` now emits a real money breakdown (`subtotal`, `tax_amount`, `service_fee_amount`, `platform_commission_amount`, `currency`, `price_breakdown` JSON) computed by the new `lib/pricing.js`, which mirrors `services/pricing.service.js` exactly and reads the same `BOOKING_TAX_RATE` / `BOOKING_SERVICE_FEE_RATE` / `PLATFORM_FEE_RATE` env vars. The nightly list is built first so `subtotal === sum(nightly.total)` by construction.
+
+Transactions / payments / invoices are behind **`--with-finance`** (also `npm run seed:all:finance`): they are ~3x the booking row count and only matter for the admin payments and dashboard screens.
+
+### 17.3 Tables deliberately left empty
+
+| Table | Reason |
+|-------|--------|
+| `payouts`, `payout_items`, `connected_payment_accounts` | need real Stripe Connect IDs; the flows cannot be exercised without Stripe anyway |
+| `ledger_accounts`, `ledger_entries` | `ledger.service.js` uses `findOrCreateAccount`, so accounts are created lazily; `ledger_entries` has no read path at all |
+| `holds`, `hold_rooms` | transient and expiring; seeded rows would *distort* availability via `held_rooms` |
+| `viewed_hotels` | recently-viewed is Redis-backed (`recentlyViewedKey` + `zRange`); this table is not the read path |
+| `audit_logs`, `idempotency_keys`, `webhook_event_logs` | runtime housekeeping / TTL data, generated as the app is used |
+
+### 17.4 Verification (isolated test databases)
+
+`seed:all --quick --clear --with-finance --skip-keycloak` → **33/33 steps, 313.53s** (Images 214.68s dominate).
+
+- `avg_rating` populated on 5,040/5,040 snapshots (avg 7.08); rating buckets sum exactly to `total_reviews`; `overall_rating` / `total_rating_sum` / `total_reviews` match a direct recompute from `reviews` (0 mismatches)
+- 75,455 bookings ↔ 75,455 `booking_rooms` (0 bookings without rooms, 0 quantity/room mismatches); `subtotal + tax + service_fee === total_price` on all 75,455
+- `transaction.amount` = `booking.total_price`, `payment.amount` = `transaction.amount`, `invoice.amount` = `transaction.amount` — 0 mismatches at each hop; 66,343 invoices with 66,343 distinct `invoice_number`
+- `booked_rooms`: 0 overbooked rows, ~9,858 sold out; cross-checked against an independent recursive-CTE recompute (0 mismatched rows)
+- `reviews.helpful_count` matches `COUNT(is_helpful = 1)` on all 50,763 reviews
+- 37,520 `review_media` rows, 0 null URLs, and all 37,520 resolve to an actual `images.object_key`
+- 16,438 replies, all on published reviews, all authored by a `hotel_users` account; 234 saved-hotels rows with no duplicate `(user_id, hotel_id)` and no orphans
+
+**Pre-existing issue (not introduced here):** re-running without `--clear` fails on unique-key duplicates in `hotel_amenities`, `room_amenities`, `room_inventory` and (now) `review_replies` / `review_helpful_votes`. Use `--clear` (or `npm run seed:all:clear`) on re-runs.
+
 ## 16. Benchmark: legacy vs fast (`--quick`, no images, no Keycloak)
 
 Both runs used identical reduced counts against isolated throwaway databases
