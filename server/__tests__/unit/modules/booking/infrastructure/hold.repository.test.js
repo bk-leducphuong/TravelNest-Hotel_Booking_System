@@ -1,4 +1,4 @@
-const holdRepository = require('@repositories/hold.repository');
+const holdRepository = require('@modules/booking/infrastructure/hold.repository');
 const { Holds, HoldRooms } = require('@models/index.js');
 const { Op } = require('sequelize');
 

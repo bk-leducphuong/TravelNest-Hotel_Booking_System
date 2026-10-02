@@ -1,9 +1,11 @@
 const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
 const transactionRepository = require('@repositories/transaction.repository');
-const bookingRepository = require('@repositories/booking.repository');
+const bookingModule = require('@modules/booking');
 const ledgerService = require('@services/ledger.service');
 const inventoryModule = require('@modules/inventory');
+
+const refundRepository = require('../../infrastructure/refund.repository');
 
 const { fromMinorUnits } = require('../../domain/money');
 
@@ -38,7 +40,7 @@ async function handleRefundSucceeded(context) {
     const refundCurrency = currency || dbTransaction.currency || 'USD';
     const amount = fromMinorUnits(refundAmount, refundCurrency);
 
-    let refundRecord = await bookingRepository.findRefundByProviderRefundId(refundId, {
+    let refundRecord = await refundRepository.findByProviderRefundId(refundId, {
       transaction,
     });
 
@@ -50,7 +52,7 @@ async function handleRefundSucceeded(context) {
 
     if (!refundRecord) {
       // Refund created outside the app (e.g. Stripe dashboard).
-      refundRecord = await bookingRepository.createRefund(
+      refundRecord = await refundRepository.create(
         {
           bookingId: dbTransaction.booking_id,
           transactionId: dbTransaction.id,
@@ -68,7 +70,7 @@ async function handleRefundSucceeded(context) {
         { transaction }
       );
     } else {
-      await bookingRepository.updateRefund(
+      await refundRepository.update(
         refundRecord.id,
         {
           status: 'succeeded',
@@ -80,7 +82,7 @@ async function handleRefundSucceeded(context) {
       );
     }
 
-    const totalRefunded = await bookingRepository.sumSucceededRefunds(dbTransaction.id, {
+    const totalRefunded = await refundRepository.sumSucceededForTransaction(dbTransaction.id, {
       transaction,
     });
     const isFullRefund = totalRefunded >= parseFloat(dbTransaction.amount) - 0.01;
@@ -97,13 +99,13 @@ async function handleRefundSucceeded(context) {
       // Skip if the booking was already cancelled (e.g. an admin force-cancel
       // already released inventory) to avoid a double release.
       const existingBooking = bookingCode
-        ? await bookingRepository.findByBookingCode(bookingCode, { transaction })
+        ? await bookingModule.findBookingByCode(bookingCode, { transaction })
         : null;
       const alreadyCancelled =
         existingBooking && ['cancelled', 'expired'].includes(existingBooking.status);
 
       if (!alreadyCancelled) {
-        await bookingRepository.updateByBookingCode(
+        await bookingModule.updateBookingsByCode(
           bookingCode,
           { status: 'cancelled' },
           { transaction }

@@ -76,18 +76,16 @@ class PricingService {
   }
 
   async getCancellationPolicySnapshot(hotelId, roomIds) {
-    let bookingRepository;
+    let bookingModule;
     try {
-      bookingRepository = require('@repositories/booking.repository');
+      bookingModule = require('@modules/booking');
     } catch (error) {
-      bookingRepository = null;
+      bookingModule = null;
     }
     const snapshots = [];
 
     for (const roomId of roomIds) {
-      const rule = bookingRepository
-        ? await bookingRepository.findCancellationRule(hotelId, roomId)
-        : null;
+      const rule = bookingModule ? await bookingModule.getCancellationRule(hotelId, roomId) : null;
       const data = rule?.toJSON ? rule.toJSON() : rule;
       snapshots.push({
         roomId,

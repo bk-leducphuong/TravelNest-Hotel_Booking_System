@@ -2,9 +2,8 @@ const ApiError = require('@utils/ApiError');
 const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
 
-const bookingRepository = require('@repositories/booking.repository');
 const inventoryModule = require('@modules/inventory');
-const paymentModule = require('@modules/payment');
+const bookingRepository = require('../../infrastructure/booking.repository');
 
 const { evaluateBookingCancellationPolicy } = require('./evaluateCancellationPolicy');
 
@@ -55,6 +54,9 @@ async function refundCancelledBooking(bookingId, userId, cancellationPolicy) {
       return null;
     }
 
+    // Lazy: payment imports the booking module, so requiring it at load time
+    // would be a cycle.
+    const paymentModule = require('@modules/payment');
     const result = await paymentModule.refundBooking(bookingId, {
       reason: cancellationPolicy.reason,
       amount,

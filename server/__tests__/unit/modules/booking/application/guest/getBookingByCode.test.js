@@ -1,8 +1,8 @@
-jest.mock('@repositories/booking.repository', () => ({
+jest.mock('@modules/booking/infrastructure/booking.repository', () => ({
   findDetailedByBookingCodeAndBuyerId: jest.fn(),
 }));
 
-const bookingRepository = require('@repositories/booking.repository');
+const bookingRepository = require('@modules/booking/infrastructure/booking.repository');
 const { getBookingByCode } = require('@modules/booking/application/guest/getBookingByCode');
 
 describe('booking/application/guest/getBookingByCode', () => {

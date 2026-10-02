@@ -1,7 +1,7 @@
 const ApiError = require('@utils/ApiError');
-const bookingRepository = require('@repositories/booking.repository');
 const transactionRepository = require('@repositories/transaction.repository');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
+const bookingRepository = require('../../infrastructure/booking.repository');
 
 const { toMinorUnits } = require('../../domain/money');
 

@@ -1,14 +1,14 @@
 const ApiError = require('@utils/ApiError');
 
 const sequelize = require('@config/database.config');
-const bookingRepository = require('@repositories/booking.repository');
-const holdRepository = require('@repositories/hold.repository');
 const idempotencyRepository = require('@repositories/idempotency.repository');
 const transactionRepository = require('@repositories/transaction.repository');
 const holdService = require('@services/hold.service');
 const pricingService = require('@services/pricing.service');
 const inventoryModule = require('@modules/inventory');
 const { generateBookingCode } = require('@utils/booking.utils');
+const holdRepository = require('../../infrastructure/hold.repository');
+const bookingRepository = require('../../infrastructure/booking.repository');
 
 const { hashRequest } = require('../../domain/request-hash');
 const { formatBookingResponse } = require('./formatters');

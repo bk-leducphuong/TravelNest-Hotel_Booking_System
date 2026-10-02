@@ -1,9 +1,11 @@
-jest.mock('@repositories/booking.repository', () => ({ findExpiredPending: jest.fn() }));
+jest.mock('@modules/booking/infrastructure/booking.repository', () => ({
+  findExpiredPending: jest.fn(),
+}));
 jest.mock('@modules/booking/application/expiry/expireBookingIfDue', () => ({
   expireBookingIfDue: jest.fn(),
 }));
 
-const bookingRepository = require('@repositories/booking.repository');
+const bookingRepository = require('@modules/booking/infrastructure/booking.repository');
 const { expireBookingIfDue } = require('@modules/booking/application/expiry/expireBookingIfDue');
 const {
   expirePendingBookings,

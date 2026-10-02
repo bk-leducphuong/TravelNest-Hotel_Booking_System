@@ -2,9 +2,9 @@ const { Transaction } = require('sequelize');
 
 const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
-const bookingRepository = require('@repositories/booking.repository');
 const transactionRepository = require('@repositories/transaction.repository');
 const inventoryModule = require('@modules/inventory');
+const bookingRepository = require('../../infrastructure/booking.repository');
 
 const { cancelExpiredPaymentIntent } = require('./cancelExpiredPaymentIntent');
 

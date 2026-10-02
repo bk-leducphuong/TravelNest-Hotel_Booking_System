@@ -1,4 +1,4 @@
-const bookingRepository = require('@repositories/booking.repository');
+const bookingRepository = require('../../infrastructure/booking.repository');
 
 const { formatHotelForLegacyClients, formatRoom } = require('./formatters');
 

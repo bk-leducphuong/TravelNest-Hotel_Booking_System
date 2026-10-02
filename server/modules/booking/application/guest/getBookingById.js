@@ -1,5 +1,5 @@
-const bookingRepository = require('@repositories/booking.repository');
 const ApiError = require('@utils/ApiError');
+const bookingRepository = require('../../infrastructure/booking.repository');
 
 const { formatHotelForLegacyClients, formatRoom } = require('./formatters');
 

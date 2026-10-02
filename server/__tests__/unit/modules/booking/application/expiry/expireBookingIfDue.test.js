@@ -1,5 +1,5 @@
 jest.mock('@config/database.config', () => ({ transaction: jest.fn() }));
-jest.mock('@repositories/booking.repository', () => ({
+jest.mock('@modules/booking/infrastructure/booking.repository', () => ({
   findExpiryContextById: jest.fn(),
   update: jest.fn(),
 }));
@@ -10,7 +10,7 @@ jest.mock('@modules/booking/application/expiry/cancelExpiredPaymentIntent', () =
 }));
 
 const sequelize = require('@config/database.config');
-const bookingRepository = require('@repositories/booking.repository');
+const bookingRepository = require('@modules/booking/infrastructure/booking.repository');
 const transactionRepository = require('@repositories/transaction.repository');
 const inventoryModule = require('@modules/inventory');
 const {

@@ -2,7 +2,7 @@ const { Transaction } = require('sequelize');
 
 const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
-const bookingRepository = require('@repositories/booking.repository');
+const bookingModule = require('@modules/booking');
 const transactionRepository = require('@repositories/transaction.repository');
 const ledgerService = require('@services/ledger.service');
 
@@ -28,7 +28,7 @@ async function handlePaymentSucceeded(context) {
 
   try {
     const existingBookings = bookingCode
-      ? await bookingRepository.findAllByBookingCode(bookingCode, {
+      ? await bookingModule.getBookingsByCode(bookingCode, {
           transaction,
           lock: Transaction.LOCK.UPDATE,
         })
@@ -192,7 +192,7 @@ async function handlePaymentSucceeded(context) {
 
       if (bookedRooms && bookedRooms.length > 0 && bookingCode) {
         for (const room of bookedRooms) {
-          const createdBooking = await bookingRepository.create(
+          const createdBooking = await bookingModule.createBooking(
             {
               buyer_id: buyerId,
               hotel_id: hotelId,
@@ -215,7 +215,7 @@ async function handlePaymentSucceeded(context) {
         }
       }
     } else {
-      await bookingRepository.updateByBookingCode(
+      await bookingModule.updateBookingsByCode(
         bookingCode,
         { status: 'confirmed', confirmed_at: new Date() },
         { transaction }

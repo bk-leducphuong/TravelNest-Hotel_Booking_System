@@ -1,4 +1,4 @@
-jest.mock('@repositories/booking.repository', () => ({
+jest.mock('@modules/booking/infrastructure/booking.repository', () => ({
   findCancellationContextByIdAndBuyerId: jest.fn(),
   findCancellationRule: jest.fn(),
   findTransactionByBookingId: jest.fn(),
@@ -8,7 +8,7 @@ jest.mock('@modules/inventory', () => ({ releaseRooms: jest.fn() }));
 jest.mock('@modules/payment', () => ({ refundBooking: jest.fn() }));
 jest.mock('@config/database.config', () => ({ transaction: jest.fn() }));
 
-const bookingRepository = require('@repositories/booking.repository');
+const bookingRepository = require('@modules/booking/infrastructure/booking.repository');
 const inventoryModule = require('@modules/inventory');
 const paymentModule = require('@modules/payment');
 const sequelize = require('@config/database.config');

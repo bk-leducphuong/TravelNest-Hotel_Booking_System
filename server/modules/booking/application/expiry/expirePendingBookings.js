@@ -1,5 +1,5 @@
 const logger = require('@config/logger.config');
-const bookingRepository = require('@repositories/booking.repository');
+const bookingRepository = require('../../infrastructure/booking.repository');
 
 const { expireBookingIfDue } = require('./expireBookingIfDue');
 

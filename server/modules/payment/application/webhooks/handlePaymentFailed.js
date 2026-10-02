@@ -1,6 +1,6 @@
 const logger = require('@config/logger.config');
 const transactionRepository = require('@repositories/transaction.repository');
-const bookingRepository = require('@repositories/booking.repository');
+const bookingModule = require('@modules/booking');
 const paymentRepository = require('../../infrastructure/payment.repository');
 
 const { fromMinorUnits } = require('../../domain/money');
@@ -65,7 +65,7 @@ async function handlePaymentFailed(context) {
     }
 
     if (bookingCode) {
-      await bookingRepository.updateByBookingCode(bookingCode, {
+      await bookingModule.updateBookingsByCode(bookingCode, {
         status: 'payment_failed',
       });
     }

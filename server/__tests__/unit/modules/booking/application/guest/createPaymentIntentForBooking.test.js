@@ -1,4 +1,4 @@
-jest.mock('@repositories/booking.repository', () => ({
+jest.mock('@modules/booking/infrastructure/booking.repository', () => ({
   findPaymentContextByIdAndBuyerId: jest.fn(),
 }));
 jest.mock('@repositories/transaction.repository', () => ({ update: jest.fn() }));
@@ -9,7 +9,7 @@ jest.mock('@adapters/payment/stripePayment.adapter', () => {
   return StripePaymentAdapter;
 });
 
-const bookingRepository = require('@repositories/booking.repository');
+const bookingRepository = require('@modules/booking/infrastructure/booking.repository');
 const transactionRepository = require('@repositories/transaction.repository');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 const {

@@ -1,9 +1,8 @@
 const ApiError = require('@utils/ApiError');
 const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
-const bookingRepository = require('@repositories/booking.repository');
+const bookingModule = require('@modules/booking');
 const transactionRepository = require('@repositories/transaction.repository');
-const holdRepository = require('@repositories/hold.repository');
 const holdService = require('@services/hold.service');
 const inventoryModule = require('@modules/inventory');
 const { generateBookingCode } = require('@utils/booking.utils');
@@ -32,7 +31,7 @@ async function createPaymentIntent(userId, paymentData) {
   }
 
   // 1. Find active hold for user
-  const activeHolds = await holdRepository.findActiveByUserId(userId);
+  const activeHolds = await bookingModule.getActiveHoldsByUser(userId);
 
   if (!activeHolds || activeHolds.length === 0) {
     throw new ApiError(
@@ -94,7 +93,7 @@ async function createPaymentIntent(userId, paymentData) {
     // 4. Create pending bookings linked to this hold
     let primaryBooking = null;
     for (const room of rooms) {
-      const booking = await bookingRepository.create(
+      const booking = await bookingModule.createBooking(
         {
           buyer_id: userId,
           hotel_id: holdData.hotel_id,
