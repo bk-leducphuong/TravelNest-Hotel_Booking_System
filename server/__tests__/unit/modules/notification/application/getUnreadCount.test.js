@@ -1,12 +1,14 @@
 jest.mock('@modules/notification/infrastructure/notification-service.client', () => ({
   notificationServiceClient: { getUnreadCount: jest.fn(), getNotifications: jest.fn() },
 }));
-jest.mock('@repositories/notification.repository', () => ({ countByCategory: jest.fn() }));
+jest.mock('@modules/notification/infrastructure/notification.repository', () => ({
+  countByCategory: jest.fn(),
+}));
 
 const {
   notificationServiceClient,
 } = require('@modules/notification/infrastructure/notification-service.client');
-const notificationRepository = require('@repositories/notification.repository');
+const notificationRepository = require('@modules/notification/infrastructure/notification.repository');
 const { getUnreadCount } = require('@modules/notification/application/getUnreadCount');
 const { getNotifications } = require('@modules/notification/application/getNotifications');
 

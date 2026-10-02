@@ -1,13 +1,13 @@
 const { Op } = require('sequelize');
 
-const { Notifications, users } = require('../models/index.js');
+const { Notifications, users } = require('@models/index.js');
 const {
   NOTIFICATION_TYPES,
   NOTIFICATION_CATEGORIES,
   NOTIFICATION_PRIORITIES,
   RELATED_ENTITY_TYPES,
   buildNotificationFromTemplate,
-} = require('../constants/notifications');
+} = require('@constants/notifications');
 
 /**
  * Notification Repository - Contains all database operations for notifications

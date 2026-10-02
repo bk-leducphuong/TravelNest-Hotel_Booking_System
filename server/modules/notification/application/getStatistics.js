@@ -1,4 +1,4 @@
-const notificationRepository = require('@repositories/notification.repository');
+const notificationRepository = require('../infrastructure/notification.repository');
 
 /**
  * Get notification statistics for a user.

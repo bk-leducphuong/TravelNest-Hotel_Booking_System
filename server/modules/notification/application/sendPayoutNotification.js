@@ -1,6 +1,6 @@
 const logger = require('@config/logger.config');
-const notificationRepository = require('@repositories/notification.repository');
 const { NOTIFICATION_TYPES, RELATED_ENTITY_TYPES } = require('@constants/notifications');
+const notificationRepository = require('../infrastructure/notification.repository');
 
 const { getHotelWithOwner } = require('../infrastructure/lookups');
 const { emitNotification } = require('../infrastructure/socket-emitter');

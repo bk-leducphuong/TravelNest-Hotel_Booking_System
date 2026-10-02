@@ -1,4 +1,4 @@
-jest.mock('@repositories/notification.repository', () => ({
+jest.mock('@modules/notification/infrastructure/notification.repository', () => ({
   createFromTemplate: jest.fn(),
   markAsSentById: jest.fn(),
 }));
@@ -9,7 +9,7 @@ jest.mock('@modules/notification/infrastructure/socket-emitter', () => ({
   emitNotification: jest.fn(),
 }));
 
-const notificationRepository = require('@repositories/notification.repository');
+const notificationRepository = require('@modules/notification/infrastructure/notification.repository');
 const { getHotelWithOwner } = require('@modules/notification/infrastructure/lookups');
 const { emitNotification } = require('@modules/notification/infrastructure/socket-emitter');
 const {
