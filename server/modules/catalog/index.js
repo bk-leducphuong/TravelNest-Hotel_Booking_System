@@ -1,4 +1,5 @@
 const roomRepository = require('./infrastructure/room-admin.repository');
+const destinationRepository = require('./infrastructure/destination.repository');
 const { getHotelDetails } = require('./application/guest/getHotelDetails');
 const { searchRooms } = require('./application/guest/searchRooms');
 const { getHotelPolicies } = require('./application/guest/getHotelPolicies');
@@ -29,11 +30,24 @@ async function getRoomForHotel(roomId, hotelId) {
   return await roomRepository.findByIdAndHotelId(roomId, hotelId);
 }
 
+// Destination resolution (used by search before falling back to ES).
+async function getActiveDestinationById(destinationId) {
+  return await destinationRepository.findActiveById(destinationId);
+}
+
+async function findBestMatchDestinationByName(text) {
+  return await destinationRepository.findBestMatchByName(text);
+}
+
 module.exports = {
   // rooms
   getRoomsForHotel,
   getRoomById,
   getRoomForHotel,
+
+  // destinations
+  getActiveDestinationById,
+  findBestMatchDestinationByName,
 
   // hotels
   getHotelDetails,

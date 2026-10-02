@@ -1,5 +1,5 @@
 const analyticsService = require('@services/analytics.service');
-const destinationRepository = require('@repositories/destination.repository');
+const catalog = require('@modules/catalog');
 const imageRepository = require('@repositories/image.repository');
 
 /**
@@ -19,7 +19,7 @@ async function getTrendingDestinations({ limit = 5, days = 30 } = {}) {
   const cityIdsForImages = new Set();
 
   for (const row of rows) {
-    const destination = (await destinationRepository.findActiveById(row.destinationId)) || null;
+    const destination = (await catalog.getActiveDestinationById(row.destinationId)) || null;
 
     if (!destination) {
       continue;

@@ -1,5 +1,5 @@
 const logger = require('@config/logger.config');
-const destinationRepository = require('@repositories/destination.repository');
+const catalog = require('@modules/catalog');
 const destinationElasticsearchHelper = require('@helpers/destination_elasticsearch.helper');
 
 /**
@@ -9,7 +9,7 @@ const destinationElasticsearchHelper = require('@helpers/destination_elasticsear
 async function resolveDestination(params) {
   const explicitDestinationId = params.destinationId;
   if (explicitDestinationId) {
-    const existing = await destinationRepository.findActiveById(explicitDestinationId);
+    const existing = await catalog.getActiveDestinationById(explicitDestinationId);
     if (existing) return existing;
   }
 
@@ -32,7 +32,7 @@ async function resolveDestination(params) {
     logger.error(error, 'Destination ES resolution error, falling back to DB');
   }
 
-  return destinationRepository.findBestMatchByName(text);
+  return catalog.findBestMatchDestinationByName(text);
 }
 
 module.exports = { resolveDestination };

@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 
-const { destinations } = require('../models');
+const { destinations } = require('@models');
 
 class DestinationRepository {
   async findById(id) {
