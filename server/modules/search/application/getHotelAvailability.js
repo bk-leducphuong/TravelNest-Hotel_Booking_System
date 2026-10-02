@@ -1,5 +1,5 @@
 const ApiError = require('@utils/ApiError');
-const searchRepository = require('@repositories/search.repository');
+const searchRepository = require('../infrastructure/search.repository');
 
 /**
  * Availability + room pricing for a single hotel on a date range.

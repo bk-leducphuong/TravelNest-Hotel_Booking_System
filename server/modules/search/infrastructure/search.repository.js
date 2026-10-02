@@ -7,8 +7,8 @@ const {
   RoomInventories,
   SearchLogs,
   hotel_search_snapshots,
-} = require('../models/index.js');
-const sequelize = require('../config/database.config.js');
+} = require('@models/index.js');
+const sequelize = require('@config/database.config');
 
 /**
  * Search Repository - Contains all database operations for search
