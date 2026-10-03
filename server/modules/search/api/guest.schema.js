@@ -1,6 +1,6 @@
 const Joi = require('joi');
 
-const { pagination } = require('./common.schema');
+const { pagination } = require('@platform/validation/common.schema');
 
 /**
  * Search validation schemas for V2 API

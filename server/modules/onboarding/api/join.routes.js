@@ -2,7 +2,7 @@ const express = require('express');
 const { authenticate } = require('@middlewares/auth.middleware');
 const upload = require('@config/multer.config');
 const validate = require('@middlewares/validate.middleware');
-const joinSchema = require('@validators/v1/join.schema');
+const joinSchema = require('./guest.schema');
 const { submitJoinForm, uploadPhotos } = require('./join.controller');
 const router = express.Router();
 

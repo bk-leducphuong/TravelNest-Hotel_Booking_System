@@ -77,7 +77,6 @@
     "test:ci": "jest --ci --coverage --maxWorkers=2"
   },
   "_moduleAliases": {
-    "@validators": "validators",
     "@routes": "routes",
     "@config": "config",
     "@database": "database",

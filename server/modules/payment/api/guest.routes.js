@@ -1,7 +1,7 @@
 const express = require('express');
 const { authenticate } = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
-const paymentSchema = require('@validators/v1/payment.schema');
+const paymentSchema = require('./guest.schema');
 const {
   createPaymentIntent,
   getUserPayments,

@@ -1,7 +1,7 @@
 const express = require('express');
 const { authenticate } = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
-const bookingSchema = require('@validators/v1/booking.schema');
+const bookingSchema = require('./guest.schema');
 const {
   getUserBookings,
   createBooking,

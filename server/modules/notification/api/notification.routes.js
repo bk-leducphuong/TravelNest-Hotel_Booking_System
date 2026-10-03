@@ -1,7 +1,7 @@
 const express = require('express');
 const { authenticate } = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
-const notificationSchema = require('@validators/v1/notification.schema');
+const notificationSchema = require('./guest.schema');
 const {
   getNotifications,
   markNotificationAsRead,

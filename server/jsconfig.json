@@ -2,7 +2,6 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@validators/*": ["validators/*"],
       "@routes/*": ["routes/*"],
       "@config/*": ["config/*"],
       "@database/*": ["database/*"],
@@ -32,7 +31,6 @@
     "config",
     "routes",
     "middlewares",
-    "validators",
     "utils",
     "adapters",
     "rabbitmq",

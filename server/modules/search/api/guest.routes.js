@@ -1,7 +1,7 @@
 const express = require('express');
 const { authenticate, optionalAuthenticate } = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
-const searchSchema = require('@validators/v1/search.schema');
+const searchSchema = require('./guest.schema');
 const {
   searchHotels,
   getHotelAvailability,

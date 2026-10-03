@@ -2,7 +2,7 @@ const express = require('express');
 const { authenticate } = require('@middlewares/auth.middleware');
 const upload = require('@config/multer.config');
 const validate = require('@middlewares/validate.middleware');
-const userSchema = require('@validators/v1/user.schema');
+const userSchema = require('./guest.schema');
 const {
   getCurrentUser,
   updateCurrentUser,

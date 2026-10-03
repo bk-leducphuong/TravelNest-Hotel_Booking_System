@@ -2,7 +2,7 @@ const express = require('express');
 
 const { authenticate } = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
-const analyticsSchema = require('@validators/v1/analytics.schema');
+const analyticsSchema = require('./guest.schema');
 const { getSearchDemand, getMySearchSummary, getMySearches } = require('./analytics.controller');
 
 const router = express.Router();
