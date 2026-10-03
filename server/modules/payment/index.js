@@ -12,6 +12,7 @@ const transactionRepository = require('./infrastructure/transaction.repository')
 const ledgerRepository = require('./infrastructure/ledger.repository');
 const idempotencyRepository = require('./infrastructure/idempotency.repository');
 const webhookEventLogRepository = require('./infrastructure/webhook_event_log.repository');
+const ledgerService = require('./application/ledger.service');
 
 // Register once per process (guarded).
 registerPaymentSubscribers();
@@ -58,21 +59,9 @@ async function failIdempotencyRecord(id, options = {}) {
   return await idempotencyRepository.markFailed(id, options);
 }
 
-// --- Ledger (payout + the legacy ledger service) ---
+// --- Ledger (payout reads the account owner) ---
 async function getPrimaryOwnerByHotelId(hotelId, options = {}) {
   return await ledgerRepository.findPrimaryOwnerByHotelId(hotelId, options);
-}
-
-async function findLedgerEntryByGroupKey(entryGroupKey, options = {}) {
-  return await ledgerRepository.findByEntryGroupKey(entryGroupKey, options);
-}
-
-async function findOrCreateLedgerAccount(accountData, options = {}) {
-  return await ledgerRepository.findOrCreateAccount(accountData, options);
-}
-
-async function createLedgerEntries(entries, options = {}) {
-  return await ledgerRepository.createEntries(entries, options);
 }
 
 /** Webhook event log used by the Stripe webhook edge (idempotency + audit). */
@@ -107,8 +96,8 @@ module.exports = {
   completeIdempotencyRecord,
   failIdempotencyRecord,
   getPrimaryOwnerByHotelId,
-  findLedgerEntryByGroupKey,
-  findOrCreateLedgerAccount,
-  createLedgerEntries,
   webhookEventLog,
+
+  // Ledger posting (payout + payment webhooks).
+  ledger: ledgerService,
 };

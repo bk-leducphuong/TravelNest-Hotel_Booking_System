@@ -1,8 +1,8 @@
 const ApiError = require('@utils/ApiError');
 const { publish, DOMAIN_EVENTS } = require('@platform/events');
 const { auditService } = require('@platform/audit');
-const ledgerService = require('@services/ledger.service');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
+const ledgerService = require('../ledger.service');
 
 const refundRepository = require('../../infrastructure/refund.repository');
 const transactionRepository = require('../../infrastructure/transaction-admin.repository');

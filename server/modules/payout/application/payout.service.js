@@ -2,7 +2,7 @@ const sequelize = require('@config/database.config');
 const logger = require('@config/logger.config');
 const notificationModule = require('@modules/notification');
 const paymentModule = require('@modules/payment');
-const ledgerService = require('@services/ledger.service');
+const { ledger: ledgerService } = require('@modules/payment');
 
 const payoutRepository = require('../infrastructure/payout.repository');
 

@@ -3,9 +3,9 @@ const { Transaction } = require('sequelize');
 const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
 const bookingModule = require('@modules/booking');
-const ledgerService = require('@services/ledger.service');
-
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
+const ledgerService = require('../ledger.service');
+
 const transactionRepository = require('../../infrastructure/transaction.repository');
 const paymentRepository = require('../../infrastructure/payment.repository');
 

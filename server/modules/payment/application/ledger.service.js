@@ -1,12 +1,7 @@
 const { uuidv7 } = require('uuidv7');
 
 const sequelize = require('@config/database.config');
-
-// Payment owns the ledger tables. Required lazily: payment imports this service
-// at load time (its webhook handlers), so a top-level require would be a cycle.
-function ledgerModule() {
-  return require('@modules/payment');
-}
+const ledgerRepository = require('../infrastructure/ledger.repository');
 
 class LedgerService {
   async recordPaymentSucceeded(
@@ -20,7 +15,8 @@ class LedgerService {
     const currency = (tx.currency || 'USD').toUpperCase();
     const hotelId = tx.hotel_id || bookingData?.hotel_id;
     const resolvedOwnerId =
-      ownerId || (hotelId ? await ledgerModule().getPrimaryOwnerByHotelId(hotelId, options) : null);
+      ownerId ||
+      (hotelId ? await ledgerRepository.findPrimaryOwnerByHotelId(hotelId, options) : null);
     const feeRate = this.normalizeFeeRate(platformFeeRate);
     const platformFeeAmount = this.roundMoney(amount * feeRate);
     const payableAmount = this.roundMoney(amount - platformFeeAmount);
@@ -78,7 +74,7 @@ class LedgerService {
     const currency = (refundData.currency || tx?.currency || 'USD').toUpperCase();
     const hotelId = refundData.hotel_id || tx?.hotel_id;
     const ownerId = hotelId
-      ? await ledgerModule().getPrimaryOwnerByHotelId(hotelId, options)
+      ? await ledgerRepository.findPrimaryOwnerByHotelId(hotelId, options)
       : null;
     const feeRate = this.normalizeFeeRate(platformFeeRate);
     const platformFeeReversal = this.roundMoney(amount * feeRate);
@@ -176,7 +172,7 @@ class LedgerService {
 
   async postBalancedEntries(posting, options = {}) {
     return await this.withTransaction(options, async (transaction) => {
-      const existing = await ledgerModule().findLedgerEntryByGroupKey(posting.entryGroupKey, {
+      const existing = await ledgerRepository.findByEntryGroupKey(posting.entryGroupKey, {
         transaction,
       });
 
@@ -191,7 +187,7 @@ class LedgerService {
       const entries = [];
 
       for (const [index, line] of lines.entries()) {
-        const account = await ledgerModule().findOrCreateLedgerAccount(line.account, {
+        const account = await ledgerRepository.findOrCreateAccount(line.account, {
           transaction,
         });
 
@@ -211,7 +207,7 @@ class LedgerService {
         });
       }
 
-      return await ledgerModule().createLedgerEntries(entries, { transaction });
+      return await ledgerRepository.createEntries(entries, { transaction });
     });
   }
 
