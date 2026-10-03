@@ -3,6 +3,7 @@ const express = require('express');
 const request = require('supertest');
 jest.mock('@modules/identity', () => ({
   identity: { resolveAuthenticatedUser: jest.fn() },
+  keycloak: { getUserInfo: jest.fn() },
 }));
 
 jest.mock('@utils/jwt.util', () => ({
@@ -12,7 +13,7 @@ jest.mock('@utils/jwt.util', () => ({
 const { identity: identityService } = require('@modules/identity');
 const { verifyJwt } = require('@utils/jwt.util');
 
-const authRoutes = require('../../../routes/v1/auth.routes');
+const authRoutes = require('../../../modules/identity/api/auth.routes');
 const errorMiddleware = require('../../../middlewares/error.middleware');
 
 describe('Auth API Integration Tests', () => {

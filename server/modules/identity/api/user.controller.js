@@ -1,7 +1,7 @@
-const { users: userService } = require('@modules/identity');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 const ApiError = require('@utils/ApiError');
+const userService = require('../application/user.service');
 
 /**
  * User Controller - HTTP ↔ business mapping

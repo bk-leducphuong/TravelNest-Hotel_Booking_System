@@ -1,4 +1,4 @@
-const authController = require('@controllers/v1/auth.controller');
+const authController = require('@modules/identity/api/auth.controller');
 
 jest.mock('@helpers/auth-context.helper', () => ({
   buildAuthSession: jest.fn(),

@@ -1,9 +1,9 @@
-const express = require('express');
-
-const { checkAuth } = require('@controllers/v1/auth.controller');
-const { optionalAuthenticate } = require('@middlewares/auth.middleware');
-
-const router = express.Router();
+/**
+ * OpenAPI documentation extracted from the identity auth routes.
+ *
+ * Kept separate from the router so route files read as routing. swagger-jsdoc
+ * discovers this file through the `apis` glob in config/swagger.config.js.
+ */
 
 /**
  * @swagger
@@ -18,6 +18,3 @@ const router = express.Router();
  *       200:
  *         description: Current authentication state
  */
-router.get('/session', optionalAuthenticate, checkAuth);
-
-module.exports = router;

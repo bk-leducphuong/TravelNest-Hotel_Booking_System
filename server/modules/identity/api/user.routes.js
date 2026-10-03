@@ -1,5 +1,8 @@
 const express = require('express');
 const { authenticate } = require('@middlewares/auth.middleware');
+const upload = require('@config/multer.config');
+const validate = require('@middlewares/validate.middleware');
+const userSchema = require('@validators/v1/user.schema');
 const {
   getCurrentUser,
   updateCurrentUser,
@@ -9,10 +12,7 @@ const {
   addFavoriteHotel,
   removeFavoriteHotel,
   checkFavoriteHotel,
-} = require('@controllers/v1/user.controller.js');
-const upload = require('@config/multer.config');
-const validate = require('@middlewares/validate.middleware');
-const userSchema = require('@validators/v1/user.schema');
+} = require('./user.controller');
 const router = express.Router();
 
 // All routes require authentication

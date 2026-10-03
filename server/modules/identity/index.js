@@ -1,6 +1,9 @@
 const identityService = require('./application/identity.service');
 const userService = require('./application/user.service');
 const userRepository = require('./infrastructure/user.repository');
+const keycloakUserInfoService = require('./infrastructure/keycloak-userinfo.client');
+const authRoutes = require('./api/auth.routes');
+const userRoutes = require('./api/user.routes');
 
 /**
  * Identity module - public interface.
@@ -20,6 +23,10 @@ async function getFavoriteHotelIds(userId, hotelIds) {
 }
 
 module.exports = {
+  // HTTP edge (mounted by routes/v1/index.js).
+  authRoutes,
+  userRoutes,
+
   getFavoriteHotelIds,
 
   // Session resolution + Role provisioning (identity.service.js).
@@ -27,4 +34,7 @@ module.exports = {
 
   // Profile, avatar, favorites and password (user.service.js).
   users: userService,
+
+  // Keycloak userinfo client (used by the auth middleware).
+  keycloak: keycloakUserInfoService,
 };

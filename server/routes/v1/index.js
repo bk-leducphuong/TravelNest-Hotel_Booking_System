@@ -9,7 +9,7 @@ const router = express.Router();
 // Import all route modules
 const adminBff = require('@bff/admin');
 const reviewModule = require('@modules/review');
-const authRoutes = require('./auth.routes');
+const identityModule = require('@modules/identity');
 const analyticsRoutes = require('./analytics.routes');
 const bookingRoutes = require('./booking.routes');
 const holdRoutes = require('./hold.routes');
@@ -19,7 +19,6 @@ const joinRoutes = require('./join.routes');
 const notificationRoutes = require('./notification.routes');
 const paymentRoutes = require('./payment.routes');
 const searchRoutes = require('./search.routes');
-const userRoutes = require('./user.routes');
 const internalSuperadminRoutes = require('./internalSuperadmin.routes');
 
 // Mount all routes
@@ -27,10 +26,10 @@ router.use('/search', searchRoutes);
 router.use('/hotels', hotelRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/images', imageRoutes);
-router.use('/auth', authRoutes);
+router.use('/auth', identityModule.authRoutes);
 router.use('/join', joinRoutes);
 router.use('/payments', paymentRoutes);
-router.use('/user', userRoutes);
+router.use('/user', identityModule.userRoutes);
 router.use('/reviews', reviewModule.guestRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('/hold', holdRoutes);
