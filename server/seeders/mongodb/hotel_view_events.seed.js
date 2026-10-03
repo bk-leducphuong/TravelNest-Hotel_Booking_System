@@ -23,11 +23,13 @@ function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-async function main() {
-  const days = Math.max(1, parseInt(getArg('days', '30'), 10));
-  const avgPerHotel = Math.max(1, parseInt(getArg('avg-per-hotel', '50'), 10));
-  const batchSize = Math.max(1, parseInt(getArg('batch', '1000'), 10));
-  const clear = process.argv.includes('--clear');
+async function main(options = {}) {
+  const days = options.days ?? Math.max(1, parseInt(getArg('days', '30'), 10));
+  const avgPerHotel =
+    options.avgPerHotel ?? Math.max(1, parseInt(getArg('avg-per-hotel', '50'), 10));
+  const batchSize = options.batch ?? Math.max(1, parseInt(getArg('batch', '1000'), 10));
+  const clear = options.clear ?? process.argv.includes('--clear');
+  const closeSequelize = options.closeSequelize !== false;
 
   await db.sequelize.authenticate();
   await mongoDb.connect();
@@ -73,7 +75,9 @@ async function main() {
   }
 
   await mongoDb.close();
-  await db.sequelize.close();
+  if (closeSequelize) {
+    await db.sequelize.close();
+  }
   console.log('MongoDB hotel view event seeding complete.');
 }
 

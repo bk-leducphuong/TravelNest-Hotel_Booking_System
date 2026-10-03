@@ -47,6 +47,9 @@ Thumbs.db
 # Sequelize / database artifacts
 infra/database/*.sqlite
 
+# Fast seeder scratch artifacts (parent-id manifests)
+seeders/.seed-tmp/
+
 # Storage / uploads (if generated at runtime)
 public/uploads/
 infra/minio-data/
