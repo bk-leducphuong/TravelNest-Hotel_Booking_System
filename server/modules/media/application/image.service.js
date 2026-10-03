@@ -1,6 +1,6 @@
-const mediaProxyService = require('@services/mediaProxy.service');
 const ApiError = require('@utils/ApiError');
 const logger = require('@config/logger.config');
+const mediaProxyService = require('../infrastructure/media-proxy.client');
 
 /**
  * Image Service - Business logic for image operations

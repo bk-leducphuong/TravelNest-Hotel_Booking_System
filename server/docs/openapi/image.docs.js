@@ -1,5 +1,5 @@
 /**
- * OpenAPI documentation extracted from routes/v1/image.routes.js.
+ * OpenAPI documentation extracted from the media image routes.
  *
  * Kept separate from the router so route files read as routing. swagger-jsdoc
  * discovers this file through the `apis` glob in config/swagger.config.js.

@@ -1,17 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const {
-  uploadImage,
-  getImages,
-  deleteImage,
-  setPrimaryImage,
-} = require('@controllers/v1/image.controller');
 const upload = require('@config/multer.config');
 const { authenticate } = require('@middlewares/auth.middleware');
 const {
   authorizeImageEntityWrite,
   authorizeImageDelete,
 } = require('@middlewares/image-auth.middleware');
+const { uploadImage, getImages, deleteImage, setPrimaryImage } = require('./image.controller');
 
 // Root route: /api/v1/images
 

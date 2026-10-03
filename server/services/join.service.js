@@ -1,4 +1,4 @@
-const mediaProxyService = require('@services/mediaProxy.service');
+const { mediaProxy: mediaProxyService } = require('@modules/media');
 const joinRepository = require('../repositories/join.repository');
 const ApiError = require('../utils/ApiError');
 

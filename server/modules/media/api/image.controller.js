@@ -1,6 +1,6 @@
-const imageService = require('@services/image.service');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
+const imageService = require('../application/image.service');
 
 /**
  * Upload image for an entity
