@@ -1,4 +1,4 @@
-const authRepository = require('@repositories/auth.repository');
+const authRepository = require('@modules/identity').auth;
 const ApiError = require('@utils/ApiError');
 const { ROLES } = require('@constants/roles');
 

@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 
 const mediaProxyService = require('@services/mediaProxy.service');
-const userRepository = require('../repositories/user.repository');
+const userRepository = require('@modules/identity').users;
 const { AuthAccounts } = require('../models');
 const ApiError = require('../utils/ApiError');
 

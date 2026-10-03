@@ -1,10 +1,22 @@
 const authService = require('@services/auth.service');
-const authRepository = require('@repositories/auth.repository');
+const authRepository = require('@modules/identity').auth;
 const bcrypt = require('bcryptjs');
 const ApiError = require('@utils/ApiError');
 
 // Mock dependencies
-jest.mock('@repositories/auth.repository');
+jest.mock('@modules/identity', () => ({
+  auth: {
+    assignRoleToUser: jest.fn(),
+    createLocalAuthAccount: jest.fn(),
+    createUser: jest.fn(),
+    findByEmail: jest.fn(),
+    findByEmailAndRole: jest.fn(),
+    findByEmailAndRoleWithPassword: jest.fn(),
+    findRoleByName: jest.fn(),
+    getUserWithContext: jest.fn(),
+    updateLastLogin: jest.fn(),
+  },
+}));
 jest.mock('bcryptjs');
 jest.mock('@constants/roles', () => ({
   isValidRole: jest.fn(),

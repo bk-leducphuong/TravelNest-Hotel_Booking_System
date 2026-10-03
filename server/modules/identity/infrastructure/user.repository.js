@@ -1,13 +1,6 @@
 const { Op } = require('sequelize');
 
-const {
-  Users,
-  SavedHotels,
-  Hotels,
-  AuthAccounts,
-  UserRoles,
-  Roles,
-} = require('../models/index.js');
+const { Users, SavedHotels, Hotels, AuthAccounts, UserRoles, Roles } = require('@models/index.js');
 
 /**
  * User Repository - Contains all database operations for users

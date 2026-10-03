@@ -1,4 +1,4 @@
-const userRepository = require('@repositories/user.repository');
+const identity = require('@modules/identity');
 
 /**
  * Attach the authenticated user's favorite status to the hotels on this page.
@@ -19,7 +19,7 @@ async function attachFavoriteStatus(response, userId) {
   }
 
   const hotelIds = hotels.map((hotel) => hotel.hotel_id).filter(Boolean);
-  const favoriteHotelIds = await userRepository.findFavoriteHotelIds(userId, hotelIds);
+  const favoriteHotelIds = await identity.getFavoriteHotelIds(userId, hotelIds);
   const favoriteHotelIdSet = new Set(favoriteHotelIds.map((hotelId) => Number(hotelId)));
 
   hotels.forEach((hotel) => {

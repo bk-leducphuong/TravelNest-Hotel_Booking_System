@@ -1,8 +1,20 @@
 const userService = require('@services/user.service');
-const userRepository = require('@repositories/user.repository');
+const userRepository = require('@modules/identity').users;
 const ApiError = require('@utils/ApiError');
 
-jest.mock('@repositories/user.repository');
+jest.mock('@modules/identity', () => ({
+  users: {
+    findById: jest.fn(),
+    findByIdWithPassword: jest.fn(),
+    findByEmail: jest.fn(),
+    updateById: jest.fn(),
+    findFavoriteHotelsByUserIdPaginated: jest.fn(),
+    findHotelById: jest.fn(),
+    findSavedHotel: jest.fn(),
+    createSavedHotel: jest.fn(),
+    deleteSavedHotel: jest.fn(),
+  },
+}));
 
 describe('UserService', () => {
   beforeEach(() => {

@@ -1,11 +1,11 @@
-const authRepository = require('@repositories/auth.repository');
+const authRepository = require('@modules/identity/infrastructure/auth.repository');
 const { Users, Roles, UserRoles, HotelUsers, AuthAccounts } = require('@models/index.js');
 
 const {
   createMockAuthUser,
   createMockRole,
   createMockUserRole,
-} = require('../../fixtures/auth.fixtures');
+} = require('../../../../fixtures/auth.fixtures');
 
 // Mock the models
 jest.mock('@models/index.js', () => ({
