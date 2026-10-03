@@ -1,5 +1,5 @@
 const redisClient = require('@config/redis.config');
-const imageRepository = require('@repositories/image.repository');
+const catalog = require('@modules/catalog');
 
 function recentSearchKey(userId) {
   return `recent_searches:user:${userId}`;
@@ -77,7 +77,7 @@ async function getRecentSearches(userId, limit = 10) {
   const cityIds = [...new Set(searches.map((search) => search.cityId).filter(Boolean))];
 
   if (cityIds.length > 0) {
-    const imagesByCityId = await imageRepository.getCityImagesByCityIds(cityIds);
+    const imagesByCityId = await catalog.getCityImagesByCityIds(cityIds);
 
     for (const search of searches) {
       if (!search.cityId) continue;

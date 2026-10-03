@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
-const { images, image_variants } = require('../models');
-const { Images, ImageVariants } = require('../models/index.js');
-const sequelize = require('../config/database.config');
+const { images, image_variants } = require('@models');
+const { Images, ImageVariants } = require('@models/index.js');
+const sequelize = require('@config/database.config');
 
 /**
  * Image Repository - Contains all database operations for images

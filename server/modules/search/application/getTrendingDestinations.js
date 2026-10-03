@@ -1,6 +1,5 @@
 const analyticsService = require('@services/analytics.service');
 const catalog = require('@modules/catalog');
-const imageRepository = require('@repositories/image.repository');
 
 /**
  * Top popular/trending destinations from the analytics service, enriched with
@@ -43,9 +42,7 @@ async function getTrendingDestinations({ limit = 5, days = 30 } = {}) {
   }
 
   if (cityIdsForImages.size > 0) {
-    const imagesByCityId = await imageRepository.getCityImagesByCityIds(
-      Array.from(cityIdsForImages)
-    );
+    const imagesByCityId = await catalog.getCityImagesByCityIds(Array.from(cityIdsForImages));
 
     for (const dest of destinations) {
       if (dest.type !== 'city' || !dest.cityId) continue;

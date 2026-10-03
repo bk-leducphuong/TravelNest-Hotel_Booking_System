@@ -2,7 +2,7 @@ require('../register-aliases');
 const { Worker } = require('bullmq');
 const config = require('@config/bullmq.config');
 const logger = require('@config/logger.config');
-const snapshotRepo = require('@repositories/hotel_search_snapshot.repository');
+const { hotelSnapshot: snapshotRepo } = require('@modules/catalog');
 const elasticsearchClient = require('@config/elasticsearch.config');
 
 const queueName = config.queues.hotelSnapshot.name;

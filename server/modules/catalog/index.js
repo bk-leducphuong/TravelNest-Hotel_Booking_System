@@ -1,5 +1,7 @@
 const roomRepository = require('./infrastructure/room-admin.repository');
 const destinationRepository = require('./infrastructure/destination.repository');
+const imageRepository = require('./infrastructure/image.repository');
+const hotelSnapshot = require('./infrastructure/hotel_search_snapshot.repository');
 const { getHotelDetails } = require('./application/guest/getHotelDetails');
 const { searchRooms } = require('./application/guest/searchRooms');
 const { getHotelPolicies } = require('./application/guest/getHotelPolicies');
@@ -39,6 +41,11 @@ async function findBestMatchDestinationByName(text) {
   return await destinationRepository.findBestMatchByName(text);
 }
 
+// City images (used by search to enrich destination cards).
+async function getCityImagesByCityIds(cityIds, options = {}) {
+  return await imageRepository.getCityImagesByCityIds(cityIds, options);
+}
+
 module.exports = {
   // rooms
   getRoomsForHotel,
@@ -48,6 +55,10 @@ module.exports = {
   // destinations
   getActiveDestinationById,
   findBestMatchDestinationByName,
+  getCityImagesByCityIds,
+
+  // hotel search-snapshot projection (used by the snapshot worker + seeders)
+  hotelSnapshot,
 
   // hotels
   getHotelDetails,
