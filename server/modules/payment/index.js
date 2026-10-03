@@ -21,12 +21,12 @@ registerPaymentSubscribers();
  * Payment module - public interface.
  *
  * Owns the guest payment path (intents, reads) and the Stripe webhook handlers,
- * plus the admin refund surface. Consolidating the legacy `@services/payment`
- * path into this module is done; further extraction to a service is a target.
+ * plus the admin refund surface and the ledger. Further extraction to a Go
+ * service is a target.
  *
  * The persistence helpers below let other contexts (booking, payout, the Stripe
- * webhook edge, the legacy ledger service) use payment-owned tables without
- * importing payment's repositories directly.
+ * webhook edge) use payment-owned tables without importing payment's
+ * repositories directly.
  */
 
 // --- Transactions (booking creates/updates them; payout reads them) ---

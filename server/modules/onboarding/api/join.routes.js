@@ -1,9 +1,9 @@
 const express = require('express');
-const { submitJoinForm, uploadPhotos } = require('@controllers/v1/join.controller.js');
 const { authenticate } = require('@middlewares/auth.middleware');
 const upload = require('@config/multer.config');
 const validate = require('@middlewares/validate.middleware');
 const joinSchema = require('@validators/v1/join.schema');
+const { submitJoinForm, uploadPhotos } = require('./join.controller');
 const router = express.Router();
 
 // root route: /api/join

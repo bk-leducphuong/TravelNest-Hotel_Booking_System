@@ -1,6 +1,6 @@
-const joinService = require('@services/join.service');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
+const joinService = require('../application/join.service');
 
 /**
  * Join Controller - HTTP ↔ business mapping

@@ -1,5 +1,5 @@
 const internal = require('@platform/internal');
-const notificationTestService = require('@services/notificationTest.service');
+const { notificationTest: notificationTestService } = require('@modules/notification');
 
 async function listTasks(req, res) {
   res.status(200).json({

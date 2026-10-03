@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 
-const { Hotels, Rooms, RoomInventories } = require('../models/index.js');
+const { Hotels, Rooms, RoomInventories } = require('@models/index.js');
 
 /**
  * Join Repository - Contains all database operations for partner registration

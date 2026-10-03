@@ -1,6 +1,6 @@
 const { mediaProxy: mediaProxyService } = require('@modules/media');
-const joinRepository = require('../repositories/join.repository');
-const ApiError = require('../utils/ApiError');
+const ApiError = require('@utils/ApiError');
+const joinRepository = require('../infrastructure/join.repository');
 
 /**
  * Join Service - Contains main business logic for partner registration
