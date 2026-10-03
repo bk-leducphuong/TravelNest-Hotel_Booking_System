@@ -10,7 +10,7 @@ require('dotenv').config({
 
 const mongoDb = require('@config/mongodb.config');
 const db = require('@models');
-const searchLogRepository = require('@repositories/mongodb/search_log.repository');
+const searchLogRepository = require('./repositories/search_log.repository');
 
 function getArg(name, fallback) {
   const match = process.argv.find((arg) => arg.startsWith(`--${name}=`));
@@ -46,7 +46,7 @@ async function main() {
   }
 
   if (clear) {
-    await require('@models/mongo/search_log.model').deleteMany({});
+    await require('./models/search_log.model').deleteMany({});
   }
 
   console.log(`Seeding ${rows} MongoDB search logs...`);

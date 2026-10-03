@@ -11,7 +11,7 @@ require('dotenv').config({
 const { v4: uuidv4 } = require('uuid');
 const mongoDb = require('@config/mongodb.config');
 const db = require('@models');
-const hotelViewEventRepository = require('@repositories/mongodb/hotel_view_event.repository');
+const hotelViewEventRepository = require('./repositories/hotel_view_event.repository');
 
 function getArg(name, fallback) {
   const match = process.argv.find((arg) => arg.startsWith(`--${name}=`));
@@ -42,7 +42,7 @@ async function main() {
   }
 
   if (clear) {
-    await require('@models/mongo/hotel_view_event.model').deleteMany({});
+    await require('./models/hotel_view_event.model').deleteMany({});
   }
 
   console.log(`Seeding MongoDB hotel view events for ${hotels.length} hotels...`);

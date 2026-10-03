@@ -1,6 +1,6 @@
 const logger = require('@config/logger.config');
-const HotelViewEvent = require('@models/mongo/hotel_view_event.model');
 const { v4: uuidv4 } = require('uuid');
+const HotelViewEvent = require('../models/hotel_view_event.model');
 
 class HotelViewEventMongoRepository {
   async insertHotelViewEvents(events = []) {

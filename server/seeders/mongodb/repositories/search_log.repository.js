@@ -1,6 +1,6 @@
 const logger = require('@config/logger.config');
-const SearchLog = require('@models/mongo/search_log.model');
 const { v4: uuidv4 } = require('uuid');
+const SearchLog = require('../models/search_log.model');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
