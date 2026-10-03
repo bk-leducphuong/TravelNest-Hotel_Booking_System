@@ -84,8 +84,6 @@
     "@middlewares": "middlewares",
     "@models": "models",
     "@public": "public",
-    "@queues": "queues",
-    "@workers": "workers",
     "@events": "events",
     "@utils": "utils",
     "@adapters": "adapters",

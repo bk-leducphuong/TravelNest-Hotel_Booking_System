@@ -131,13 +131,13 @@ const createApp = async () => {
   const { createBullBoard } = require('@bull-board/api');
   const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
   const { ExpressAdapter } = require('@bull-board/express');
-  const { hotelSnapshotQueue, holdExpiryQueue } = require('@queues/index');
+  const { jobs } = require('@modules/booking');
 
   const serverAdapter = new ExpressAdapter();
   serverAdapter.setBasePath('/admin/queues');
 
   createBullBoard({
-    queues: [new BullMQAdapter(hotelSnapshotQueue), new BullMQAdapter(holdExpiryQueue)],
+    queues: [new BullMQAdapter(jobs.holdExpiry.queue)],
     serverAdapter,
   });
 

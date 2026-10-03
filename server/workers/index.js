@@ -5,14 +5,9 @@ const logger = require('@config/logger.config');
 const { registerTransport } = require('@platform/events');
 const natsTransport = require('@events/nats.adapter');
 const redisHoldTransport = require('@platform/events/transports/redis-hold');
-const { scheduleHoldExpiryScanner } = require('@queues/holdExpiry.queue');
-const { scheduleBookingExpiryScanner } = require('@queues/bookingExpiry.queue');
+const { jobs } = require('@modules/booking');
 
-const hotelSnapshotWorker = require('./hotelSnapshot.worker');
-const holdExpiryWorker = require('./holdExpiry.worker');
-const bookingExpiryWorker = require('./bookingExpiry.worker');
-
-const workers = [hotelSnapshotWorker, holdExpiryWorker, bookingExpiryWorker];
+const workers = [jobs.holdExpiry.createWorker(), jobs.bookingExpiry.createWorker()];
 
 let healthServer;
 
@@ -48,8 +43,8 @@ async function startWorkers() {
     registerTransport(redisHoldTransport);
     await natsTransport.connect();
 
-    await scheduleHoldExpiryScanner();
-    await scheduleBookingExpiryScanner();
+    await jobs.holdExpiry.schedule();
+    await jobs.bookingExpiry.schedule();
 
     // Worker.run() is a blocking main loop that only resolves once the worker
     // closes, so start it without awaiting and wait for readiness instead —

@@ -5,24 +5,12 @@ const { recomputeHotelRatingSummary } = require('../application/recomputeHotelRa
 
 let registered = false;
 
-async function refreshHotelReadModels({ hotelId, reviewId }) {
+async function refreshHotelReadModels({ hotelId }) {
   if (!hotelId) {
     return;
   }
 
   await recomputeHotelRatingSummary(hotelId);
-
-  // Refresh the storefront/search snapshot. Required lazily so the module does
-  // not pull in queue/transport wiring at import time.
-  try {
-    const { emitReviewCreated } = require('@utils/hotel_snapshot_events.utils');
-    await emitReviewCreated(hotelId, reviewId || null);
-  } catch (error) {
-    logger.warn(
-      { error: error.message, hotelId, reviewId },
-      'Failed to refresh hotel snapshot after review change'
-    );
-  }
 }
 
 /**

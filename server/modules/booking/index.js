@@ -4,7 +4,7 @@ const holdService = require('./application/hold.service');
 const adminRoutes = require('./api/admin.routes');
 const guestRoutes = require('./api/guest.routes');
 const holdRoutes = require('./api/hold.routes');
-const { registerBookingSubscribers } = require('./events/subscribers');
+const jobs = require('./jobs');
 const { getUserBookings } = require('./application/guest/getUserBookings');
 const { getBookingById } = require('./application/guest/getBookingById');
 const { getBookingByCode } = require('./application/guest/getBookingByCode');
@@ -14,9 +14,6 @@ const {
   createPaymentIntentForBooking,
 } = require('./application/guest/createPaymentIntentForBooking');
 const { expirePendingBookings } = require('./application/expiry/expirePendingBookings');
-
-// Register once per process (guarded).
-registerBookingSubscribers();
 
 /**
  * Booking module - public interface.
@@ -82,4 +79,7 @@ module.exports = {
 
   // Background expiry (worker entrypoint).
   expirePendingBookings,
+
+  // Background jobs (queues + worker factories) owned by booking.
+  jobs,
 };

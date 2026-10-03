@@ -14,8 +14,6 @@
       "@constants/*": ["constants/*"],
       "@helpers/*": ["helpers/*"],
       "@infra/*": ["infra/*"],
-      "@queues/*": ["queues/*"],
-      "@workers/*": ["workers/*"],
       "@modules/*": ["modules/*"],
       "@platform/*": ["platform/*"],
       "@bff/*": ["bff/*"]
@@ -32,7 +30,6 @@
     "middlewares",
     "utils",
     "adapters",
-    "rabbitmq",
     "database",
     "modules",
     "platform",

@@ -1,6 +1,5 @@
 const adminRoutes = require('./api/admin.routes');
 const roomInventoryRepository = require('./infrastructure/room_inventory.repository');
-const { registerInventorySubscribers } = require('./events/subscribers');
 const { reserveRooms } = require('./application/guest/reserveRooms');
 const { releaseRooms } = require('./application/guest/releaseRooms');
 const { checkAvailability } = require('./application/guest/checkAvailability');
@@ -8,9 +7,6 @@ const { getInventoryDetails } = require('./application/guest/getInventoryDetails
 const { checkAvailabilityForHold } = require('./application/guest/checkAvailabilityForHold');
 const { holdRooms } = require('./application/guest/holdRooms');
 const { releaseHoldRooms } = require('./application/guest/releaseHoldRooms');
-
-// Register once per process (guarded).
-registerInventorySubscribers();
 
 /**
  * Read raw inventory rows for rooms over a date range (used by pricing).
