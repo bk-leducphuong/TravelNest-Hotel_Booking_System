@@ -11,7 +11,7 @@ const adminBff = require('@bff/admin');
 const reviewModule = require('@modules/review');
 const identityModule = require('@modules/identity');
 const mediaModule = require('@modules/media');
-const analyticsRoutes = require('./analytics.routes');
+const analyticsModule = require('@modules/analytics');
 const bookingRoutes = require('./booking.routes');
 const holdRoutes = require('./hold.routes');
 const hotelRoutes = require('./hotel.routes');
@@ -24,7 +24,7 @@ const internalSuperadminRoutes = require('./internalSuperadmin.routes');
 // Mount all routes
 router.use('/search', searchRoutes);
 router.use('/hotels', hotelRoutes);
-router.use('/analytics', analyticsRoutes);
+router.use('/analytics', analyticsModule.analyticsRoutes);
 router.use('/images', mediaModule.imageRoutes);
 router.use('/auth', identityModule.authRoutes);
 router.use('/join', joinRoutes);

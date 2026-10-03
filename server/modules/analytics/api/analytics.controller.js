@@ -1,5 +1,5 @@
-const analyticsService = require('@services/analytics.service');
 const asyncHandler = require('@utils/asyncHandler');
+const analyticsService = require('../infrastructure/analytics-service.client');
 
 const getSearchDemand = asyncHandler(async (req, res) => {
   const { nextDays, limit } = req.query;

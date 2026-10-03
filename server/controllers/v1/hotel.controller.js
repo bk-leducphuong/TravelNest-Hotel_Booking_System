@@ -2,7 +2,7 @@ const hotelModule = require('@modules/catalog');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 const { computeNumberOfNights } = require('@helpers/hotel.helpers');
-const hotelViewEventService = require('@services/hotelViewEvent.service');
+const { hotelViewEvents: hotelViewEventService } = require('@modules/analytics');
 const { getAuthenticatedUserId, getTrackingSessionId } = require('@helpers/auth-context.helper');
 
 /**

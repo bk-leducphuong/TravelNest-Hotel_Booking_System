@@ -1,4 +1,4 @@
-const analyticsService = require('@services/analytics.service');
+const { analytics: analyticsService } = require('@modules/analytics');
 
 const { enrichHotelCardsByIds } = require('./hotel-cards');
 

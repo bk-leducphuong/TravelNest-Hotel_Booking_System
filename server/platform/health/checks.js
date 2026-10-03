@@ -3,7 +3,7 @@ const redisClient = require('@config/redis.config');
 const { minioClient, bucketName } = require('@config/minio.config');
 const elasticsearchClient = require('@config/elasticsearch.config');
 const logger = require('@config/logger.config');
-const analyticsService = require('@services/analytics.service');
+const { analytics: analyticsService } = require('@modules/analytics');
 
 const { formatBytes } = require('./format');
 const { getUptime } = require('./uptime');

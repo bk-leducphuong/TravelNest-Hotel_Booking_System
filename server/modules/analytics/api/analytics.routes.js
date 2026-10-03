@@ -1,13 +1,9 @@
 const express = require('express');
 
-const {
-  getSearchDemand,
-  getMySearchSummary,
-  getMySearches,
-} = require('@controllers/v1/analytics.controller');
 const { authenticate } = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
 const analyticsSchema = require('@validators/v1/analytics.schema');
+const { getSearchDemand, getMySearchSummary, getMySearches } = require('./analytics.controller');
 
 const router = express.Router();
 
