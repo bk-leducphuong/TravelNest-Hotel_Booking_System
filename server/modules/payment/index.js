@@ -1,5 +1,6 @@
 const adminRoutes = require('./api/admin.routes');
 const guestRoutes = require('./api/guest.routes');
+const webhookRoutes = require('./api/webhook.routes');
 const { registerPaymentSubscribers } = require('./events/subscribers');
 const { refundBooking } = require('./application/admin/refundBooking');
 const { createPaymentIntent } = require('./application/guest/createPaymentIntent');
@@ -12,7 +13,6 @@ const { handleRefundSucceeded } = require('./application/webhooks/handleRefundSu
 const transactionRepository = require('./infrastructure/transaction.repository');
 const ledgerRepository = require('./infrastructure/ledger.repository');
 const idempotencyRepository = require('./infrastructure/idempotency.repository');
-const webhookEventLogRepository = require('./infrastructure/webhook_event_log.repository');
 const ledgerService = require('./application/ledger.service');
 
 // Register once per process (guarded).
@@ -66,16 +66,12 @@ async function getPrimaryOwnerByHotelId(hotelId, options = {}) {
 }
 
 /** Webhook event log used by the Stripe webhook edge (idempotency + audit). */
-const webhookEventLog = {
-  findByEventId: (eventId) => webhookEventLogRepository.findByEventId(eventId),
-  create: (data) => webhookEventLogRepository.create(data),
-  updateStatus: (eventId, status, errorMessage) =>
-    webhookEventLogRepository.updateStatus(eventId, status, errorMessage),
-};
+const webhookEventLog = require('./infrastructure/webhook-event-log');
 
 module.exports = {
   adminRoutes,
   guestRoutes,
+  webhookRoutes,
   refundBooking,
 
   // Guest payment path

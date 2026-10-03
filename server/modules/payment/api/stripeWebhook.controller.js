@@ -1,4 +1,11 @@
-const paymentModule = require('@modules/payment');
+const paymentModule = {
+  handlePaymentSucceeded: require('../application/webhooks/handlePaymentSucceeded')
+    .handlePaymentSucceeded,
+  handlePaymentFailed: require('../application/webhooks/handlePaymentFailed').handlePaymentFailed,
+  handleRefundSucceeded: require('../application/webhooks/handleRefundSucceeded')
+    .handleRefundSucceeded,
+  webhookEventLog: require('../infrastructure/webhook-event-log'),
+};
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 const StripeWebhookAdapter = require('@adapters/webhooks/stripeWebhook.adapter');
 const emailPublisher = require('@platform/events/producers/email');

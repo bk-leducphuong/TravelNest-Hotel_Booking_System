@@ -28,7 +28,7 @@ const bullBoardAuth = require('@middlewares/bull-board-auth.middleware');
 
 /** ********************* Routes ************************ */
 const v1Routes = require('@routes/v1/index.js');
-const healthRoutes = require('@routes/health.routes.js');
+const { healthRoutes } = require('@platform/health');
 
 /*********************** Init Server ************************/
 const createApp = async () => {
@@ -97,7 +97,7 @@ const createApp = async () => {
 
   // Webhook routes - MUST come before bodyParser.json() for raw body access
   // Webhooks need raw body for signature verification
-  const webhookRoutes = require('@routes/v1/webhook.routes.js');
+  const { webhookRoutes } = require('@modules/payment');
   app.use('/api/v1/webhooks', bodyParser.raw({ type: 'application/json' }), webhookRoutes);
 
   // Regular JSON parsing for all other routes

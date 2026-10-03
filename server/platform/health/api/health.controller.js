@@ -1,4 +1,8 @@
-const health = require('@platform/health');
+const health = {
+  getHealthStatus: require('../application/getHealthStatus').getHealthStatus,
+  getLiveness: require('../application/getLiveness').getLiveness,
+  getReadiness: require('../application/getReadiness').getReadiness,
+};
 const logger = require('@config/logger.config');
 
 /**
