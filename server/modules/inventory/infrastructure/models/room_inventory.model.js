@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 
-const { CURRENCIES } = require('../constants/common');
+const { CURRENCIES } = require('../../../../constants/common');
 module.exports = function (sequelize, DataTypes) {
   const RoomInventory = sequelize.define(
     'room_inventory',

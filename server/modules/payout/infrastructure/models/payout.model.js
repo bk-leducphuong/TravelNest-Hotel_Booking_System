@@ -1,8 +1,8 @@
 const Sequelize = require('sequelize');
 const { uuidv7 } = require('uuidv7');
 
-const { CURRENCIES } = require('../constants/common');
-const { PAYMENT_ACCOUNT_PROVIDERS, PAYOUT_STATUSES } = require('../constants/payment');
+const { CURRENCIES } = require('../../../../constants/common');
+const { PAYMENT_ACCOUNT_PROVIDERS, PAYOUT_STATUSES } = require('../../../../constants/payment');
 
 module.exports = function (sequelize, DataTypes) {
   const Payout = sequelize.define(
