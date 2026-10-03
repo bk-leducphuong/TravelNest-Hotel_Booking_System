@@ -33,9 +33,6 @@ module.exports = {
   globalTeardown: '<rootDir>/__tests__/globalTeardown.js',
 
   moduleNameMapper: {
-    '^@controllers(.*)$': '<rootDir>/controllers$1',
-    '^@services(.*)$': '<rootDir>/services$1',
-    '^@repositories(.*)$': '<rootDir>/repositories$1',
     '^@models(.*)$': '<rootDir>/models$1',
     '^@config(.*)$': '<rootDir>/config$1',
     '^@utils(.*)$': '<rootDir>/utils$1',

@@ -77,7 +77,6 @@
     "test:ci": "jest --ci --coverage --maxWorkers=2"
   },
   "_moduleAliases": {
-    "@controllers": "controllers",
     "@validators": "validators",
     "@routes": "routes",
     "@config": "config",
@@ -86,8 +85,6 @@
     "@middlewares": "middlewares",
     "@models": "models",
     "@public": "public",
-    "@repositories": "repositories",
-    "@services": "services",
     "@queues": "queues",
     "@workers": "workers",
     "@events": "events",

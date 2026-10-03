@@ -2,7 +2,6 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@controllers/*": ["controllers/*"],
       "@validators/*": ["validators/*"],
       "@routes/*": ["routes/*"],
       "@config/*": ["config/*"],
@@ -11,8 +10,6 @@
       "@middlewares/*": ["middlewares/*"],
       "@models/*": ["models/*"],
       "@public/*": ["public/*"],
-      "@repositories/*": ["repositories/*"],
-      "@services/*": ["services/*"],
       "@socket/*": ["socket/*"],
       "@utils/*": ["utils/*"],
       "@adapters/*": ["adapters/*"],
@@ -31,9 +28,6 @@
   },
   "include": [
     ".",
-    "controllers",
-    "services",
-    "repositories",
     "models",
     "config",
     "routes",
