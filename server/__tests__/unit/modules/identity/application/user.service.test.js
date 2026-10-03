@@ -1,19 +1,17 @@
-const userService = require('@services/user.service');
-const userRepository = require('@modules/identity').users;
+const userService = require('@modules/identity/application/user.service');
+const userRepository = require('@modules/identity/infrastructure/user.repository');
 const ApiError = require('@utils/ApiError');
 
-jest.mock('@modules/identity', () => ({
-  users: {
-    findById: jest.fn(),
-    findByIdWithPassword: jest.fn(),
-    findByEmail: jest.fn(),
-    updateById: jest.fn(),
-    findFavoriteHotelsByUserIdPaginated: jest.fn(),
-    findHotelById: jest.fn(),
-    findSavedHotel: jest.fn(),
-    createSavedHotel: jest.fn(),
-    deleteSavedHotel: jest.fn(),
-  },
+jest.mock('@modules/identity/infrastructure/user.repository', () => ({
+  findById: jest.fn(),
+  findByIdWithPassword: jest.fn(),
+  findByEmail: jest.fn(),
+  updateById: jest.fn(),
+  findFavoriteHotelsByUserIdPaginated: jest.fn(),
+  findHotelById: jest.fn(),
+  findSavedHotel: jest.fn(),
+  createSavedHotel: jest.fn(),
+  deleteSavedHotel: jest.fn(),
 }));
 
 describe('UserService', () => {

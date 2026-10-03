@@ -1,4 +1,4 @@
-const userService = require('@services/user.service');
+const { users: userService } = require('@modules/identity');
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 const ApiError = require('@utils/ApiError');

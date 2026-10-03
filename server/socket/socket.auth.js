@@ -1,7 +1,7 @@
 const logger = require('@config/logger.config');
 const ApiError = require('@utils/ApiError');
 const { ROLES } = require('@constants/roles');
-const identityService = require('@services/identity.service');
+const { identity: identityService } = require('@modules/identity');
 const { verifyJwt } = require('@utils/jwt.util');
 const {
   extractUserRoles,

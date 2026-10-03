@@ -1,20 +1,18 @@
 const ApiError = require('@utils/ApiError');
 
-jest.mock('@modules/identity', () => ({
-  auth: {
-    findByKeycloakUserId: jest.fn(),
-    findByEmail: jest.fn(),
-    createUser: jest.fn(),
-    bindKeycloakUserId: jest.fn(),
-    findRolesByNames: jest.fn(),
-    replaceManagedUserRoles: jest.fn(),
-    updateLastLogin: jest.fn(),
-    getUserWithContext: jest.fn(),
-  },
+jest.mock('@modules/identity/infrastructure/auth.repository', () => ({
+  findByKeycloakUserId: jest.fn(),
+  findByEmail: jest.fn(),
+  createUser: jest.fn(),
+  bindKeycloakUserId: jest.fn(),
+  findRolesByNames: jest.fn(),
+  replaceManagedUserRoles: jest.fn(),
+  updateLastLogin: jest.fn(),
+  getUserWithContext: jest.fn(),
 }));
 
-const authRepository = require('@modules/identity').auth;
-const identityService = require('@services/identity.service');
+const authRepository = require('@modules/identity/infrastructure/auth.repository');
+const identityService = require('@modules/identity/application/identity.service');
 
 describe('IdentityService', () => {
   beforeEach(() => {

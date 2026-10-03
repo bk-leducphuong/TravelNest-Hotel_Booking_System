@@ -1,14 +1,17 @@
+const identityService = require('./application/identity.service');
+const userService = require('./application/user.service');
 const userRepository = require('./infrastructure/user.repository');
-const authRepository = require('./infrastructure/auth.repository');
 
 /**
  * Identity module - public interface.
  *
  * Owns users, auth accounts, roles and permissions (tables: users,
  * auth_accounts, roles, permissions, user_roles, role_permissions,
- * saved_hotels). Cross-module callers use the named functions here; the legacy
- * auth/identity/user services currently use the `users` / `auth` bridges and
- * move into this module next.
+ * saved_hotels, hotel_users, viewed_hotels).
+ *
+ * `identity` (session/provisioning) and `users` (profile/favorites) are the
+ * module's application services; `getFavoriteHotelIds` is a cross-module read
+ * used by search.
  */
 
 /** Favorite hotel ids for a user, intersected with the given hotel ids. */
@@ -19,8 +22,9 @@ async function getFavoriteHotelIds(userId, hotelIds) {
 module.exports = {
   getFavoriteHotelIds,
 
-  // Transitional repository bridges for the legacy identity services. Remove
-  // once auth/identity/user services live inside this module.
-  users: userRepository,
-  auth: authRepository,
+  // Session resolution + Role provisioning (identity.service.js).
+  identity: identityService,
+
+  // Profile, avatar, favorites and password (user.service.js).
+  users: userService,
 };

@@ -1,5 +1,5 @@
 const logger = require('@config/logger.config');
-const identityService = require('@services/identity.service');
+const { identity: identityService } = require('@modules/identity');
 const keycloakUserInfoService = require('@services/keycloak-userinfo.service');
 const ApiError = require('@utils/ApiError');
 const { verifyJwt } = require('@utils/jwt.util');

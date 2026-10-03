@@ -1,9 +1,9 @@
 const bcrypt = require('bcryptjs');
 
 const mediaProxyService = require('@services/mediaProxy.service');
-const userRepository = require('@modules/identity').users;
-const { AuthAccounts } = require('../models');
-const ApiError = require('../utils/ApiError');
+const { AuthAccounts } = require('@models/index.js');
+const ApiError = require('@utils/ApiError');
+const userRepository = require('../infrastructure/user.repository');
 
 /**
  * User Service - Contains main business logic

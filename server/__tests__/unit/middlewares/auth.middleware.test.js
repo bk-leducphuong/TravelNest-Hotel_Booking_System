@@ -5,8 +5,8 @@ const {
   authenticateRequest,
 } = require('@middlewares/auth.middleware');
 
-jest.mock('@services/identity.service', () => ({
-  resolveAuthenticatedUser: jest.fn(),
+jest.mock('@modules/identity', () => ({
+  identity: { resolveAuthenticatedUser: jest.fn() },
 }));
 
 jest.mock('@services/keycloak-userinfo.service', () => ({
@@ -22,7 +22,7 @@ jest.mock('@config/logger.config', () => ({
   error: jest.fn(),
 }));
 
-const identityService = require('@services/identity.service');
+const { identity: identityService } = require('@modules/identity');
 const keycloakUserInfoService = require('@services/keycloak-userinfo.service');
 const { verifyJwt } = require('@utils/jwt.util');
 const ApiError = require('@utils/ApiError');

@@ -1,6 +1,6 @@
-const authRepository = require('@modules/identity').auth;
 const ApiError = require('@utils/ApiError');
 const { ROLES } = require('@constants/roles');
+const authRepository = require('../infrastructure/auth.repository');
 
 const MANAGED_GLOBAL_ROLES = [ROLES.USER, ROLES.ADMIN, ROLES.SUPPORT_AGENT];
 

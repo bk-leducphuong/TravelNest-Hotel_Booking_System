@@ -1,15 +1,15 @@
 require('../../../register-aliases');
 const express = require('express');
 const request = require('supertest');
-jest.mock('@services/identity.service', () => ({
-  resolveAuthenticatedUser: jest.fn(),
+jest.mock('@modules/identity', () => ({
+  identity: { resolveAuthenticatedUser: jest.fn() },
 }));
 
 jest.mock('@utils/jwt.util', () => ({
   verifyJwt: jest.fn(),
 }));
 
-const identityService = require('@services/identity.service');
+const { identity: identityService } = require('@modules/identity');
 const { verifyJwt } = require('@utils/jwt.util');
 
 const authRoutes = require('../../../routes/v1/auth.routes');
