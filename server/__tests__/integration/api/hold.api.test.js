@@ -2,9 +2,16 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const request = require('supertest');
 require('../../../register-aliases');
-const holdService = require('@services/hold.service');
+const { hold: holdService } = require('@modules/booking');
 
-jest.mock('@services/hold.service');
+jest.mock('@modules/booking', () => ({
+  hold: {
+    createHold: jest.fn(),
+    getActiveHoldsByUser: jest.fn(),
+    getHold: jest.fn(),
+    releaseHold: jest.fn(),
+  },
+}));
 
 // Mock auth middleware so we can simulate authenticated user via X-Test-User-Id header
 jest.mock('@middlewares/auth.middleware', () => ({

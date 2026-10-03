@@ -1,15 +1,10 @@
-// Booking owns holds. Required lazily: @modules/booking loads this service via
-// createBookingFromHold, so a top-level require would be a load-time cycle.
-function bookingModule() {
-  return require('@modules/booking');
-}
-
 const inventoryModule = require('@modules/inventory');
 const sequelize = require('@config/database.config');
 const { Transaction } = require('sequelize');
 const logger = require('@config/logger.config');
 const ApiError = require('@utils/ApiError');
-const pricingService = require('@services/pricing.service');
+const holdRepository = require('../infrastructure/hold.repository');
+const pricingService = require('./pricing.service');
 
 /** Default hold duration in minutes (e.g. time to complete payment) */
 const HOLD_DURATION_MINUTES = 15;
@@ -80,7 +75,7 @@ class HoldService {
 
     const transaction = await sequelize.transaction();
     try {
-      const { hold, holdRooms } = await bookingModule().createHold(
+      const { hold, holdRooms } = await holdRepository.create(
         {
           userId,
           hotelId,
@@ -168,7 +163,7 @@ class HoldService {
    */
   async getHold(holdId, userId = null) {
     // await getHoldFromCache(holdId);
-    const hold = await bookingModule().getHoldByIdWithRooms(holdId);
+    const hold = await holdRepository.findByIdWithRooms(holdId);
     if (!hold) {
       throw new ApiError(404, 'HOLD_NOT_FOUND', 'Hold not found');
     }
@@ -187,7 +182,7 @@ class HoldService {
    * Get active holds for a user
    */
   async getActiveHoldsByUser(userId) {
-    const holds = await bookingModule().getActiveHoldsByUser(userId);
+    const holds = await holdRepository.findActiveByUserId(userId);
     return holds.map((hold) => {
       const h = hold.toJSON ? hold.toJSON() : hold;
       return {
@@ -207,7 +202,7 @@ class HoldService {
    * @param {Object} [options] - Optional. If options.transaction is provided, runs inside that transaction (caller commits); otherwise starts its own transaction.
    */
   async releaseHold(holdId, userId, reason = 'released', options = {}) {
-    const hold = await bookingModule().getHoldByIdWithRooms(holdId);
+    const hold = await holdRepository.findByIdWithRooms(holdId);
     if (!hold) {
       throw new ApiError(404, 'HOLD_NOT_FOUND', 'Hold not found');
     }
@@ -241,7 +236,7 @@ class HoldService {
         { transaction }
       );
 
-      await bookingModule().updateHoldStatus(
+      await holdRepository.updateStatus(
         holdId,
         {
           status: newStatus,
@@ -276,7 +271,7 @@ class HoldService {
     const transaction = await sequelize.transaction();
 
     try {
-      const hold = await bookingModule().getHoldByIdWithRooms(holdId, {
+      const hold = await holdRepository.findByIdWithRooms(holdId, {
         transaction,
         lock: Transaction.LOCK.UPDATE,
       });
@@ -300,7 +295,7 @@ class HoldService {
 
       const expiredAt = new Date();
 
-      await bookingModule().updateHoldStatus(
+      await holdRepository.updateStatus(
         holdId,
         {
           status: 'expired',
@@ -337,7 +332,7 @@ class HoldService {
   }
 
   async releaseExpiredHolds(options = {}) {
-    const expired = await bookingModule().getExpiredActiveHolds({
+    const expired = await holdRepository.findExpiredActive({
       limit: options.limit || 100,
       order: [['expires_at', 'ASC']],
     });

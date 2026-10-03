@@ -1,11 +1,13 @@
 const ApiError = require('@utils/ApiError');
-jest.mock('@modules/booking', () => ({
-  createHold: jest.fn(),
-  getHoldByIdWithRooms: jest.fn(),
-  getActiveHoldsByUser: jest.fn(),
-  updateHoldStatus: jest.fn(),
-  getExpiredActiveHolds: jest.fn(),
-  getCancellationRule: jest.fn(),
+jest.mock('@modules/booking/infrastructure/hold.repository', () => ({
+  create: jest.fn(),
+  findByIdWithRooms: jest.fn(),
+  findActiveByUserId: jest.fn(),
+  updateStatus: jest.fn(),
+  findExpiredActive: jest.fn(),
+}));
+jest.mock('@modules/booking/infrastructure/booking.repository', () => ({
+  findCancellationRule: jest.fn(),
 }));
 jest.mock('@modules/inventory', () => ({
   checkAvailabilityForHold: jest.fn(),
@@ -22,8 +24,8 @@ jest.mock('@config/database.config', () => ({
   ),
 }));
 
-const holdService = require('@services/hold.service');
-const bookingModule = require('@modules/booking');
+const holdService = require('@modules/booking/application/hold.service');
+const holdRepository = require('@modules/booking/infrastructure/hold.repository');
 const inventoryService = require('@modules/inventory');
 const sequelize = require('@config/database.config');
 
@@ -33,7 +35,7 @@ const {
   createMockCreateHoldPayload,
   createMockCreateHoldResponse,
   createMockReleaseHoldResponse,
-} = require('../../fixtures/hold.fixtures');
+} = require('../../../../fixtures/hold.fixtures');
 
 describe('HoldService', () => {
   let mockTransaction;
@@ -62,7 +64,7 @@ describe('HoldService', () => {
         { room_id: payload.rooms[0].roomId, date: payload.checkOutDate, price_per_night: 100 },
         { room_id: payload.rooms[1].roomId, date: payload.checkInDate, price_per_night: 150 },
       ]);
-      bookingModule.createHold.mockResolvedValue({
+      holdRepository.create.mockResolvedValue({
         hold: {
           id: mockResponse.holdId,
           check_in_date: payload.checkInDate,
@@ -90,7 +92,7 @@ describe('HoldService', () => {
         checkInDate: payload.checkInDate,
         checkOutDate: payload.checkOutDate,
       });
-      expect(bookingModule.createHold).toHaveBeenCalled();
+      expect(holdRepository.create).toHaveBeenCalled();
       expect(inventoryService.holdRooms).toHaveBeenCalled();
       expect(mockTransaction.commit).toHaveBeenCalled();
       expect(result).toHaveProperty('holdId', mockResponse.holdId);
@@ -119,7 +121,7 @@ describe('HoldService', () => {
         statusCode: 400,
         code: 'INVALID_ROOMS',
       });
-      expect(bookingModule.createHold).not.toHaveBeenCalled();
+      expect(holdRepository.create).not.toHaveBeenCalled();
     });
 
     it('should throw ApiError when checkOutDate is not after checkInDate', async () => {
@@ -144,7 +146,7 @@ describe('HoldService', () => {
         statusCode: 400,
         code: 'INVALID_DATE_RANGE',
       });
-      expect(bookingModule.createHold).not.toHaveBeenCalled();
+      expect(holdRepository.create).not.toHaveBeenCalled();
     });
 
     it('should throw ApiError when rooms are not available', async () => {
@@ -167,7 +169,7 @@ describe('HoldService', () => {
         statusCode: 409,
         code: 'ROOMS_NOT_AVAILABLE',
       });
-      expect(bookingModule.createHold).not.toHaveBeenCalled();
+      expect(holdRepository.create).not.toHaveBeenCalled();
     });
   });
 
@@ -181,18 +183,18 @@ describe('HoldService', () => {
         total_price: 199.99,
       });
 
-      bookingModule.getHoldByIdWithRooms.mockResolvedValue(mockHold);
+      holdRepository.findByIdWithRooms.mockResolvedValue(mockHold);
 
       const result = await holdService.getHold(holdId, userId);
 
-      expect(bookingModule.getHoldByIdWithRooms).toHaveBeenCalledWith(holdId);
+      expect(holdRepository.findByIdWithRooms).toHaveBeenCalledWith(holdId);
       expect(result).toHaveProperty('id', holdId);
       expect(result).toHaveProperty('totalPrice', 199.99);
       expect(result).toHaveProperty('isExpired');
     });
 
     it('should throw ApiError 404 when hold not found', async () => {
-      bookingModule.getHoldByIdWithRooms.mockResolvedValue(null);
+      holdRepository.findByIdWithRooms.mockResolvedValue(null);
 
       await expect(holdService.getHold('non-existent', 'user-123')).rejects.toThrow(ApiError);
       await expect(holdService.getHold('non-existent', 'user-123')).rejects.toMatchObject({
@@ -206,7 +208,7 @@ describe('HoldService', () => {
         id: 'hold-1',
         user_id: 'owner-uuid',
       });
-      bookingModule.getHoldByIdWithRooms.mockResolvedValue(mockHold);
+      holdRepository.findByIdWithRooms.mockResolvedValue(mockHold);
 
       await expect(holdService.getHold('hold-1', 'different-user-uuid')).rejects.toThrow(ApiError);
       await expect(holdService.getHold('hold-1', 'different-user-uuid')).rejects.toMatchObject({
@@ -224,18 +226,18 @@ describe('HoldService', () => {
         createMockHoldRecord({ id: 'hold-2', user_id: userId }),
       ].map((h) => ({ ...h, toJSON: () => ({ ...h }) }));
 
-      bookingModule.getActiveHoldsByUser.mockResolvedValue(mockHolds);
+      holdRepository.findActiveByUserId.mockResolvedValue(mockHolds);
 
       const result = await holdService.getActiveHoldsByUser(userId);
 
-      expect(bookingModule.getActiveHoldsByUser).toHaveBeenCalledWith(userId);
+      expect(holdRepository.findActiveByUserId).toHaveBeenCalledWith(userId);
       expect(Array.isArray(result)).toBe(true);
       expect(result).toHaveLength(2);
       expect(result[0]).toHaveProperty('totalPrice');
     });
 
     it('should return empty array when user has no active holds', async () => {
-      bookingModule.getActiveHoldsByUser.mockResolvedValue([]);
+      holdRepository.findActiveByUserId.mockResolvedValue([]);
 
       const result = await holdService.getActiveHoldsByUser('user-123');
 
@@ -255,14 +257,14 @@ describe('HoldService', () => {
         check_out_date: '2026-03-18',
       });
 
-      bookingModule.getHoldByIdWithRooms.mockResolvedValue(mockHold);
-      bookingModule.updateHoldStatus.mockResolvedValue([1]);
+      holdRepository.findByIdWithRooms.mockResolvedValue(mockHold);
+      holdRepository.updateStatus.mockResolvedValue([1]);
 
       const result = await holdService.releaseHold(holdId, userId, 'released');
 
-      expect(bookingModule.getHoldByIdWithRooms).toHaveBeenCalledWith(holdId);
+      expect(holdRepository.findByIdWithRooms).toHaveBeenCalledWith(holdId);
       expect(inventoryService.releaseHoldRooms).toHaveBeenCalled();
-      expect(bookingModule.updateHoldStatus).toHaveBeenCalledWith(
+      expect(holdRepository.updateStatus).toHaveBeenCalledWith(
         holdId,
         expect.objectContaining({
           status: 'released',
@@ -284,12 +286,12 @@ describe('HoldService', () => {
         status: 'active',
       });
 
-      bookingModule.getHoldByIdWithRooms.mockResolvedValue(mockHold);
-      bookingModule.updateHoldStatus.mockResolvedValue([1]);
+      holdRepository.findByIdWithRooms.mockResolvedValue(mockHold);
+      holdRepository.updateStatus.mockResolvedValue([1]);
 
       const result = await holdService.releaseHold(holdId, userId, 'expired');
 
-      expect(bookingModule.updateHoldStatus).toHaveBeenCalledWith(
+      expect(holdRepository.updateStatus).toHaveBeenCalledWith(
         holdId,
         expect.objectContaining({ status: 'expired' }),
         expect.any(Object)
@@ -298,7 +300,7 @@ describe('HoldService', () => {
     });
 
     it('should throw ApiError 404 when hold not found', async () => {
-      bookingModule.getHoldByIdWithRooms.mockResolvedValue(null);
+      holdRepository.findByIdWithRooms.mockResolvedValue(null);
 
       await expect(holdService.releaseHold('non-existent', 'user-123', 'released')).rejects.toThrow(
         ApiError
@@ -318,7 +320,7 @@ describe('HoldService', () => {
         user_id: 'owner-uuid',
         status: 'active',
       });
-      bookingModule.getHoldByIdWithRooms.mockResolvedValue(mockHold);
+      holdRepository.findByIdWithRooms.mockResolvedValue(mockHold);
 
       await expect(
         holdService.releaseHold('hold-1', 'other-user-uuid', 'released')
@@ -338,7 +340,7 @@ describe('HoldService', () => {
         user_id: 'user-uuid',
         status: 'released',
       });
-      bookingModule.getHoldByIdWithRooms.mockResolvedValue(mockHold);
+      holdRepository.findByIdWithRooms.mockResolvedValue(mockHold);
 
       await expect(holdService.releaseHold('hold-1', 'user-uuid', 'released')).rejects.toThrow(
         ApiError

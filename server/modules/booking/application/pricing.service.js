@@ -1,5 +1,6 @@
 const inventoryModule = require('@modules/inventory');
 const ApiError = require('@utils/ApiError');
+const bookingRepository = require('../infrastructure/booking.repository');
 
 class PricingService {
   async quote({ hotelId, rooms, checkInDate, checkOutDate }) {
@@ -76,16 +77,10 @@ class PricingService {
   }
 
   async getCancellationPolicySnapshot(hotelId, roomIds) {
-    let bookingModule;
-    try {
-      bookingModule = require('@modules/booking');
-    } catch (error) {
-      bookingModule = null;
-    }
     const snapshots = [];
 
     for (const roomId of roomIds) {
-      const rule = bookingModule ? await bookingModule.getCancellationRule(hotelId, roomId) : null;
+      const rule = await bookingRepository.findCancellationRule(hotelId, roomId);
       const data = rule?.toJSON ? rule.toJSON() : rule;
       snapshots.push({
         roomId,

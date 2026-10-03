@@ -2,7 +2,7 @@ require('../register-aliases');
 const { Worker } = require('bullmq');
 const config = require('@config/bullmq.config');
 const logger = require('@config/logger.config');
-const holdService = require('@services/hold.service');
+const { hold: holdService } = require('@modules/booking');
 const { publish, HOLD_EVENTS } = require('@platform/events');
 
 const queueName = 'holdExpiry';

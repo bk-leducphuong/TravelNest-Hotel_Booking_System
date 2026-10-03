@@ -2,7 +2,6 @@ const ApiError = require('@utils/ApiError');
 const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
 const bookingModule = require('@modules/booking');
-const holdService = require('@services/hold.service');
 const inventoryModule = require('@modules/inventory');
 const { generateBookingCode } = require('@utils/booking.utils');
 
@@ -31,7 +30,7 @@ async function createPaymentIntent(userId, paymentData) {
   }
 
   // 1. Find active hold for user
-  const activeHolds = await bookingModule.getActiveHoldsByUser(userId);
+  const activeHolds = await bookingModule.hold.getActiveHoldsByUser(userId);
 
   if (!activeHolds || activeHolds.length === 0) {
     throw new ApiError(
@@ -80,7 +79,7 @@ async function createPaymentIntent(userId, paymentData) {
     const numberOfGuests = holdData.number_of_guests;
 
     // 2. Release hold (held rooms + hold status) inside this transaction
-    await holdService.releaseHold(holdData.id, userId, 'completed', { transaction });
+    await bookingModule.hold.releaseHold(holdData.id, userId, 'completed', { transaction });
 
     const bookedRooms = rooms.map((room) => ({
       room_id: room.roomId,

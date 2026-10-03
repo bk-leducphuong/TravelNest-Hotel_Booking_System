@@ -12,8 +12,8 @@ jest.mock('@modules/booking/infrastructure/booking.repository', () => ({
   create: jest.fn(),
   bulkCreateBookingRooms: jest.fn(),
 }));
-jest.mock('@services/hold.service', () => ({ releaseHold: jest.fn() }));
-jest.mock('@services/pricing.service', () => ({ quote: jest.fn() }));
+jest.mock('@modules/booking/application/hold.service', () => ({ releaseHold: jest.fn() }));
+jest.mock('@modules/booking/application/pricing.service', () => ({ quote: jest.fn() }));
 jest.mock('@modules/inventory', () => ({ reserveRooms: jest.fn() }));
 jest.mock('@config/database.config', () => ({ transaction: jest.fn() }));
 jest.mock('@utils/booking.utils', () => ({ generateBookingCode: () => 'CODE1' }));
@@ -21,8 +21,8 @@ jest.mock('@utils/booking.utils', () => ({ generateBookingCode: () => 'CODE1' })
 const paymentModule = require('@modules/payment');
 const holdRepository = require('@modules/booking/infrastructure/hold.repository');
 const bookingRepository = require('@modules/booking/infrastructure/booking.repository');
-const holdService = require('@services/hold.service');
-const pricingService = require('@services/pricing.service');
+const holdService = require('@modules/booking/application/hold.service');
+const pricingService = require('@modules/booking/application/pricing.service');
 const inventoryModule = require('@modules/inventory');
 const sequelize = require('@config/database.config');
 const { hashRequest } = require('@modules/booking/domain/request-hash');
