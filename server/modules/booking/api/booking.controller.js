@@ -1,4 +1,13 @@
-const bookingModule = require('@modules/booking');
+const bookingUseCases = {
+  getUserBookings: require('../application/guest/getUserBookings').getUserBookings,
+  getBookingById: require('../application/guest/getBookingById').getBookingById,
+  getBookingByCode: require('../application/guest/getBookingByCode').getBookingByCode,
+  cancelBooking: require('../application/guest/cancelBooking').cancelBooking,
+  createBookingFromHold: require('../application/guest/createBookingFromHold')
+    .createBookingFromHold,
+  createPaymentIntentForBooking: require('../application/guest/createPaymentIntentForBooking')
+    .createPaymentIntentForBooking,
+};
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 
@@ -19,7 +28,7 @@ const getUserBookings = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { includeCancelled } = req.query;
 
-  const bookings = await bookingModule.getUserBookings(userId, {
+  const bookings = await bookingUseCases.getUserBookings(userId, {
     includeCancelled: includeCancelled === 'true',
   });
 
@@ -36,7 +45,7 @@ const createBooking = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const idempotencyKey = req.headers['idempotency-key'];
 
-  const booking = await bookingModule.createBookingFromHold(userId, req.body, idempotencyKey);
+  const booking = await bookingUseCases.createBookingFromHold(userId, req.body, idempotencyKey);
 
   res.status(201).json({
     data: booking,
@@ -51,7 +60,7 @@ const createBookingPaymentIntent = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { bookingId } = req.params;
 
-  const result = await bookingModule.createPaymentIntentForBooking(bookingId, userId, req.body);
+  const result = await bookingUseCases.createPaymentIntentForBooking(bookingId, userId, req.body);
 
   res.status(201).json({
     data: result,
@@ -66,7 +75,7 @@ const getBookingById = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { bookingId } = req.params;
 
-  const booking = await bookingModule.getBookingById(bookingId, userId);
+  const booking = await bookingUseCases.getBookingById(bookingId, userId);
 
   res.status(200).json({
     data: booking,
@@ -81,7 +90,7 @@ const getBookingByCode = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { bookingCode } = req.params;
 
-  const booking = await bookingModule.getBookingByCode(bookingCode, userId);
+  const booking = await bookingUseCases.getBookingByCode(bookingCode, userId);
 
   res.status(200).json({
     data: booking,
@@ -97,7 +106,7 @@ const cancelBooking = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
   const { processRefund } = req.query;
 
-  const result = await bookingModule.cancelBooking(bookingId, userId, {
+  const result = await bookingUseCases.cancelBooking(bookingId, userId, {
     processRefund: processRefund === 'true',
   });
 

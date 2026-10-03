@@ -1,8 +1,8 @@
 const express = require('express');
 
 const asyncHandler = require('@utils/asyncHandler');
-const controller = require('@controllers/v1/internalSuperadmin.controller');
 const { requireInternalSuperadmin } = require('@middlewares/internal-superadmin.middleware');
+const controller = require('./internalSuperadmin.controller');
 
 const router = express.Router();
 

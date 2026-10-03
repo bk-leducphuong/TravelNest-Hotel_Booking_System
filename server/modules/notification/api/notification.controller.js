@@ -1,4 +1,10 @@
-const notificationModule = require('@modules/notification');
+const notificationUseCases = {
+  getNotifications: require('../application/getNotifications').getNotifications,
+  getUnreadCount: require('../application/getUnreadCount').getUnreadCount,
+  markAllNotificationsAsRead: require('../application/markAllNotificationsAsRead')
+    .markAllNotificationsAsRead,
+  markNotificationAsRead: require('../application/markNotificationAsRead').markNotificationAsRead,
+};
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 
@@ -15,7 +21,7 @@ const getNotifications = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { page, limit, unreadOnly } = req.query;
 
-  const result = await notificationModule.getNotifications(userId, {
+  const result = await notificationUseCases.getNotifications(userId, {
     page: page ? parseInt(page, 10) : 1,
     limit: limit ? parseInt(limit, 10) : 20,
     unreadOnly: unreadOnly === 'true',
@@ -39,7 +45,7 @@ const markNotificationAsRead = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { notificationId } = req.params;
 
-  await notificationModule.markNotificationAsRead(notificationId, userId);
+  await notificationUseCases.markNotificationAsRead(notificationId, userId);
 
   res.status(200).json({
     data: {
@@ -55,7 +61,7 @@ const markNotificationAsRead = asyncHandler(async (req, res) => {
 const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
-  const updatedCount = await notificationModule.markAllNotificationsAsRead(userId);
+  const updatedCount = await notificationUseCases.markAllNotificationsAsRead(userId);
 
   res.status(200).json({
     data: {
@@ -72,7 +78,7 @@ const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
 const getUnreadCount = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
-  const count = await notificationModule.getUnreadCount(userId);
+  const count = await notificationUseCases.getUnreadCount(userId);
 
   res.status(200).json({
     data: {

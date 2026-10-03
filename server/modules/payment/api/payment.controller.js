@@ -1,4 +1,11 @@
-const paymentModule = require('@modules/payment');
+const paymentUseCases = {
+  createPaymentIntent: require('../application/guest/createPaymentIntent').createPaymentIntent,
+  getPaymentByBookingId: require('../application/guest/getPaymentByBookingId')
+    .getPaymentByBookingId,
+  getPaymentByTransactionId: require('../application/guest/getPaymentByTransactionId')
+    .getPaymentByTransactionId,
+  getUserPayments: require('../application/guest/getUserPayments').getUserPayments,
+};
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
 
@@ -19,7 +26,7 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { paymentMethodId, currency } = req.body;
 
-  const result = await paymentModule.createPaymentIntent(userId, {
+  const result = await paymentUseCases.createPaymentIntent(userId, {
     paymentMethodId,
     currency,
   });
@@ -37,7 +44,7 @@ const getUserPayments = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { page, limit } = req.query;
 
-  const result = await paymentModule.getUserPayments(userId, {
+  const result = await paymentUseCases.getUserPayments(userId, {
     page: page ? parseInt(page, 10) : 1,
     limit: limit ? parseInt(limit, 10) : 20,
   });
@@ -60,7 +67,7 @@ const getPaymentByBookingId = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { bookingId } = req.params;
 
-  const payment = await paymentModule.getPaymentByBookingId(bookingId, userId);
+  const payment = await paymentUseCases.getPaymentByBookingId(bookingId, userId);
 
   res.status(200).json({
     data: payment,
@@ -75,7 +82,7 @@ const getPaymentByTransactionId = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { transactionId } = req.params;
 
-  const payment = await paymentModule.getPaymentByTransactionId(
+  const payment = await paymentUseCases.getPaymentByTransactionId(
     parseInt(transactionId, 10),
     userId
   );

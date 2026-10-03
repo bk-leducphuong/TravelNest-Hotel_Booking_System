@@ -32,7 +32,7 @@ jest.mock('@middlewares/auth.middleware', () => ({
 
 const errorMiddleware = require('@middlewares/error.middleware');
 
-const holdRoutes = require('../../../routes/v1/hold.routes');
+const holdRoutes = require('../../../modules/booking/api/hold.routes');
 
 describe('Hold API Integration Tests', () => {
   let app;

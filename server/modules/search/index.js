@@ -7,6 +7,7 @@ const {
   getDestinationAutocomplete,
 } = require('./application/autocomplete');
 const { saveSearchLog } = require('./application/saveSearchLog');
+const guestRoutes = require('./api/guest.routes');
 
 /**
  * Search module - public interface.
@@ -19,6 +20,7 @@ const { saveSearchLog } = require('./application/saveSearchLog');
  * this module is the seam that makes that move mechanical.
  */
 module.exports = {
+  guestRoutes,
   searchHotels,
   getHotelAvailability,
   recordRecentSearch,

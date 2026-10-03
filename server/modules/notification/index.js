@@ -5,6 +5,7 @@ const { getUnreadCount } = require('./application/getUnreadCount');
 const { getStatistics } = require('./application/getStatistics');
 const { sendPayoutNotification } = require('./application/sendPayoutNotification');
 const notificationTest = require('./application/notification-test.service');
+const notificationRoutes = require('./api/notification.routes');
 
 /**
  * Notification module - public interface.
@@ -14,6 +15,8 @@ const notificationTest = require('./application/notification-test.service');
  * Node. Cross-module callers must use this index.
  */
 module.exports = {
+  notificationRoutes,
+
   getNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,

@@ -1,13 +1,13 @@
 const express = require('express');
+const { authenticate } = require('@middlewares/auth.middleware');
+const validate = require('@middlewares/validate.middleware');
+const notificationSchema = require('@validators/v1/notification.schema');
 const {
   getNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
   getUnreadCount,
-} = require('@controllers/v1/notification.controller.js');
-const { authenticate } = require('@middlewares/auth.middleware');
-const validate = require('@middlewares/validate.middleware');
-const notificationSchema = require('@validators/v1/notification.schema');
+} = require('./notification.controller');
 const router = express.Router();
 
 // root route: /api/notifications

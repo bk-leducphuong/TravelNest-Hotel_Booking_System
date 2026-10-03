@@ -1,5 +1,5 @@
-const { hold: holdService } = require('@modules/booking');
 const asyncHandler = require('@utils/asyncHandler');
+const holdService = require('../application/hold.service');
 
 function getSessionUserId(req) {
   return req.session?.user?.id || req.session?.user?.user_id || req.user?.id || req.user?.user_id;

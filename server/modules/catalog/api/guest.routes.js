@@ -1,4 +1,7 @@
 const express = require('express');
+const { authenticate, optionalAuthenticate } = require('@middlewares/auth.middleware');
+const validate = require('@middlewares/validate.middleware');
+const hotelSchema = require('@validators/v1/hotel.schema');
 const {
   getRecentlyViewedHotels,
   getTrendingHotels,
@@ -7,10 +10,7 @@ const {
   getHotelPolicies,
   getNearbyPlaces,
   getHotelsByIds,
-} = require('@controllers/v1/hotel.controller.js');
-const { authenticate, optionalAuthenticate } = require('@middlewares/auth.middleware');
-const validate = require('@middlewares/validate.middleware');
-const hotelSchema = require('@validators/v1/hotel.schema');
+} = require('./hotel.controller');
 const router = express.Router();
 const HOTEL_ID_ROUTE_PARAM = ':hotelId([0-9a-fA-F-]{36})';
 

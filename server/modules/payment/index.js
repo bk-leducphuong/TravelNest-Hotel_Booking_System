@@ -1,4 +1,5 @@
 const adminRoutes = require('./api/admin.routes');
+const guestRoutes = require('./api/guest.routes');
 const { registerPaymentSubscribers } = require('./events/subscribers');
 const { refundBooking } = require('./application/admin/refundBooking');
 const { createPaymentIntent } = require('./application/guest/createPaymentIntent');
@@ -74,6 +75,7 @@ const webhookEventLog = {
 
 module.exports = {
   adminRoutes,
+  guestRoutes,
   refundBooking,
 
   // Guest payment path

@@ -2,6 +2,8 @@ const bookingRepository = require('./infrastructure/booking.repository');
 const holdService = require('./application/hold.service');
 
 const adminRoutes = require('./api/admin.routes');
+const guestRoutes = require('./api/guest.routes');
+const holdRoutes = require('./api/hold.routes');
 const { registerBookingSubscribers } = require('./events/subscribers');
 const { getUserBookings } = require('./application/guest/getUserBookings');
 const { getBookingById } = require('./application/guest/getBookingById');
@@ -56,6 +58,8 @@ async function updateBookingsByCode(bookingCode, updateData, options = {}) {
 
 module.exports = {
   adminRoutes,
+  guestRoutes,
+  holdRoutes,
   getCompletedBookingForReview,
 
   // Persistence API for cross-module callers (payment).

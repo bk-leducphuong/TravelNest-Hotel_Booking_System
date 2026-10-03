@@ -1,5 +1,5 @@
 /**
- * OpenAPI documentation extracted from routes/v1/notification.routes.js.
+ * OpenAPI documentation extracted from modules/notification/api/notification.routes.js.
  *
  * Kept separate from the router so route files read as routing. swagger-jsdoc
  * discovers this file through the `apis` glob in config/swagger.config.js.

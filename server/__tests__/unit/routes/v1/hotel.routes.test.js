@@ -3,7 +3,7 @@ jest.mock('@middlewares/auth.middleware', () => ({
   optionalAuthenticate: (req, res, next) => next(),
 }));
 
-jest.mock('@controllers/v1/hotel.controller.js', () => ({
+jest.mock('@modules/catalog/api/hotel.controller', () => ({
   getRecentlyViewedHotels: (req, res) => res.status(200).json({ route: 'recently-viewed' }),
   getTrendingHotels: (req, res) => res.status(200).json({ route: 'trending' }),
   getHotelDetails: (req, res) =>
@@ -13,7 +13,7 @@ jest.mock('@controllers/v1/hotel.controller.js', () => ({
   getNearbyPlaces: (req, res) => res.status(200).json({ route: 'nearby-places' }),
 }));
 
-const hotelRoutes = require('@routes/v1/hotel.routes');
+const hotelRoutes = require('@modules/catalog/api/guest.routes');
 describe('hotel.routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();

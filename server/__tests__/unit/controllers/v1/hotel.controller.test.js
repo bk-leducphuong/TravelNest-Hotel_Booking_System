@@ -1,4 +1,4 @@
-const hotelController = require('@controllers/v1/hotel.controller');
+const hotelController = require('@modules/catalog/api/hotel.controller');
 const hotelService = require('@modules/catalog');
 const ApiError = require('@utils/ApiError');
 

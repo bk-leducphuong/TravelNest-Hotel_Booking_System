@@ -1,4 +1,7 @@
 const express = require('express');
+const { authenticate } = require('@middlewares/auth.middleware');
+const validate = require('@middlewares/validate.middleware');
+const bookingSchema = require('@validators/v1/booking.schema');
 const {
   getUserBookings,
   createBooking,
@@ -6,10 +9,7 @@ const {
   getBookingById,
   getBookingByCode,
   cancelBooking,
-} = require('@controllers/v1/booking.controller.js');
-const { authenticate } = require('@middlewares/auth.middleware');
-const validate = require('@middlewares/validate.middleware');
-const bookingSchema = require('@validators/v1/booking.schema');
+} = require('./booking.controller');
 const router = express.Router();
 
 // root route: /api/bookings

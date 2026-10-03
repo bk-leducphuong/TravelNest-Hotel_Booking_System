@@ -4,15 +4,10 @@
  */
 
 const express = require('express');
-const {
-  createHold,
-  getMyHolds,
-  getHoldById,
-  releaseHold,
-} = require('@controllers/v1/hold.controller');
 const { authenticate } = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
 const holdSchema = require('@validators/v1/hold.schema');
+const { createHold, getMyHolds, getHoldById, releaseHold } = require('./hold.controller');
 
 const router = express.Router();
 

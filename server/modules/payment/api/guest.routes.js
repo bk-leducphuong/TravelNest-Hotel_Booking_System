@@ -1,13 +1,13 @@
 const express = require('express');
+const { authenticate } = require('@middlewares/auth.middleware');
+const validate = require('@middlewares/validate.middleware');
+const paymentSchema = require('@validators/v1/payment.schema');
 const {
   createPaymentIntent,
   getUserPayments,
   getPaymentByBookingId,
   getPaymentByTransactionId,
-} = require('@controllers/v1/payment.controller.js');
-const { authenticate } = require('@middlewares/auth.middleware');
-const validate = require('@middlewares/validate.middleware');
-const paymentSchema = require('@validators/v1/payment.schema');
+} = require('./payment.controller');
 const router = express.Router();
 
 // root route: /api/payments
