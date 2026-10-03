@@ -26,11 +26,12 @@ function pick(items) {
   return items[randomInt(0, items.length - 1)];
 }
 
-async function main() {
-  const rows = Math.max(1, parseInt(getArg('rows', '1000'), 10));
-  const days = Math.max(1, parseInt(getArg('days', '90'), 10));
-  const batchSize = Math.max(1, parseInt(getArg('batch', '1000'), 10));
-  const clear = process.argv.includes('--clear');
+async function main(options = {}) {
+  const rows = options.rows ?? Math.max(1, parseInt(getArg('rows', '1000'), 10));
+  const days = options.days ?? Math.max(1, parseInt(getArg('days', '90'), 10));
+  const batchSize = options.batch ?? Math.max(1, parseInt(getArg('batch', '1000'), 10));
+  const clear = options.clear ?? process.argv.includes('--clear');
+  const closeSequelize = options.closeSequelize !== false;
 
   await db.sequelize.authenticate();
   await mongoDb.connect();
@@ -81,7 +82,9 @@ async function main() {
   }
 
   await mongoDb.close();
-  await db.sequelize.close();
+  if (closeSequelize) {
+    await db.sequelize.close();
+  }
   console.log('MongoDB search log seeding complete.');
 }
 
