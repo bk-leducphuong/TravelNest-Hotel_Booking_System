@@ -19,6 +19,11 @@ async function getInventoryForDateRange(roomIds, startDate, endDate) {
   return await roomInventoryRepository.findByRoomsAndDateRange(roomIds, startDate, endDate);
 }
 
+/** Bulk-create inventory rows (used by partner onboarding). */
+async function createRoomInventories(entries, options = {}) {
+  return await roomInventoryRepository.bulkCreate(entries, options);
+}
+
 /**
  * Inventory module - public interface.
  *
@@ -36,4 +41,5 @@ module.exports = {
   holdRooms,
   releaseHoldRooms,
   getInventoryForDateRange,
+  createRoomInventories,
 };

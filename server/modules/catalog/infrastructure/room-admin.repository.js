@@ -5,6 +5,16 @@ const { rooms: Rooms } = require('@models/index.js');
  * Inventory needs room_id/quantity/hotel context to manage availability.
  */
 class RoomRepository {
+  async create(data) {
+    return await Rooms.create({
+      room_name: data.roomName,
+      max_guests: data.maxGuests,
+      hotel_id: data.hotelId,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+  }
+
   async findByHotelId(hotelId) {
     return await Rooms.findAll({
       where: { hotel_id: hotelId },

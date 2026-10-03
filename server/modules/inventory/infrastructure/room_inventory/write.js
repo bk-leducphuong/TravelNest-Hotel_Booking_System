@@ -44,4 +44,13 @@ async function update(roomId, date, updateData, options = {}) {
   }
 }
 
-module.exports = { create, update };
+async function bulkCreate(entries, options = {}) {
+  try {
+    return await RoomInventory.bulkCreate(entries, options);
+  } catch (error) {
+    logger.error('Error bulk creating room inventory:', error);
+    throw error;
+  }
+}
+
+module.exports = { create, bulkCreate, update };

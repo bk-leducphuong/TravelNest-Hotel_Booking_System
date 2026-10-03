@@ -4,10 +4,8 @@ const joinRoutes = require('./api/join.routes');
 /**
  * Onboarding module - public interface.
  *
- * Owns the partner "become a host" flow (join form + photo upload). NOTE: the
- * join repository still writes catalog/inventory-owned tables (hotels, rooms,
- * room_inventories) directly; that cross-context write is tracked debt to be
- * replaced by the catalog/inventory public APIs.
+ * Owns the partner "become a host" flow (join form + photo upload). It creates
+ * the hotel/room/inventory through the catalog and inventory public APIs.
  */
 module.exports = {
   // HTTP edge (mounted by routes/v1/index.js).

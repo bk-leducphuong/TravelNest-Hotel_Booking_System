@@ -1,4 +1,5 @@
 const roomRepository = require('./infrastructure/room-admin.repository');
+const hotelRepository = require('./infrastructure/hotel.repository');
 const destinationRepository = require('./infrastructure/destination.repository');
 const imageRepository = require('./infrastructure/image.repository');
 const hotelSnapshot = require('./infrastructure/hotel_search_snapshot.repository');
@@ -32,6 +33,15 @@ async function getRoomForHotel(roomId, hotelId) {
   return await roomRepository.findByIdAndHotelId(roomId, hotelId);
 }
 
+// Write API for partner onboarding (catalog owns hotels + rooms).
+async function upsertHotel(hotelData) {
+  return await hotelRepository.upsertHotel(hotelData);
+}
+
+async function createRoom(roomData) {
+  return await roomRepository.create(roomData);
+}
+
 // Destination resolution (used by search before falling back to ES).
 async function getActiveDestinationById(destinationId) {
   return await destinationRepository.findActiveById(destinationId);
@@ -51,6 +61,10 @@ module.exports = {
   getRoomsForHotel,
   getRoomById,
   getRoomForHotel,
+
+  // onboarding writes
+  upsertHotel,
+  createRoom,
 
   // destinations
   getActiveDestinationById,

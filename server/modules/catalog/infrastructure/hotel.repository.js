@@ -1,4 +1,5 @@
 const find = require('./hotel/find');
+const write = require('./hotel/write');
 const reviews = require('./hotel/reviews');
 const nearby = require('./hotel/nearby');
 
@@ -10,6 +11,7 @@ const nearby = require('./hotel/nearby');
  */
 module.exports = {
   ...find,
+  ...write,
   ...reviews,
   ...nearby,
 };

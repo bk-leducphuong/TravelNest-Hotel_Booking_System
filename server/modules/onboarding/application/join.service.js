@@ -1,6 +1,7 @@
 const { mediaProxy: mediaProxyService } = require('@modules/media');
+const catalogModule = require('@modules/catalog');
+const inventoryModule = require('@modules/inventory');
 const ApiError = require('@utils/ApiError');
-const joinRepository = require('../infrastructure/join.repository');
 
 /**
  * Join Service - Contains main business logic for partner registration
@@ -81,7 +82,7 @@ class JoinService {
     }
 
     // Create or update hotel
-    const [hotel, created] = await joinRepository.upsertHotel({
+    const [hotel, created] = await catalogModule.upsertHotel({
       ownerId,
       name: hotelName.trim(),
       address: streetName.trim(),
@@ -98,7 +99,7 @@ class JoinService {
     const hotelId = hotel.id || hotel.get?.('id') || hotel.dataValues?.id || hotel.hotel_id;
 
     // Create room
-    const room = await joinRepository.createRoom({
+    const room = await catalogModule.createRoom({
       roomName: roomDetails.roomType.trim(),
       maxGuests: numberOfGuests,
       hotelId,
@@ -121,7 +122,7 @@ class JoinService {
       };
     });
 
-    await joinRepository.createRoomInventories(inventoryEntries);
+    await inventoryModule.createRoomInventories(inventoryEntries);
 
     return {
       hotel_id: hotelId,
