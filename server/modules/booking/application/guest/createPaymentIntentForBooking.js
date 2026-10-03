@@ -1,7 +1,7 @@
 const ApiError = require('@utils/ApiError');
-const transactionRepository = require('@repositories/transaction.repository');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 const bookingRepository = require('../../infrastructure/booking.repository');
+const { paymentModule } = require('../../infrastructure/payment.client');
 
 const { toMinorUnits } = require('../../domain/money');
 
@@ -67,7 +67,7 @@ async function createPaymentIntentForBooking(bookingId, userId, data = {}) {
     },
   });
 
-  await transactionRepository.update(dbTransaction.id, {
+  await paymentModule().updateTransaction(dbTransaction.id, {
     paymentIntentId: payment.id,
     paymentMethod: data.paymentMethod || 'card',
     metadata: {

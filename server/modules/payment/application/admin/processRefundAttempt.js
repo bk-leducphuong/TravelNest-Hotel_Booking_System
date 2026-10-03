@@ -5,7 +5,7 @@ const ledgerService = require('@services/ledger.service');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 
 const refundRepository = require('../../infrastructure/refund.repository');
-const transactionRepository = require('../../infrastructure/transaction.repository');
+const transactionRepository = require('../../infrastructure/transaction-admin.repository');
 const {
   toMinorUnits,
   toStripeReason,

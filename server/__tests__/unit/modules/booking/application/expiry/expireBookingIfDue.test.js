@@ -3,7 +3,7 @@ jest.mock('@modules/booking/infrastructure/booking.repository', () => ({
   findExpiryContextById: jest.fn(),
   update: jest.fn(),
 }));
-jest.mock('@repositories/transaction.repository', () => ({ update: jest.fn() }));
+jest.mock('@modules/payment', () => ({ updateTransaction: jest.fn() }));
 jest.mock('@modules/inventory', () => ({ releaseRooms: jest.fn() }));
 jest.mock('@modules/booking/application/expiry/cancelExpiredPaymentIntent', () => ({
   cancelExpiredPaymentIntent: jest.fn(),
@@ -11,7 +11,7 @@ jest.mock('@modules/booking/application/expiry/cancelExpiredPaymentIntent', () =
 
 const sequelize = require('@config/database.config');
 const bookingRepository = require('@modules/booking/infrastructure/booking.repository');
-const transactionRepository = require('@repositories/transaction.repository');
+const paymentModule = require('@modules/payment');
 const inventoryModule = require('@modules/inventory');
 const {
   cancelExpiredPaymentIntent,
@@ -56,7 +56,7 @@ describe('booking/application/expiry/expireBookingIfDue', () => {
     sequelize.transaction.mockResolvedValue(tx);
     inventoryModule.releaseRooms.mockResolvedValue(undefined);
     bookingRepository.update.mockResolvedValue([1]);
-    transactionRepository.update.mockResolvedValue([1]);
+    paymentModule.updateTransaction.mockResolvedValue([1]);
   });
 
   it('rolls back and returns null when the booking is gone', async () => {
@@ -104,7 +104,7 @@ describe('booking/application/expiry/expireBookingIfDue', () => {
       { status: 'expired', cancelled_at: expect.any(Date) },
       { transaction: tx }
     );
-    expect(transactionRepository.update).toHaveBeenCalledWith(
+    expect(paymentModule.updateTransaction).toHaveBeenCalledWith(
       70,
       expect.objectContaining({ status: 'cancelled' }),
       { transaction: tx }

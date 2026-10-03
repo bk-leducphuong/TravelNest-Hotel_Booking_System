@@ -2,7 +2,7 @@ const ApiError = require('@utils/ApiError');
 const { publish, DOMAIN_EVENTS } = require('@platform/events');
 
 const refundRepository = require('../../infrastructure/refund.repository');
-const transactionRepository = require('../../infrastructure/transaction.repository');
+const transactionRepository = require('../../infrastructure/transaction-admin.repository');
 const {
   assertRefundableTransaction,
   normalizeReason,

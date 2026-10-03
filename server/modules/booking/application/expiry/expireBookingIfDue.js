@@ -2,9 +2,9 @@ const { Transaction } = require('sequelize');
 
 const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
-const transactionRepository = require('@repositories/transaction.repository');
 const inventoryModule = require('@modules/inventory');
 const bookingRepository = require('../../infrastructure/booking.repository');
+const { paymentModule } = require('../../infrastructure/payment.client');
 
 const { cancelExpiredPaymentIntent } = require('./cancelExpiredPaymentIntent');
 
@@ -74,7 +74,7 @@ async function expireBookingIfDue(bookingId) {
 
     const dbTransaction = booking.transaction;
     if (dbTransaction && ['pending', 'processing'].includes(dbTransaction.status)) {
-      await transactionRepository.update(
+      await paymentModule().updateTransaction(
         dbTransaction.id,
         {
           status: 'cancelled',

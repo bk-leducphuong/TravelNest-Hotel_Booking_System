@@ -3,10 +3,10 @@ const { Transaction } = require('sequelize');
 const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
 const bookingModule = require('@modules/booking');
-const transactionRepository = require('@repositories/transaction.repository');
 const ledgerService = require('@services/ledger.service');
 
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
+const transactionRepository = require('../../infrastructure/transaction.repository');
 const paymentRepository = require('../../infrastructure/payment.repository');
 
 const { fromMinorUnits } = require('../../domain/money');

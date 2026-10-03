@@ -1,7 +1,7 @@
 const ApiError = require('@utils/ApiError');
 
 const refundRepository = require('../../infrastructure/refund.repository');
-const transactionRepository = require('../../infrastructure/transaction.repository');
+const transactionRepository = require('../../infrastructure/transaction-admin.repository');
 const {
   assertRefundableTransaction,
   remainingRefundable,

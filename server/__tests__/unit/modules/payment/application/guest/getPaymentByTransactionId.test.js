@@ -1,6 +1,8 @@
-jest.mock('@repositories/transaction.repository', () => ({ findById: jest.fn() }));
+jest.mock('@modules/payment/infrastructure/transaction.repository', () => ({
+  findById: jest.fn(),
+}));
 
-const transactionRepository = require('@repositories/transaction.repository');
+const transactionRepository = require('@modules/payment/infrastructure/transaction.repository');
 const {
   getPaymentByTransactionId,
 } = require('@modules/payment/application/guest/getPaymentByTransactionId');

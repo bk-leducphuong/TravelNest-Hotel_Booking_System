@@ -1,14 +1,13 @@
 const ApiError = require('@utils/ApiError');
 
 const sequelize = require('@config/database.config');
-const idempotencyRepository = require('@repositories/idempotency.repository');
-const transactionRepository = require('@repositories/transaction.repository');
 const holdService = require('@services/hold.service');
 const pricingService = require('@services/pricing.service');
 const inventoryModule = require('@modules/inventory');
 const { generateBookingCode } = require('@utils/booking.utils');
 const holdRepository = require('../../infrastructure/hold.repository');
 const bookingRepository = require('../../infrastructure/booking.repository');
+const { paymentModule } = require('../../infrastructure/payment.client');
 
 const { hashRequest } = require('../../domain/request-hash');
 const { formatBookingResponse } = require('./formatters');
@@ -35,7 +34,7 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
   }
 
   const requestHash = hashRequest(data);
-  const existingKey = await idempotencyRepository.findByUserAndKey(userId, idempotencyKey);
+  const existingKey = await paymentModule().findIdempotencyRecord(userId, idempotencyKey);
 
   if (existingKey) {
     if (existingKey.request_hash !== requestHash) {
@@ -54,7 +53,7 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
     throw new ApiError(409, 'REQUEST_IN_PROGRESS', 'This idempotent request is still processing');
   }
 
-  const idempotencyRecord = await idempotencyRepository.create({
+  const idempotencyRecord = await paymentModule().createIdempotencyRecord({
     userId,
     idempotencyKey,
     requestHash,
@@ -145,7 +144,7 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
         { transaction }
       );
 
-      const dbTransaction = await transactionRepository.create(
+      const dbTransaction = await paymentModule().createTransaction(
         {
           bookingId: booking.id,
           buyerId: userId,
@@ -168,7 +167,7 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
         quote,
       });
 
-      await idempotencyRepository.markCompleted(
+      await paymentModule().completeIdempotencyRecord(
         idempotencyRecord.id,
         {
           resourceType: 'booking',
@@ -181,7 +180,9 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
       return result;
     });
   } catch (error) {
-    await idempotencyRepository.markFailed(idempotencyRecord.id).catch(() => {});
+    await paymentModule()
+      .failIdempotencyRecord(idempotencyRecord.id)
+      .catch(() => {});
     throw error;
   }
 }

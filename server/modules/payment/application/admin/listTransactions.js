@@ -1,4 +1,4 @@
-const transactionRepository = require('../../infrastructure/transaction.repository');
+const transactionRepository = require('../../infrastructure/transaction-admin.repository');
 
 /**
  * Paginated transaction list for the admin payments view.

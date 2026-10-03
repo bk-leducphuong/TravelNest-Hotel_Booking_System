@@ -1,9 +1,9 @@
 const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
-const transactionRepository = require('@repositories/transaction.repository');
 const bookingModule = require('@modules/booking');
 const ledgerService = require('@services/ledger.service');
 const inventoryModule = require('@modules/inventory');
+const transactionRepository = require('../../infrastructure/transaction.repository');
 
 const refundRepository = require('../../infrastructure/refund.repository');
 

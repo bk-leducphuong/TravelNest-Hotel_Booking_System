@@ -1,6 +1,6 @@
 const logger = require('@config/logger.config');
-const transactionRepository = require('@repositories/transaction.repository');
 const bookingModule = require('@modules/booking');
+const transactionRepository = require('../../infrastructure/transaction.repository');
 const paymentRepository = require('../../infrastructure/payment.repository');
 
 const { fromMinorUnits } = require('../../domain/money');

@@ -1,10 +1,9 @@
 const sequelize = require('@config/database.config');
 const logger = require('@config/logger.config');
 const notificationModule = require('@modules/notification');
+const paymentModule = require('@modules/payment');
 const ledgerService = require('@services/ledger.service');
 
-const transactionRepository = require('@repositories/transaction.repository');
-const ledgerRepository = require('@repositories/ledger.repository');
 const payoutRepository = require('../infrastructure/payout.repository');
 
 class PayoutService {
@@ -52,7 +51,7 @@ class PayoutService {
   }
 
   async createPayoutForTransaction(transactionId, options = {}) {
-    const transaction = await transactionRepository.findById(transactionId);
+    const transaction = await paymentModule.getTransactionById(transactionId);
 
     if (!transaction) {
       throw new Error('Transaction not found');
@@ -96,7 +95,7 @@ class PayoutService {
 
       const transaction = bookingData.transaction;
       const ownerId =
-        options.ownerId || (await ledgerRepository.findPrimaryOwnerByHotelId(bookingData.hotel_id));
+        options.ownerId || (await paymentModule.getPrimaryOwnerByHotelId(bookingData.hotel_id));
 
       if (!ownerId) {
         logger.warn('Skipping payout creation; hotel owner not found', {

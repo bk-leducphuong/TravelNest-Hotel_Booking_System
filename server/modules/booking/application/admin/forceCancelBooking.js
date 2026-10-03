@@ -6,6 +6,7 @@ const sequelize = require('@config/database.config');
 const inventoryModule = require('@modules/inventory');
 
 const bookingRepository = require('../../infrastructure/booking-admin.repository');
+const { paymentModule } = require('../../infrastructure/payment.client');
 const {
   BOOKING_STATUS,
   assertTransition,
@@ -84,10 +85,7 @@ async function forceCancelBooking(
 
   if (processRefund) {
     try {
-      // Lazy: payment imports the booking module, so requiring it at load time
-      // would be a cycle.
-      const paymentModule = require('@modules/payment');
-      refund = await paymentModule.refundBooking(bookingId, {
+      refund = await paymentModule().refundBooking(bookingId, {
         reason: 'hotel_cancelled',
         amount: refundAmount,
         actorUserId,

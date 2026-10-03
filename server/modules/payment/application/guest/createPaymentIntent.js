@@ -2,12 +2,12 @@ const ApiError = require('@utils/ApiError');
 const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
 const bookingModule = require('@modules/booking');
-const transactionRepository = require('@repositories/transaction.repository');
 const holdService = require('@services/hold.service');
 const inventoryModule = require('@modules/inventory');
 const { generateBookingCode } = require('@utils/booking.utils');
 
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
+const transactionRepository = require('../../infrastructure/transaction.repository');
 
 const { toMinorUnits } = require('../../domain/money');
 

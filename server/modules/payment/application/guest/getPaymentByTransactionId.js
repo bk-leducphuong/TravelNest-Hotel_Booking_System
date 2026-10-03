@@ -1,5 +1,5 @@
 const ApiError = require('@utils/ApiError');
-const transactionRepository = require('@repositories/transaction.repository');
+const transactionRepository = require('../../infrastructure/transaction.repository');
 
 /**
  * Get the transaction (with its payment) by transaction id, scoped to its buyer.

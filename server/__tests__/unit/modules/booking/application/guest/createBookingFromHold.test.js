@@ -1,8 +1,9 @@
-jest.mock('@repositories/idempotency.repository', () => ({
-  findByUserAndKey: jest.fn(),
-  create: jest.fn(),
-  markCompleted: jest.fn(),
-  markFailed: jest.fn(),
+jest.mock('@modules/payment', () => ({
+  findIdempotencyRecord: jest.fn(),
+  createIdempotencyRecord: jest.fn(),
+  createTransaction: jest.fn(),
+  completeIdempotencyRecord: jest.fn(),
+  failIdempotencyRecord: jest.fn(),
 }));
 jest.mock('@modules/booking/infrastructure/hold.repository', () => ({
   findByIdWithRooms: jest.fn(),
@@ -11,17 +12,15 @@ jest.mock('@modules/booking/infrastructure/booking.repository', () => ({
   create: jest.fn(),
   bulkCreateBookingRooms: jest.fn(),
 }));
-jest.mock('@repositories/transaction.repository', () => ({ create: jest.fn() }));
 jest.mock('@services/hold.service', () => ({ releaseHold: jest.fn() }));
 jest.mock('@services/pricing.service', () => ({ quote: jest.fn() }));
 jest.mock('@modules/inventory', () => ({ reserveRooms: jest.fn() }));
 jest.mock('@config/database.config', () => ({ transaction: jest.fn() }));
 jest.mock('@utils/booking.utils', () => ({ generateBookingCode: () => 'CODE1' }));
 
-const idempotencyRepository = require('@repositories/idempotency.repository');
+const paymentModule = require('@modules/payment');
 const holdRepository = require('@modules/booking/infrastructure/hold.repository');
 const bookingRepository = require('@modules/booking/infrastructure/booking.repository');
-const transactionRepository = require('@repositories/transaction.repository');
 const holdService = require('@services/hold.service');
 const pricingService = require('@services/pricing.service');
 const inventoryModule = require('@modules/inventory');
@@ -67,17 +66,17 @@ const hold = {
 };
 
 function primeHappyPath() {
-  idempotencyRepository.findByUserAndKey.mockResolvedValue(null);
-  idempotencyRepository.create.mockResolvedValue({ id: 99 });
-  idempotencyRepository.markCompleted.mockResolvedValue(undefined);
-  idempotencyRepository.markFailed.mockResolvedValue(undefined);
+  paymentModule.findIdempotencyRecord.mockResolvedValue(null);
+  paymentModule.createIdempotencyRecord.mockResolvedValue({ id: 99 });
+  paymentModule.completeIdempotencyRecord.mockResolvedValue(undefined);
+  paymentModule.failIdempotencyRecord.mockResolvedValue(undefined);
   holdRepository.findByIdWithRooms.mockResolvedValue(hold);
   pricingService.quote.mockResolvedValue(quote);
   holdService.releaseHold.mockResolvedValue(undefined);
   inventoryModule.reserveRooms.mockResolvedValue(undefined);
   bookingRepository.create.mockResolvedValue(booking);
   bookingRepository.bulkCreateBookingRooms.mockResolvedValue(undefined);
-  transactionRepository.create.mockResolvedValue({ id: 70 });
+  paymentModule.createTransaction.mockResolvedValue({ id: 70 });
   sequelize.transaction.mockImplementation((callback) => callback({}));
 }
 
@@ -87,11 +86,11 @@ describe('booking/application/guest/createBookingFromHold', () => {
       statusCode: 400,
       code: 'IDEMPOTENCY_KEY_REQUIRED',
     });
-    expect(idempotencyRepository.findByUserAndKey).not.toHaveBeenCalled();
+    expect(paymentModule.findIdempotencyRecord).not.toHaveBeenCalled();
   });
 
   it('replays the stored response for a completed idempotent request', async () => {
-    idempotencyRepository.findByUserAndKey.mockResolvedValue({
+    paymentModule.findIdempotencyRecord.mockResolvedValue({
       request_hash: hashRequest(data),
       status: 'completed',
       response_body: { bookingId: 50, bookingCode: 'CODE1' },
@@ -104,7 +103,7 @@ describe('booking/application/guest/createBookingFromHold', () => {
   });
 
   it('rejects reuse of an idempotency key with a different body', async () => {
-    idempotencyRepository.findByUserAndKey.mockResolvedValue({
+    paymentModule.findIdempotencyRecord.mockResolvedValue({
       request_hash: 'different-hash',
       status: 'completed',
     });
@@ -116,7 +115,7 @@ describe('booking/application/guest/createBookingFromHold', () => {
   });
 
   it('rejects a request that is still in progress', async () => {
-    idempotencyRepository.findByUserAndKey.mockResolvedValue({
+    paymentModule.findIdempotencyRecord.mockResolvedValue({
       request_hash: hashRequest(data),
       status: 'processing',
     });
@@ -135,7 +134,7 @@ describe('booking/application/guest/createBookingFromHold', () => {
       statusCode: 404,
       code: 'HOLD_NOT_FOUND',
     });
-    expect(idempotencyRepository.markFailed).toHaveBeenCalledWith(99);
+    expect(paymentModule.failIdempotencyRecord).toHaveBeenCalledWith(99);
   });
 
   it('creates the booking, reserves rooms and records idempotency inside one transaction', async () => {
@@ -166,7 +165,7 @@ describe('booking/application/guest/createBookingFromHold', () => {
       }),
       { transaction: {} }
     );
-    expect(transactionRepository.create).toHaveBeenCalledWith(
+    expect(paymentModule.createTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
         bookingId: 50,
         buyerId: USER_ID,
@@ -197,12 +196,12 @@ describe('booking/application/guest/createBookingFromHold', () => {
       cancellationPolicy: quote.cancellationPolicy,
     };
     expect(result).toEqual(expected);
-    expect(idempotencyRepository.markCompleted).toHaveBeenCalledWith(
+    expect(paymentModule.completeIdempotencyRecord).toHaveBeenCalledWith(
       99,
       { resourceType: 'booking', resourceId: 50, responseBody: expected },
       { transaction: {} }
     );
-    expect(idempotencyRepository.markFailed).not.toHaveBeenCalled();
+    expect(paymentModule.failIdempotencyRecord).not.toHaveBeenCalled();
   });
 
   it('marks the idempotency record failed when booking creation throws', async () => {
@@ -210,6 +209,6 @@ describe('booking/application/guest/createBookingFromHold', () => {
     bookingRepository.create.mockRejectedValue(new Error('db down'));
 
     await expect(createBookingFromHold(USER_ID, data, IDEMPOTENCY_KEY)).rejects.toThrow('db down');
-    expect(idempotencyRepository.markFailed).toHaveBeenCalledWith(99);
+    expect(paymentModule.failIdempotencyRecord).toHaveBeenCalledWith(99);
   });
 });

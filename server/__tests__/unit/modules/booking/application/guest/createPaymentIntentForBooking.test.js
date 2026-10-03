@@ -1,7 +1,7 @@
 jest.mock('@modules/booking/infrastructure/booking.repository', () => ({
   findPaymentContextByIdAndBuyerId: jest.fn(),
 }));
-jest.mock('@repositories/transaction.repository', () => ({ update: jest.fn() }));
+jest.mock('@modules/payment', () => ({ updateTransaction: jest.fn() }));
 jest.mock('@adapters/payment/stripePayment.adapter', () => {
   const instance = { getPayment: jest.fn(), createPayment: jest.fn() };
   const StripePaymentAdapter = jest.fn(() => instance);
@@ -10,7 +10,7 @@ jest.mock('@adapters/payment/stripePayment.adapter', () => {
 });
 
 const bookingRepository = require('@modules/booking/infrastructure/booking.repository');
-const transactionRepository = require('@repositories/transaction.repository');
+const paymentModule = require('@modules/payment');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 const {
   createPaymentIntentForBooking,
@@ -120,7 +120,7 @@ describe('booking/application/guest/createPaymentIntentForBooking', () => {
         metadata: expect.objectContaining({ booking_id: 5, transaction_id: 70, buyer_id: 1 }),
       })
     );
-    expect(transactionRepository.update).toHaveBeenCalledWith(70, {
+    expect(paymentModule.updateTransaction).toHaveBeenCalledWith(70, {
       paymentIntentId: 'pi_new',
       paymentMethod: 'card',
       metadata: {

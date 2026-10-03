@@ -1,14 +1,13 @@
 const paymentModule = require('@modules/payment');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 const StripeWebhookAdapter = require('@adapters/webhooks/stripeWebhook.adapter');
-const webhookEventLogRepository = require('@repositories/webhook_event_log.repository');
 const emailPublisher = require('@platform/events/producers/email');
 const notificationPublisher = require('@platform/events/producers/notification');
 const logger = require('@config/logger.config');
 
 // Initialize adapters
 const paymentAdapter = new StripePaymentAdapter();
-const webhookAdapter = new StripeWebhookAdapter(paymentAdapter, webhookEventLogRepository);
+const webhookAdapter = new StripeWebhookAdapter(paymentAdapter, paymentModule.webhookEventLog);
 
 /**
  * Main webhook handler
@@ -35,7 +34,7 @@ const handleStripeWebhook = async (req, res) => {
     // 4. Route to appropriate handler
     await routeWebhookEvent(event);
 
-    await webhookEventLogRepository.updateStatus(event.id, 'processed');
+    await paymentModule.webhookEventLog.updateStatus(event.id, 'processed');
 
     // 5. Return success response
     res.status(200).json({ received: true });
@@ -48,7 +47,7 @@ const handleStripeWebhook = async (req, res) => {
     }
 
     if (error.eventId) {
-      await webhookEventLogRepository.updateStatus(error.eventId, 'failed', error.message);
+      await paymentModule.webhookEventLog.updateStatus(error.eventId, 'failed', error.message);
     }
 
     res.status(500).json({ error: 'Webhook processing failed' });
