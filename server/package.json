@@ -87,7 +87,6 @@
     "@queues": "queues",
     "@workers": "workers",
     "@events": "events",
-    "@socket": "socket",
     "@utils": "utils",
     "@adapters": "adapters",
     "@helpers": "helpers",

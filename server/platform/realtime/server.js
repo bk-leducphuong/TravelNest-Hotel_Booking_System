@@ -2,14 +2,14 @@ const { Server } = require('socket.io');
 const logger = require('@config/logger.config');
 const { ROLES } = require('@constants/roles');
 
-const { socketAuthentication, socketAuthorization } = require('./socket.auth');
+const { socketAuthentication, socketAuthorization } = require('./auth');
 
 // Import namespace controllers
-const publicController = require('./controllers/public.controller');
-const userController = require('./controllers/user.controller');
-const propertyController = require('./controllers/property');
-const supportController = require('./controllers/support.controller');
-const adminController = require('./controllers/admin');
+const publicController = require('./namespaces/public');
+const userController = require('./namespaces/user');
+const propertyController = require('./namespaces/property');
+const supportController = require('./namespaces/support');
+const adminController = require('./namespaces/admin');
 
 let io;
 

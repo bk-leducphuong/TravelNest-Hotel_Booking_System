@@ -11,7 +11,7 @@ const cookieParser = require('cookie-parser');
 /** ********************* Config ************************ */
 const logger = require('@config/logger.config');
 const db = require('@models');
-const { initSocket } = require('@socket/index');
+const { initSocket } = require('@platform/realtime');
 const { initBucket } = require('@config/minio.config');
 const { setupSwagger } = require('@config/swagger.config');
 const { registerTransport, INBOUND_EVENTS, HOLD_EVENTS } = require('@platform/events');

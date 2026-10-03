@@ -1,6 +1,5 @@
 const logger = require('@config/logger.config');
-const { getNamespace } = require('@socket/index');
-const userController = require('@socket/controllers/user.controller');
+const { sendHoldExpired } = require('@platform/realtime');
 
 /**
  * Inbound consumer for `hold.expired`.
@@ -16,8 +15,7 @@ function handleHoldExpired(envelope) {
     return;
   }
 
-  const userNamespace = getNamespace('/user');
-  userController.sendHoldExpired(userNamespace, payload.userId, {
+  sendHoldExpired(payload.userId, {
     type: 'hold:expired',
     ...payload,
   });

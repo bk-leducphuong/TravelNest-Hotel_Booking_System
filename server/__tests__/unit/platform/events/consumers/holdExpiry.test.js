@@ -1,15 +1,10 @@
-jest.mock('@socket/index', () => ({ getNamespace: jest.fn() }));
-jest.mock('@socket/controllers/user.controller', () => ({ sendHoldExpired: jest.fn() }));
+jest.mock('@platform/realtime', () => ({ sendHoldExpired: jest.fn() }));
 
-const { getNamespace } = require('@socket/index');
-const userController = require('@socket/controllers/user.controller');
+const { sendHoldExpired } = require('@platform/realtime');
 const { handleHoldExpired } = require('@platform/events/consumers/holdExpiry');
 
 describe('platform/events/consumers/holdExpiry', () => {
   it('forwards the hold to the user socket room', () => {
-    const namespace = {};
-    getNamespace.mockReturnValue(namespace);
-
     handleHoldExpired({
       payload: {
         userId: 'u1',
@@ -19,9 +14,7 @@ describe('platform/events/consumers/holdExpiry', () => {
       },
     });
 
-    expect(getNamespace).toHaveBeenCalledWith('/user');
-    expect(userController.sendHoldExpired).toHaveBeenCalledWith(
-      namespace,
+    expect(sendHoldExpired).toHaveBeenCalledWith(
       'u1',
       expect.objectContaining({ type: 'hold:expired', userId: 'u1', holdId: 'h1' })
     );
@@ -30,7 +23,6 @@ describe('platform/events/consumers/holdExpiry', () => {
   it('ignores payloads without a user or hold', () => {
     handleHoldExpired({ payload: { userId: 'u1' } });
 
-    expect(getNamespace).not.toHaveBeenCalled();
-    expect(userController.sendHoldExpired).not.toHaveBeenCalled();
+    expect(sendHoldExpired).not.toHaveBeenCalled();
   });
 });

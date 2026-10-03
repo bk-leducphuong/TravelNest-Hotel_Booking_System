@@ -4,12 +4,12 @@ const logger = require('@config/logger.config');
  * Emit a notification to a Socket.IO room. Socket emission is best-effort: it
  * never throws into the caller's flow.
  *
- * `@socket/index` is required lazily to avoid a require cycle (socket setup
- * pulls in controllers that may reach back here).
+ * `@platform/realtime` is required lazily to avoid a require cycle (socket
+ * setup pulls in controllers that may reach back here).
  */
 async function emitNotification(room, event, data) {
   try {
-    const { getIO } = require('@socket/index');
+    const { getIO } = require('@platform/realtime');
     const io = getIO();
 
     io.to(room).emit(event, data, (acknowledgment) => {

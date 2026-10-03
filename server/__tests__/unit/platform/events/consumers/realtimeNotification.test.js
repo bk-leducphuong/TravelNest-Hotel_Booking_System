@@ -1,6 +1,6 @@
-jest.mock('@socket/index', () => ({ getNamespace: jest.fn() }));
+jest.mock('@platform/realtime', () => ({ getNamespace: jest.fn() }));
 
-const { getNamespace } = require('@socket/index');
+const { getNamespace } = require('@platform/realtime');
 const { handleRealtimeNotification } = require('@platform/events/consumers/realtimeNotification');
 
 const namespace = { to: jest.fn() };

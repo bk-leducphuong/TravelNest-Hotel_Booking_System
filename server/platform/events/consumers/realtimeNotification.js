@@ -1,5 +1,5 @@
 const logger = require('@config/logger.config');
-const { getNamespace } = require('@socket/index');
+const { getNamespace } = require('@platform/realtime');
 
 /**
  * Inbound consumer for `notification.realtime.dispatch.v1`.
