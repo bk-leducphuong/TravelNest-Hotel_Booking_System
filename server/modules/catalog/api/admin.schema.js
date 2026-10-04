@@ -1,5 +1,7 @@
 const Joi = require('joi');
 
+const { POLICY_TYPES } = require('@constants/hotels');
+
 /**
  * Catalog module validation schemas (admin / host property management).
  * IDs are UUIDs; dates are ISO.
@@ -73,6 +75,36 @@ const updateRoom = {
   body: Joi.object(ROOM_BODY_FIELDS).min(1).required(),
 };
 
+const policyParams = {
+  params: Joi.object({ hotelId: uuid.required(), policyId: uuid.required() }).required(),
+};
+
+const POLICY_BODY_FIELDS = {
+  policyType: Joi.string().valid(...POLICY_TYPES),
+  title: Joi.string().max(150),
+  description: Joi.string().max(5000),
+  displayOrder: Joi.number().integer().min(0),
+  icon: Joi.string().max(50).allow('', null),
+  isActive: Joi.boolean(),
+};
+
+const createPolicy = {
+  params: Joi.object({ hotelId: uuid.required() }).required(),
+  body: Joi.object({
+    ...POLICY_BODY_FIELDS,
+    policyType: Joi.string()
+      .valid(...POLICY_TYPES)
+      .required(),
+    title: Joi.string().max(150).required(),
+    description: Joi.string().max(5000).required(),
+  }).required(),
+};
+
+const updatePolicy = {
+  params: Joi.object({ hotelId: uuid.required(), policyId: uuid.required() }).required(),
+  body: Joi.object(POLICY_BODY_FIELDS).min(1).required(),
+};
+
 module.exports = {
   listHotels,
   hotelParams,
@@ -80,4 +112,7 @@ module.exports = {
   updateHotel,
   createRoom,
   updateRoom,
+  policyParams,
+  createPolicy,
+  updatePolicy,
 };

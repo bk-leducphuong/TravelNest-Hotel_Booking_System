@@ -68,4 +68,32 @@ router.delete(
   controller.deleteRoomHandler
 );
 
+router.get(
+  '/:hotelId/policies',
+  requireHotelPermission(PERMISSIONS.HOTEL_READ),
+  validate(schema.hotelParams),
+  controller.listPoliciesHandler
+);
+
+router.post(
+  '/:hotelId/policies',
+  requireHotelPermission(PERMISSIONS.HOTEL_UPDATE),
+  validate(schema.createPolicy),
+  controller.createPolicyHandler
+);
+
+router.patch(
+  '/:hotelId/policies/:policyId',
+  requireHotelPermission(PERMISSIONS.HOTEL_UPDATE),
+  validate(schema.updatePolicy),
+  controller.updatePolicyHandler
+);
+
+router.delete(
+  '/:hotelId/policies/:policyId',
+  requireHotelPermission(PERMISSIONS.HOTEL_UPDATE),
+  validate(schema.policyParams),
+  controller.deletePolicyHandler
+);
+
 module.exports = router;
