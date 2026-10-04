@@ -74,7 +74,7 @@ async function findByBuyerId(buyerId, options = {}) {
         {
           model: Hotels,
           as: 'hotel',
-          attributes: ['id', 'name', 'city', 'country'],
+          attributes: ['id', 'name'],
         },
         {
           model: Bookings,

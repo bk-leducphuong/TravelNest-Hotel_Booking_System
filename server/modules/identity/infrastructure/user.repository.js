@@ -1,6 +1,15 @@
 const { Op } = require('sequelize');
 
-const { Users, SavedHotels, Hotels, AuthAccounts, UserRoles, Roles } = require('@models/index.js');
+const {
+  Users,
+  SavedHotels,
+  Hotels,
+  HotelRatingSummaries,
+  Images,
+  AuthAccounts,
+  UserRoles,
+  Roles,
+} = require('@models/index.js');
 
 /**
  * User Repository - Contains all database operations for users
@@ -132,10 +141,45 @@ class UserRepository {
    * Find hotel by ID
    */
   async findHotelById(hotelId) {
-    return await Hotels.findOne({
-      where: { id: hotelId },
-      attributes: ['id', 'name', 'overall_rating', 'address', 'hotel_class', 'image_urls'],
-    });
+    const [hotel, ratingSummary, images] = await Promise.all([
+      Hotels.findOne({
+        where: { id: hotelId },
+        attributes: [
+          'id',
+          'name',
+          'address',
+          'hotel_class',
+          'check_in_time',
+          'check_out_time',
+          'min_price',
+        ],
+        raw: true,
+      }),
+      HotelRatingSummaries.findOne({
+        where: { hotel_id: hotelId },
+        attributes: ['overall_rating'],
+        raw: true,
+      }),
+      Images.findAll({
+        where: { entity_type: 'hotel', entity_id: hotelId, status: 'active' },
+        attributes: ['object_key', 'is_primary', 'display_order'],
+        order: [
+          ['is_primary', 'DESC'],
+          ['display_order', 'ASC'],
+        ],
+        raw: true,
+      }),
+    ]);
+
+    if (!hotel) {
+      return null;
+    }
+
+    return {
+      ...hotel,
+      overall_rating: ratingSummary?.overall_rating ?? 0,
+      image_urls: images.map((image) => image.object_key),
+    };
   }
 
   /**

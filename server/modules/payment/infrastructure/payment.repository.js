@@ -164,18 +164,13 @@ class PaymentRepository {
       include: [
         {
           model: Payments,
-          attributes: [
-            'payment_id',
-            'payment_method',
-            'payment_status',
-            'amount',
-            'currency',
-            'paid_at',
-          ],
+          as: 'payments',
+          attributes: ['id', 'payment_method', 'payment_status', 'amount', 'currency', 'paid_at'],
         },
         {
           model: Hotels,
-          attributes: ['id', 'name', 'city'],
+          as: 'hotel',
+          attributes: ['id', 'name'],
         },
       ],
       limit: limit || undefined,
@@ -202,18 +197,13 @@ class PaymentRepository {
       include: [
         {
           model: Payments,
-          attributes: [
-            'payment_id',
-            'payment_method',
-            'payment_status',
-            'amount',
-            'currency',
-            'paid_at',
-          ],
+          as: 'payments',
+          attributes: ['id', 'payment_method', 'payment_status', 'amount', 'currency', 'paid_at'],
         },
         {
           model: Hotels,
-          attributes: ['id', 'name', 'city'],
+          as: 'hotel',
+          attributes: ['id', 'name'],
         },
       ],
     });

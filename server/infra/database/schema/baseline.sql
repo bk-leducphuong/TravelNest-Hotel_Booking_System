@@ -1046,7 +1046,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `status` enum('active','inactive','banned') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active' COMMENT 'Account status used for authentication/authorization checks',
   `date_of_birth` date DEFAULT NULL,
   `gender` enum('male','female','non_binary','other','prefer_not_to_say') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `nationality` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `nationality` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `last_login_at` datetime DEFAULT NULL COMMENT 'Timestamp of the user last successful login',
   `email_verified_at` datetime DEFAULT NULL COMMENT 'When the user verified their email address',
   `phone_verified_at` datetime DEFAULT NULL COMMENT 'When the user verified their phone number',

@@ -32,10 +32,7 @@ async function searchHotels(params, userId = null) {
       destinationType: destination?.type || null,
       cityId: destination?.city_id || params.cityId || null,
       countryId: destination?.country_id || params.countryId || null,
-      city:
-        destination?.type === 'city'
-          ? destination.display_name
-          : params.city || destination?.display_name || null,
+      city: destination?.type === 'city' ? destination.display_name : params.city || null,
       country: destination?.country_name || params.country || null,
     };
 

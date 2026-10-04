@@ -93,7 +93,7 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: true,
       },
       nationality: {
-        type: DataTypes.STRING(30),
+        type: DataTypes.STRING(255),
         allowNull: true,
       },
       last_login_at: {
