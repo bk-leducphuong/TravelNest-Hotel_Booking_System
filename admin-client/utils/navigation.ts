@@ -9,6 +9,7 @@ export interface AdminNavItem {
  */
 export const ADMIN_NAV: AdminNavItem[] = [
   { label: "Dashboard", to: "/" },
+  { label: "Property", to: "/properties", permission: "hotel.read" },
   { label: "Bookings", to: "/bookings", permission: "booking.read" },
   { label: "Availability", to: "/availability", permission: "room.read" },
   { label: "Payments", to: "/payments", permission: "payment.read" },

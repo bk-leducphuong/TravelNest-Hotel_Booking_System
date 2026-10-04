@@ -15,8 +15,8 @@ const { deletePolicy } = require('../application/admin/deletePolicy');
 const actor = (req) => ({ actorUserId: req.user?.id, requestId: req.id });
 
 const listHotelsHandler = asyncHandler(async (req, res) => {
-  const data = await listHotels(req.query);
-  res.status(200).json({ data });
+  const { hotels, page, limit, total } = await listHotels(req.query);
+  res.status(200).json({ data: hotels, meta: { page, limit, total } });
 });
 
 const getHotelHandler = asyncHandler(async (req, res) => {
