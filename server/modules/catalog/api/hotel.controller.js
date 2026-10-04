@@ -12,9 +12,9 @@ const hotelUseCases = {
 };
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
-const { computeNumberOfNights } = require('@helpers/hotel.helpers');
 const { hotelViewEvents: hotelViewEventService } = require('@modules/analytics');
 const { getAuthenticatedUserId, getTrackingSessionId } = require('@helpers/auth-context.helper');
+const { computeNumberOfNights } = require('../domain/nights');
 
 /**
  * GET /api/hotels/:hotelId

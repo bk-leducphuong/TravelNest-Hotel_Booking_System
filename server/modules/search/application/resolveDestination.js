@@ -1,6 +1,6 @@
 const logger = require('@config/logger.config');
 const catalog = require('@modules/catalog');
-const destinationElasticsearchHelper = require('@helpers/destination_elasticsearch.helper');
+const destinationElasticsearchHelper = require('../infrastructure/destination-elasticsearch.helper');
 
 /**
  * Resolve a unified destination (city or country) from raw search parameters.

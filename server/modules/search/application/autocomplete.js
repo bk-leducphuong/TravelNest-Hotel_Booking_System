@@ -1,6 +1,6 @@
 const logger = require('@config/logger.config');
-const elasticsearchHelper = require('@helpers/elasticsearch.helper');
-const destinationElasticsearchHelper = require('@helpers/destination_elasticsearch.helper');
+const elasticsearchHelper = require('../infrastructure/elasticsearch.helper');
+const destinationElasticsearchHelper = require('../infrastructure/destination-elasticsearch.helper');
 
 /**
  * Autocomplete suggestions for hotel names. Degrades to an empty list on error.

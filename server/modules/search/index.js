@@ -8,6 +8,7 @@ const {
 } = require('./application/autocomplete');
 const { saveSearchLog } = require('./application/saveSearchLog');
 const guestRoutes = require('./api/guest.routes');
+const elasticsearchHelper = require('./infrastructure/elasticsearch.helper');
 
 /**
  * Search module - public interface.
@@ -29,4 +30,7 @@ module.exports = {
   getAutocompleteSuggestions,
   getDestinationAutocomplete,
   saveSearchLog,
+
+  // Elasticsearch access helper (exposed for the ES diagnostic script).
+  elasticsearchHelper,
 };

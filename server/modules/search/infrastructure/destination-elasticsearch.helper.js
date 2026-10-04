@@ -1,5 +1,5 @@
-const elasticsearchClient = require('../config/elasticsearch.config');
-const logger = require('../config/logger.config');
+const elasticsearchClient = require('@config/elasticsearch.config');
+const logger = require('@config/logger.config');
 
 class DestinationElasticsearchHelper {
   constructor() {

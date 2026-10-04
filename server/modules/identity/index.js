@@ -1,5 +1,11 @@
 const identityService = require('./application/identity.service');
 const userService = require('./application/user.service');
+const {
+  extractUserRoles,
+  extractUserPermissions,
+  extractHotelRoles,
+  hasHotelRole,
+} = require('./application/user.helpers');
 const userRepository = require('./infrastructure/user.repository');
 const keycloakUserInfoService = require('./infrastructure/keycloak-userinfo.client');
 const authRoutes = require('./api/auth.routes');
@@ -37,4 +43,10 @@ module.exports = {
 
   // Keycloak userinfo client (used by the auth middleware).
   keycloak: keycloakUserInfoService,
+
+  // User role/permission extraction (used by the realtime socket auth).
+  extractUserRoles,
+  extractUserPermissions,
+  extractHotelRoles,
+  hasHotelRole,
 };

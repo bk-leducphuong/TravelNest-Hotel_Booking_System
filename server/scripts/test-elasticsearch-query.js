@@ -5,7 +5,7 @@
 
 require('../register-aliases');
 
-const elasticsearchHelper = require('@helpers/elasticsearch.helper');
+const { elasticsearchHelper } = require('@modules/search');
 const logger = require('@config/logger.config');
 
 async function testElasticsearchQuery() {
