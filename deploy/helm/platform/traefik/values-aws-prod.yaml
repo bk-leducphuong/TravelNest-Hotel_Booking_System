@@ -1,0 +1,41 @@
+# Traefik values for the EKS prod cluster.
+#
+# The Ingress manifests in deploy/k8s hardcode `ingressClassName: traefik`, so
+# this chart must provide that class. Traffic path:
+#   Route53 -> NLB (this Service) -> Traefik -> Ingress -> Service -> Pod
+
+deployment:
+  replicas: 2
+
+ingressClass:
+  enabled: true
+  isDefaultClass: true
+  name: traefik
+
+providers:
+  kubernetesIngress:
+    enabled: true
+
+service:
+  type: LoadBalancer
+  annotations:
+    # Internet-facing NLB created by the AWS cloud provider.
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    # external-dns (source: service) creates these records pointing at the NLB.
+    external-dns.alpha.kubernetes.io/hostname: "deployserver.work,*.deployserver.work"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+logs:
+  general:
+    level: INFO
+  access:
+    enabled: true

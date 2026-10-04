@@ -1,0 +1,66 @@
+# Argo CD values for the EKS prod cluster.
+#
+# KSOPS is baked into the Helm values (rather than applied afterwards with
+# deploy/k8s/bootstrap/argocd/ksops) so the repo-server can decrypt
+# deploy/k8s/**/secret.enc.yaml at render time from the first sync.
+#
+# The chart defaults for repoServer.volumeMounts/volumes/initContainers are
+# empty, so replacing them here is safe.
+
+global:
+  domain: argocd.deployserver.work
+
+configs:
+  params:
+    # Traefik terminates TLS; argocd-server serves plain HTTP behind it.
+    server.insecure: true
+  cm:
+    # Required for KSOPS (kustomize exec plugins).
+    kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
+
+repoServer:
+  env:
+    - name: XDG_CONFIG_HOME
+      value: /.config
+    - name: SOPS_AGE_KEY_FILE
+      value: /.config/sops/age/keys.txt
+  initContainers:
+    - name: install-ksops
+      image: viaductoss/ksops:v4.5.1
+      command: ["/usr/local/bin/ksops", "install", "--with-kustomize", "/custom-tools"]
+      volumeMounts:
+        - name: custom-tools
+          mountPath: /custom-tools
+  volumes:
+    - name: custom-tools
+      emptyDir: {}
+    - name: sops-age
+      secret:
+        # Created out of band: `init-age-key.sh` or
+        # kubectl -n argocd create secret generic sops-age --from-file=keys.txt=...
+        # optional=true lets the pod start before the key exists.
+        secretName: sops-age
+        optional: true
+        items:
+          - key: keys.txt
+            path: keys.txt
+  volumeMounts:
+    - name: custom-tools
+      mountPath: /usr/local/bin/kustomize
+      subPath: kustomize
+    - name: custom-tools
+      mountPath: /usr/local/bin/ksops
+      subPath: ksops
+    - name: sops-age
+      mountPath: /.config/sops/age
+      readOnly: true
+
+server:
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - argocd.deployserver.work
+    tls: true

@@ -1,0 +1,25 @@
+# Terraform working files
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+
+# Local (gitignored) variable/config files
+backend.hcl
+*.auto.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI config
+.terraformrc
+terraform.rc
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Keep committed:
+#   .terraform.lock.hcl   (provider lock file — commit this)
+#   aws-prod.tfvars       (non-secret values — commit this)

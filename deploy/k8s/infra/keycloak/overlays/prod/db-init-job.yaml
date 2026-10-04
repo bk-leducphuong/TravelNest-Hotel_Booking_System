@@ -1,0 +1,63 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keycloak-db-init
+  annotations:
+    # Create the keycloak database/user before Keycloak starts. RDS cannot run
+    # the in-cluster MySQL init ConfigMap, so this replaces it.
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 300
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: keycloak-db-init
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: db-init
+          image: mysql:8.0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              echo "Waiting for MySQL at ${DB_HOST}:${DB_PORT}..."
+              for i in $(seq 1 30); do
+                if mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASSWORD}" -e 'SELECT 1' >/dev/null 2>&1; then
+                  echo "MySQL is reachable."
+                  break
+                fi
+                echo "  attempt ${i}/30..."
+                sleep 5
+              done
+
+              echo "Ensuring keycloak database and user exist..."
+              mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASSWORD}" <<SQL
+              CREATE DATABASE IF NOT EXISTS keycloak CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+              CREATE USER IF NOT EXISTS '${KEYCLOAK_DB_USER}'@'%' IDENTIFIED BY '${KEYCLOAK_DB_PASSWORD}';
+              GRANT ALL PRIVILEGES ON keycloak.* TO '${KEYCLOAK_DB_USER}'@'%';
+              FLUSH PRIVILEGES;
+              SQL
+              echo "Keycloak database ready."
+          envFrom:
+            - configMapRef:
+                name: keycloak-config
+            - secretRef:
+                name: keycloak-secret
+            - configMapRef:
+                name: api-config
+            # api-secret supplies DB_HOST / DB_PORT / DB_PASSWORD (the RDS master
+            # user), which are only used to run the CREATE/GRANT statements.
+            - secretRef:
+                name: api-secret
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
