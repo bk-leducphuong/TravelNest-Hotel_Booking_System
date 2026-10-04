@@ -71,6 +71,11 @@ model file. Model files use **relative requires** (not `@` aliases) because the 
 is also loaded by scripts that don't register aliases (`scripts/dump-schema.js`,
 `scripts/check-schema-drift.js`).
 
+Module repositories reach this registry through the **`platform/database` seam**
+(`@platform/database`). Importing the legacy `@models` path from a module is a blocking
+architecture violation (`npm run arch:check`); `@models` remains the registry's own path,
+used by platform code, scripts and tests.
+
 > Schema note: the schema is owned by **migrations**, not `sequelize.sync()`.
 > `infra/database/schema/baseline.sql` is the canonical DDL snapshot; the
 > `20260101000000-baseline-schema` migration applies it so a fresh database is

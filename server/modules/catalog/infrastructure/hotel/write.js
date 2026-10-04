@@ -1,4 +1,4 @@
-const { Hotels } = require('@models/index.js');
+const { Hotels } = require('@platform/database');
 
 /**
  * Hotel write operations.

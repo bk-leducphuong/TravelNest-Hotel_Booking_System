@@ -7,7 +7,7 @@ const {
   bookings: Bookings,
   hotels: Hotels,
   users: Users,
-} = require('@models/index.js');
+} = require('@platform/database');
 
 /**
  * Payment module transaction repository.

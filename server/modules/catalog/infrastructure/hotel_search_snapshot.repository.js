@@ -11,7 +11,7 @@ const {
   images,
   rooms,
   hotel_rating_summaries,
-} = require('@models');
+} = require('@platform/database');
 
 /**
  * HotelSearchSnapshot Repository - Contains all database operations for hotel search snapshots

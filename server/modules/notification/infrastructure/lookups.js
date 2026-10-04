@@ -1,4 +1,4 @@
-const { Hotels } = require('@models');
+const { Hotels } = require('@platform/database');
 
 /**
  * Look up a hotel's owner for composing owner-facing notifications.

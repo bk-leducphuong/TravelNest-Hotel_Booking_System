@@ -1,4 +1,4 @@
-const { Transactions } = require('@models/index.js');
+const { Transactions } = require('@platform/database');
 const logger = require('@config/logger.config');
 
 /**

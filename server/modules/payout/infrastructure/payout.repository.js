@@ -8,7 +8,7 @@ const {
   Users,
   Bookings,
   PayoutItems,
-} = require('@models/index.js');
+} = require('@platform/database');
 const logger = require('@config/logger.config');
 
 class PayoutRepository {

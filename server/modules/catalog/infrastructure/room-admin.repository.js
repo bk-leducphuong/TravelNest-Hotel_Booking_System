@@ -1,4 +1,4 @@
-const { rooms: Rooms } = require('@models/index.js');
+const { rooms: Rooms } = require('@platform/database');
 
 /**
  * Catalog room repository - read access to room metadata.

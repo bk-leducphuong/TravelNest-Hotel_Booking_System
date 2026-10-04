@@ -1,4 +1,4 @@
-const { NearbyPlaces } = require('@models/index.js');
+const { NearbyPlaces } = require('@platform/database');
 
 /**
  * Nearby-place queries.

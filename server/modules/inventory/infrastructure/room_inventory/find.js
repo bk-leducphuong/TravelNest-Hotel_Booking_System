@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 
-const { RoomInventory } = require('@models/index.js');
+const { RoomInventory } = require('@platform/database');
 const logger = require('@config/logger.config');
 
 const { toDateOnly } = require('./dates');

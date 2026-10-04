@@ -10,7 +10,7 @@ const {
   ImageVariants,
   Cities,
   Countries,
-} = require('@models/index.js');
+} = require('@platform/database');
 
 /**
  * Hotel, room and policy read queries.

@@ -1,4 +1,4 @@
-const { RoomInventory } = require('@models/index.js');
+const { RoomInventory } = require('@platform/database');
 const sequelize = require('@config/database.config');
 const logger = require('@config/logger.config');
 

@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 
-const { Transactions, Bookings, Hotels, Payments } = require('@models/index.js');
+const { Transactions, Bookings, Hotels, Payments } = require('@platform/database');
 const logger = require('@config/logger.config');
 
 /**

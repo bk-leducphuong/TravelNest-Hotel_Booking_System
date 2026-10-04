@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
-const { images, image_variants } = require('@models');
-const { Images, ImageVariants } = require('@models/index.js');
+const { images, image_variants } = require('@platform/database');
+const { Images, ImageVariants } = require('@platform/database');
 const sequelize = require('@config/database.config');
 
 /**

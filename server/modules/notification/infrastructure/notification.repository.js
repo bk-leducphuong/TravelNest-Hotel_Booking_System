@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 
-const { Notifications, users } = require('@models/index.js');
+const { Notifications, users } = require('@platform/database');
 const {
   NOTIFICATION_TYPES,
   NOTIFICATION_CATEGORIES,

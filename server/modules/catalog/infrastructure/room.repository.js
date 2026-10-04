@@ -1,4 +1,4 @@
-const { Rooms, RoomInventories, Amenities, Images, ImageVariants } = require('@models/index.js');
+const { Rooms, RoomInventories, Amenities, Images, ImageVariants } = require('@platform/database');
 
 /**
  * Room Repository - Contains all database operations for rooms

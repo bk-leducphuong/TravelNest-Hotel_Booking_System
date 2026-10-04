@@ -7,7 +7,7 @@ const {
   RoomInventories,
   SearchLogs,
   hotel_search_snapshots,
-} = require('@models/index.js');
+} = require('@platform/database');
 const sequelize = require('@config/database.config');
 
 /**

@@ -1,4 +1,4 @@
-const { IdempotencyKeys } = require('@models/index.js');
+const { IdempotencyKeys } = require('@platform/database');
 
 class IdempotencyRepository {
   async findByUserAndKey(userId, idempotencyKey, options = {}) {

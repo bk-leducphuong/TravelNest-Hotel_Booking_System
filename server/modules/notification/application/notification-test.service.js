@@ -6,7 +6,7 @@ const { VALID_ROLES } = require('@constants/roles');
 const ApiError = require('@utils/ApiError');
 const notificationPublisher = require('@platform/events/producers/notification');
 const emailPublisher = require('@platform/events/producers/email');
-const { Users, UserRoles, Roles } = require('@models/index.js');
+const { Users, UserRoles, Roles } = require('@platform/database');
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;

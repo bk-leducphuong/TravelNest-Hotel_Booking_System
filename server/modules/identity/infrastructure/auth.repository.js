@@ -8,7 +8,7 @@ const {
   RolePermissions,
   Hotels,
   sequelize,
-} = require('@models/index.js');
+} = require('@platform/database');
 const { Op } = require('sequelize');
 
 const USER_CONTEXT_INCLUDE = [

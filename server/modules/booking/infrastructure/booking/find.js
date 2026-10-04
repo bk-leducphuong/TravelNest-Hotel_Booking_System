@@ -9,7 +9,7 @@ const {
   Rooms,
   Transactions,
   HotelCancellationRules,
-} = require('@models/index.js');
+} = require('@platform/database');
 
 /**
  * Booking read queries.

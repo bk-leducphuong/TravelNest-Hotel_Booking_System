@@ -1,6 +1,6 @@
 const { Op, fn, col } = require('sequelize');
 
-const { room_inventory: RoomInventory, rooms: Rooms } = require('@models/index.js');
+const { room_inventory: RoomInventory, rooms: Rooms } = require('@platform/database');
 
 /**
  * Inventory repository - the only place that touches the room_inventory table.

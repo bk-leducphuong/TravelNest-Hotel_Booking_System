@@ -9,7 +9,7 @@ const {
   transactions: Transactions,
   payments: Payments,
   refunds: Refunds,
-} = require('@models/index.js');
+} = require('@platform/database');
 
 /**
  * Booking module (admin) repository. Owns booking reads/writes for the

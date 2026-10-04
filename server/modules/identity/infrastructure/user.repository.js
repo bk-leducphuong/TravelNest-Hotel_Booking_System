@@ -9,7 +9,7 @@ const {
   AuthAccounts,
   UserRoles,
   Roles,
-} = require('@models/index.js');
+} = require('@platform/database');
 
 /**
  * User Repository - Contains all database operations for users
