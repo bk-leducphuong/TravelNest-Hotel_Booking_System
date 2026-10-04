@@ -26,4 +26,19 @@ async function upsertHotel(hotelData) {
   );
 }
 
-module.exports = { upsertHotel };
+/**
+ * Update hotel columns (snake_case, already mapped by the caller). Returns the
+ * affected row count; callers re-read through the repository if they need the
+ * fresh record.
+ */
+async function updateHotel(hotelId, values) {
+  return await Hotels.update(
+    {
+      ...values,
+      updated_at: new Date(),
+    },
+    { where: { id: hotelId } }
+  );
+}
+
+module.exports = { upsertHotel, updateHotel };

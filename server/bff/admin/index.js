@@ -2,6 +2,7 @@ const express = require('express');
 
 const reviewModule = require('@modules/review');
 const inventoryModule = require('@modules/inventory');
+const catalogModule = require('@modules/catalog');
 const paymentModule = require('@modules/payment');
 const bookingModule = require('@modules/booking');
 const payoutModule = require('@modules/payout');
@@ -18,6 +19,7 @@ const router = express.Router();
  * Mounted at /api/v1/admin.
  */
 router.use('/me', meRoutes);
+router.use('/hotels', catalogModule.adminRoutes);
 router.use('/reviews', reviewModule.adminRoutes);
 router.use('/inventory', inventoryModule.adminRoutes);
 router.use('/payments', paymentModule.adminRoutes);

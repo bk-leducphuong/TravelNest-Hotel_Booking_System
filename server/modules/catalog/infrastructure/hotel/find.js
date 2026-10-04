@@ -237,8 +237,63 @@ async function findBasicByIds(hotelIds = []) {
   });
 }
 
+const ADMIN_HOTEL_ATTRIBUTES = [
+  'id',
+  'name',
+  'description',
+  'address',
+  'city_id',
+  'country_id',
+  'phone_number',
+  'latitude',
+  'longitude',
+  'hotel_class',
+  'check_in_time',
+  'check_out_time',
+  'check_in_policy',
+  'check_out_policy',
+  'min_price',
+  'status',
+  'timezone',
+  'created_at',
+  'updated_at',
+];
+
+/**
+ * Paginated hotel list for the back-office. Unlike `findById` this does not
+ * filter on status, so owners and platform staff can see drafts/suspended rows.
+ */
+async function findAllForAdmin({ search, status, cityId, limit = 20, offset = 0 } = {}) {
+  const where = {};
+
+  if (status) where.status = status;
+  if (cityId) where.city_id = cityId;
+  if (search) {
+    where[Op.or] = [
+      { name: { [Op.like]: `%${search}%` } },
+      { address: { [Op.like]: `%${search}%` } },
+    ];
+  }
+
+  return await Hotels.findAndCountAll({
+    where,
+    attributes: ADMIN_HOTEL_ATTRIBUTES,
+    limit,
+    offset,
+    order: [['created_at', 'DESC']],
+    distinct: true,
+  });
+}
+
+/** Admin hotel read: any status, full editable attribute set. */
+async function findByIdForAdmin(hotelId) {
+  return await Hotels.findByPk(hotelId, { attributes: ADMIN_HOTEL_ATTRIBUTES });
+}
+
 module.exports = {
   findById,
+  findAllForAdmin,
+  findByIdForAdmin,
   findImagesByHotelId,
   findAmenitiesByHotelId,
   findRoomById,

@@ -10,9 +10,25 @@ class RoomRepository {
       room_name: data.roomName,
       max_guests: data.maxGuests,
       hotel_id: data.hotelId,
+      ...(data.roomType !== undefined ? { room_type: data.roomType } : {}),
+      ...(data.quantity !== undefined ? { quantity: data.quantity } : {}),
+      ...(data.roomSize !== undefined ? { room_size: data.roomSize } : {}),
+      ...(data.status !== undefined ? { status: data.status } : {}),
       created_at: new Date(),
       updated_at: new Date(),
     });
+  }
+
+  async update(roomId, values) {
+    return await Rooms.update({ ...values, updated_at: new Date() }, { where: { id: roomId } });
+  }
+
+  /** Soft delete: rooms are referenced by inventory/bookings, so never hard-delete. */
+  async deactivate(roomId) {
+    return await Rooms.update(
+      { status: 'inactive', updated_at: new Date() },
+      { where: { id: roomId } }
+    );
   }
 
   async findByHotelId(hotelId) {
