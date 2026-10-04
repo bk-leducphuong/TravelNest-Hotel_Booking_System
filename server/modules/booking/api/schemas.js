@@ -47,6 +47,13 @@ const getBookingStats = {
   params: Joi.object({ hotelId: uuid.required() }).required(),
 };
 
+const getBookingTrend = {
+  params: Joi.object({ hotelId: uuid.required() }).required(),
+  query: Joi.object({
+    days: Joi.number().integer().min(1).max(90).default(14),
+  }).unknown(false),
+};
+
 const updateBookingStatus = {
   params: Joi.object({ bookingId: uuid.required() }).required(),
   body: Joi.object({
@@ -69,6 +76,7 @@ module.exports = {
   listBookings,
   getBooking,
   getBookingStats,
+  getBookingTrend,
   updateBookingStatus,
   cancelBooking,
 };

@@ -3,6 +3,7 @@ const asyncHandler = require('@utils/asyncHandler');
 const { listBookings } = require('../application/admin/listBookings');
 const { getBooking } = require('../application/admin/getBooking');
 const { getBookingStats } = require('../application/admin/getBookingStats');
+const { getBookingTrend } = require('../application/admin/getBookingTrend');
 const { updateBookingStatus } = require('../application/admin/updateBookingStatus');
 const { forceCancelBooking } = require('../application/admin/forceCancelBooking');
 
@@ -28,6 +29,12 @@ const getBookingStatsHandler = asyncHandler(async (req, res) => {
   const stats = await getBookingStats(req.params.hotelId);
 
   res.status(200).json({ data: stats });
+});
+
+const getBookingTrendHandler = asyncHandler(async (req, res) => {
+  const trend = await getBookingTrend(req.params.hotelId, { days: req.query.days });
+
+  res.status(200).json({ data: trend });
 });
 
 const updateBookingStatusHandler = asyncHandler(async (req, res) => {
@@ -56,6 +63,7 @@ module.exports = {
   listBookingsHandler,
   getBookingHandler,
   getBookingStatsHandler,
+  getBookingTrendHandler,
   updateBookingStatusHandler,
   cancelBookingHandler,
 };

@@ -34,6 +34,13 @@ router.get(
 );
 
 router.get(
+  '/hotels/:hotelId/trend',
+  requireHotelPermission(PERMISSIONS.BOOKING_READ),
+  validate(schema.getBookingTrend),
+  controller.getBookingTrendHandler
+);
+
+router.get(
   '/:bookingId',
   requireHotelPermission(PERMISSIONS.BOOKING_READ),
   validate(schema.getBooking),

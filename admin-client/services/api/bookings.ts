@@ -105,6 +105,17 @@ export interface BookingStats {
   departuresToday: number;
 }
 
+export interface BookingTrendPoint {
+  date: string;
+  count: number;
+}
+
+export interface BookingTrend {
+  hotelId: string;
+  days: number;
+  points: BookingTrendPoint[];
+}
+
 export interface StatusUpdateResult {
   bookingId: string;
   previousStatus: string;
@@ -131,9 +142,21 @@ function toQuery(filters: Record<string, unknown>): string {
   return query ? `?${query}` : "";
 }
 
-export async function fetchBookingStats(hotelId: string): Promise<BookingStats> {
+export async function fetchBookingStats(
+  hotelId: string
+): Promise<BookingStats> {
   const response = await apiFetch<{ data: BookingStats }>(
     `/admin/bookings/hotels/${encodeURIComponent(hotelId)}/stats`
+  );
+  return response.data;
+}
+
+export async function fetchBookingTrend(
+  hotelId: string,
+  days = 14
+): Promise<BookingTrend> {
+  const response = await apiFetch<{ data: BookingTrend }>(
+    `/admin/bookings/hotels/${encodeURIComponent(hotelId)}/trend?days=${days}`
   );
   return response.data;
 }
@@ -141,9 +164,10 @@ export async function fetchBookingStats(hotelId: string): Promise<BookingStats> 
 export async function fetchBookings(
   filters: BookingListFilters = {}
 ): Promise<{ data: BookingListItem[]; meta: PaginatedMeta }> {
-  const response = await apiFetch<{ data: BookingListItem[]; meta: PaginatedMeta }>(
-    `/admin/bookings${toQuery(filters)}`
-  );
+  const response = await apiFetch<{
+    data: BookingListItem[];
+    meta: PaginatedMeta;
+  }>(`/admin/bookings${toQuery(filters)}`);
   return { data: response.data, meta: response.meta };
 }
 
