@@ -1,6 +1,7 @@
 const ApiError = require('@utils/ApiError');
 const { ROLES } = require('@constants/roles');
 const authRepository = require('../infrastructure/auth.repository');
+const hotelMembershipRepository = require('../infrastructure/hotel-membership.repository');
 
 const MANAGED_GLOBAL_ROLES = [ROLES.USER, ROLES.ADMIN, ROLES.SUPPORT_AGENT];
 
@@ -120,6 +121,28 @@ class IdentityService {
       desiredRoles.map((role) => role.id),
       managedRoles.map((role) => role.id)
     );
+  }
+
+  /**
+   * Link a user to a hotel as its (primary) owner. Used when a partner submits
+   * the join onboarding form, so the new property is manageable afterwards.
+   */
+  async assignHotelOwner(userId, hotelId, { isPrimaryOwner = true } = {}) {
+    if (!userId || !hotelId) {
+      throw new ApiError(400, 'MISSING_HOTEL_OWNER', 'userId and hotelId are required');
+    }
+
+    const role = await authRepository.findRoleByName(ROLES.OWNER);
+    if (!role) {
+      throw new ApiError(500, 'OWNER_ROLE_MISSING', 'Owner role is not provisioned');
+    }
+
+    return await hotelMembershipRepository.upsertHotelRole({
+      userId,
+      hotelId,
+      roleId: role.id,
+      isPrimaryOwner,
+    });
   }
 }
 

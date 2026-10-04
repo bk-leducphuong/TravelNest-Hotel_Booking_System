@@ -1,6 +1,7 @@
 const { mediaProxy: mediaProxyService } = require('@modules/media');
 const catalogModule = require('@modules/catalog');
 const inventoryModule = require('@modules/inventory');
+const identityModule = require('@modules/identity');
 const ApiError = require('@utils/ApiError');
 
 /**
@@ -97,6 +98,9 @@ class JoinService {
 
     // Extract hotel ID from Sequelize instance
     const hotelId = hotel.id || hotel.get?.('id') || hotel.dataValues?.id || hotel.hotel_id;
+
+    // Link the owner so the property is manageable in the admin client.
+    await identityModule.assignHotelOwner(ownerId, hotelId);
 
     // Create room
     const room = await catalogModule.createRoom({
