@@ -36,9 +36,12 @@ server/
       infrastructure/      # models + repositories + adapters
       api/                 # routers/controllers/schemas
       events/              # publishers/subscribers
+      jobs/                # BullMQ queues + worker factories (only where needed)
       index.js             # PUBLIC interface - the only cross-module surface
-  platform/                # cross-cutting: events, audit
-  models/                  # legacy central registry (now scans module model dirs too)
+  platform/                # cross-cutting: events, audit, realtime, health, internal, validation
+  events/                  # NATS transport adapter (platform/events is the in-process port)
+  workers/                 # worker-process entrypoint (composition root)
+  models/                  # central registry that scans module/platform model dirs
   shared utils: config, middlewares, utils, constants
 ```
 
@@ -89,11 +92,11 @@ Known events (see `platform/events/index.js`):
 
 | Event | Emitted by | Consumed by |
 |---|---|---|
-| `review.created` / `review.status_changed` | Review | Review (rating projection + search snapshot) |
-| `inventory.changed` | Inventory | Inventory (search snapshot) |
-| `payment.refund_created` / `_succeeded` / `_failed` | Payment | Payment (guest notification) |
-| `booking.status_changed` / `booking.cancelled` / `booking.completed` | Booking | Booking (search snapshot on completion) |
-| `payout.batch_generated` / `payout.paid` / `payout.failed` | Payout | Payout (owner notifications via payout service) |
+| `review.created` / `review.status_changed` / `review.deleted` | Review | Review (rating-summary projection) |
+| `payment.refund_created` / `_succeeded` / `_failed` | Payment | Payment (guest notification on `refund_succeeded`) |
+| `booking.status_changed` / `booking.cancelled` / `booking.completed` | Booking | — (published; no in-process subscriber) |
+| `inventory.changed` | Inventory | — (published; no in-process subscriber) |
+| `payout.batch_generated` / `payout.paid` / `payout.failed` | Payout | — (published; owner notifications are sent by the Go payout service) |
 
 Subscribers are registered once per process from each module's `index.js`.
 
