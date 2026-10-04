@@ -3,7 +3,6 @@ const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
 const bookingModule = require('@modules/booking');
 const inventoryModule = require('@modules/inventory');
-const { generateBookingCode } = require('@utils/booking.utils');
 
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 const transactionRepository = require('../../infrastructure/transaction.repository');
@@ -61,7 +60,7 @@ async function createPaymentIntent(userId, paymentData) {
     throw new ApiError(400, 'HOLD_HAS_NO_ROOMS', 'Active hold does not contain any rooms.');
   }
 
-  const bookingCode = generateBookingCode();
+  const bookingCode = bookingModule.generateBookingCode();
   const holdCurrency = 'USD';
   const amount = parseFloat(holdData.total_price);
   const paymentWindowMinutes = parseInt(process.env.BOOKING_PAYMENT_WINDOW_MINUTES || '15', 10);

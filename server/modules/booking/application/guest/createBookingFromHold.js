@@ -2,7 +2,7 @@ const ApiError = require('@utils/ApiError');
 
 const sequelize = require('@config/database.config');
 const inventoryModule = require('@modules/inventory');
-const { generateBookingCode } = require('@utils/booking.utils');
+const { generateBookingCode } = require('../../domain/booking-code');
 const holdService = require('../hold.service');
 const pricingService = require('../pricing.service');
 const holdRepository = require('../../infrastructure/hold.repository');

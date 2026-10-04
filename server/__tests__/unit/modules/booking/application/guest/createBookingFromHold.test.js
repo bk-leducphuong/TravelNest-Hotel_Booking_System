@@ -16,7 +16,7 @@ jest.mock('@modules/booking/application/hold.service', () => ({ releaseHold: jes
 jest.mock('@modules/booking/application/pricing.service', () => ({ quote: jest.fn() }));
 jest.mock('@modules/inventory', () => ({ reserveRooms: jest.fn() }));
 jest.mock('@config/database.config', () => ({ transaction: jest.fn() }));
-jest.mock('@utils/booking.utils', () => ({ generateBookingCode: () => 'CODE1' }));
+jest.mock('@modules/booking/domain/booking-code', () => ({ generateBookingCode: () => 'CODE1' }));
 
 const paymentModule = require('@modules/payment');
 const holdRepository = require('@modules/booking/infrastructure/hold.repository');
