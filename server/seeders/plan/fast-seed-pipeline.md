@@ -13,17 +13,17 @@ and for environments where `local_infile` is unavailable.
 
 Current bottlenecks, ranked by impact at million-row scale:
 
-| # | Bottleneck | Location |
-|---|------------|----------|
-| 1 | `findOrCreate` once per junction link (2 round-trips each) | `hotel_amenity.seed.js:114`, `room_amenity.seed.js:97`, plus `user.seed.js`, `city.seed.js:112`, `amenity.seed.js:223`, `destinations.seed.js:61,111`, `permission.seed.js`, `hotel_staff.seed.js` |
-| 2 | Per-booking `rooms.findByPk` + `room_inventory.findOne` | `booking.seed.js:164`, `booking.seed.js:132` |
-| 3 | `bulkCreate(..., { validate: true })` (Sequelize instantiates + validates every row) | `room_inventory.seed.js:131,141`, `review.seed.js:411,529`, `room.seed.js:127`, `booking.seed.js:324,420`, `notification.seed.js:383`, `hotel_policy.seed.js:350,398`, `nearby_place.seed.js:321,377` |
-| 4 | Entire table accumulated in one array before insert (OOM risk at GB) | `review.seed.js`, `booking.seed.js`, `notification.seed.js` |
-| 5 | Small batches / one autocommit per batch | `hotel.seed.js:21` (500), `room_inventory.seed.js:87` (10k) |
-| 6 | Secondary indexes maintained on every insert | `hotels` (6), `bookings` (7), `room_inventory` (4), `hotel_search_snapshots` (~15) |
-| 7 | Per-hotel snapshot rebuild loop | `hotel_search_snapshot.seed.js:87-129` → `snapshotRepo.fullRefresh()` |
-| 8 | No bulk-load session tuning | `config/database.options.js` |
-| 9 | `faker` called per field, single-threaded | all seeders |
+| #   | Bottleneck                                                                           | Location                                                                                                                                                                                              |
+| --- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `findOrCreate` once per junction link (2 round-trips each)                           | `hotel_amenity.seed.js:114`, `room_amenity.seed.js:97`, plus `user.seed.js`, `city.seed.js:112`, `amenity.seed.js:223`, `destinations.seed.js:61,111`, `permission.seed.js`, `hotel_staff.seed.js`    |
+| 2   | Per-booking `rooms.findByPk` + `room_inventory.findOne`                              | `booking.seed.js:164`, `booking.seed.js:132`                                                                                                                                                          |
+| 3   | `bulkCreate(..., { validate: true })` (Sequelize instantiates + validates every row) | `room_inventory.seed.js:131,141`, `review.seed.js:411,529`, `room.seed.js:127`, `booking.seed.js:324,420`, `notification.seed.js:383`, `hotel_policy.seed.js:350,398`, `nearby_place.seed.js:321,377` |
+| 4   | Entire table accumulated in one array before insert (OOM risk at GB)                 | `review.seed.js`, `booking.seed.js`, `notification.seed.js`                                                                                                                                           |
+| 5   | Small batches / one autocommit per batch                                             | `hotel.seed.js:21` (500), `room_inventory.seed.js:87` (10k)                                                                                                                                           |
+| 6   | Secondary indexes maintained on every insert                                         | `hotels` (6), `bookings` (7), `room_inventory` (4), `hotel_search_snapshots` (~15)                                                                                                                    |
+| 7   | Per-hotel snapshot rebuild loop                                                      | `hotel_search_snapshot.seed.js:87-129` → `snapshotRepo.fullRefresh()`                                                                                                                                 |
+| 8   | No bulk-load session tuning                                                          | `config/database.options.js`                                                                                                                                                                          |
+| 9   | `faker` called per field, single-threaded                                            | all seeders                                                                                                                                                                                           |
 
 ---
 
@@ -89,7 +89,11 @@ Add a loader connection factory (raw `mysql2`) used only by the bulk path:
 ```js
 function createBulkConnection() {
   return mysql.createConnection({
-    host, port, user: process.env.DB_ADMIN_USER || user, password, database,
+    host,
+    port,
+    user: process.env.DB_ADMIN_USER || user,
+    password,
+    database,
     localInfile: true,
     multipleStatements: true,
     // big batches: disable per-query row limits if needed
@@ -105,14 +109,14 @@ Use `DB_ADMIN_USER` (root) so `SET sql_log_bin=0` is permitted.
 
 ### 4.1 `bulk.js`
 
-| Function | Purpose |
-|----------|---------|
-| `withBulkSession(fn)` | open raw connection, apply, and restore bulk session settings |
-| `loadStream(conn, table, columns, readable, opts)` | stream a `Readable` into `LOAD DATA LOCAL INFILE` |
-| `listSecondaryIndexes(conn, table)` | `SHOW INDEX FROM` → DDL stmts |
-| `dropSecondaryIndexes(conn, table)` | drop all non-`PRIMARY` indexes |
-| `recreateIndexes(conn, table, ddl)` | re-add indexes, then `ANALYZE TABLE` |
-| `truncate(conn, tables)` | FK-safe truncate |
+| Function                                           | Purpose                                                       |
+| -------------------------------------------------- | ------------------------------------------------------------- |
+| `withBulkSession(fn)`                              | open raw connection, apply, and restore bulk session settings |
+| `loadStream(conn, table, columns, readable, opts)` | stream a `Readable` into `LOAD DATA LOCAL INFILE`             |
+| `listSecondaryIndexes(conn, table)`                | `SHOW INDEX FROM` → DDL stmts                                 |
+| `dropSecondaryIndexes(conn, table)`                | drop all non-`PRIMARY` indexes                                |
+| `recreateIndexes(conn, table, ddl)`                | re-add indexes, then `ANALYZE TABLE`                          |
+| `truncate(conn, tables)`                           | FK-safe truncate                                              |
 
 Session settings applied:
 
@@ -176,19 +180,19 @@ Pure functions (no DB, no per-row `await`). Port existing faker logic with:
 
 Dependency order and manifests:
 
-| # | Table | Method | Parent IDs sampled | Emits manifest |
-|---|-------|--------|--------------------|----------------|
-| 0 | countries, cities, amenities, permissions | existing Sequelize | — | cities, amenities |
-| 1 | users (+ auth_accounts, user_roles) | bulk stream | cities? | users |
-| 2 | hotels | bulk stream | cities, countries | hotels |
-| 3 | rooms | bulk stream | hotels | rooms |
-| 4 | room_amenities | bulk stream (`INSERT IGNORE`) | rooms, amenities | — |
-| 5 | hotel_amenities | bulk stream (`INSERT IGNORE`) | hotels, amenities | — |
-| 6 | room_inventory | bulk stream | rooms | — |
-| 7 | bookings | bulk stream | hotels, rooms, users | — |
-| 8 | reviews | bulk stream | hotels, users | — |
-| 9 | notifications | bulk stream | users | — |
-| 10 | hotel_search_snapshots | set-based SQL | — | — |
+| #   | Table                                     | Method                        | Parent IDs sampled   | Emits manifest    |
+| --- | ----------------------------------------- | ----------------------------- | -------------------- | ----------------- |
+| 0   | countries, cities, amenities, permissions | existing Sequelize            | —                    | cities, amenities |
+| 1   | users (+ auth_accounts, user_roles)       | bulk stream                   | cities?              | users             |
+| 2   | hotels                                    | bulk stream                   | cities, countries    | hotels            |
+| 3   | rooms                                     | bulk stream                   | hotels               | rooms             |
+| 4   | room_amenities                            | bulk stream (`INSERT IGNORE`) | rooms, amenities     | —                 |
+| 5   | hotel_amenities                           | bulk stream (`INSERT IGNORE`) | hotels, amenities    | —                 |
+| 6   | room_inventory                            | bulk stream                   | rooms                | —                 |
+| 7   | bookings                                  | bulk stream                   | hotels, rooms, users | —                 |
+| 8   | reviews                                   | bulk stream                   | hotels, users        | —                 |
+| 9   | notifications                             | bulk stream                   | users                | —                 |
+| 10  | hotel_search_snapshots                    | set-based SQL                 | —                    | —                 |
 
 Specific fixes carried into generators:
 
@@ -279,27 +283,27 @@ CLI flags:
 
 ## 9. Risks
 
-| Risk | Mitigation |
-|------|------------|
-| `local_infile` disabled client or server | enable both; fall back to bulkInsert |
-| Free text containing newlines/quotes | `csv.js` hygiene + parser test |
-| JSON / `\N` / enum / empty-int under strict `sql_mode` | `SET sql_mode=''`; validate sample |
-| `sql_log_bin=0` needs privileges | use `DB_ADMIN_USER` (root) |
-| Disk/memory blow-up | stream shards; never hold full array |
-| Index rebuild time/space | rebuild only after load; `ANALYZE TABLE` |
-| Data correctness drift vs models | `--strict` sample check |
+| Risk                                                   | Mitigation                               |
+| ------------------------------------------------------ | ---------------------------------------- |
+| `local_infile` disabled client or server               | enable both; fall back to bulkInsert     |
+| Free text containing newlines/quotes                   | `csv.js` hygiene + parser test           |
+| JSON / `\N` / enum / empty-int under strict `sql_mode` | `SET sql_mode=''`; validate sample       |
+| `sql_log_bin=0` needs privileges                       | use `DB_ADMIN_USER` (root)               |
+| Disk/memory blow-up                                    | stream shards; never hold full array     |
+| Index rebuild time/space                               | rebuild only after load; `ANALYZE TABLE` |
+| Data correctness drift vs models                       | `--strict` sample check                  |
 
 ---
 
 ## 10. Expected impact (local dev)
 
-| Optimization | Speedup |
-|--------------|---------|
-| N+1 elimination (junctions/users) | 10–100x |
-| `validate:false` + raw bulk insert | 2–3x |
-| drop/recreate indexes + session tuning | 2–5x |
-| LOAD DATA streaming + parallel shards | 5–20x |
-| snapshot set-based rebuild | minutes → seconds |
+| Optimization                           | Speedup           |
+| -------------------------------------- | ----------------- |
+| N+1 elimination (junctions/users)      | 10–100x           |
+| `validate:false` + raw bulk insert     | 2–3x              |
+| drop/recreate indexes + session tuning | 2–5x              |
+| LOAD DATA streaming + parallel shards  | 5–20x             |
+| snapshot set-based rebuild             | minutes → seconds |
 
 Net for GB tables: **10–50x** wall-clock reduction.
 
@@ -416,15 +420,16 @@ event, and then the consumer downloaded the original and re-uploaded a variant.
 The fast path writes objects straight to MinIO and bulk-inserts metadata, with
 no API/media-service/NATS dependency.
 
-| File | Role |
-|------|------|
-| `server/seeders/generate/images.gen.js` | Loads source albums, decodes each source **once** (`sharp`) and pre-builds its `medium_webp` variant; builds `images` / `image_variants` rows and object keys |
-| `server/seeders/lib/minio-objects.js` | MinIO put/remove helpers + a bounded-concurrency limiter |
-| `server/seeders/lib/images.js` | `runImages()`: entity streaming, pooled uploads, batched metadata inserts, keyset-paginated cleanup |
-| `server/seeders/database/seed-images.js` | CLI (`seed:images`) |
-| `server/seeders/database/images.seed.js` | Unchanged; still available as `seed:images:legacy` |
+| File                                     | Role                                                                                                                                                          |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `server/seeders/generate/images.gen.js`  | Loads source albums, decodes each source **once** (`sharp`) and pre-builds its `medium_webp` variant; builds `images` / `image_variants` rows and object keys |
+| `server/seeders/lib/minio-objects.js`    | MinIO put/remove helpers + a bounded-concurrency limiter                                                                                                      |
+| `server/seeders/lib/images.js`           | `runImages()`: entity streaming, pooled uploads, batched metadata inserts, keyset-paginated cleanup                                                           |
+| `server/seeders/database/seed-images.js` | CLI (`seed:images`)                                                                                                                                           |
+| `server/seeders/database/images.seed.js` | Unchanged; still available as `seed:images:legacy`                                                                                                            |
 
 Key points:
+
 - All entities reuse the same 3 hotel + 3 room source files, so decoding and
   variant generation happen once, not per entity.
 - Object keys mirror the media service: `{type}/{entityId}/{imageId}.{ext}` and
@@ -457,19 +462,19 @@ bucket `uploads-seedtest`.
 
 `seed:all --quick --skip-keycloak` → **22/22 steps passed, 260 s total**.
 
-| Step | Rows | Time |
-|------|------|------|
-| Hotels | 5,040 | 0.49s |
-| Rooms | 20,230 | 0.49s |
-| Hotel Amenities | 50,424 | 1.20s |
-| Room Amenities | 111,260 | 6.01s |
-| Room Inventory | 606,900 | 27.37s |
-| Hotel Policies | 42,870 | 0.55s |
-| Nearby Places | 75,646 | 8.05s |
-| Bookings | 75,653 | 5.76s |
-| Reviews | 50,702 | 1.20s |
-| **Images** | **75,810** | **198.05s** |
-| Snapshots | 5,040 | 2.85s |
+| Step            | Rows       | Time        |
+| --------------- | ---------- | ----------- |
+| Hotels          | 5,040      | 0.49s       |
+| Rooms           | 20,230     | 0.49s       |
+| Hotel Amenities | 50,424     | 1.20s       |
+| Room Amenities  | 111,260    | 6.01s       |
+| Room Inventory  | 606,900    | 27.37s      |
+| Hotel Policies  | 42,870     | 0.55s       |
+| Nearby Places   | 75,646     | 8.05s       |
+| Bookings        | 75,653     | 5.76s       |
+| Reviews         | 50,702     | 1.20s       |
+| **Images**      | **75,810** | **198.05s** |
+| Snapshots       | 5,040      | 2.85s       |
 
 Verification: every hotel (5,040) and room (20,230) has images; exactly one
 `active` primary per entity (25,270/25,270); `image_variants` 1:1 with images;
@@ -477,6 +482,7 @@ all snapshots have `primary_image_url`; MongoDB got 5,000 search logs and
 78,017 view events.
 
 Bugs found and fixed during this test (all were caught only by running it):
+
 1. Every fast runner destructured `options` from the context object while
    `runFastTable` passed it as a second argument → all fast tables failed.
 2. MySQL refuses to drop an index that backs a foreign key; index drop/rebuild
@@ -487,29 +493,29 @@ Bugs found and fixed during this test (all were caught only by running it):
 4. MinIO bucket names cannot contain underscores (use `uploads-seedtest`).
 
 ### Observation: image seeding is I/O bound, not overhead bound
+
 Images are 198 s of the 260 s run. MinIO received ~48 GB for 302k objects
 because `images/rooms/room_3.avif` is ~980 KB and is uploaded to every room
 (plus its WebP variant). A full-scale run with ~69k rooms would push tens of
 GB. Options if that matters: shrink the room source fixtures, add a
 max-bytes downscale/skip rule, or seed hotel images only.
 
-
 ## 15. Seeder coverage audit — is `seed:all` self-sufficient?
 
 Every seeding entry point in the repo was reviewed against `seed:all`:
 
-| Seeder | npm script | In `seed:all`? |
-|--------|-----------|---------------|
-| `database/seed-all.js` | `seed:all` | — (the orchestrator) |
-| `seed-all.legacy.js` | `seed:all:legacy` | reference baseline |
-| `database/seed-images.js` | `seed:images` | ✅ step *Images* (now hotel + room + **city**) |
-| `mongodb/search_logs.seed.js` | `seed:search_logs` | ✅ step *MongoDB Search Logs* |
-| `mongodb/hotel_view_events.seed.js` | `seed:hotel_view_events` | ✅ step *MongoDB Hotel View Events* |
-| `elasticsearch/destinations_index.seed.js` | `es:seed-destinations` | ✅ step *Elasticsearch Search Indices* (new) |
-| `elasticsearch/hotels_index.seed.js` | `es:seed-hotels` | ✅ step *Elasticsearch Search Indices* (new) |
-| `database/city_images.seed.js` | `seed:city_images` | ✅ superseded — city images now go through the fast direct-MinIO path |
-| `scripts/backfill-snapshot-primary-images.js` | `seed:snapshot-images` | ❌ deliberately not needed (see below) |
-| reference seeders (countries, cities, destinations, users, amenities, hotel_staff, permissions) | `seed:*` | ✅ steps *Countries*, *Cities*, *Destinations*, *Users*, *Amenities*, *Admin & Hotel Staff*, *Permissions* |
+| Seeder                                                                                          | npm script               | In `seed:all`?                                                                                             |
+| ----------------------------------------------------------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `database/seed-all.js`                                                                          | `seed:all`               | — (the orchestrator)                                                                                       |
+| `seed-all.legacy.js`                                                                            | `seed:all:legacy`        | reference baseline                                                                                         |
+| `database/seed-images.js`                                                                       | `seed:images`            | ✅ step _Images_ (now hotel + room + **city**)                                                             |
+| `mongodb/search_logs.seed.js`                                                                   | `seed:search_logs`       | ✅ step _MongoDB Search Logs_                                                                              |
+| `mongodb/hotel_view_events.seed.js`                                                             | `seed:hotel_view_events` | ✅ step _MongoDB Hotel View Events_                                                                        |
+| `elasticsearch/destinations_index.seed.js`                                                      | `es:seed-destinations`   | ✅ step _Elasticsearch Search Indices_ (new)                                                               |
+| `elasticsearch/hotels_index.seed.js`                                                            | `es:seed-hotels`         | ✅ step _Elasticsearch Search Indices_ (new)                                                               |
+| `database/city_images.seed.js`                                                                  | `seed:city_images`       | ✅ superseded — city images now go through the fast direct-MinIO path                                      |
+| `scripts/backfill-snapshot-primary-images.js`                                                   | `seed:snapshot-images`   | ❌ deliberately not needed (see below)                                                                     |
+| reference seeders (countries, cities, destinations, users, amenities, hotel_staff, permissions) | `seed:*`                 | ✅ steps _Countries_, _Cities_, _Destinations_, _Users_, _Amenities_, _Admin & Hotel Staff_, _Permissions_ |
 
 ### 15.1 City images folded in
 
@@ -517,11 +523,11 @@ Every seeding entry point in the repo was reviewed against `seed:all`:
 MinIO pipeline, so it required a running server. The fast image runner now
 handles the `city` entity type:
 
-* source fixtures: `seeders/database/images/city/vietnam/*.avif` (62 files)
-* one **primary** image per city (not an album), matched by city name first
+- source fixtures: `seeders/database/images/city/vietnam/*.avif` (62 files)
+- one **primary** image per city (not an album), matched by city name first
   (`Hà Nội.avif` → city `Hà Nội`) with a round-robin fallback for the one
   unmatched city
-* a real WebP variant is written alongside each original, exactly like
+- a real WebP variant is written alongside each original, exactly like
   hotels/rooms
 
 `selectAlbum()` in `seeders/lib/images.js` decides between whole-album cycling
@@ -569,18 +575,18 @@ Every table in the migrated schema was checked for row count after a `seed:all` 
 
 ### 17.2 Tables now seeded
 
-| Table | Why | Approach |
-|-------|-----|----------|
-| `hotel_rating_summaries` | only rating source; drives `avg_rating` | set-based rebuild (`lib/rating-summaries.js`), mirrors `review/domain/rating-summary.js` bucket semantics |
-| `room_inventory.booked_rooms` | availability + search filter | recursive-CTE backfill (`lib/booked-rooms.js`), clamped to `total_rooms` |
-| `booking_rooms` | included on every booking read | derived from `bookings.price_breakdown` |
-| `transactions` | booking payment context, admin `/payments` | derived from bookings (opt-in) |
-| `payments` | admin `/payments`, booking detail | derived from transactions (opt-in) |
-| `invoices` | **admin dashboard revenue** | derived from captured transactions (opt-in) |
-| `review_replies` | hotel detail reply, `hasReply` filter | staff-authored, one per review (UNIQUE) |
-| `review_media` | hotel detail guest photos | URLs reuse already-uploaded hotel images |
-| `review_helpful_votes` | backs `reviews.helpful_count` | plus `lib/helpful-counts.js` to resync the counter |
-| `saved_hotels` | wishlist page + heart icons | per-user sampling, deduped |
+| Table                         | Why                                        | Approach                                                                                                  |
+| ----------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `hotel_rating_summaries`      | only rating source; drives `avg_rating`    | set-based rebuild (`lib/rating-summaries.js`), mirrors `review/domain/rating-summary.js` bucket semantics |
+| `room_inventory.booked_rooms` | availability + search filter               | recursive-CTE backfill (`lib/booked-rooms.js`), clamped to `total_rooms`                                  |
+| `booking_rooms`               | included on every booking read             | derived from `bookings.price_breakdown`                                                                   |
+| `transactions`                | booking payment context, admin `/payments` | derived from bookings (opt-in)                                                                            |
+| `payments`                    | admin `/payments`, booking detail          | derived from transactions (opt-in)                                                                        |
+| `invoices`                    | **admin dashboard revenue**                | derived from captured transactions (opt-in)                                                               |
+| `review_replies`              | hotel detail reply, `hasReply` filter      | staff-authored, one per review (UNIQUE)                                                                   |
+| `review_media`                | hotel detail guest photos                  | URLs reuse already-uploaded hotel images                                                                  |
+| `review_helpful_votes`        | backs `reviews.helpful_count`              | plus `lib/helpful-counts.js` to resync the counter                                                        |
+| `saved_hotels`                | wishlist page + heart icons                | per-user sampling, deduped                                                                                |
 
 `bookings.gen.js` now emits a real money breakdown (`subtotal`, `tax_amount`, `service_fee_amount`, `platform_commission_amount`, `currency`, `price_breakdown` JSON) computed by the new `lib/pricing.js`, which mirrors `services/pricing.service.js` exactly and reads the same `BOOKING_TAX_RATE` / `BOOKING_SERVICE_FEE_RATE` / `PLATFORM_FEE_RATE` env vars. The nightly list is built first so `subtotal === sum(nightly.total)` by construction.
 
@@ -588,13 +594,13 @@ Transactions / payments / invoices are behind **`--with-finance`** (also `npm ru
 
 ### 17.3 Tables deliberately left empty
 
-| Table | Reason |
-|-------|--------|
-| `payouts`, `payout_items`, `connected_payment_accounts` | need real Stripe Connect IDs; the flows cannot be exercised without Stripe anyway |
-| `ledger_accounts`, `ledger_entries` | `ledger.service.js` uses `findOrCreateAccount`, so accounts are created lazily; `ledger_entries` has no read path at all |
-| `holds`, `hold_rooms` | transient and expiring; seeded rows would *distort* availability via `held_rooms` |
-| `viewed_hotels` | recently-viewed is Redis-backed (`recentlyViewedKey` + `zRange`); this table is not the read path |
-| `audit_logs`, `idempotency_keys`, `webhook_event_logs` | runtime housekeeping / TTL data, generated as the app is used |
+| Table                                                   | Reason                                                                                                                   |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `payouts`, `payout_items`, `connected_payment_accounts` | need real Stripe Connect IDs; the flows cannot be exercised without Stripe anyway                                        |
+| `ledger_accounts`, `ledger_entries`                     | `ledger.service.js` uses `findOrCreateAccount`, so accounts are created lazily; `ledger_entries` has no read path at all |
+| `holds`, `hold_rooms`                                   | transient and expiring; seeded rows would _distort_ availability via `held_rooms`                                        |
+| `viewed_hotels`                                         | recently-viewed is Redis-backed (`recentlyViewedKey` + `zRange`); this table is not the read path                        |
+| `audit_logs`, `idempotency_keys`, `webhook_event_logs`  | runtime housekeeping / TTL data, generated as the app is used                                                            |
 
 ### 17.4 Verification (isolated test databases)
 
@@ -615,27 +621,27 @@ Transactions / payments / invoices are behind **`--with-finance`** (also `npm ru
 Both runs used identical reduced counts against isolated throwaway databases
 (`travelnest_seedtest` vs `travelnest_seedtest_legacy`).
 
-| Step | Legacy | Fast | Speed-up |
-|------|-------:|-----:|---------:|
-| Countries | 0.01s | 0.03s | — |
-| Cities | 0.38s | 0.54s | — |
-| Destinations | 0.29s | 0.53s | — |
-| Users | 2.43s | 2.77s | — |
-| Amenities | 0.29s | 0.29s | — |
-| Hotels | 0.59s | 0.72s | — |
-| **Hotel Amenities** | **247.25s** | **7.70s** | **32×** |
-| Hotel Policies | 1.83s | 0.71s | 2.6× |
-| Hotel Cancellation Rules | 0.39s | 0.28s | 1.4× |
-| Nearby Places | 8.49s | 4.50s | 1.9× |
-| Rooms | 1.00s | 1.50s | — |
-| **Room Amenities** | **717.23s** | **7.12s** | **101×** |
-| Room Inventory | 29.22s | 20.93s | 1.4× |
-| Bookings | — (seeded by room-inventory step) | 6.74s | — |
-| Reviews | 4.88s | 2.67s | 1.8× |
-| Notifications | 11.97s | 0.30s | 40× |
-| Permissions | 2.26s | 2.11s | — |
-| Hotel Search Snapshots | 53.05s | 3.65s | 15× |
-| **Total** | **1082.00s (18m 02s)** | **80.22s** | **13.5×** |
+| Step                     |                            Legacy |       Fast |  Speed-up |
+| ------------------------ | --------------------------------: | ---------: | --------: |
+| Countries                |                             0.01s |      0.03s |         — |
+| Cities                   |                             0.38s |      0.54s |         — |
+| Destinations             |                             0.29s |      0.53s |         — |
+| Users                    |                             2.43s |      2.77s |         — |
+| Amenities                |                             0.29s |      0.29s |         — |
+| Hotels                   |                             0.59s |      0.72s |         — |
+| **Hotel Amenities**      |                       **247.25s** |  **7.70s** |   **32×** |
+| Hotel Policies           |                             1.83s |      0.71s |      2.6× |
+| Hotel Cancellation Rules |                             0.39s |      0.28s |      1.4× |
+| Nearby Places            |                             8.49s |      4.50s |      1.9× |
+| Rooms                    |                             1.00s |      1.50s |         — |
+| **Room Amenities**       |                       **717.23s** |  **7.12s** |  **101×** |
+| Room Inventory           |                            29.22s |     20.93s |      1.4× |
+| Bookings                 | — (seeded by room-inventory step) |      6.74s |         — |
+| Reviews                  |                             4.88s |      2.67s |      1.8× |
+| Notifications            |                            11.97s |      0.30s |       40× |
+| Permissions              |                             2.26s |      2.11s |         — |
+| Hotel Search Snapshots   |                            53.05s |      3.65s |       15× |
+| **Total**                |            **1082.00s (18m 02s)** | **80.22s** | **13.5×** |
 
 The two legacy killers were the row-by-row amenity inserts (`buildBulkCreate`
 `include`s inside a loop): 964 s of the 1082 s total, i.e. **89% of the whole
