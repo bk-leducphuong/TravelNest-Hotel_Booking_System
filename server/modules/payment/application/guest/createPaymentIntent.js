@@ -4,7 +4,7 @@ const sequelize = require('@config/database.config');
 const bookingModule = require('@modules/booking');
 const inventoryModule = require('@modules/inventory');
 
-const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
+const StripePaymentAdapter = require('../../infrastructure/adapters/stripe-payment.adapter');
 const transactionRepository = require('../../infrastructure/transaction.repository');
 
 const { toMinorUnits } = require('../../domain/money');

@@ -14,6 +14,7 @@ const transactionRepository = require('./infrastructure/transaction.repository')
 const ledgerRepository = require('./infrastructure/ledger.repository');
 const idempotencyRepository = require('./infrastructure/idempotency.repository');
 const ledgerService = require('./application/ledger.service');
+const stripePaymentAdapter = require('./infrastructure/adapters/stripe-payment.adapter');
 
 // Register once per process (guarded).
 registerPaymentSubscribers();
@@ -68,6 +69,17 @@ async function getPrimaryOwnerByHotelId(hotelId, options = {}) {
 /** Webhook event log used by the Stripe webhook edge (idempotency + audit). */
 const webhookEventLog = require('./infrastructure/webhook-event-log');
 
+/**
+ * Stripe provider operations for the contexts that drive Stripe on the booking
+ * side (booking creates/reads/cancels the PaymentIntent). Exposing these keeps
+ * the Stripe adapter inside payment instead of leaking it to booking.
+ */
+const paymentProvider = {
+  getPayment: (paymentId) => stripePaymentAdapter.getPayment(paymentId),
+  createPayment: (params) => stripePaymentAdapter.createPayment(params),
+  cancelPayment: (paymentId) => stripePaymentAdapter.cancelPayment(paymentId),
+};
+
 module.exports = {
   adminRoutes,
   guestRoutes,
@@ -95,6 +107,9 @@ module.exports = {
   failIdempotencyRecord,
   getPrimaryOwnerByHotelId,
   webhookEventLog,
+
+  // Stripe provider operations (booking's payment flow).
+  paymentProvider,
 
   // Ledger posting (payout + payment webhooks).
   ledger: ledgerService,

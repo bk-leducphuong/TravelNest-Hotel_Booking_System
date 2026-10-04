@@ -35,7 +35,6 @@ module.exports = {
     '^@helpers(.*)$': '<rootDir>/helpers$1',
     '^@middlewares(.*)$': '<rootDir>/middlewares$1',
     '^@constants(.*)$': '<rootDir>/constants$1',
-    '^@adapters(.*)$': '<rootDir>/adapters$1',
     '^@events(.*)$': '<rootDir>/events$1',
     '^@routes(.*)$': '<rootDir>/routes$1',
     '^@email-templates(.*)$': '<rootDir>/email-templates$1',

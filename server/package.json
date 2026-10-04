@@ -89,7 +89,6 @@
     "@public": "public",
     "@events": "events",
     "@utils": "utils",
-    "@adapters": "adapters",
     "@helpers": "helpers",
     "@constants": "constants",
     "@modules": "modules",

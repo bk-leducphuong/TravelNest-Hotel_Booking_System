@@ -32,7 +32,6 @@ server/
 ├── middlewares/        Auth, error, rate-limiter, validation
 ├── helpers/            Shared helpers
 ├── utils/              Shared utilities
-├── adapters/           External integrations (Stripe, webhooks)
 ├── infra/              Dockerfiles, migrations, ES/Mongo setup
 ├── scripts/            Utility scripts
 ├── seeders/            Data seeders
