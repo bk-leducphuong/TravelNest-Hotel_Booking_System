@@ -8,6 +8,20 @@ import boundariesPlugin from 'eslint-plugin-boundaries';
 import globals from 'globals';
 
 export default [
+  {
+    // `.eslintignore` is no longer read by ESLint 9, so keep the intended
+    // ignores (plus local service data dirs) here.
+    ignores: [
+      'node_modules/**',
+      'coverage/**',
+      'dist/**',
+      'logs/**',
+      'infra/minio-data/**',
+      'infra/minio-data-test/**',
+      'infra/elasticsearch/data/**',
+    ],
+  },
+
   js.configs.recommended,
 
   {
@@ -31,12 +45,25 @@ export default [
     },
 
     settings: {
+      // NOTE: patterns are relative to this file (server/), NOT prefixed with
+      // `src/` — the app is laid out at the repo root. They were previously
+      // `src/...`, which matched nothing and silently disabled every rule
+      // below. Keep them in sync with scripts/check-architecture.js.
       'boundaries/elements': [
-        { type: 'controller', pattern: 'src/controllers/*' },
-        { type: 'service', pattern: 'src/services/*' },
-        { type: 'repository', pattern: 'src/repositories/*' },
-        { type: 'model', pattern: 'src/models/*' },
+        { type: 'controller', pattern: 'controllers/**' },
+        { type: 'service', pattern: 'services/**' },
+        { type: 'repository', pattern: 'repositories/**' },
+        { type: 'model', pattern: 'models/**' },
+        { type: 'module', pattern: 'modules/**' },
       ],
+      // The plugin only tracks `import` by default; this is a CommonJS codebase,
+      // so `require()` must be listed explicitly or no dependency is ever seen.
+      'boundaries/dependency-nodes': ['require', 'import'],
+      // LIMITATION: `@services`/`@repositories`/… are module-alias runtime
+      // aliases. ESLint cannot resolve them without an `import/resolver`, so
+      // this rule only sees relative imports. `scripts/check-architecture.js`
+      // (npm run arch:check) is the authoritative gate: it matches aliases by
+      // string and is what CI blocks on.
     },
 
     rules: {
@@ -71,16 +98,44 @@ export default [
       'unused-imports/no-unused-imports': 'error',
       'no-unused-vars': 'off',
 
-      /* Architecture enforcement */
+      /* Architecture enforcement.
+       *
+       * Advisory only: `scripts/check-architecture.js` (npm run arch:check) is
+       * the blocking ratchet because it understands the current debt baseline.
+       * This rule surfaces the same layering violations inline in editors.
+       *
+       * Intended direction: controller -> service -> repository -> model. */
       'boundaries/element-types': [
-        'error',
+        'warn',
         {
           default: 'disallow',
           rules: [
             { from: 'controller', allow: ['service'] },
-            { from: 'service', allow: ['repository', 'utils'] },
+            { from: 'service', allow: ['repository'] },
             { from: 'repository', allow: ['model'] },
             { from: 'model', allow: [] },
+            { from: 'module', allow: ['module'] },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    // Enforce module boundaries: cross-module access must go through the
+    // target module's public index.js (e.g. `@modules/booking`), never its
+    // internals. Within a module, use relative paths.
+    files: ['modules/**/*.js'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@modules/*/*'],
+              message:
+                'Cross-module access must go through the target module public index.js (e.g. @modules/booking), not its internals.',
+            },
           ],
         },
       ],

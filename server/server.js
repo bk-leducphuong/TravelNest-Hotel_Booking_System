@@ -3,7 +3,7 @@ require('dotenv').config({
 });
 const logger = require('./config/logger.config');
 const createApp = require('./app');
-const natsPublisher = require('./events/nats.publisher');
+const natsTransport = require('./events/nats.adapter');
 const PORT = process.env.PORT || 3000;
 
 let httpServer;
@@ -29,7 +29,7 @@ async function shutdown(signal) {
     await new Promise((resolve) => httpServer.close(resolve));
   }
 
-  await natsPublisher.close();
+  await natsTransport.close();
   process.exit(0);
 }
 

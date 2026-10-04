@@ -1,5 +1,5 @@
 const ApiError = require('@utils/ApiError');
-const { eventBus, DOMAIN_EVENTS } = require('@platform/events');
+const { publish, DOMAIN_EVENTS } = require('@platform/events');
 const { auditService } = require('@platform/audit');
 
 const reviewRepository = require('../../infrastructure/review.repository');
@@ -33,7 +33,7 @@ async function setReviewStatus(reviewId, { status, reason, actorUserId, requestI
     requestId,
   });
 
-  await eventBus.publish(DOMAIN_EVENTS.REVIEW_STATUS_CHANGED, {
+  await publish(DOMAIN_EVENTS.REVIEW_STATUS_CHANGED, {
     reviewId,
     hotelId: review.hotel_id,
     from: previousStatus,

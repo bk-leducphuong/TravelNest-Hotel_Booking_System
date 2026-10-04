@@ -14,6 +14,7 @@
 
 ### 🧩 Architecture & Modules
 - [Modular Monolith](Modular-Monolith)
+- [Table Ownership](Table-Ownership)
 - [Booking Admin](Module-Booking)
 - [Review & Moderation](Module-Review)
 - [Inventory Admin](Module-Inventory)

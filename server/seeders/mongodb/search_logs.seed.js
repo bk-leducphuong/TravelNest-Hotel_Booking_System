@@ -10,7 +10,7 @@ require('dotenv').config({
 
 const mongoDb = require('@config/mongodb.config');
 const db = require('@models');
-const searchLogRepository = require('@repositories/mongodb/search_log.repository');
+const searchLogRepository = require('./repositories/search_log.repository');
 
 function getArg(name, fallback) {
   const match = process.argv.find((arg) => arg.startsWith(`--${name}=`));
@@ -26,11 +26,12 @@ function pick(items) {
   return items[randomInt(0, items.length - 1)];
 }
 
-async function main() {
-  const rows = Math.max(1, parseInt(getArg('rows', '1000'), 10));
-  const days = Math.max(1, parseInt(getArg('days', '90'), 10));
-  const batchSize = Math.max(1, parseInt(getArg('batch', '1000'), 10));
-  const clear = process.argv.includes('--clear');
+async function main(options = {}) {
+  const rows = options.rows ?? Math.max(1, parseInt(getArg('rows', '1000'), 10));
+  const days = options.days ?? Math.max(1, parseInt(getArg('days', '90'), 10));
+  const batchSize = options.batch ?? Math.max(1, parseInt(getArg('batch', '1000'), 10));
+  const clear = options.clear ?? process.argv.includes('--clear');
+  const closeSequelize = options.closeSequelize !== false;
 
   await db.sequelize.authenticate();
   await mongoDb.connect();
@@ -46,7 +47,7 @@ async function main() {
   }
 
   if (clear) {
-    await require('@models/mongo/search_log.model').deleteMany({});
+    await require('./models/search_log.model').deleteMany({});
   }
 
   console.log(`Seeding ${rows} MongoDB search logs...`);
@@ -81,7 +82,9 @@ async function main() {
   }
 
   await mongoDb.close();
-  await db.sequelize.close();
+  if (closeSequelize) {
+    await db.sequelize.close();
+  }
   console.log('MongoDB search log seeding complete.');
 }
 

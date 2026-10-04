@@ -1,10 +1,14 @@
 const logger = require('@config/logger.config');
-const identityService = require('@services/identity.service');
-const keycloakUserInfoService = require('@services/keycloak-userinfo.service');
 const ApiError = require('@utils/ApiError');
 const { verifyJwt } = require('@utils/jwt.util');
 const { ROLES } = require('@constants/roles');
 const { collectPermissionNames } = require('@helpers/permission.helper');
+
+// Identity's index mounts its own routes, which import this middleware, so
+// Identity is required lazily to avoid a load-time cycle.
+function identityModule() {
+  return require('@modules/identity');
+}
 
 function getBearerToken(req) {
   const authorization = req.get('authorization');
@@ -31,7 +35,7 @@ async function authenticateRequest(req) {
   }
 
   const enrichedToken = await enrichTokenClaims(verifiedToken, token);
-  const user = await identityService.resolveAuthenticatedUser(enrichedToken);
+  const user = await identityModule().identity.resolveAuthenticatedUser(enrichedToken);
 
   req.auth = {
     provider: 'keycloak',
@@ -48,7 +52,7 @@ async function enrichTokenClaims(verifiedToken, accessToken) {
     return verifiedToken;
   }
 
-  const userInfo = await keycloakUserInfoService.getUserInfo(accessToken);
+  const userInfo = await identityModule().keycloak.getUserInfo(accessToken);
   const subject = verifiedToken?.subject || userInfo.sub || null;
   const email =
     verifiedToken?.email || (userInfo.email ? String(userInfo.email).toLowerCase() : null);

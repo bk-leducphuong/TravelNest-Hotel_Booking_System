@@ -1,4 +1,4 @@
-const transactionRepository = require('../../infrastructure/transaction.repository');
+const transactionRepository = require('../../infrastructure/transaction-admin.repository');
 const refundRepository = require('../../infrastructure/refund.repository');
 const { num, round2 } = require('../../domain/refund-rules');
 

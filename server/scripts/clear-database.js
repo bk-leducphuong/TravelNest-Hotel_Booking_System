@@ -109,7 +109,9 @@ async function main() {
     console.error('\n❌ Fatal error while clearing database:', error);
     try {
       await db.sequelize.close();
-    } catch (_) {}
+    } catch (_) {
+      /* ignore close errors during fatal shutdown */
+    }
     process.exit(1);
   }
 }
@@ -119,4 +121,3 @@ if (require.main === module) {
 }
 
 module.exports = { main };
-

@@ -41,14 +41,4 @@ module.exports = {
   connection: connectionOptions,
   defaultJobOptions,
   workerOptions,
-  queues: {
-    hotelSnapshot: {
-      name: 'hotelSnapshot',
-      options: defaultJobOptions,
-      workerOptions: {
-        ...workerOptions,
-        concurrency: parseInt(process.env.BULLMQ_HOTEL_CONCURRENCY || '10', 10),
-      },
-    },
-  },
 };

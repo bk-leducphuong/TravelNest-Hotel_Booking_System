@@ -55,7 +55,7 @@ flowchart LR
 
   API --> STRIPE[[Stripe]]
   API --> SMS[[Infobip SMS]]
-  API --> MAIL[[SMTP / Nodemailer]] 
+  API --> MAIL[[SMTP / Nodemailer]]
 ```
 
 ## Getting Started
@@ -101,16 +101,20 @@ npm install
 
 ### Database Setup
 
-Run the initial database setup and seed data for development:
+Run the database migrations and seed data for development:
 
 ```bash
-# Create / migrate schema (via custom init + Sequelize)
-npm run db:init
+# Create / migrate the schema (the baseline migration creates all tables)
 npm run migrate
 
 # Seed core data
 npm run seed:all:quick
 ```
+
+> Migrations are the single source of truth for the schema. The canonical DDL
+> lives in `infra/database/schema/baseline.sql`; regenerate it after intentional
+> model changes with `npm run db:schema:dump`. `npm run schema:check` (also run in
+> CI) fails if a model change is missing its migration.
 
 Useful database commands:
 

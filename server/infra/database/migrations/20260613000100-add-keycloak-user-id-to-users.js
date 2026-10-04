@@ -1,9 +1,6 @@
 'use strict';
 
-const {
-  addColumnIfMissing,
-  addIndexIfMissing,
-} = require('../migration-utils/schema');
+const { addColumnIfMissing, addIndexIfMissing } = require('../migration-utils/schema');
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {

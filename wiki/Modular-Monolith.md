@@ -65,11 +65,15 @@ Cross-module access is **only** through `<module>/index.js` (or via events). The
 All models register on the same `db` object, so `db.reviews`, `db.<PascalCase>` and
 associations keep working. Modules can therefore own their tables without a central
 model file. Model files use **relative requires** (not `@` aliases) because the registry
-is also loaded by scripts that don't register aliases (`infra/database/init.js`).
+is also loaded by scripts that don't register aliases (`scripts/dump-schema.js`,
+`scripts/check-schema-drift.js`).
 
-> Schema note: core tables are created by `sequelize.sync({ alter:false })` in
-> `infra/database/init.js`. Existing tables are **not altered**, so new columns/tables
-> need a real migration under `infra/database/migrations/`.
+> Schema note: the schema is owned by **migrations**, not `sequelize.sync()`.
+> `infra/database/schema/baseline.sql` is the canonical DDL snapshot; the
+> `20260101000000-baseline-schema` migration applies it so a fresh database is
+> built entirely from versioned migrations. `npm run schema:check` (run in CI)
+> fails if a model change is missing its migration. `sequelize.sync()` remains
+> only in test bootstrap.
 
 ---
 

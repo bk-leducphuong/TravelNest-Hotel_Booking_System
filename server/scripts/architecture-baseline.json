@@ -1,0 +1,9 @@
+{
+  "$comment": "Architecture debt baseline for scripts/check-architecture.js. Lower these numbers as debt is paid down; never raise them without review.",
+  "layerLeaks": {
+    "controllers -> @models|@repositories": 1,
+    "services -> @models": 1,
+    "services -> @config/database.config": 2
+  },
+  "godFiles": {}
+}

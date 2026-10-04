@@ -7,8 +7,8 @@ const db = require('../models');
 const elasticsearchClient = require('../config/elasticsearch.config');
 const mongoDb = require('../config/mongodb.config');
 const { minioClient, bucketName } = require('../config/minio.config');
-const HotelViewEvent = require('../models/mongo/hotel_view_event.model');
-const SearchLog = require('../models/mongo/search_log.model');
+const HotelViewEvent = require('../seeders/mongodb/models/hotel_view_event.model');
+const SearchLog = require('../seeders/mongodb/models/search_log.model');
 
 const DATABASE_TABLES = [
   // Review / activity children

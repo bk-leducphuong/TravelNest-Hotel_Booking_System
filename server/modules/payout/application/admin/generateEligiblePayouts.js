@@ -1,5 +1,5 @@
 const { auditService } = require('@platform/audit');
-const { eventBus, DOMAIN_EVENTS } = require('@platform/events');
+const { publish, DOMAIN_EVENTS } = require('@platform/events');
 
 const payoutService = require('../payout.service');
 
@@ -23,7 +23,7 @@ async function generateEligiblePayouts({ cutoffDate, ownerId, actorUserId, reque
     requestId,
   });
 
-  await eventBus.publish(DOMAIN_EVENTS.PAYOUT_BATCH_GENERATED, {
+  await publish(DOMAIN_EVENTS.PAYOUT_BATCH_GENERATED, {
     scanned: result.scanned,
     created: result.created,
   });

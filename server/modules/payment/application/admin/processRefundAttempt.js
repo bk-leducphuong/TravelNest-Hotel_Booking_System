@@ -1,11 +1,11 @@
 const ApiError = require('@utils/ApiError');
-const { eventBus, DOMAIN_EVENTS } = require('@platform/events');
+const { publish, DOMAIN_EVENTS } = require('@platform/events');
 const { auditService } = require('@platform/audit');
-const ledgerService = require('@services/ledger.service');
 const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
+const ledgerService = require('../ledger.service');
 
 const refundRepository = require('../../infrastructure/refund.repository');
-const transactionRepository = require('../../infrastructure/transaction.repository');
+const transactionRepository = require('../../infrastructure/transaction-admin.repository');
 const {
   toMinorUnits,
   toStripeReason,
@@ -13,7 +13,7 @@ const {
   round2,
 } = require('../../domain/refund-rules');
 
-const paymentProvider = new StripePaymentAdapter();
+const stripeAdapter = new StripePaymentAdapter();
 
 /**
  * Perform a single refund attempt against Stripe and reconcile local state.
@@ -24,7 +24,7 @@ async function processRefundAttempt({ refund, transaction, reason, actorUserId, 
   const bookingCode = transaction.booking?.booking_code || null;
 
   try {
-    const stripeRefund = await paymentProvider.refundCharge({
+    const stripeRefund = await stripeAdapter.refundCharge({
       chargeId: transaction.stripe_charge_id,
       amount: toMinorUnits(refund.amount),
       reason: toStripeReason(reason),
@@ -88,9 +88,9 @@ async function processRefundAttempt({ refund, transaction, reason, actorUserId, 
     });
 
     if (status === 'succeeded') {
-      await eventBus.publish(DOMAIN_EVENTS.PAYMENT_REFUND_SUCCEEDED, payload);
+      await publish(DOMAIN_EVENTS.PAYMENT_REFUND_SUCCEEDED, payload);
     } else if (status === 'failed' || status === 'cancelled') {
-      await eventBus.publish(DOMAIN_EVENTS.PAYMENT_REFUND_FAILED, payload);
+      await publish(DOMAIN_EVENTS.PAYMENT_REFUND_FAILED, payload);
     }
 
     return {
@@ -121,7 +121,7 @@ async function processRefundAttempt({ refund, transaction, reason, actorUserId, 
       requestId,
     });
 
-    await eventBus.publish(DOMAIN_EVENTS.PAYMENT_REFUND_FAILED, {
+    await publish(DOMAIN_EVENTS.PAYMENT_REFUND_FAILED, {
       refundId: refund.id,
       transactionId: transaction.id,
       bookingId: transaction.booking_id,

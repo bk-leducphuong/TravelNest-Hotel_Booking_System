@@ -201,11 +201,10 @@ kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application-local.ya
 # the ApplicationSet creates the data layer + app Applications; they sync
 # concurrently and converge (see "Sync ordering" above)
 
-# 2. Create the base schema, migrate, then seed quick MySQL data.
-#    (db-init runs sequelize.sync; the migrations are incremental and assume
-#     the base tables already exist.)
+# 2. Apply migrations, then seed quick MySQL data.
+#    The baseline migration creates the full schema, so `sequelize.sync`
+#    (db-init) is no longer part of the flow.
 kubectl apply -f <(kubectl kustomize deploy/k8s/local/jobs)   # or apply them one at a time
-kubectl -n travelnest logs -f job/db-init
 kubectl -n travelnest logs -f job/api-migrate
 kubectl -n travelnest logs -f job/seed-quick
 

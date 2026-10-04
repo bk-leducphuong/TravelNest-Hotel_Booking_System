@@ -1,4 +1,4 @@
-const authController = require('@controllers/v1/auth.controller');
+const authController = require('@modules/identity/api/auth.controller');
 
 jest.mock('@helpers/auth-context.helper', () => ({
   buildAuthSession: jest.fn(),
@@ -61,21 +61,6 @@ describe('AuthController', () => {
         data: {
           session,
           isAuthenticated: false,
-        },
-      });
-    });
-  });
-
-  describe('deprecatedAuthFlow', () => {
-    it('returns 410 for removed app-owned auth flows', async () => {
-      await authController.deprecatedAuthFlow(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(410);
-      expect(res.json).toHaveBeenCalledWith({
-        error: {
-          code: 'AUTH_FLOW_REMOVED',
-          message:
-            'This auth flow is no longer served by TravelNest. Use Keycloak/OpenID Connect for login, logout, registration, password reset, and social sign-in.',
         },
       });
     });

@@ -1,5 +1,5 @@
-const holdController = require('@controllers/v1/hold.controller');
-const holdService = require('@services/hold.service');
+const holdController = require('@modules/booking/api/hold.controller');
+const holdService = require('@modules/booking/application/hold.service');
 const ApiError = require('@utils/ApiError');
 
 const {
@@ -9,7 +9,12 @@ const {
   createMockHoldRecord,
 } = require('../../../fixtures/hold.fixtures');
 
-jest.mock('@services/hold.service');
+jest.mock('@modules/booking/application/hold.service', () => ({
+  createHold: jest.fn(),
+  getActiveHoldsByUser: jest.fn(),
+  getHold: jest.fn(),
+  releaseHold: jest.fn(),
+}));
 
 describe('HoldController', () => {
   let req, res, next;

@@ -44,11 +44,18 @@ async function addIndexIfMissing(queryInterface, tableName, fields, options) {
   }
 }
 
+async function dropIndexIfExists(queryInterface, tableName, indexName) {
+  if (await indexExists(queryInterface, tableName, indexName)) {
+    await queryInterface.removeIndex(tableName, indexName);
+  }
+}
+
 module.exports = {
   addColumnIfMissing,
   addIndexIfMissing,
   columnExists,
   createTableIfMissing,
+  dropIndexIfExists,
   indexExists,
   tableExists,
 };

@@ -13,7 +13,6 @@ module.exports = function (sequelize, DataTypes) {
       review_id: {
         type: DataTypes.UUID,
         allowNull: false,
-        unique: true,
         references: { model: 'reviews', key: 'id' },
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',

@@ -11,12 +11,14 @@ const cookieParser = require('cookie-parser');
 /** ********************* Config ************************ */
 const logger = require('@config/logger.config');
 const db = require('@models');
-const { initSocket } = require('@socket/index');
-const { startHoldExpirySubscriber } = require('@events/holdExpiry.subscriber');
-const { startNotificationRealtimeSubscriber } = require('@events/notificationRealtime.subscriber');
+const { initSocket } = require('@platform/realtime');
 const { initBucket } = require('@config/minio.config');
 const { setupSwagger } = require('@config/swagger.config');
-const natsPublisher = require('@events/nats.publisher');
+const { registerTransport, INBOUND_EVENTS, HOLD_EVENTS } = require('@platform/events');
+const natsTransport = require('@events/nats.adapter');
+const redisHoldTransport = require('@platform/events/transports/redis-hold');
+const { handleRealtimeNotification } = require('@platform/events/consumers/realtimeNotification');
+const { handleHoldExpired } = require('@platform/events/consumers/holdExpiry');
 
 /** ********************* Middlewares ************************ */
 const errorMiddleware = require('@middlewares/error.middleware.js');
@@ -26,7 +28,7 @@ const bullBoardAuth = require('@middlewares/bull-board-auth.middleware');
 
 /** ********************* Routes ************************ */
 const v1Routes = require('@routes/v1/index.js');
-const healthRoutes = require('@routes/health.routes.js');
+const { healthRoutes } = require('@platform/health');
 
 /*********************** Init Server ************************/
 const createApp = async () => {
@@ -37,7 +39,9 @@ const createApp = async () => {
   require('@models/index.js');
   logger.info('Database connected successfully');
 
-  await natsPublisher.connect();
+  registerTransport(natsTransport);
+  registerTransport(redisHoldTransport);
+  await natsTransport.connect();
 
   const app = express();
 
@@ -50,9 +54,11 @@ const createApp = async () => {
   // Socket io
   const server = http.createServer(app);
   initSocket(server);
-  await startHoldExpirySubscriber();
-  await startNotificationRealtimeSubscriber();
   app.set('httpServer', server);
+
+  // Inbound events: transport adapters deliver to the socket consumers.
+  await natsTransport.subscribe(INBOUND_EVENTS.REALTIME_DISPATCH, handleRealtimeNotification);
+  await redisHoldTransport.subscribe(HOLD_EVENTS.HOLD_EXPIRED, handleHoldExpired);
 
   const normalizeOrigin = (origin) => origin && origin.replace(/\/$/, '');
   const allowedOrigins = [
@@ -91,7 +97,7 @@ const createApp = async () => {
 
   // Webhook routes - MUST come before bodyParser.json() for raw body access
   // Webhooks need raw body for signature verification
-  const webhookRoutes = require('@routes/v1/webhook.routes.js');
+  const { webhookRoutes } = require('@modules/payment');
   app.use('/api/v1/webhooks', bodyParser.raw({ type: 'application/json' }), webhookRoutes);
 
   // Regular JSON parsing for all other routes
@@ -125,13 +131,13 @@ const createApp = async () => {
   const { createBullBoard } = require('@bull-board/api');
   const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
   const { ExpressAdapter } = require('@bull-board/express');
-  const { hotelSnapshotQueue, holdExpiryQueue } = require('@queues/index');
+  const { jobs } = require('@modules/booking');
 
   const serverAdapter = new ExpressAdapter();
   serverAdapter.setBasePath('/admin/queues');
 
   createBullBoard({
-    queues: [new BullMQAdapter(hotelSnapshotQueue), new BullMQAdapter(holdExpiryQueue)],
+    queues: [new BullMQAdapter(jobs.holdExpiry.queue)],
     serverAdapter,
   });
 

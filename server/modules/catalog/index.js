@@ -1,10 +1,25 @@
-const roomRepository = require('./infrastructure/room.repository');
+const roomRepository = require('./infrastructure/room-admin.repository');
+const guestRoutes = require('./api/guest.routes');
+const hotelRepository = require('./infrastructure/hotel.repository');
+const destinationRepository = require('./infrastructure/destination.repository');
+const imageRepository = require('./infrastructure/image.repository');
+const hotelSnapshot = require('./infrastructure/hotel_search_snapshot.repository');
+const { getHotelDetails } = require('./application/guest/getHotelDetails');
+const { searchRooms } = require('./application/guest/searchRooms');
+const { getHotelPolicies } = require('./application/guest/getHotelPolicies');
+const { getNearbyPlaces } = require('./application/guest/getNearbyPlaces');
+const { getNearbyPlacesByCategory } = require('./application/guest/getNearbyPlacesByCategory');
+const { getHotelsByIds } = require('./application/guest/getHotelsByIds');
+const { getRecentlyViewedHotels } = require('./application/guest/getRecentlyViewedHotels');
+const { getTrendingHotels } = require('./application/guest/getTrendingHotels');
+const { recordRecentlyViewedHotel } = require('./application/guest/recordRecentlyViewedHotel');
 
 /**
  * Catalog module - public interface.
  *
- * Other modules may only use what is exported here; never Catalog's models or
- * repositories directly.
+ * Owns hotels and rooms: hotel details/search, nearby places, policies, hotel
+ * cards, and room lookup. Other modules may only use what is exported here;
+ * never Catalog's models or repositories directly.
  */
 
 async function getRoomsForHotel(hotelId) {
@@ -19,8 +34,57 @@ async function getRoomForHotel(roomId, hotelId) {
   return await roomRepository.findByIdAndHotelId(roomId, hotelId);
 }
 
+// Write API for partner onboarding (catalog owns hotels + rooms).
+async function upsertHotel(hotelData) {
+  return await hotelRepository.upsertHotel(hotelData);
+}
+
+async function createRoom(roomData) {
+  return await roomRepository.create(roomData);
+}
+
+// Destination resolution (used by search before falling back to ES).
+async function getActiveDestinationById(destinationId) {
+  return await destinationRepository.findActiveById(destinationId);
+}
+
+async function findBestMatchDestinationByName(text) {
+  return await destinationRepository.findBestMatchByName(text);
+}
+
+// City images (used by search to enrich destination cards).
+async function getCityImagesByCityIds(cityIds, options = {}) {
+  return await imageRepository.getCityImagesByCityIds(cityIds, options);
+}
+
 module.exports = {
+  guestRoutes,
+
+  // rooms
   getRoomsForHotel,
   getRoomById,
   getRoomForHotel,
+
+  // onboarding writes
+  upsertHotel,
+  createRoom,
+
+  // destinations
+  getActiveDestinationById,
+  findBestMatchDestinationByName,
+  getCityImagesByCityIds,
+
+  // hotel search-snapshot projection (used by the snapshot worker + seeders)
+  hotelSnapshot,
+
+  // hotels
+  getHotelDetails,
+  searchRooms,
+  getHotelPolicies,
+  getNearbyPlaces,
+  getNearbyPlacesByCategory,
+  getHotelsByIds,
+  getRecentlyViewedHotels,
+  getTrendingHotels,
+  recordRecentlyViewedHotel,
 };

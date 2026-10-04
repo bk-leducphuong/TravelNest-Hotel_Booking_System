@@ -96,8 +96,7 @@ const POLICY_TEMPLATES = {
   payment: [
     {
       title: 'Payment Policy',
-      description:
-        'Payment is due at time of booking. We accept all major credit cards, debit cards, and PayPal.',
+      description: 'Payment is due at time of booking. We accept all major credit and debit cards.',
       icon: 'credit-card',
     },
     {

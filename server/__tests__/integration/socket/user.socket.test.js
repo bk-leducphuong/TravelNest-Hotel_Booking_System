@@ -2,10 +2,8 @@ const http = require('http');
 
 const { Server } = require('socket.io');
 const Client = require('socket.io-client');
-const notificationService = require('@services/notification.service');
 
 // Mock dependencies
-jest.mock('@services/notification.service');
 jest.mock('@config/logger.config', () => ({
   info: jest.fn(),
   warn: jest.fn(),
@@ -113,7 +111,7 @@ describe('User Socket Controller Integration Tests', () => {
     });
 
     // Import and setup user controller
-    const userController = require('@socket/controllers/user.controller');
+    const userController = require('@platform/realtime/namespaces/user');
     userNamespace.on('connection', (socket) => {
       serverSocket = socket;
       userController.handleConnection(userNamespace, socket);
@@ -369,7 +367,7 @@ describe('User Socket Controller Integration Tests', () => {
   describe('Helper Functions', () => {
     describe('sendNotification', () => {
       it('should send notification to specific user', (done) => {
-        const userController = require('@socket/controllers/user.controller');
+        const userController = require('@platform/realtime/namespaces/user');
         const userNamespace = io.of('/user');
 
         const notification = {
@@ -389,7 +387,7 @@ describe('User Socket Controller Integration Tests', () => {
 
     describe('sendBookingUpdate', () => {
       it('should send booking update to user and booking room', (done) => {
-        const userController = require('@socket/controllers/user.controller');
+        const userController = require('@platform/realtime/namespaces/user');
         const userNamespace = io.of('/user');
         const bookingId = 'booking-999';
 

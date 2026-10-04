@@ -1,0 +1,216 @@
+const Sequelize = require('sequelize');
+const { uuidv7 } = require('uuidv7');
+module.exports = function (sequelize, DataTypes) {
+  const User = sequelize.define(
+    'users',
+    {
+      id: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        primaryKey: true,
+        defaultValue: () => uuidv7(),
+      },
+      email: {
+        type: DataTypes.STRING(255),
+        allowNull: false,
+        validate: {
+          isEmail: true,
+        },
+      },
+      keycloak_user_id: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        unique: 'keycloak_user_id_UNIQUE',
+        comment: 'Stable Keycloak subject identifier mapped to this local application user.',
+      },
+      first_name: {
+        type: DataTypes.STRING(255),
+        allowNull: false,
+      },
+      last_name: {
+        type: DataTypes.STRING(255),
+        allowNull: false,
+      },
+      full_name: {
+        type: DataTypes.VIRTUAL,
+        get() {
+          return `${this.first_name} ${this.last_name}`;
+        },
+        set(value) {
+          const [firstName, lastName] = value.split(' ');
+          this.setDataValue('first_name', firstName);
+          this.setDataValue('last_name', lastName);
+        },
+      },
+      phone_number: {
+        type: DataTypes.STRING(15),
+        allowNull: true,
+        comment:
+          'Phone number in E.164 format (e.g., +12025550123). Validation enforced at application level.',
+        validate: {
+          is: /^\+[1-9]\d{1,14}$/, // Basic E.164 regex
+        },
+      },
+      created_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'created_at',
+      },
+      updated_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'updated_at',
+      },
+      connect_account_id: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        unique: 'connect_account_id_UNIQUE',
+      },
+      address: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      country: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+      },
+      profile_picture_url: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      status: {
+        type: DataTypes.ENUM('active', 'inactive', 'banned'),
+        allowNull: false,
+        defaultValue: 'active',
+        comment: 'Account status used for authentication/authorization checks',
+      },
+      date_of_birth: {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+      },
+      gender: {
+        type: DataTypes.ENUM('male', 'female', 'non_binary', 'other', 'prefer_not_to_say'),
+        allowNull: true,
+      },
+      nationality: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+      },
+      last_login_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'Timestamp of the user last successful login',
+      },
+      email_verified_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'When the user verified their email address',
+      },
+      phone_verified_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'When the user verified their phone number',
+      },
+      terms_accepted_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'When the user accepted the latest terms of service',
+      },
+      deleted_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        field: 'deleted_at',
+      },
+    },
+    {
+      sequelize,
+      tableName: 'users',
+      timestamps: true,
+      paranoid: true,
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
+      deletedAt: 'deleted_at',
+      indexes: [
+        {
+          name: 'PRIMARY',
+          unique: true,
+          using: 'BTREE',
+          fields: [{ name: 'id' }],
+        },
+        {
+          name: 'unique_email',
+          unique: true,
+          using: 'BTREE',
+          fields: [{ name: 'email' }],
+        },
+        {
+          name: 'connect_account_id_UNIQUE',
+          unique: true,
+          using: 'BTREE',
+          fields: [{ name: 'connect_account_id' }],
+        },
+        {
+          name: 'keycloak_user_id_UNIQUE',
+          unique: true,
+          using: 'BTREE',
+          fields: [{ name: 'keycloak_user_id' }],
+        },
+      ],
+    }
+  );
+
+  User.associate = function (models) {
+    User.hasMany(models.bookings, {
+      foreignKey: 'buyer_id',
+      as: 'user_bookings', // Explicit alias to avoid conflicts
+    });
+    User.hasMany(models.notifications, {
+      foreignKey: 'sender_id',
+      as: 'sent_notifications', // Explicit alias
+    });
+    User.hasMany(models.reviews, {
+      foreignKey: 'user_id',
+      as: 'user_reviews', // Explicit alias
+    });
+    User.hasMany(models.saved_hotels, {
+      foreignKey: 'user_id',
+      as: 'saved_hotels_list', // Explicit alias
+    });
+    User.hasMany(models.viewed_hotels, {
+      foreignKey: 'user_id',
+      as: 'viewed_hotels_list', // Explicit alias
+    });
+    User.hasMany(models.hotel_users, {
+      foreignKey: 'user_id',
+      as: 'hotel_roles',
+    });
+    // Global roles/permissions through a separate table
+    User.hasMany(models.user_roles, {
+      foreignKey: 'user_id',
+      as: 'roles',
+    });
+
+    User.hasMany(models.auth_accounts, {
+      foreignKey: 'user_id',
+      as: 'auth_accounts',
+    });
+    User.hasMany(models.connected_payment_accounts, {
+      foreignKey: 'user_id',
+      as: 'connected_payment_accounts',
+    });
+    User.hasMany(models.payouts, {
+      foreignKey: 'owner_id',
+      as: 'owner_payouts',
+    });
+    User.hasMany(models.ledger_entries, {
+      foreignKey: 'buyer_id',
+      as: 'buyer_ledger_entries',
+    });
+    User.hasMany(models.ledger_entries, {
+      foreignKey: 'owner_id',
+      as: 'owner_ledger_entries',
+    });
+  };
+
+  return User;
+};

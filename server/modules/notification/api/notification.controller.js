@@ -1,0 +1,95 @@
+const notificationUseCases = {
+  getNotifications: require('../application/getNotifications').getNotifications,
+  getUnreadCount: require('../application/getUnreadCount').getUnreadCount,
+  markAllNotificationsAsRead: require('../application/markAllNotificationsAsRead')
+    .markAllNotificationsAsRead,
+  markNotificationAsRead: require('../application/markNotificationAsRead').markNotificationAsRead,
+};
+const logger = require('@config/logger.config');
+const asyncHandler = require('@utils/asyncHandler');
+
+/**
+ * Notification Controller - HTTP ↔ business mapping
+ * Follows RESTful API standards
+ */
+
+/**
+ * GET /api/notifications
+ * Get notifications for authenticated user
+ */
+const getNotifications = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { page, limit, unreadOnly } = req.query;
+
+  const result = await notificationUseCases.getNotifications(userId, {
+    page: page ? parseInt(page, 10) : 1,
+    limit: limit ? parseInt(limit, 10) : 20,
+    unreadOnly: unreadOnly === 'true',
+  });
+
+  res.status(200).json({
+    data: result.notifications,
+    meta: {
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+    },
+  });
+});
+
+/**
+ * PATCH /api/notifications/:notificationId/read
+ * Mark a specific notification as read
+ */
+const markNotificationAsRead = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { notificationId } = req.params;
+
+  await notificationUseCases.markNotificationAsRead(notificationId, userId);
+
+  res.status(200).json({
+    data: {
+      message: 'Notification marked as read',
+    },
+  });
+});
+
+/**
+ * PATCH /api/notifications/read-all
+ * Mark all notifications as read for authenticated user
+ */
+const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  const updatedCount = await notificationUseCases.markAllNotificationsAsRead(userId);
+
+  res.status(200).json({
+    data: {
+      message: 'All notifications marked as read',
+      updatedCount,
+    },
+  });
+});
+
+/**
+ * GET /api/notifications/unread-count
+ * Get unread notification count for authenticated user
+ */
+const getUnreadCount = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  const count = await notificationUseCases.getUnreadCount(userId);
+
+  res.status(200).json({
+    data: {
+      unreadCount: count,
+    },
+  });
+});
+
+module.exports = {
+  getNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  getUnreadCount,
+};

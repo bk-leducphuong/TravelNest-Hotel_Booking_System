@@ -1,8 +1,8 @@
 const ApiError = require('@utils/ApiError');
-const { eventBus, DOMAIN_EVENTS } = require('@platform/events');
+const { publish, DOMAIN_EVENTS } = require('@platform/events');
 
 const refundRepository = require('../../infrastructure/refund.repository');
-const transactionRepository = require('../../infrastructure/transaction.repository');
+const transactionRepository = require('../../infrastructure/transaction-admin.repository');
 const {
   assertRefundableTransaction,
   normalizeReason,
@@ -60,7 +60,7 @@ async function initiateRefund(transactionId, payload = {}, { actorUserId, reques
     metadata: { source: 'admin', initiated_by: actorUserId || null },
   });
 
-  await eventBus.publish(DOMAIN_EVENTS.PAYMENT_REFUND_CREATED, {
+  await publish(DOMAIN_EVENTS.PAYMENT_REFUND_CREATED, {
     refundId: refund.id,
     transactionId: transaction.id,
     hotelId: transaction.hotel_id,

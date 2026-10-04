@@ -1,6 +1,6 @@
 const ApiError = require('@utils/ApiError');
 
-const transactionRepository = require('../../infrastructure/transaction.repository');
+const transactionRepository = require('../../infrastructure/transaction-admin.repository');
 const { initiateRefund } = require('./initiateRefund');
 
 /**

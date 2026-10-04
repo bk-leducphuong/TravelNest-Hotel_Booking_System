@@ -1,12 +1,12 @@
 const ApiError = require('@utils/ApiError');
-const { eventBus, DOMAIN_EVENTS } = require('@platform/events');
+const { publish, DOMAIN_EVENTS } = require('@platform/events');
 const { auditService } = require('@platform/audit');
 const sequelize = require('@config/database.config');
 
 const inventoryModule = require('@modules/inventory');
-const paymentModule = require('@modules/payment');
 
 const bookingRepository = require('../../infrastructure/booking-admin.repository');
+const { paymentModule } = require('../../infrastructure/payment.client');
 const {
   BOOKING_STATUS,
   assertTransition,
@@ -85,7 +85,7 @@ async function forceCancelBooking(
 
   if (processRefund) {
     try {
-      refund = await paymentModule.refundBooking(bookingId, {
+      refund = await paymentModule().refundBooking(bookingId, {
         reason: 'hotel_cancelled',
         amount: refundAmount,
         actorUserId,
@@ -109,7 +109,7 @@ async function forceCancelBooking(
     requestId,
   });
 
-  await eventBus.publish(DOMAIN_EVENTS.BOOKING_CANCELLED, {
+  await publish(DOMAIN_EVENTS.BOOKING_CANCELLED, {
     bookingId,
     hotelId: bookingData.hotel_id,
     buyerId: bookingData.buyer_id,

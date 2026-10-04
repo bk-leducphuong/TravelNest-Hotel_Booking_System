@@ -97,7 +97,12 @@ const options = {
       },
     ],
   },
-  apis: ['./routes/v1/*.js', './routes/v1/**/*.js', './routes/health.routes.js'],
+  apis: [
+    './routes/v1/*.js',
+    './routes/v1/**/*.js',
+    // Route files stay readable: large OpenAPI blocks live under docs/openapi.
+    './docs/openapi/*.js',
+  ],
 };
 
 const swaggerSpec = swaggerJsdoc(options);
