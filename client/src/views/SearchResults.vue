@@ -422,7 +422,7 @@
                     d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
                   />
                 </svg>
-                Hiển thị trên bản đồ
+                {{ $t('searchResults.showOnMap') }}
               </button>
             </div>
             <HotelFilterSidebar
@@ -445,20 +445,20 @@
               <div class="arrange">
                 <div class="selection-search">
                   <i class="fa-solid fa-repeat"></i>
-                  <span>Sắp xếp theo:</span>
+                  <span>{{ $t('searchResults.sortBy') }}</span>
                   <!-- Sorting Controls -->
                   <select v-model="sortCriteria" @change="handleSort">
-                    <option value="">Lựa chọn hàng đầu của chúng tôi</option>
-                    <option value="priceLowToHigh">Giá (ưu tiên thấp nhất)</option>
-                    <option value="priceHighToLow">Giá (ưu tiên cao nhất)</option>
-                    <option value="ratingHighToLow">Xếp hạng chỗ nghỉ (Cao đến thấp)</option>
+                    <option value="">{{ $t('searchResults.sortTop') }}</option>
+                    <option value="priceLowToHigh">{{ $t('searchResults.sortPriceAsc') }}</option>
+                    <option value="priceHighToLow">{{ $t('searchResults.sortPriceDesc') }}</option>
+                    <option value="ratingHighToLow">{{ $t('searchResults.sortRating') }}</option>
                   </select>
                 </div>
                 <div class="type-search">
                   <input
                     type="text"
                     v-model="searchQuery"
-                    placeholder="Search hotels..."
+                    :placeholder="$t('searchResults.searchPlaceholder')"
                     @input="filterHotels"
                   />
                   <button>
@@ -588,7 +588,7 @@
                     :disabled="pagination.page <= 1 || isLoading"
                     @click="changePage(pagination.page - 1)"
                   >
-                    Trước
+                    {{ $t('searchResults.prev') }}
                   </button>
 
                   <template v-for="page in pageNumbers" :key="page">
@@ -612,7 +612,7 @@
                     :disabled="pagination.page >= pagination.totalPages || isLoading"
                     @click="changePage(pagination.page + 1)"
                   >
-                    Sau
+                    {{ $t('searchResults.next') }}
                   </button>
                 </nav>
               </div>

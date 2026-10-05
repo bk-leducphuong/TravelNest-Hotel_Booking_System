@@ -19,6 +19,20 @@
 
   "searchResults.foundTitle_1": "Tìm thấy",
   "searchResults.foundTitle_2": "chỗ nghỉ",
+  "searchResults.showOnMap": "Hiển thị trên bản đồ",
+  "searchResults.sortBy": "Sắp xếp theo:",
+  "searchResults.sortTop": "Lựa chọn hàng đầu của chúng tôi",
+  "searchResults.sortPriceAsc": "Giá (ưu tiên thấp nhất)",
+  "searchResults.sortPriceDesc": "Giá (ưu tiên cao nhất)",
+  "searchResults.sortRating": "Xếp hạng chỗ nghỉ (Cao đến thấp)",
+  "searchResults.searchPlaceholder": "Tìm khách sạn...",
+  "searchResults.prev": "Trước",
+  "searchResults.next": "Sau",
+
+  "language.selectTitle": "Chọn ngôn ngữ của bạn",
+  "language.recommended": "Được đề xuất cho bạn",
+  "language.english": "Tiếng Anh",
+  "language.vietnamese": "Tiếng Việt",
 
   "welcomeMessage": "Chào mừng đến với trang web đặt phòng!",
   "selectLanguage": "Chọn ngôn ngữ",

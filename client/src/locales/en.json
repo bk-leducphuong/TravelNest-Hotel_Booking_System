@@ -19,6 +19,20 @@
 
   "searchResults.foundTitle_1": "Found",
   "searchResults.foundTitle_2": "hotels",
+  "searchResults.showOnMap": "Show on map",
+  "searchResults.sortBy": "Sort by:",
+  "searchResults.sortTop": "Our top picks",
+  "searchResults.sortPriceAsc": "Price (lowest first)",
+  "searchResults.sortPriceDesc": "Price (highest first)",
+  "searchResults.sortRating": "Property rating (high to low)",
+  "searchResults.searchPlaceholder": "Search hotels...",
+  "searchResults.prev": "Previous",
+  "searchResults.next": "Next",
+
+  "language.selectTitle": "Choose your language",
+  "language.recommended": "Recommended for you",
+  "language.english": "English",
+  "language.vietnamese": "Vietnamese",
 
   "welcomeMessage": "Welcome to the booking website!",
   "selectLanguage": "Select Language",

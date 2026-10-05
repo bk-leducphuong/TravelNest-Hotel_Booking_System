@@ -48,7 +48,7 @@ TravelNest is a full-stack hotel booking platform inspired by [booking.com](http
 - **Real‑time availability**: See up‑to‑date room availability and pricing.
 - **Bookings**: Create, manage, and cancel reservations.
 - **Reviews**: Rate and review properties after your stay.
-- **Multi‑language**: Support for Vietnamese and English.
+- **Multi‑language**: English & Vietnamese with an in‑app language switcher.
 
 ### For Property Owners / Admin
 
@@ -58,7 +58,6 @@ TravelNest is a full-stack hotel booking platform inspired by [booking.com](http
 - **Booking management**: View and manage guest reservations.
 - **Guest engagement**: Respond to reviews and send notifications.
 - **Analytics dashboards**: Track bookings, revenue, and review performance.
-- **Multi‑locale content management**.
 
 ---
 
