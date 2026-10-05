@@ -403,4 +403,29 @@ export default {
 .next {
   right: -20px;
 }
+
+@media (max-width: 768px) {
+  .header-container {
+    padding: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header-left,
+  .header-right {
+    flex-wrap: wrap;
+  }
+
+  .slider-container {
+    margin: 16px;
+  }
+
+  .nav-button-container {
+    display: none;
+  }
+}
 </style>

@@ -1182,4 +1182,40 @@
     height: 100%;
     width: 100%;
   }
+
+  @media (max-width: 768px) {
+    .col-3,
+    .col-9 {
+      flex: 0 0 100%;
+      max-width: 100%;
+    }
+
+    .inner-content {
+      padding: 10px 0;
+    }
+
+    .arrange {
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .type-search input {
+      width: 100%;
+    }
+
+    .room-infor {
+      flex-direction: column;
+      height: auto;
+    }
+
+    .room-infor .inner-img {
+      width: 100%;
+      height: 200px;
+      margin-bottom: 12px;
+    }
+
+    .room-infor .inner-show {
+      padding: 0;
+    }
+  }
 </style>

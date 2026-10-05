@@ -158,4 +158,20 @@
     margin-top: 16px;
     grid-template-columns: repeat(3, 366px);
   }
+
+  @media (max-width: 768px) {
+    .popular-place-card-up-grid,
+    .popular-place-card-bottom-grid {
+      grid-template-columns: 1fr;
+      max-width: 100%;
+    }
+
+    .popular-place-card-up-grid {
+      max-height: none;
+    }
+
+    .popular-place-card-grid {
+      grid-template-rows: 200px;
+    }
+  }
 </style>

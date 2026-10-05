@@ -398,4 +398,40 @@ button {
 .cancel {
   color: #ff2c2c !important;
 }
+
+@media (max-width: 768px) {
+  .header-container {
+    padding: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .header-left,
+  .header-right {
+    flex-wrap: wrap;
+  }
+
+  .account-settings {
+    padding: 16px;
+  }
+
+  .section {
+    flex-direction: column;
+  }
+
+  .hotel-image-container {
+    width: 100%;
+    height: 180px;
+    margin: 0 0 12px 0;
+  }
+
+  .price-container {
+    flex-direction: row !important;
+    justify-content: space-between;
+  }
+}
 </style>

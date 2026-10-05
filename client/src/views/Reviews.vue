@@ -289,4 +289,17 @@ export default {
 .selected {
   border-left: 4px solid #1a73e8;
 }
+
+@media (max-width: 768px) {
+  .review-dashboard {
+    flex-direction: column;
+    margin: 20px 16px;
+    gap: 16px;
+  }
+
+  .left-container,
+  .right-container {
+    width: 100%;
+  }
+}
 </style>
