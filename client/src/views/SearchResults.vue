@@ -7,8 +7,8 @@
   import { useToast } from 'vue-toastification';
   import SavedHotelIcon from '@/components/SavedHotelIcon.vue';
   import { SearchService } from '@/services/search.service';
-  import Loading from 'vue-loading-overlay';
-  import 'vue-loading-overlay/dist/css/index.css';
+  import SkeletonGrid from '@/components/common/SkeletonGrid.vue';
+  import EmptyState from '@/components/common/EmptyState.vue';
   import errorHandler from '@/request/errorHandler';
   import { getImageUrl } from '@/utils/images';
 
@@ -19,7 +19,8 @@
       TheFooter,
       HotelFilterSidebar,
       SavedHotelIcon,
-      Loading,
+      SkeletonGrid,
+      EmptyState,
     },
     setup() {
       // Get toast interface
@@ -405,12 +406,6 @@
   <!-- inforSearch -->
   <div class="inforSearch">
     <div class="container">
-      <Loading
-        v-model:active="isLoading"
-        :can-cancel="true"
-        :color="`#003b95`"
-        :is-full-page="false"
-      />
       <div class="inner-wrap">
         <div class="row">
           <div class="col-3">
@@ -476,18 +471,15 @@
                 </div>
               </div>
 
-              <div v-if="noResultsFound">
-                <p>
-                  No hotels found matching your criteria. Please try adjusting your search filters.
-                </p>
-              </div>
+              <SkeletonGrid v-if="isLoading" :count="4" image-height="200px" />
 
-              <div
-                class="room-infor"
-                v-for="hotel in displayHotels"
-                :key="hotel.hotel_id"
-                @click="redirectToHotelDetails(hotel.hotel_id)"
-              >
+              <template v-else-if="displayHotels.length > 0">
+                <div
+                  class="room-infor"
+                  v-for="hotel in displayHotels"
+                  :key="hotel.hotel_id"
+                  @click="redirectToHotelDetails(hotel.hotel_id)"
+                >
                 <div class="inner-img">
                   <SavedHotelIcon
                     :hotel-id="hotel.hotel_id"
@@ -575,6 +567,14 @@
                   </div>
                 </div>
               </div>
+              </template>
+
+              <EmptyState
+                v-else
+                title="No hotels found"
+                message="Try adjusting your dates, location or filters."
+                icon="fa-solid fa-magnifying-glass"
+              />
 
               <div v-if="showPagination" class="pagination-wrapper">
                 <p class="pagination-summary">

@@ -1,14 +1,18 @@
 <script>
 import TheHeader from '../components/Header.vue'
+import SkeletonGrid from '@/components/common/SkeletonGrid.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { mapGetters } from 'vuex'
-import axios from 'axios'
 import { useToast } from 'vue-toastification'
 import errorHandler from '@/request/errorHandler';
+import { ReviewService } from '@/services/review.service'
 import { getFirstImageUrl, getImageUrl } from '@/utils/images'
 
 export default {
   components: {
-    TheHeader
+    TheHeader,
+    SkeletonGrid,
+    EmptyState
   },
   setup() {
     const toast = useToast()
@@ -19,6 +23,7 @@ export default {
   data() {
     return {
       reviews: [],
+      isLoading: false,
       notReviewed: 0,
       reviewed: 0,
       viewMode: 'all'
@@ -27,6 +32,8 @@ export default {
   watch: {
     reviews() {
       // calculate number of not reviewed
+      this.notReviewed = 0
+      this.reviewed = 0
       this.reviews.forEach((review) => {
         if (review.review.length == 0) {
           this.notReviewed++
@@ -42,12 +49,14 @@ export default {
   methods: {
     async getAllReviews() {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_SERVER_HOST}/api/review/get-all-reviews`, {
-          withCredentials: true
-        })
-        this.reviews = response.data.reviews
-      }catch(error) {
+        this.isLoading = true
+        const response = await ReviewService.getReviews()
+        this.reviews = response?.data ?? []
+      } catch (error) {
         errorHandler(error)
+        this.reviews = []
+      } finally {
+        this.isLoading = false
       }
     },
     makeReview(bookingCode, hotelId, hotelName) {
@@ -107,10 +116,15 @@ export default {
       </div>
     </div>
     <div class="right-container">
-      <!-- <div class="right-header">
-        <h2>Reviews</h2>
-      </div> -->
-      <div class="review-card" v-for="(review, index) in reviews" :key="index">
+      <SkeletonGrid v-if="isLoading" :count="2" image-height="125px" />
+      <EmptyState
+        v-else-if="reviews.length === 0"
+        title="No reviews yet"
+        message="Complete a stay to leave a review."
+        icon="fa-regular fa-star"
+      />
+      <template v-else>
+        <div class="review-card" v-for="(review, index) in reviews" :key="index">
         <div style="display: flex; gap: 16px; align-items: start">
           <img
             :src="getFirstImageUrl(review.hotel.image_urls)"
@@ -135,6 +149,7 @@ export default {
           </div>
         </div>
       </div>
+      </template>
     </div>
   </div>
 </template>

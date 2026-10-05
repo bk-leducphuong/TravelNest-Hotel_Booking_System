@@ -5,8 +5,8 @@ import MapComponent from '@/components/map/MapComponent.vue'
 import { mapActions, mapGetters } from 'vuex'
 import ImageGallery from '@/components/hotel-image/ImageGallery.vue'
 import { useToast } from 'vue-toastification'
-import Loading from 'vue-loading-overlay'
-import 'vue-loading-overlay/dist/css/index.css'
+import SkeletonGrid from '@/components/common/SkeletonGrid.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { HotelService } from '@/services/hotel.service'
 import { getImagePath, getImageUrl } from '@/utils/images'
 
@@ -22,7 +22,8 @@ export default {
     TheFooter,
     MapComponent,
     ImageGallery,
-    Loading,
+    SkeletonGrid,
+    EmptyState,
     // ReviewForm,
     ReviewValidation
   },
@@ -780,10 +781,13 @@ export default {
           </tr>
         </tbody>
       </table>
-      <Loading v-model:active="isSearchRoomLoading" :color="`#003b95`" :is-full-page="false" />
-      <div v-if="room_list.length == 0" class="no-room-found">
-        <h5>Không tìm thấy phòng phù hợp với lựa chọn của bạn.</h5>
-      </div>
+      <SkeletonGrid v-if="isSearchRoomLoading" :count="2" image-height="90px" />
+      <EmptyState
+        v-else-if="room_list.length === 0"
+        title="No rooms available"
+        message="Try different dates or guest counts."
+        icon="fa-solid fa-bed"
+      />
     </div>
 
     <!-- end price -->
