@@ -29,7 +29,8 @@
     "test": "yarn workspaces foreach -A run test",
     "clean": "yarn workspaces foreach -A exec rm -rf node_modules && rm -rf node_modules",
     "clean:build": "rm -rf client/dist server/dist admin-client/.output",
-    "db:migrate": "yarn workspace @travelnest/server migrate"
+    "db:migrate": "yarn workspace @travelnest/server migrate",
+    "demo:seed": "yarn workspace @travelnest/server demo:reset"
   },
   "engines": {
     "node": ">=20.0.0",

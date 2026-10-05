@@ -108,7 +108,8 @@ Each package has its own detailed README:
 
 ## Getting Started
 
-See the **[Wiki: Getting Started](https://github.com/bk-leducphuong/TravelNest/wiki/Getting-Started)** for detailed setup instructions.
+See the **[Wiki: Getting Started](https://github.com/bk-leducphuong/TravelNest/wiki/Getting-Started)** for detailed setup instructions, and the
+**[Demo Guide](wiki/Demo-Guide.md)** for a repeatable demo bring-up, seeded accounts and a suggested demo script.
 
 ```bash
 # Clone the repository

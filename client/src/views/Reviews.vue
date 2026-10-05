@@ -140,7 +140,7 @@ export default {
               >
               <span class="review-status" v-else>Reviewed</span>
             </div>
-            <button class="review-button"v-if="review.review.length == 0" @click="makeReview(review.booking_code, review.hotel.hotel_id, review.hotel.name)">
+            <button class="review-button" v-if="review.review.length == 0" @click="makeReview(review.booking_code, review.hotel.hotel_id, review.hotel.name)">
               Review your stay
             </button>
             <button class="review-button" v-else @click="editReview(review.booking_code, review.hotel.hotel_id, review.hotel.name)">

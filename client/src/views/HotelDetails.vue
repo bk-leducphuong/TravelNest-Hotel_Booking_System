@@ -461,13 +461,11 @@ export default {
     // date picker popup
     flatpickr(this.$refs.dateInput, {
       dateFormat: 'd/m/Y', // Định dạng ngày
-      locale: 'vn', // Ngôn ngữ tiếng Việt cho tên ngày tháng
       mode: 'range', // Cho phép chọn dải ngày
 
       minDate: 'today', // Không cho phép chọn ngày trong quá khứ
       showMonths: 2, // Hiển thị 2 tháng cạnh nhau
       onChange: function (selectedDates, dateStr, instance) {},
-      mode: 'range',
       locale: {
         rangeSeparator: ' đến ' // Thay "to" bằng "đến"
       },
@@ -815,7 +813,7 @@ export default {
           <strong>Hạng mục</strong>
           <div class="review__process--bar">
             <div class="row">
-              <div class="col-lg-4 col-md-6 col-12" v-for="review in reviewCriterias">
+              <div class="col-lg-4 col-md-6 col-12" v-for="review in reviewCriterias" :key="review.criteria_name">
                 <div class="category">
                   <div>{{ review.criteria_name }}</div>
                   <div>
@@ -971,7 +969,7 @@ export default {
             <strong>Hạng mục</strong>
             <div class="review__process--bar">
               <div class="row">
-                <div class="col-lg-4 col-md-6 col-12" v-for="review in reviewCriterias">
+                <div class="col-lg-4 col-md-6 col-12" v-for="review in reviewCriterias" :key="review.criteria_name">
                   <div class="category">
                     <div>{{ review.criteria_name }}</div>
                     <div>

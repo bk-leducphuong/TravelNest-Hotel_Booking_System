@@ -114,7 +114,7 @@ export default {
             </div>
             <div class="detail-item">
               <div class="detail-label">Room Type</div>
-              <div class="detail-value" v-for="room in bookingInformation.rooms">{{ room.roomName }} x {{ room.quantity }}</div>
+              <div class="detail-value" v-for="room in bookingInformation.rooms" :key="room.roomId || room.roomName">{{ room.roomName }} x {{ room.quantity }}</div>
             </div>
           </div>
         </div>

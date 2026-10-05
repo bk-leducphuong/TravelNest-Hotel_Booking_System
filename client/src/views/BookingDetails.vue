@@ -77,7 +77,7 @@ export default {
         <p><strong>Booking code:</strong> {{ getBookingInformation.booking_code }}</p>
         <p><strong>PIN Code:</strong> 4338 <span class="lock-icon">🔒</span></p>
         <h3 class="subheading">Booking Details</h3>
-        <p v-for="room in getBookingInformation.rooms">{{ room.roomName }} x {{ room.quantity }}</p>
+        <p v-for="room in getBookingInformation.rooms" :key="room.roomId || room.roomName">{{ room.roomName }} x {{ room.quantity }}</p>
         <p><strong>You booked for:</strong> {{ getBookingInformation.numberOfGuests }} adult</p>
         <p><strong>Check-in:</strong> {{ new Date(getBookingInformation.checkInDate).toString().split(' ').slice(0, 4).join(' ') }} (12:00 PM - 12:00 AM)</p>
         <p><strong>Check-out:</strong>  {{ new Date(getBookingInformation.checkOutDate).toString().split(' ').slice(0, 4).join(' ') }}  (12:00 PM - 1:00 PM)</p>

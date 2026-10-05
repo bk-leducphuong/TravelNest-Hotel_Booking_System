@@ -79,7 +79,7 @@ export default {
     },
     arrangeBookings(criteria) {
       switch (criteria) {
-        case 'all':
+        case 'all': {
           this.arrangedBookings = this.bookings
           // Ngày hiện tại
           const today = new Date()
@@ -97,6 +97,7 @@ export default {
           })
 
           break
+        }
         case 'today':
           this.arrangedBookings = this.bookings
           this.arrangedBookings = this.arrangedBookings.filter(

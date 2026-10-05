@@ -14,9 +14,8 @@ import './assets/styles/index.scss';
 if (window.location.pathname === '/silent-check-sso.html') {
   window.parent.postMessage(window.location.href, window.location.origin);
 } else {
-async function bootstrap() {
+const bootstrap = async () => {
   await stores.dispatch('auth/initializeAuth');
-
   const app = createApp(App);
 
   // add custom directives
