@@ -273,6 +273,14 @@ describe('G. Payments + webhook', () => {
     const res = await api(guest).get('/payments');
     expect(res.status).toBe(200);
   });
+
+  test('G6 create a payment intent from the active hold', async () => {
+    await freshHold(guest);
+    const res = await api(guest).post('/payments', { paymentMethodId: 'pm_card_visa' });
+    expect(res.status).toBe(201);
+    expect(res.data.data.clientSecret).toBeTruthy();
+    expect(res.data.data.paymentIntentId).toBeTruthy();
+  });
 });
 
 describe('H. Favorites / profile', () => {

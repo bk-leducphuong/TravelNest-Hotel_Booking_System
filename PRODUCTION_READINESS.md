@@ -8,7 +8,7 @@ Date: 2026-10-07. See `guest-e2e-test-plan.md` for the plan and
 
 | Suite | Result |
 | --- | --- |
-| API e2e (`server/__tests__/e2e`, live stack, Jest+supertest) | **82 / 82 pass** (stable over repeated runs) |
+| API e2e (`server/__tests__/e2e`, live stack, Jest+supertest) | **83 / 83 pass** (stable over repeated runs) |
 | Backend unit tests | **334 / 334 pass** |
 | Architecture gate (`arch:check`) | **pass** |
 | ESLint (changed + new files) | **0 errors** |
@@ -79,7 +79,7 @@ Status: **Fixed** / **Partial** / **Open** / **N-A (guest scope)**.
 | R5 | Hold oversell | **Verified** | Concurrency test E8: 6 parallel holds on one room → no 500, inventory stays usable. |
 | R6 | Idempotency coverage | Partial | `POST /bookings` only. Holds/payments/cancels have no idempotency key. |
 | R7 | Idempotency recovery | **Fixed** | A stale `processing` or `failed` record can be re-claimed after a 2-minute lease (`touchIdempotencyRecord`) instead of blocking the key for the full 24h TTL. |
-| R8 | External I/O in DB txn | Open | `createPaymentIntent` (hold path) calls Stripe inside a DB transaction. |
+| R8 | External I/O in DB txn | **Fixed** | The hold-path intent is created before the DB transaction (booking id generated up front); the DB work runs with no network call holding locks, and a failed transaction cancels the intent as compensation. Covered by e2e G6. |
 | R9 | No outbox | N-A / Open | Events publish best-effort over NATS (not exercised in the guest run). |
 | R10 | Search dependency (ES) | Verified up | ES healthy; hybrid search returns results. Degradation path not triggered. |
 | R11 | XSS (`v-html` highlight) | **Fixed** | `highlightMatch` now HTML-escapes the hotel name and regex-escapes the query before building `<mark>`; previously a host-controlled name could inject script and a query containing `(` crashed the render. |
