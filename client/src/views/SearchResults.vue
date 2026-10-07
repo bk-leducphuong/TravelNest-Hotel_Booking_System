@@ -104,6 +104,18 @@
       hasCoordinates() {
         return Boolean(this.$route.query.latitude && this.$route.query.longitude);
       },
+      // The stay length is derived from the dates when the URL omits
+      // `numberOfDays` (e.g. a shared link), instead of silently failing.
+      computedNumberOfDays() {
+        const days = parseInt(this.$route.query.numberOfDays, 10);
+        if (Number.isFinite(days) && days > 0) return days;
+        const { checkInDate, checkOutDate } = this.$route.query;
+        if (!checkInDate || !checkOutDate) return undefined;
+        const inD = new Date(`${String(checkInDate).slice(0, 10)}T00:00:00`);
+        const outD = new Date(`${String(checkOutDate).slice(0, 10)}T00:00:00`);
+        const diff = Math.round((outD - inD) / 86400000);
+        return diff > 0 ? diff : undefined;
+      },
     },
     watch: {
       '$route.query': {
@@ -177,7 +189,7 @@
           this.$route.query.adults &&
           this.$route.query.children &&
           this.$route.query.rooms &&
-          this.$route.query.numberOfDays
+          this.computedNumberOfDays
           ? true
           : false;
       },
@@ -185,7 +197,7 @@
         this.updateLocation(this.$route.query.location);
         this.updateCheckInDate(this.$route.query.checkInDate);
         this.updateCheckOutDate(this.$route.query.checkOutDate);
-        this.updateNumberOfDays(this.$route.query.numberOfDays);
+        this.updateNumberOfDays(this.computedNumberOfDays);
         this.updateAdults(this.$route.query.adults);
         this.updateRooms(this.$route.query.rooms);
         this.updateChildren(this.$route.query.children);
