@@ -62,6 +62,11 @@ async function failIdempotencyRecord(id, options = {}) {
   return await idempotencyRepository.markFailed(id, options);
 }
 
+/** Re-claim a stale/failed idempotency record (recovery after a crash). */
+async function touchIdempotencyRecord(id, data = {}, options = {}) {
+  return await idempotencyRepository.touchProcessing(id, data, options);
+}
+
 // --- Ledger (payout reads the account owner) ---
 async function getPrimaryOwnerByHotelId(hotelId, options = {}) {
   return await ledgerRepository.findPrimaryOwnerByHotelId(hotelId, options);
@@ -106,6 +111,7 @@ module.exports = {
   createIdempotencyRecord,
   completeIdempotencyRecord,
   failIdempotencyRecord,
+  touchIdempotencyRecord,
   getPrimaryOwnerByHotelId,
   webhookEventLog,
 

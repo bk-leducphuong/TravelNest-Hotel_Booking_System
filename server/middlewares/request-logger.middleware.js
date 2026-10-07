@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 
 const logger = require('../config/logger.config');
+const { redact } = require('../utils/redact');
 
 /**
  * Request logging middleware for tracking all HTTP requests
@@ -26,7 +27,7 @@ const requestLogger = (req, res, next) => {
       url: req.originalUrl,
       query: req.query,
       params: req.params,
-      body: req.method !== 'GET' ? req.body : undefined,
+      body: req.method !== 'GET' ? redact(req.body) : undefined,
       headers: {
         'content-type': req.get('content-type'),
         accept: req.get('accept'),

@@ -34,6 +34,7 @@ class IdempotencyRepository {
         resource_id: data.resourceId,
         response_body: data.responseBody,
         status: 'completed',
+        updated_at: new Date(),
       },
       {
         where: { id },
@@ -44,7 +45,26 @@ class IdempotencyRepository {
 
   async markFailed(id, options = {}) {
     return await IdempotencyKeys.update(
-      { status: 'failed' },
+      { status: 'failed', updated_at: new Date() },
+      {
+        where: { id },
+        ...options,
+      }
+    );
+  }
+
+  /**
+   * Re-claim a stale/failed record as 'processing' and refresh its lease.
+   * Used to recover from a request that crashed mid-flight.
+   */
+  async touchProcessing(id, data = {}, options = {}) {
+    return await IdempotencyKeys.update(
+      {
+        status: 'processing',
+        request_hash: data.requestHash,
+        expires_at: data.expiresAt,
+        updated_at: new Date(),
+      },
       {
         where: { id },
         ...options,

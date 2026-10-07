@@ -14,6 +14,90 @@ const { formatBookingResponse } = require('./formatters');
 
 const PAYMENT_WINDOW_MINUTES = 15;
 const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
+// How long an in-flight "processing" record is treated as active before a retry
+// may take it over — recovery from a request that crashed mid-flight.
+const IDEMPOTENCY_LEASE_MS = 2 * 60 * 1000;
+
+/**
+ * @returns the replayed response when the key already holds a completed result
+ * for the same request; throws when the key was reused with a different body.
+ */
+function replayOrThrowOnMismatch(record, requestHash) {
+  if (record.request_hash !== requestHash) {
+    throw new ApiError(
+      409,
+      'IDEMPOTENCY_KEY_REUSED',
+      'Idempotency-Key was already used with a different request'
+    );
+  }
+  if (record.status === 'completed') {
+    return { ...(record.response_body || {}), idempotentReplay: true };
+  }
+  return null;
+}
+
+/**
+ * Look up or claim an idempotency record for this request.
+ *
+ * @returns {Promise<{ replay?: object, record?: object }>} `replay` short-circuits
+ * the request; `record` is the claimed row to complete later.
+ */
+async function acquireIdempotencyRecord(userId, idempotencyKey, requestHash) {
+  const existing = await paymentModule().findIdempotencyRecord(userId, idempotencyKey);
+
+  if (existing) {
+    const replay = replayOrThrowOnMismatch(existing, requestHash);
+    if (replay) {
+      return { replay };
+    }
+
+    // 'processing' (in flight) or 'failed' (a previous attempt). Claim the row
+    // only once its lease has lapsed, so a crashed request can be retried
+    // instead of blocking the key for the full TTL.
+    const lastTouch = new Date(existing.updated_at || existing.created_at || 0).getTime();
+    const leaseActive =
+      existing.status === 'processing' && Date.now() - lastTouch < IDEMPOTENCY_LEASE_MS;
+    if (leaseActive) {
+      throw new ApiError(409, 'REQUEST_IN_PROGRESS', 'This idempotent request is still processing');
+    }
+
+    await paymentModule().touchIdempotencyRecord(existing.id, {
+      requestHash,
+      expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS),
+    });
+    return { record: existing };
+  }
+
+  try {
+    const record = await paymentModule().createIdempotencyRecord({
+      userId,
+      idempotencyKey,
+      requestHash,
+      status: 'processing',
+      expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS),
+    });
+    return { record };
+  } catch (err) {
+    // Two identical requests can race between the lookup and the insert; the
+    // unique (user_id, idempotency_key) constraint resolves the winner. Re-read
+    // and replay/conflict exactly like the sequential path instead of 500ing.
+    if (err && err.name === 'SequelizeUniqueConstraintError') {
+      const raced = await paymentModule().findIdempotencyRecord(userId, idempotencyKey);
+      if (raced) {
+        const replay = replayOrThrowOnMismatch(raced, requestHash);
+        if (replay) {
+          return { replay };
+        }
+        throw new ApiError(
+          409,
+          'REQUEST_IN_PROGRESS',
+          'This idempotent request is still processing'
+        );
+      }
+    }
+    throw err;
+  }
+}
 
 /**
  * Create a pending-payment booking from an active hold.
@@ -34,63 +118,11 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
   }
 
   const requestHash = hashRequest(data);
-  const existingKey = await paymentModule().findIdempotencyRecord(userId, idempotencyKey);
-
-  if (existingKey) {
-    if (existingKey.request_hash !== requestHash) {
-      throw new ApiError(
-        409,
-        'IDEMPOTENCY_KEY_REUSED',
-        'Idempotency-Key was already used with a different request'
-      );
-    }
-    if (existingKey.status === 'completed') {
-      return {
-        ...(existingKey.response_body || {}),
-        idempotentReplay: true,
-      };
-    }
-    throw new ApiError(409, 'REQUEST_IN_PROGRESS', 'This idempotent request is still processing');
+  const acquired = await acquireIdempotencyRecord(userId, idempotencyKey, requestHash);
+  if (acquired.replay) {
+    return acquired.replay;
   }
-
-  let idempotencyRecord;
-  try {
-    idempotencyRecord = await paymentModule().createIdempotencyRecord({
-      userId,
-      idempotencyKey,
-      requestHash,
-      status: 'processing',
-      expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS),
-    });
-  } catch (err) {
-    // Two identical requests can race between the lookup and the insert; the
-    // unique (user_id, idempotency_key) constraint resolves the winner. Re-read
-    // and replay/conflict exactly like the sequential path instead of 500ing.
-    if (err && err.name === 'SequelizeUniqueConstraintError') {
-      const raced = await paymentModule().findIdempotencyRecord(userId, idempotencyKey);
-      if (raced) {
-        if (raced.request_hash !== requestHash) {
-          throw new ApiError(
-            409,
-            'IDEMPOTENCY_KEY_REUSED',
-            'Idempotency-Key was already used with a different request'
-          );
-        }
-        if (raced.status === 'completed') {
-          return {
-            ...(raced.response_body || {}),
-            idempotentReplay: true,
-          };
-        }
-        throw new ApiError(
-          409,
-          'REQUEST_IN_PROGRESS',
-          'This idempotent request is still processing'
-        );
-      }
-    }
-    throw err;
-  }
+  const idempotencyRecord = acquired.record;
 
   try {
     return await sequelize.transaction(async (transaction) => {

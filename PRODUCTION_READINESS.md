@@ -9,7 +9,7 @@ Date: 2026-10-07. See `guest-e2e-test-plan.md` for the plan and
 | Suite | Result |
 | --- | --- |
 | API e2e (`server/__tests__/e2e`, live stack, Jest+supertest) | **82 / 82 pass** (stable over repeated runs) |
-| Backend unit tests | **326 / 326 pass** |
+| Backend unit tests | **334 / 334 pass** |
 | Architecture gate (`arch:check`) | **pass** |
 | ESLint (changed + new files) | **0 errors** |
 | UI/UX (Playwright MCP against the real Chrome) | U1, U3, U4, U7, U8, U9, **U10 (full pay → confirmation)**, U11 verified; U5/U12–U19 partial |
@@ -74,11 +74,11 @@ Status: **Fixed** / **Partial** / **Open** / **N-A (guest scope)**.
 | --- | --- | --- | --- |
 | R1 | JWT key mgmt (static PEM, no JWKS) | Open | `jwt.util.js` reads `KEYCLOAK_PUBLIC_KEY_PEM`; no `kid`/JWKS. Rotation needs redeploy. Recommend JWKS + cache. |
 | R2 | Rate limiting | Partial | Per-IP, in-memory, 300/15m. Added **`RATE_LIMIT_ENABLED`** toggle (off in dev). Still per-IP and not shared across instances. |
-| R3 | Log PII | Open | `request-logger` logs response bodies; verified bodies are masked in error.log but confirm no PII for auth/payment payloads. |
+| R3 | Log PII | **Fixed** | Request bodies are redacted (`utils/redact.js`) — passwords, tokens, card/payment fields and contact PII are masked before logging. Verified: a posted password/card no longer appears in `logs/`. |
 | R4 | Webhook auth | **Fixed** | Signature verified when `STRIPE_WEBHOOK_SECRET` set; now **fails closed in production** when unset (was fail-open). |
 | R5 | Hold oversell | **Verified** | Concurrency test E8: 6 parallel holds on one room → no 500, inventory stays usable. |
 | R6 | Idempotency coverage | Partial | `POST /bookings` only. Holds/payments/cancels have no idempotency key. |
-| R7 | Idempotency recovery | Partial | Race now handled (fix #5). The 24h `processing` TTL with no lease remains a recovery gap. |
+| R7 | Idempotency recovery | **Fixed** | A stale `processing` or `failed` record can be re-claimed after a 2-minute lease (`touchIdempotencyRecord`) instead of blocking the key for the full 24h TTL. |
 | R8 | External I/O in DB txn | Open | `createPaymentIntent` (hold path) calls Stripe inside a DB transaction. |
 | R9 | No outbox | N-A / Open | Events publish best-effort over NATS (not exercised in the guest run). |
 | R10 | Search dependency (ES) | Verified up | ES healthy; hybrid search returns results. Degradation path not triggered. |
