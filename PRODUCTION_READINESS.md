@@ -28,7 +28,7 @@ Env (defaults in `server/__tests__/e2e/env.js`): `E2E_USERNAME=test@travelnest.c
 / `password123`; second guest `owner@travelnest.local` / `Test@1234`;
 `E2E_CITY=Ha Noi`.
 
-## 3. Defects found and fixed (agent changes, commit `c97c8fa`)
+## 3. Defects found and fixed (agent commits `c97c8fa` … `67f6c4b`)
 
 | # | Sev | Symptom | Root cause | Fix |
 | --- | --- | --- | --- | --- |
@@ -38,29 +38,33 @@ Env (defaults in `server/__tests__/e2e/env.js`): `E2E_USERNAME=test@travelnest.c
 | 4 | S2 | Concurrent double-cancel → 500 | `updateStatus` returned 0 rows on the losing race | → **409 `BOOKING_ALREADY_CANCELLED`** |
 | 5 | S2 | Parallel same `Idempotency-Key` → 500 | unique-constraint race between lookup and insert | catch `UniqueConstraintError` → re-read & **replay/409** |
 | 6 | **S1** | **UI checkout blocked** — "Next" never advanced | `Book.vue` rendered the **required** phone input with a hard-coded `disabled` and no binding | made it editable + `v-model`, wired into `checkFormFulfillment` and `CheckOut`; re-verified full UI pay → confirmation |
+| 7 | S3 | `POST /user/favorite-hotels` always 400'd for real hotels | `hotelId` validated as a number, but hotel ids are UUIDs | schema → `Joi.string().uuid()` |
+| 8 | S3 | `GET /payments/bookings/:bookingId` 400'd for real bookings | `bookingId`/`transactionId` validated as numbers | schema → `Joi.string().uuid()` |
+| 9 | S3 | Shared `/search` link showed "0 hotels" + alert | `isSearchUrlValid` required an undocumented `numberOfDays` | derive it from the dates |
+| 10 | S3 | Dates off-by-one; a 2-night stay showed "3 nights" | `new Date('YYYY-MM-DD')` parsed as UTC; nights hard-coded | TZ-safe formatting + computed nights |
+| 11 | S4 | Placeholder typo "goging" | locale string | fixed |
+| 12 | S3 | Confirmation header said "Booking.com" | hard-coded brand | fixed |
+| 13 | S3 | Booking card titled with the city, raw date string | wrong field / `Date#toString` | hotel name + formatted dates |
+| 14 | S3 | Keycloak silent-SSO console error on every load | Vite injected dev scripts into `silent-check-sso.html`; they `postMessage` objects keycloak-js tries to parse | serve it from the configured static dir |
+| 15 | S2 | Webhook verification **skipped** when the secret is unset (fail-open) | no production guard | fail closed in production (`NODE_ENV=production`) |
 
 Defects #1 and #2 broke **logged-in search** and the **entire payment step** —
 both introduced by the recent "move Stripe adapters into payment" refactor.
 
-## 4. Open defects (documented, not fixed)
+## 4. Open defects (remaining)
 
 | # | Sev | Area | Detail | Recommended fix |
 | --- | --- | --- | --- | --- |
-| D1 | **S1** | UI checkout | `client/src/views/Book.vue:298-306` renders the **required** phone `input` with a hard-coded `disabled`. Users without a saved phone cannot complete checkout (value also isn't `v-model`-bound, so typing would be ignored). | Make the field editable + bound (`v-model`), or prefill/require it in the profile step. |
-| D2 | S3 | Favorites contract | `POST /user/favorite-hotels` types `hotelId` as a **number**; hotel IDs are UUIDs → always 400. (`test.failing` H2) | Accept a UUID string in the schema. |
-| D3 | S3 | Payments contract | `GET /payments/bookings/:bookingId` & `/transactions/:transactionId` type IDs as **numbers**; booking IDs are UUIDs. (`test.failing` Y1) | Accept UUID strings. |
-| D4 | S3 | Search UX | `/search` silently shows **"Found 0 hotels"** + an alert unless the undocumented `numberOfDays` query param is present (`isSearchUrlValid`). | Derive `numberOfDays` from the dates; include it in the documented route contract. |
-| D5 | S3 | Dates | Off-by-one between the search dates and the in-page stay panel (query 27→29, panel 26→28); the confirmation page shows a 2-night stay as **"3 nights"**; the checkout used **stale dates** from the previous search. | Normalise to one date source / timezone-safe formatting. |
-| D6 | S4 | i18n/UX | Typo in the destination placeholder: **"Where are you goging?"**; header renders `Đăng kýĐăng nhập` with no spacing. | Fix the locale strings. |
-| D7 | S3 | Console | On every load: `TypeError: Failed to construct 'URL': Invalid URL` from `keycloak-js parseCallbackUrl_fn` (silent-check-sso). | Fix the silent-check-sso URL / Keycloak callback handling. |
 | D8 | S4 | a11y | 40 `input`/`select` elements without an `aria-label`, `placeholder` or `id` on the search page. | Associate labels with controls. |
-| D9 | S3 | Bookings UI | Booking cards show the **city** ("Ha Noi") as the title and the raw date `Wed Oct 07 2026`; hotel name not shown. | Show the hotel name + formatted dates. |
 | D10 | S3 | Runtime deps | `analytics` and `notification` Go services run in Docker with **no published port** but the backend targets `localhost:8081`/`localhost:8083` → `/health` 503, trending 502, notifications 502. | Publish the ports / run them on the host, or point env at the compose DNS names. |
-| D11 | S3 | Branding | The booking confirmation page header renders **"Booking.com"**, not "TravelNest". | Fix the confirmation header brand. |
 
 > D10 was worked around for this run with a temporary compose override
 > (`/tmp/opencode/analytics-port.override.yml`, publishing 8081 + 8083). The
 > repo's `docker-compose.yml` was left untouched.
+>
+> Fixed since the first draft: D1 (checkout), D2/D3 (UUID contracts),
+> D4 (search days), D5 (dates/nights), D6 (typo), D7 (silent-SSO), D9 (booking
+> card), D11 (branding) — see the fixed-defects table above.
 
 ## 5. Production-readiness matrix (R1–R18)
 
@@ -71,7 +75,7 @@ Status: **Fixed** / **Partial** / **Open** / **N-A (guest scope)**.
 | R1 | JWT key mgmt (static PEM, no JWKS) | Open | `jwt.util.js` reads `KEYCLOAK_PUBLIC_KEY_PEM`; no `kid`/JWKS. Rotation needs redeploy. Recommend JWKS + cache. |
 | R2 | Rate limiting | Partial | Per-IP, in-memory, 300/15m. Added **`RATE_LIMIT_ENABLED`** toggle (off in dev). Still per-IP and not shared across instances. |
 | R3 | Log PII | Open | `request-logger` logs response bodies; verified bodies are masked in error.log but confirm no PII for auth/payment payloads. |
-| R4 | Webhook auth | Partial | Signature verified when `STRIPE_WEBHOOK_SECRET` set; **skipped with a warning if unset**. Fail closed in production. |
+| R4 | Webhook auth | **Fixed** | Signature verified when `STRIPE_WEBHOOK_SECRET` set; now **fails closed in production** when unset (was fail-open). |
 | R5 | Hold oversell | **Verified** | Concurrency test E8: 6 parallel holds on one room → no 500, inventory stays usable. |
 | R6 | Idempotency coverage | Partial | `POST /bookings` only. Holds/payments/cancels have no idempotency key. |
 | R7 | Idempotency recovery | Partial | Race now handled (fix #5). The 24h `processing` TTL with no lease remains a recovery gap. |

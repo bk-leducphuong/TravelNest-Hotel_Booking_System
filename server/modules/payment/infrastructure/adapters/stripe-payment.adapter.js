@@ -169,7 +169,13 @@ class StripePaymentAdapter {
   verifyWebhook(payload, signature) {
     try {
       if (!this.webhookSecret) {
-        logger.warn('Stripe webhook secret not configured, skipping verification');
+        // Fail closed in production: without a secret we cannot authenticate
+        // the sender, so accepting the payload would let anyone forge events.
+        if (process.env.NODE_ENV === 'production') {
+          logger.error('Stripe webhook secret not configured; rejecting webhook in production');
+          throw new Error('Webhook signature verification failed');
+        }
+        logger.warn('Stripe webhook secret not configured, skipping verification (non-production)');
         return JSON.parse(payload.toString());
       }
 
