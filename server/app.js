@@ -7,6 +7,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const helmet = require('helmet');
 
 /** ********************* Config ************************ */
 const logger = require('@config/logger.config');
@@ -44,6 +45,19 @@ const createApp = async () => {
   await natsTransport.connect();
 
   const app = express();
+
+  // Security headers. CSP is intentionally left to the edge/CDN: this service
+  // returns JSON and serves Swagger UI (which needs inline scripts). The rest
+  // of the helmet defaults (nosniff, frameguard, HSTS, referrer policy) are
+  // safe here. `crossOriginResourcePolicy: cross-origin` keeps image/asset
+  // responses loadable from the separate guest/admin origins.
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    })
+  );
 
   // Initialize s3 bucket
   await initBucket();

@@ -9,7 +9,7 @@ Date: 2026-10-07. See `guest-e2e-test-plan.md` for the plan and
 | Suite | Result |
 | --- | --- |
 | API e2e (`server/__tests__/e2e`, live stack, Jest+supertest) | **82 / 82 pass** (stable over repeated runs) |
-| Backend unit tests | **320 / 320 pass** |
+| Backend unit tests | **326 / 326 pass** |
 | Architecture gate (`arch:check`) | **pass** |
 | ESLint (changed + new files) | **0 errors** |
 | UI/UX (Playwright MCP against the real Chrome) | U1, U3, U4, U7, U8, U9, **U10 (full pay → confirmation)**, U11 verified; U5/U12–U19 partial |
@@ -83,10 +83,10 @@ Status: **Fixed** / **Partial** / **Open** / **N-A (guest scope)**.
 | R9 | No outbox | N-A / Open | Events publish best-effort over NATS (not exercised in the guest run). |
 | R10 | Search dependency (ES) | Verified up | ES healthy; hybrid search returns results. Degradation path not triggered. |
 | R11 | XSS (`v-html` highlight) | Open | `SearchResults.vue` uses `v-html` for match highlighting — needs escaping review. |
-| R12 | Security headers (helmet) | Open | No helmet/CSP. |
+| R12 | Security headers (helmet) | **Fixed** | Added `helmet` (nosniff, frameguard, HSTS, referrer policy, DNS-prefetch off). CSP intentionally left to the edge (JSON API + Swagger UI); CORP set to `cross-origin` so assets stay loadable. |
 | R13 | Body limits | Open | Global JSON limit 50 MB — tighten per route. |
 | R14 | CORS | **Verified** | Disallowed origin is not granted `Access-Control-Allow-Origin` (J7). Rejection surfaces as a 500 rather than 403 (minor). |
-| R15 | Startup config validation | Open | Missing env throws at request time. |
+| R15 | Startup config validation | **Fixed** | `config/validate-env.js` validates required env at boot — throws in production, warns otherwise (unit-tested). |
 | R16 | Graceful shutdown | Open | Worker handles it; server drain not verified. |
 | R17 | Perf / N+1 | Partial | `GET /health` ~20ms; list endpoints use paginated reads. No load test run. |
 | R18 | Audit coverage | Partial | Webhook event log + idempotency records exist; guest-critical ops audit not asserted. |
