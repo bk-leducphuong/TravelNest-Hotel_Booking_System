@@ -205,10 +205,10 @@ describe('F. Idempotency', () => {
 });
 
 describe('H. Favorites validation', () => {
-  test('H3 favoriting a nonexistent hotel does not 500', async () => {
-    const res = await api(guest).post('/user/favorite-hotels', { hotelId: 999999999 });
+  test('H3 favoriting a nonexistent hotel returns 404 (not 500)', async () => {
+    const res = await api(guest).post('/user/favorite-hotels', { hotelId: uuid() });
     no500(res);
-    expect([200, 201, 400, 404]).toContain(res.status);
+    expect(res.status).toBe(404);
   });
 
   test('H4 PATCH /user ignores mass-assignment fields', async () => {

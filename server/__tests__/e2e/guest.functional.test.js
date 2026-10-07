@@ -281,13 +281,19 @@ describe('H. Favorites / profile', () => {
     expect(res.status).toBe(200);
   });
 
-  // FINDING (contract): the favorites API declares hotelId as a *number*, but
-  // hotel ids are UUID strings — so a real hotel can never be favorited.
-  // `test.failing` passes while the behaviour is still broken and will flip to
-  // a hard failure once the API is fixed (signalling the test needs updating).
-  test.failing('H2 add favorite accepts the hotel UUID', async () => {
-    const res = await api(guest).post('/user/favorite-hotels', { hotelId: ctx.hotelId });
-    expect([200, 201]).toContain(res.status);
+  test('H2 add + check + remove a favorite hotel by UUID', async () => {
+    const c = api(guest);
+    const add = await c.post('/user/favorite-hotels', { hotelId: ctx.hotelId });
+    expect([200, 201, 409]).toContain(add.status);
+
+    const check = await c.get(`/user/favorite-hotels/${ctx.hotelId}`);
+    expect(check.status).toBe(200);
+
+    const list = await c.get('/user/favorite-hotels');
+    expect(list.status).toBe(200);
+
+    const remove = await c.delete(`/user/favorite-hotels/${ctx.hotelId}`);
+    expect([200, 204, 404]).toContain(remove.status);
   });
 });
 
@@ -313,10 +319,9 @@ describe('Z. Second principal sanity (for IDOR tests)', () => {
   });
 });
 
-describe('Y. Contract findings (currently broken — documented)', () => {
-  // Uses Jest's `test.failing`: green while the defect exists, red once fixed.
-  test.failing('Y1 payment lookup accepts a UUID bookingId', async () => {
+describe('Y. Contract regression guards', () => {
+  test('Y1 payment lookup accepts a UUID bookingId (not 400)', async () => {
     const res = await api(guest).get(`/payments/bookings/${uuid()}`);
-    expect(res.status).not.toBe(400);
+    expect([200, 404]).toContain(res.status);
   });
 });

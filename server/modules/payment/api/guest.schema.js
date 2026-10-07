@@ -8,17 +8,15 @@ const { pagination } = require('@platform/validation/common.schema');
  */
 
 // Common validations
-const bookingIdSchema = Joi.number().integer().positive().required().messages({
-  'number.base': 'bookingId must be a number',
-  'number.integer': 'bookingId must be an integer',
-  'number.positive': 'bookingId must be a positive number',
+const bookingIdSchema = Joi.string().uuid().required().messages({
+  'string.base': 'bookingId must be a string',
+  'string.guid': 'bookingId must be a valid UUID',
   'any.required': 'bookingId is required',
 });
 
-const transactionIdSchema = Joi.number().integer().positive().required().messages({
-  'number.base': 'transactionId must be a number',
-  'number.integer': 'transactionId must be an integer',
-  'number.positive': 'transactionId must be a positive number',
+const transactionIdSchema = Joi.string().uuid().required().messages({
+  'string.base': 'transactionId must be a string',
+  'string.guid': 'transactionId must be a valid UUID',
   'any.required': 'transactionId is required',
 });
 
@@ -47,10 +45,9 @@ const bookingDetailsSchema = Joi.object({
     'string.max': 'bookingCode must not exceed 100 characters',
     'any.required': 'bookingCode is required',
   }),
-  hotelId: Joi.number().integer().positive().required().messages({
-    'number.base': 'hotelId must be a number',
-    'number.integer': 'hotelId must be an integer',
-    'number.positive': 'hotelId must be a positive number',
+  hotelId: Joi.string().uuid().required().messages({
+    'string.base': 'hotelId must be a string',
+    'string.guid': 'hotelId must be a valid UUID',
     'any.required': 'hotelId is required',
   }),
   checkInDate: Joi.string().isoDate().required().messages({

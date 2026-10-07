@@ -88,9 +88,9 @@ exports.getFavoriteHotels = {
  */
 exports.addFavoriteHotel = {
   body: Joi.object({
-    hotelId: Joi.number().integer().positive().required().messages({
-      'number.base': 'hotelId must be a number',
-      'number.positive': 'hotelId must be a positive number',
+    hotelId: Joi.string().uuid().required().messages({
+      'string.base': 'hotelId must be a string',
+      'string.guid': 'hotelId must be a valid UUID',
       'any.required': 'hotelId is required',
     }),
   }).required(),
@@ -102,9 +102,9 @@ exports.addFavoriteHotel = {
  */
 exports.checkFavoriteHotel = {
   params: Joi.object({
-    hotelId: Joi.number().integer().positive().required().messages({
-      'number.base': 'hotelId must be a number',
-      'number.positive': 'hotelId must be a positive number',
+    hotelId: Joi.string().uuid().required().messages({
+      'string.base': 'hotelId must be a string',
+      'string.guid': 'hotelId must be a valid UUID',
       'any.required': 'hotelId is required',
     }),
   }).required(),
@@ -116,9 +116,9 @@ exports.checkFavoriteHotel = {
  */
 exports.removeFavoriteHotel = {
   params: Joi.object({
-    hotelId: Joi.number().integer().positive().required().messages({
-      'number.base': 'hotelId must be a number',
-      'number.positive': 'hotelId must be a positive number',
+    hotelId: Joi.string().uuid().required().messages({
+      'string.base': 'hotelId must be a string',
+      'string.guid': 'hotelId must be a valid UUID',
       'any.required': 'hotelId is required',
     }),
   }).required(),
