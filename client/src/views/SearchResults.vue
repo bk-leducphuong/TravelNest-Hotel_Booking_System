@@ -472,7 +472,11 @@
                   <i class="fa-solid fa-repeat"></i>
                   <span>{{ $t('searchResults.sortBy') }}</span>
                   <!-- Sorting Controls -->
-                  <select v-model="sortCriteria" @change="handleSort">
+                  <select
+                    v-model="sortCriteria"
+                    :aria-label="$t('searchResults.sortBy')"
+                    @change="handleSort"
+                  >
                     <option value="">{{ $t('searchResults.sortTop') }}</option>
                     <option value="priceLowToHigh">{{ $t('searchResults.sortPriceAsc') }}</option>
                     <option value="priceHighToLow">{{ $t('searchResults.sortPriceDesc') }}</option>

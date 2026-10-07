@@ -57,6 +57,7 @@
               type="text"
               v-model="guestDetails"
               class="search-input"
+              :aria-label="$t('userHeader.guestInputLabel')"
               @click="toggleGuestSelector"
               readonly
             />

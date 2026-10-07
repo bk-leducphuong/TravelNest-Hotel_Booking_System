@@ -47,6 +47,7 @@ Env (defaults in `server/__tests__/e2e/env.js`): `E2E_USERNAME=test@travelnest.c
 | 13 | S3 | Booking card titled with the city, raw date string | wrong field / `Date#toString` | hotel name + formatted dates |
 | 14 | S3 | Keycloak silent-SSO console error on every load | Vite injected dev scripts into `silent-check-sso.html`; they `postMessage` objects keycloak-js tries to parse | serve it from the configured static dir |
 | 15 | S2 | Webhook verification **skipped** when the secret is unset (fail-open) | no production guard | fail closed in production (`NODE_ENV=production`) |
+| 16 | S4 | Form controls without an accessible name | missing `aria-label` / label association (header guest selector, results sort, hotel room-quantity + review filters, bookings filter) | added `aria-label`s; audit now reports **0** unlabeled visible controls on home/search/hotel/bookings |
 
 Defects #1 and #2 broke **logged-in search** and the **entire payment step** —
 both introduced by the recent "move Stripe adapters into payment" refactor.
@@ -55,7 +56,6 @@ both introduced by the recent "move Stripe adapters into payment" refactor.
 
 | # | Sev | Area | Detail | Recommended fix |
 | --- | --- | --- | --- | --- |
-| D8 | S4 | a11y | 40 `input`/`select` elements without an `aria-label`, `placeholder` or `id` on the search page. | Associate labels with controls. |
 | D10 | S3 | Runtime deps | `analytics` and `notification` Go services run in Docker with **no published port** but the backend targets `localhost:8081`/`localhost:8083` → `/health` 503, trending 502, notifications 502. | Publish the ports / run them on the host, or point env at the compose DNS names. |
 
 > D10 was worked around for this run with a temporary compose override
@@ -63,8 +63,8 @@ both introduced by the recent "move Stripe adapters into payment" refactor.
 > repo's `docker-compose.yml` was left untouched.
 >
 > Fixed since the first draft: D1 (checkout), D2/D3 (UUID contracts),
-> D4 (search days), D5 (dates/nights), D6 (typo), D7 (silent-SSO), D9 (booking
-> card), D11 (branding) — see the fixed-defects table above.
+> D4 (search days), D5 (dates/nights), D6 (typo), D7 (silent-SSO), D8 (a11y),
+> D9 (booking card), D11 (branding) — see the fixed-defects table above.
 
 ## 5. Production-readiness matrix (R1–R18)
 

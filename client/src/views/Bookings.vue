@@ -155,7 +155,7 @@ export default {
     <div class="header-title">Bookings & Trips</div>
     <div class="header">
       <div class="header-left">
-        <select class="dropdown" id="trip-list" @change="arrangeBookings($event.target.value)">
+        <select class="dropdown" id="trip-list" aria-label="Filter trips" @change="arrangeBookings($event.target.value)">
           <option value="all">Tất cả</option>
           <option value="today">Hôm nay</option>
           <option value="last-week">1 tuần trước</option>

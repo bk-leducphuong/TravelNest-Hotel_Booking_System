@@ -681,6 +681,7 @@ export default {
               type="text"
               v-model="guestDetails"
               class="search-input"
+              :aria-label="$t('userHeader.guestInputLabel')"
               @click="toggleGuestSelector"
               readonly
             />
@@ -770,7 +771,7 @@ export default {
               </ul>
             </td>
             <td>
-              <select @change="handleRoomSelection($event, room)">
+              <select aria-label="Number of rooms" @change="handleRoomSelection($event, room)">
                 <option value="0" selected>0</option>
                 <option v-for="n in room.available_rooms" :key="n" :value="n">
                   {{ n }} (USD {{ parseInt(n * room.price_per_night).toLocaleString('en-US') }})
@@ -848,7 +849,7 @@ export default {
           <ul>
             <li>
               <p>Khách đánh giá</p>
-              <select name="" id="">
+              <select name="" id="" aria-label="Khách đánh giá">
                 <option value="">Tất cả({{ this.reviews.length }})</option>
                 <option value="">Gia đình(11)</option>
                 <option value="">Cặp đôi(2)</option>
@@ -858,7 +859,7 @@ export default {
             </li>
             <li>
               <p>Điểm đánh giá</p>
-              <select name="" id="">
+              <select name="" id="" aria-label="Điểm đánh giá">
                 <option value="">Tất cả({{ this.reviews.length }})</option>
                 <option value="">Tuyệt hảo: 9+ (19)</option>
                 <option value="">Tốt: 7-9 (2)</option>
@@ -868,7 +869,7 @@ export default {
             </li>
             <li>
               <p>Ngôn ngữ</p>
-              <select name="" id="">
+              <select name="" id="" aria-label="Ngôn ngữ">
                 <option value="">Tất cả ({{ this.reviews.length }})</option>
                 <option value="">Tiếng Việt (6)</option>
                 <option value="">Tiếng Anh (6)</option>
@@ -878,7 +879,7 @@ export default {
             </li>
             <li>
               <p>Thời gian trong năm</p>
-              <select name="" id="">
+              <select name="" id="" aria-label="Thời gian trong năm">
                 <option value="">Tất cả({{ this.reviews.length }})</option>
                 <option value="">Tháng 3-5</option>
                 <option value="">Tháng 6-8</option>
