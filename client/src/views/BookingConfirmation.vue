@@ -14,7 +14,28 @@ export default {
       bookingInformation: null
     }
   },
+  computed: {
+    nights() {
+      const ci = this.bookingInformation?.checkInDate;
+      const co = this.bookingInformation?.checkOutDate;
+      if (!ci || !co) return 1;
+      const a = new Date(`${String(ci).slice(0, 10)}T00:00:00`);
+      const b = new Date(`${String(co).slice(0, 10)}T00:00:00`);
+      const diff = Math.round((b - a) / 86400000);
+      return Number.isFinite(diff) && diff > 0 ? diff : 1;
+    },
+  },
   methods: {
+    // Format a `YYYY-MM-DD` (or ISO) date without a timezone shift — parsing
+    // `new Date('2026-10-26')` treats it as UTC midnight and can render the
+    // previous day in negative-offset zones.
+    formatDate(value) {
+      if (!value) return '';
+      const s = String(value).slice(0, 10);
+      const [y, m, d] = s.split('-');
+      if (!y || !m || !d) return s;
+      return `${d}/${m}/${y}`;
+    },
     async getBookingInformation() {
       const bookingCode = this.$route.query.bookingCode
       if (bookingCode) {
@@ -82,7 +103,7 @@ export default {
     <div class="" style="padding: 0px 20px">
       <div class="inner-wrap">
         <div class="inner-logo">
-          <strong @click="this.$router.push('/')" style="cursor: pointer">Booking.com</strong>
+          <strong @click="this.$router.push('/')" style="cursor: pointer">TravelNest</strong>
         </div>
         <div class="inner-login">
           <ul>
@@ -124,15 +145,15 @@ export default {
           <div class="detail-grid">
             <div class="detail-item">
               <div class="detail-label">Check-in</div>
-              <div class="detail-value">{{ new Date(bookingInformation.checkInDate).toLocaleDateString('vi-VN') }}</div>
+              <div class="detail-value">{{ formatDate(bookingInformation.checkInDate) }}</div>
             </div>
             <div class="detail-item">
               <div class="detail-label">Check-out</div>
-              <div class="detail-value">{{ new Date(bookingInformation.checkOutDate).toLocaleDateString('vi-VN') }}</div>
+              <div class="detail-value">{{ formatDate(bookingInformation.checkOutDate) }}</div>
             </div>
             <div class="detail-item">
               <div class="detail-label">Length of Stay</div>
-              <div class="detail-value">3 nights</div>
+              <div class="detail-value">{{ nights }} night{{ nights === 1 ? '' : 's' }}</div>
             </div>
             <div class="detail-item">
               <div class="detail-label">Guests</div>
@@ -145,7 +166,7 @@ export default {
           <h2 class="section-title">Price Summary</h2>
           <div class="price-summary">
             <div class="price-row">
-              <span>Room Rate (3 nights)</span>
+              <span>Room Rate ({{ nights }} night{{ nights === 1 ? '' : 's' }})</span>
               <span>USD {{ parseInt(bookingInformation.totalPrice).toLocaleString('en-US') }}</span>
             </div>
             <div class="price-row">

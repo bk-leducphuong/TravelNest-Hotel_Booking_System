@@ -77,6 +77,15 @@ export default {
 
       router.push({ name: 'BookingDetails', params: { bookingCode: bookingCode } })
     },
+    // Format a `YYYY-MM-DD` date without a timezone shift (avoids rendering
+    // the previous day for negative-offset zones).
+    formatDate(value) {
+      if (!value) return ''
+      const s = String(value).slice(0, 10)
+      const [y, m, d] = s.split('-')
+      if (!y || !m || !d) return s
+      return `${d}/${m}/${y}`
+    },
     arrangeBookings(criteria) {
       switch (criteria) {
         case 'all': {
@@ -166,9 +175,9 @@ export default {
     />
     <template v-else>
       <div class="booking-container" v-for="booking in arrangedBookings" :key="booking.booking_id">
-      <h3 style="margin-bottom: 5px; font-weight: 700">{{ booking.hotel.city }}</h3>
+      <h3 style="margin-bottom: 5px; font-weight: 700">{{ booking.hotel.name }}</h3>
       <p>
-        {{ new Date(booking.bookedOn).toDateString() }}
+        Booked on {{ formatDate(booking.bookedOn) }}
       </p>
       <div class="booking-content-container">
         <div class="section">
@@ -177,10 +186,10 @@ export default {
           </div>
           <div style="flex: 1; display: flex; justify-content: space-between">
             <div class="content">
-              <h2>{{ booking.hotel.name }}</h2>
+              <h2>{{ booking.hotel.city }}</h2>
               <p>
-                {{ new Date(booking.checkInDate).toString().split(' ').slice(0, 4).join(' ') }} -
-                {{ new Date(booking.checkOutDate).toString().split(' ').slice(0, 4).join(' ') }}
+                {{ formatDate(booking.checkInDate) }} -
+                {{ formatDate(booking.checkOutDate) }}
               </p>
               <p>Free cancellation</p>
               <p

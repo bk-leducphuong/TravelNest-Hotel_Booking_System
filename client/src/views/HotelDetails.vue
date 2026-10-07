@@ -105,6 +105,22 @@ export default {
       'updateRooms',
       'updateChildren'
     ]),
+    // Format a date as DD/MM/YYYY without a timezone shift. A bare
+    // `new Date('2026-10-26')` is parsed as UTC midnight and can render the
+    // previous day in negative-offset zones.
+    formatDate(value) {
+      if (!value) return ''
+      if (value instanceof Date) {
+        const y = value.getFullYear()
+        const m = String(value.getMonth() + 1).padStart(2, '0')
+        const d = String(value.getDate()).padStart(2, '0')
+        return `${d}/${m}/${y}`
+      }
+      const s = String(value).slice(0, 10)
+      const [y, m, d] = s.split('-')
+      if (!y || !m || !d) return s
+      return `${d}/${m}/${y}`
+    },
     calculateNumberOfDays(checkInDateString, checkOutDateString) {
       const checkInDate = new Date(checkInDateString)
       const checkOutDate = new Date(checkOutDateString)
@@ -425,16 +441,15 @@ export default {
       this.checkOutDate = this.getSearchData.checkOutDate
       this.selectedLocation = this.getSearchData.location
       if (this.getSearchData.checkInDate && this.getSearchData.checkOutDate) {
-        let checkInDate = new Date(this.getSearchData.checkInDate).toLocaleDateString('vi-VN')
-        let checkOutDate = new Date(this.getSearchData.checkOutDate).toLocaleDateString('vi-VN')
+        const startOfToday = new Date().setHours(0, 0, 0, 0)
+        let checkInDate = this.formatDate(this.getSearchData.checkInDate)
+        let checkOutDate = this.formatDate(this.getSearchData.checkOutDate)
 
-        if (new Date(this.getSearchData.checkInDate).getTime() < new Date().getTime()) {
-          checkInDate = new Date().toLocaleDateString('vi-VN')
+        if (new Date(this.getSearchData.checkInDate).getTime() < startOfToday) {
+          checkInDate = this.formatDate(new Date())
         }
-        if (new Date(this.getSearchData.checkOutDate).getTime() < new Date().getTime()) {
-          checkOutDate = new Date(new Date().getTime() + 1000 * 60 * 60 * 24).toLocaleDateString(
-            'vi-VN'
-          )
+        if (new Date(this.getSearchData.checkOutDate).getTime() < startOfToday) {
+          checkOutDate = this.formatDate(new Date(Date.now() + 1000 * 60 * 60 * 24))
         }
 
         this.dateRange =
