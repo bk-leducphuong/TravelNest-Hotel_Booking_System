@@ -73,7 +73,7 @@ Status: **Fixed** / **Partial** / **Open** / **N-A (guest scope)**.
 | # | Area | Status | Evidence / note |
 | --- | --- | --- | --- |
 | R1 | JWT key mgmt (static PEM, no JWKS) | Open | `jwt.util.js` reads `KEYCLOAK_PUBLIC_KEY_PEM`; no `kid`/JWKS. Rotation needs redeploy. Recommend JWKS + cache. |
-| R2 | Rate limiting | Partial | Per-IP, in-memory, 300/15m. Added **`RATE_LIMIT_ENABLED`** toggle (off in dev). Still per-IP and not shared across instances. |
+| R2 | Rate limiting | **Fixed** | Redis-backed store (shared across instances), keyed per authenticated user (IP fallback); strict auth tier (30/15m) and a tighter write tier for hold/bookings/payments (60/15m) on top of the global 300/15m. `RATE_LIMIT_ENABLED=false` disables it (dev/e2e); fails open on Redis errors. |
 | R3 | Log PII | **Fixed** | Request bodies are redacted (`utils/redact.js`) — passwords, tokens, card/payment fields and contact PII are masked before logging. Verified: a posted password/card no longer appears in `logs/`. |
 | R4 | Webhook auth | **Fixed** | Signature verified when `STRIPE_WEBHOOK_SECRET` set; now **fails closed in production** when unset (was fail-open). |
 | R5 | Hold oversell | **Verified** | Concurrency test E8: 6 parallel holds on one room → no 500, inventory stays usable. |
