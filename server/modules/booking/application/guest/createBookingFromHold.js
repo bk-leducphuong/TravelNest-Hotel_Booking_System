@@ -53,13 +53,44 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
     throw new ApiError(409, 'REQUEST_IN_PROGRESS', 'This idempotent request is still processing');
   }
 
-  const idempotencyRecord = await paymentModule().createIdempotencyRecord({
-    userId,
-    idempotencyKey,
-    requestHash,
-    status: 'processing',
-    expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS),
-  });
+  let idempotencyRecord;
+  try {
+    idempotencyRecord = await paymentModule().createIdempotencyRecord({
+      userId,
+      idempotencyKey,
+      requestHash,
+      status: 'processing',
+      expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS),
+    });
+  } catch (err) {
+    // Two identical requests can race between the lookup and the insert; the
+    // unique (user_id, idempotency_key) constraint resolves the winner. Re-read
+    // and replay/conflict exactly like the sequential path instead of 500ing.
+    if (err && err.name === 'SequelizeUniqueConstraintError') {
+      const raced = await paymentModule().findIdempotencyRecord(userId, idempotencyKey);
+      if (raced) {
+        if (raced.request_hash !== requestHash) {
+          throw new ApiError(
+            409,
+            'IDEMPOTENCY_KEY_REUSED',
+            'Idempotency-Key was already used with a different request'
+          );
+        }
+        if (raced.status === 'completed') {
+          return {
+            ...(raced.response_body || {}),
+            idempotentReplay: true,
+          };
+        }
+        throw new ApiError(
+          409,
+          'REQUEST_IN_PROGRESS',
+          'This idempotent request is still processing'
+        );
+      }
+    }
+    throw err;
+  }
 
   try {
     return await sequelize.transaction(async (transaction) => {

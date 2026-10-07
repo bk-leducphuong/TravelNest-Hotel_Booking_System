@@ -123,7 +123,17 @@ class UserService {
       throw new ApiError(409, 'HOTEL_ALREADY_FAVORITE', 'Hotel already in favorites');
     }
 
-    await userRepository.createSavedHotel(userId, hotelId);
+    try {
+      await userRepository.createSavedHotel(userId, hotelId);
+    } catch (err) {
+      // `saved_hotels.hotel_id` has an FK to `hotels`. A missing hotel (or a
+      // hotel deleted between the check and the insert) surfaces as a foreign
+      // key error — map it to a clean 404 instead of a 500.
+      if (err && err.name === 'SequelizeForeignKeyConstraintError') {
+        throw new ApiError(404, 'HOTEL_NOT_FOUND', 'Hotel not found');
+      }
+      throw err;
+    }
   }
 
   /**

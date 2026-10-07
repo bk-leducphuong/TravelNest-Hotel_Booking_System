@@ -14,7 +14,8 @@ const transactionRepository = require('./infrastructure/transaction.repository')
 const ledgerRepository = require('./infrastructure/ledger.repository');
 const idempotencyRepository = require('./infrastructure/idempotency.repository');
 const ledgerService = require('./application/ledger.service');
-const stripePaymentAdapter = require('./infrastructure/adapters/stripe-payment.adapter');
+const StripePaymentAdapter = require('./infrastructure/adapters/stripe-payment.adapter');
+const stripePaymentAdapter = new StripePaymentAdapter();
 
 // Register once per process (guarded).
 registerPaymentSubscribers();

@@ -1,5 +1,9 @@
 const rateLimit = require('express-rate-limit');
 
+// Global per-IP throttling can be turned off with RATE_LIMIT_ENABLED=false
+// (e.g. local development and end-to-end test runs). Enabled by default.
+const isEnabled = String(process.env.RATE_LIMIT_ENABLED ?? 'true').toLowerCase() !== 'false';
+
 const max = parseInt(process.env.RATE_LIMIT_MAX || '300', 10);
 
 const limiter = rateLimit({
@@ -22,4 +26,4 @@ const limiter = rateLimit({
   },
 });
 
-module.exports = limiter;
+module.exports = isEnabled ? limiter : (req, res, next) => next();
