@@ -397,11 +397,24 @@
         const name = (h) => (h.hotel_name || h.name || '').toLowerCase();
         this.filteredHotels = this.hotels.filter((hotel) => name(hotel).includes(query));
       },
+      escapeHtml(value) {
+        return String(value ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      },
       highlightMatch(name) {
-        const query = this.searchQuery.trim();
-        if (!query) return name;
-        const regex = new RegExp(`(${query})`, 'gi');
-        return name.replace(regex, '<mark style="background-color: #5dabff;">$1</mark>');
+        // Escape for HTML *and* regex: hotel names are data (host-controlled)
+        // and the search query is user input, so neither can be trusted inside
+        // v-html / `new RegExp`.
+        const escapedName = this.escapeHtml(name);
+        const query = (this.searchQuery || '').trim();
+        if (!query) return escapedName;
+        const escapedQuery = this.escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${escapedQuery})`, 'gi');
+        return escapedName.replace(regex, '<mark style="background-color: #5dabff;">$1</mark>');
       },
       serverHost() {
         return import.meta.env.VITE_SERVER_HOST;

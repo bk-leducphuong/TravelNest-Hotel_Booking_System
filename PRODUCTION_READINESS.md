@@ -82,7 +82,7 @@ Status: **Fixed** / **Partial** / **Open** / **N-A (guest scope)**.
 | R8 | External I/O in DB txn | Open | `createPaymentIntent` (hold path) calls Stripe inside a DB transaction. |
 | R9 | No outbox | N-A / Open | Events publish best-effort over NATS (not exercised in the guest run). |
 | R10 | Search dependency (ES) | Verified up | ES healthy; hybrid search returns results. Degradation path not triggered. |
-| R11 | XSS (`v-html` highlight) | Open | `SearchResults.vue` uses `v-html` for match highlighting — needs escaping review. |
+| R11 | XSS (`v-html` highlight) | **Fixed** | `highlightMatch` now HTML-escapes the hotel name and regex-escapes the query before building `<mark>`; previously a host-controlled name could inject script and a query containing `(` crashed the render. |
 | R12 | Security headers (helmet) | **Fixed** | Added `helmet` (nosniff, frameguard, HSTS, referrer policy, DNS-prefetch off). CSP intentionally left to the edge (JSON API + Swagger UI); CORP set to `cross-origin` so assets stay loadable. |
 | R13 | Body limits | Open | Global JSON limit 50 MB — tighten per route. |
 | R14 | CORS | **Verified** | Disallowed origin is not granted `Access-Control-Allow-Origin` (J7). Rejection surfaces as a 500 rather than 403 (minor). |
