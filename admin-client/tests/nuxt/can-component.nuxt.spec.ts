@@ -1,19 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mountSuspended, mockNuxtImport } from "@nuxt/test-utils/runtime";
+import { mountSuspended } from "@nuxt/test-utils/runtime";
 import type { VueWrapper } from "@vue/test-utils";
 
 const { useAuthStoreMock } = vi.hoisted(() => ({
   useAuthStoreMock: vi.fn(() => ({
+    globalRoles: ["admin"],
     permissions: ["review.read", "booking.read"],
+    activeHotel: null,
     isAuthenticated: false,
     sessionLoaded: true,
     ensureInitialized: vi.fn().mockResolvedValue(undefined),
     loadSession: vi.fn().mockResolvedValue(undefined),
+    login: vi.fn().mockResolvedValue(undefined),
     reset: vi.fn(),
   })),
 }));
 
-mockNuxtImport("useAuthStore", () => useAuthStoreMock);
+// `usePermissions` imports the store module directly, so mock the module itself;
+// `mockNuxtImport` only intercepts Nuxt auto-imports.
+vi.mock("~/stores/auth", () => ({ useAuthStore: useAuthStoreMock }));
 
 describe("Can component (Nuxt runtime)", () => {
   let Can: any;
