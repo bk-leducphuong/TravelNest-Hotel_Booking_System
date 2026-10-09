@@ -39,33 +39,35 @@
  *                     properties:
  *                       id: { type: string, format: uuid }
  *                       name: { type: string }
- *                       description: { type: string }
  *                       address: { type: string }
- *                       city: { type: string }
- *                       country: { type: string }
- *                       hotelClass: { type: integer, description: "Star rating 1-5" }
- *                       minPrice: { type: number, nullable: true }
- *                       images:
- *                         type: array
- *                         items:
- *                           type: object
- *                           properties:
- *                             id: { type: string }
- *                             url: { type: string }
- *                             isPrimary: { type: boolean }
- *                       ratingSummary:
+ *                       city:
  *                         type: object
  *                         nullable: true
  *                         properties:
- *                           overallRating: { type: number }
- *                           totalReviews: { type: integer }
- *                       viewedAt: { type: string, format: date-time }
+ *                           id: { type: string, format: uuid }
+ *                           name: { type: string }
+ *                           slug: { type: string }
+ *                       country:
+ *                         type: object
+ *                         nullable: true
+ *                         properties:
+ *                           id: { type: string, format: uuid }
+ *                           name: { type: string }
+ *                           isoCode: { type: string }
+ *                       latitude: { type: number, nullable: true }
+ *                       longitude: { type: number, nullable: true }
+ *                       hotelClass: { type: integer, nullable: true, description: "Star rating 1-5" }
+ *                       minPrice: { type: number, nullable: true }
+ *                       primaryImageUrl: { type: string, nullable: true }
  *       401:
  *         description: Unauthorized - authentication required
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: false }
+ *                 message: { type: string }
  */
 
 /**
@@ -108,27 +110,92 @@
  *                     properties:
  *                       id: { type: string, format: uuid }
  *                       name: { type: string }
- *                       description: { type: string }
  *                       address: { type: string }
- *                       city: { type: string }
- *                       country: { type: string }
- *                       hotelClass: { type: integer, description: "Star rating 1-5" }
- *                       minPrice: { type: number, nullable: true }
- *                       images:
- *                         type: array
- *                         items:
- *                           type: object
- *                           properties:
- *                             id: { type: string }
- *                             url: { type: string }
- *                             isPrimary: { type: boolean }
- *                       ratingSummary:
+ *                       city:
  *                         type: object
  *                         nullable: true
  *                         properties:
- *                           overallRating: { type: number }
- *                           totalReviews: { type: integer }
- *                       bookingCount: { type: integer, description: "Number of bookings in the period" }
+ *                           id: { type: string, format: uuid }
+ *                           name: { type: string }
+ *                           slug: { type: string }
+ *                       country:
+ *                         type: object
+ *                         nullable: true
+ *                         properties:
+ *                           id: { type: string, format: uuid }
+ *                           name: { type: string }
+ *                           isoCode: { type: string }
+ *                       latitude: { type: number, nullable: true }
+ *                       longitude: { type: number, nullable: true }
+ *                       hotelClass: { type: integer, nullable: true, description: "Star rating 1-5" }
+ *                       minPrice: { type: number, nullable: true }
+ *                       primaryImageUrl: { type: string, nullable: true }
+ *                       views: { type: integer, description: "Number of views in the period" }
+ */
+
+/**
+ * @swagger
+ * /hotels/batch:
+ *   post:
+ *     summary: Get enriched hotel cards for a list of hotel IDs
+ *     description: |
+ *       Returns lightweight "hotel card" objects for the requested hotel IDs, using the
+ *       same card shape as the trending and recently-viewed endpoints. This is a public
+ *       endpoint (no authentication). At most the first 50 IDs are used; when `ids` is
+ *       missing or empty, an empty array is returned.
+ *     tags:
+ *       - Hotels
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - ids
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 minItems: 1
+ *                 items:
+ *                   type: string
+ *                   format: uuid
+ *                 description: Hotel UUIDs to fetch (the first 50 are used).
+ *     responses:
+ *       200:
+ *         description: Hotel cards for the requested IDs, in the requested order
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string, format: uuid }
+ *                       name: { type: string }
+ *                       address: { type: string }
+ *                       city:
+ *                         type: object
+ *                         nullable: true
+ *                         properties:
+ *                           id: { type: string, format: uuid }
+ *                           name: { type: string }
+ *                           slug: { type: string }
+ *                       country:
+ *                         type: object
+ *                         nullable: true
+ *                         properties:
+ *                           id: { type: string, format: uuid }
+ *                           name: { type: string }
+ *                           isoCode: { type: string }
+ *                       latitude: { type: number, nullable: true }
+ *                       longitude: { type: number, nullable: true }
+ *                       hotelClass: { type: integer, nullable: true, description: "Star rating 1-5" }
+ *                       minPrice: { type: number, nullable: true }
+ *                       primaryImageUrl: { type: string, nullable: true }
  */
 
 /**
@@ -147,6 +214,10 @@
  *       - Nearby places (restaurants, attractions, etc.)
  *       - Hotel policies (cancellation, pets, etc.)
  *       - Available rooms with pricing (only when check-in/out dates are provided)
+ *
+ *       Authentication is optional (`optionalAuthenticate`). When a valid bearer token is
+ *       supplied the view is attributed to the user and recorded in their recently-viewed
+ *       list; without a token the endpoint behaves as a public read.
  *     tags:
  *       - Hotels
  *     parameters:
@@ -202,8 +273,22 @@
  *                         name: { type: string }
  *                         description: { type: string }
  *                         address: { type: string }
- *                         city: { type: string }
- *                         country: { type: string }
+ *                         city:
+ *                           type: object
+ *                           nullable: true
+ *                           properties:
+ *                             id: { type: string, format: uuid }
+ *                             name: { type: string }
+ *                             slug: { type: string }
+ *                             latitude: { type: number }
+ *                             longitude: { type: number }
+ *                         country:
+ *                           type: object
+ *                           nullable: true
+ *                           properties:
+ *                             id: { type: string, format: uuid }
+ *                             name: { type: string }
+ *                             isoCode: { type: string }
  *                         phoneNumber: { type: string }
  *                         latitude: { type: number }
  *                         longitude: { type: number }

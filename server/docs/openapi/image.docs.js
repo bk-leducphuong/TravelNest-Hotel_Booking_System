@@ -124,7 +124,7 @@
  *               example: "019c7c18-a27e-71f6-839e-5998c2dc8976"
  *             entityType:
  *               type: string
- *               enum: [hotel, room, review, user_avatar]
+ *               enum: [hotel, room, review, user_avatar, city, country]
  *               example: "hotel"
  *             entityId:
  *               type: string
@@ -235,7 +235,7 @@
  *         required: true
  *         schema:
  *           type: string
- *           enum: [hotel, room, review, user_avatar]
+ *           enum: [hotel, room, review, user_avatar, city, country]
  *         description: Type of entity to get images for
  *         example: hotel
  *       - in: path
@@ -292,13 +292,15 @@
  *       Background processing typically takes 2-5 seconds per image.
  *     tags:
  *       - Images
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: entityType
  *         required: true
  *         schema:
  *           type: string
- *           enum: [hotel, room, review, user_avatar]
+ *           enum: [hotel, room, review, user_avatar, city, country]
  *         description: Type of entity to upload image for
  *         example: hotel
  *       - in: path
@@ -342,20 +344,31 @@
  *         content:
  *           application/json:
  *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - authentication required
+ *         content:
+ *           application/json:
+ *             schema:
  *               type: object
  *               properties:
  *                 success:
  *                   type: boolean
  *                   example: false
- *                 error:
- *                   type: object
- *                   properties:
- *                     code:
- *                       type: string
- *                       example: "NO_FILE_PROVIDED"
- *                     message:
- *                       type: string
- *                       example: "No file provided"
+ *                 message:
+ *                   type: string
+ *       403:
+ *         description: You do not have permission to manage images for this entity
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
  *       500:
  *         description: Upload failed
  *         content:
@@ -385,13 +398,15 @@
  *       - User Avatar: Profile picture
  *     tags:
  *       - Images
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: entityType
  *         required: true
  *         schema:
  *           type: string
- *           enum: [hotel, room, review, user_avatar]
+ *           enum: [hotel, room, review, user_avatar, city, country]
  *         description: Type of entity
  *         example: hotel
  *       - in: path
@@ -422,22 +437,9 @@
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 error:
- *                   type: object
- *                   properties:
- *                     code:
- *                       type: string
- *                       example: "INVALID_IMAGE_STATUS"
- *                     message:
- *                       type: string
- *                       example: "Cannot set non-active image as primary"
- *       403:
- *         description: Image does not belong to the specified entity
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - authentication required
  *         content:
  *           application/json:
  *             schema:
@@ -446,15 +448,20 @@
  *                 success:
  *                   type: boolean
  *                   example: false
- *                 error:
- *                   type: object
- *                   properties:
- *                     code:
- *                       type: string
- *                       example: "IMAGE_NOT_BELONGS_TO_ENTITY"
- *                     message:
- *                       type: string
- *                       example: "Image does not belong to this entity"
+ *                 message:
+ *                   type: string
+ *       403:
+ *         description: You do not have permission to manage images for this entity
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
  *       404:
  *         description: Image not found
  *         content:
@@ -488,6 +495,8 @@
  *       - Variants are not deleted from storage but become inaccessible
  *     tags:
  *       - Images
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -509,22 +518,9 @@
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 error:
- *                   type: object
- *                   properties:
- *                     code:
- *                       type: string
- *                       example: "IMAGE_ALREADY_DELETED"
- *                     message:
- *                       type: string
- *                       example: "Image already deleted"
- *       404:
- *         description: Image not found
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - authentication required
  *         content:
  *           application/json:
  *             schema:
@@ -533,15 +529,26 @@
  *                 success:
  *                   type: boolean
  *                   example: false
- *                 error:
- *                   type: object
- *                   properties:
- *                     code:
- *                       type: string
- *                       example: "IMAGE_NOT_FOUND"
- *                     message:
- *                       type: string
- *                       example: "Image not found"
+ *                 message:
+ *                   type: string
+ *       403:
+ *         description: You do not have permission to manage images for this entity
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Image not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Failed to delete image
  *         content:

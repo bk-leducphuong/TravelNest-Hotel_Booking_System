@@ -15,7 +15,7 @@
  *       - Internal Superadmin
  *     security:
  *       - internalSuperadminToken: []
- *       - sessionAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: userIds
@@ -72,8 +72,16 @@
  *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Superadmin authentication required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
  *         description: Superadmin access required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 
 /**
@@ -86,7 +94,7 @@
  *       - Internal Superadmin
  *     security:
  *       - internalSuperadminToken: []
- *       - sessionAuth: []
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -134,8 +142,16 @@
  *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Superadmin authentication required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
  *         description: Superadmin access required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       503:
  *         description: NATS publish failed.
  *         content:
@@ -154,7 +170,7 @@
  *       - Internal Superadmin
  *     security:
  *       - internalSuperadminToken: []
- *       - sessionAuth: []
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -197,8 +213,16 @@
  *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Superadmin authentication required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
  *         description: Superadmin access required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       503:
  *         description: NATS publish failed for all targets.
  *         content:
@@ -552,7 +576,7 @@
  *       - Internal Superadmin
  *     security:
  *       - internalSuperadminToken: []
- *       - sessionAuth: []
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Available internal task names.
@@ -615,7 +639,7 @@
  *       - Internal Superadmin
  *     security:
  *       - internalSuperadminToken: []
- *       - sessionAuth: []
+ *       - bearerAuth: []
  *     requestBody:
  *       required: false
  *       content:
@@ -635,6 +659,18 @@
  *                   example: true
  *                 data:
  *                   $ref: '#/components/schemas/InternalTaskResult'
+ *       401:
+ *         description: Superadmin authentication required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Superadmin access required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       409:
  *         description: The init task is already running.
  *         content:
@@ -659,7 +695,7 @@
  *       - Internal Superadmin
  *     security:
  *       - internalSuperadminToken: []
- *       - sessionAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: seeder
@@ -697,6 +733,18 @@
  *                   example: true
  *                 data:
  *                   $ref: '#/components/schemas/InternalTaskResult'
+ *       401:
+ *         description: Superadmin authentication required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Superadmin access required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: Unknown seeder.
  *         content:
@@ -721,7 +769,7 @@
  *       - Internal Superadmin
  *     security:
  *       - internalSuperadminToken: []
- *       - sessionAuth: []
+ *       - bearerAuth: []
  *     requestBody:
  *       required: false
  *       content:
@@ -757,6 +805,18 @@
  *                   example: true
  *                 data:
  *                   $ref: '#/components/schemas/InternalTaskResult'
+ *       401:
+ *         description: Superadmin authentication required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Superadmin access required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       400:
  *         description: Invalid image seeder option.
  *         content:
@@ -787,7 +847,7 @@
  *       - Internal Superadmin
  *     security:
  *       - internalSuperadminToken: []
- *       - sessionAuth: []
+ *       - bearerAuth: []
  *     requestBody:
  *       required: false
  *       content:
@@ -823,6 +883,18 @@
  *                   example: true
  *                 data:
  *                   $ref: '#/components/schemas/InternalTaskResult'
+ *       401:
+ *         description: Superadmin authentication required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Superadmin access required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       400:
  *         description: Invalid city image seeder option.
  *         content:
@@ -853,7 +925,7 @@
  *       - Internal Superadmin
  *     security:
  *       - internalSuperadminToken: []
- *       - sessionAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: target
@@ -891,6 +963,18 @@
  *                   example: true
  *                 data:
  *                   $ref: '#/components/schemas/InternalTaskResult'
+ *       401:
+ *         description: Superadmin authentication required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Superadmin access required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: Unknown Elasticsearch setup target.
  *         content:
@@ -915,7 +999,7 @@
  *       - Internal Superadmin
  *     security:
  *       - internalSuperadminToken: []
- *       - sessionAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: target
@@ -954,6 +1038,18 @@
  *                   example: true
  *                 data:
  *                   $ref: '#/components/schemas/InternalTaskResult'
+ *       401:
+ *         description: Superadmin authentication required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Superadmin access required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: Unknown Elasticsearch seeder target.
  *         content:
@@ -978,7 +1074,7 @@
  *       - Internal Superadmin
  *     security:
  *       - internalSuperadminToken: []
- *       - sessionAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: target
@@ -1019,6 +1115,18 @@
  *                   example: true
  *                 data:
  *                   $ref: '#/components/schemas/InternalTaskResult'
+ *       401:
+ *         description: Superadmin authentication required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Superadmin access required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: Unknown MongoDB seeder target.
  *         content:

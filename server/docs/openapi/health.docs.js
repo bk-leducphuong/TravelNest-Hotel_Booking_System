@@ -10,7 +10,7 @@
  * /health:
  *   get:
  *     summary: Get comprehensive health status
- *     description: Returns detailed health status of all services including Node.js process, MySQL, Redis, and RabbitMQ
+ *     description: Returns detailed health status of all services including the Node.js process, MySQL, Redis, MinIO, Elasticsearch, and the analytics service
  *     tags: [Health]
  *     responses:
  *       200:

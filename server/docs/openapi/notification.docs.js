@@ -224,7 +224,13 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
  */
 
 /**
@@ -249,7 +255,13 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
  */
 
 /**
@@ -274,7 +286,13 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
  */
 
 /**
@@ -303,7 +321,7 @@
  *             schema:
  *               $ref: '#/components/schemas/NotificationMarkReadResponse'
  *       400:
- *         description: Validation error (invalid notificationId)
+ *         description: Validation error (invalid notificationId); the Error body includes a `fields` map
  *         content:
  *           application/json:
  *             schema:
@@ -313,7 +331,13 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
  *       404:
  *         description: Notification not found or does not belong to the user
  *         content:
