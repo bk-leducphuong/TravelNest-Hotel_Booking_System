@@ -51,6 +51,14 @@ client/.vscode/*
 
 server/infra/.env
 
+# Local infra runtime data (MinIO objects, Elasticsearch indices). Keep the
+# .gitkeep placeholders, ignore the generated contents.
+server/infra/minio-data/*
+!server/infra/minio-data/.gitkeep
+server/infra/minio-data-test/
+server/infra/elasticsearch/data/*
+!server/infra/elasticsearch/data/.gitkeep
+
 server/secrets/*
 
 # Services

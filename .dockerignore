@@ -25,3 +25,11 @@ wiki
 reports
 plan
 scrape_data
+# Local bind-mounted service data / generated infra state. `server/infra/`
+# holds MinIO objects (tens of GB), Elasticsearch/Logstash data, etc. It is
+# mounted at runtime only and must never be sent as build context.
+server/infra/minio-data
+server/infra/minio-data-test
+server/infra/elasticsearch
+server/infra/logstash
+server/infra/filebeat
