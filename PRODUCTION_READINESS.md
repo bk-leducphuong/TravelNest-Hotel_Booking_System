@@ -48,23 +48,23 @@ Env (defaults in `server/__tests__/e2e/env.js`): `E2E_USERNAME=test@travelnest.c
 | 14 | S3 | Keycloak silent-SSO console error on every load | Vite injected dev scripts into `silent-check-sso.html`; they `postMessage` objects keycloak-js tries to parse | serve it from the configured static dir |
 | 15 | S2 | Webhook verification **skipped** when the secret is unset (fail-open) | no production guard | fail closed in production (`NODE_ENV=production`) |
 | 16 | S4 | Form controls without an accessible name | missing `aria-label` / label association (header guest selector, results sort, hotel room-quantity + review filters, bookings filter) | added `aria-label`s; audit now reports **0** unlabeled visible controls on home/search/hotel/bookings |
+| 17 | S3 | `analytics` / `media` / `notification` unreachable from the host | Docker services had **no published ports**, but the backend defaults to `localhost:8081`/`8082`/`8083` | added `ports:` for all three in `server/infra/docker-compose.yml`; verified healthz 200 and backend `/health` healthy + trending/notifications 200 |
 
 Defects #1 and #2 broke **logged-in search** and the **entire payment step** —
 both introduced by the recent "move Stripe adapters into payment" refactor.
 
-## 4. Open defects (remaining)
+## 4. Open defects
 
-| # | Sev | Area | Detail | Recommended fix |
-| --- | --- | --- | --- | --- |
-| D10 | S3 | Runtime deps | `analytics` and `notification` Go services run in Docker with **no published port** but the backend targets `localhost:8081`/`localhost:8083` → `/health` 503, trending 502, notifications 502. | Publish the ports / run them on the host, or point env at the compose DNS names. |
+None — every defect surfaced by the guest-flow run has been fixed (see the table above).
 
-> D10 was worked around for this run with a temporary compose override
-> (`/tmp/opencode/analytics-port.override.yml`, publishing 8081 + 8083). The
-> repo's `docker-compose.yml` was left untouched.
+> **D10 (service ports) is fixed permanently**: `analytics` (8081), `media`
+> (8082) and `notification` (8083) now publish their ports in
+> `server/infra/docker-compose.yml`, so a host-run backend can reach them
+> (previously only a temporary compose override made them reachable).
 >
 > Fixed since the first draft: D1 (checkout), D2/D3 (UUID contracts),
 > D4 (search days), D5 (dates/nights), D6 (typo), D7 (silent-SSO), D8 (a11y),
-> D9 (booking card), D11 (branding) — see the fixed-defects table above.
+> D9 (booking card), D10 (service ports), D11 (branding).
 
 ## 5. Production-readiness matrix (R1–R18)
 
