@@ -378,3 +378,79 @@ explicitly covering the `support_agent` (masked) vs `admin` (unmasked) PII bound
    (R/S/T) — coordinate to avoid regressions.
 5. **Separate app vs section:** revisit after Phase 1 if plumbing maintenance outweighs the
    isolation benefit.
+
+---
+
+## 11. Deferred work / open issues (implementation backlog)
+
+Items intentionally left out of Phases 0–1, each with enough context to pick up later.
+
+### D1 — Roll the ownership guard into legacy admin routes (security)
+- **Context:** systemic cross-hotel IDOR (R-F1 / S-F1 / T-F1 in
+  `docs/plan/phase_1/README.md`). Admin routes scoped by entity id authorize against
+  `X-Hotel-Id` only and never verify the entity belongs to that hotel.
+- **Have:** `server/helpers/ownership.helper.js` (`assertEntityBelongsToHotel`,
+  `assertHotelScopedAccess`) — created and unit-tested, but **not yet used**.
+- **Do:** resolve the entity first, then call the guard, on the entity-detail routes in
+  `modules/catalog` (`/rooms/:roomId`), `modules/booking` (`/bookings/:bookingId`),
+  `modules/payment` (`/payments/transactions/:transactionId`), and the payout equivalents.
+- **Accept:** cross-hotel entity id returns 404; same-hotel still works; regression tests
+  added. Coordinate the blast radius before merging.
+
+### D2 — Record PII access in the audit trail (security)
+- **Context:** §7.3 requires logging reads of sensitive PII; not implemented.
+- **Do:** in the superadmin controller/service, when `platform.user.pii_read` is exercised
+  (or on any user-detail read), call `auditService.recordFromRequest` with
+  `action: 'platform.user.pii_read'`, `entityType: 'user'`, `entityId`, and the actor.
+- **Accept:** an audit row is written per PII read; best-effort (never breaks the read).
+
+### D3 — Integration test for the authz / PII boundary
+- **Context:** unit tests cover the service and controller wiring, but no DB-backed test.
+- **Do:** add under `server/__tests__/integration` (Testcontainers): `support_agent` can read
+  hotels/users but sees masked PII; `admin` sees unmasked; a non-platform user gets 403;
+  a request without a `platform.*` permission gets 403.
+- **Accept:** runs in CI when Docker is available.
+
+### D4 — Move overview aggregates to the analytics service
+- **Context:** `GET /superadmin/overview` currently runs `COUNT(*)` queries directly against
+  MySQL (`superadmin.repository.getPlatformOverview`).
+- **Do:** source platform KPIs (and later GMV/refund/payout) from the analytics service /
+  ClickHouse / summary tables; cache in Redis with a short TTL.
+- **Accept:** overview no longer issues per-status count queries on the primary DB.
+
+### D5 — Rate-limit the aggregate endpoints
+- **Context:** §7.5. `/superadmin/overview` is unbounded-ish and expensive.
+- **Do:** add a dedicated limiter for the superadmin router (or at least `/overview`) and
+  confirm all lists stay paginated (already default 20, max 100).
+- **Accept:** burst requests to `/overview` are throttled.
+
+### D6 — Keycloak client + DNS + k8s/Argo CD
+- **Context:** the app scaffold, Dockerfile, nginx and CI workflow exist; the runtime
+  provisioning does not.
+- **Do:** create the public Keycloak client `travelnest-superadmin` (PKCE S256) with redirect
+  URIs/web origins; add `deploy/k8s/` manifests + an Argo CD app; add a DNS entry
+  (`superadmin.deployserver.work`); set the `NUXT_PUBLIC_*` repo variables used by
+  `.github/workflows/superadmin-client.yml`.
+- **Accept:** the console is reachable in an environment and can complete a login.
+
+### D7 — Internal ops API hardening (separate from this feature)
+- **Context:** see §2 "Internal ops routes stay put".
+- **Do:** (a) delete the redundant commented `// requireInternalSuperadmin,` lines in
+  `platform/internal/api/internalSuperadmin.routes.js`; (b) require the configured **token**
+  (not an `admin` bearer session) for the destructive ops routes (`database/init`,
+  `*/seeders/*`, `elasticsearch/*`, `mongodb/*`).
+- **Accept:** an `admin` browser session can no longer trigger seeders / DB init.
+
+### D8 — Frontend typecheck / ESLint tooling
+- **Context:** `superadmin-client` mirrors `admin-client`, which does not declare
+  `typescript` as a devDependency — so `eslint`/`vue-tsc` fail locally and CI marks them
+  `continue-on-error`.
+- **Do:** add `typescript` to devDependencies, fix any resulting type errors, then remove the
+  `continue-on-error` flags in `.github/workflows/superadmin-client.yml`.
+- **Accept:** `typecheck` and `lint` pass in CI.
+
+### D9 — superadmin-client E2E coverage
+- **Context:** Playwright is configured but no specs exist.
+- **Do:** add `tests/e2e` specs for the login → `/403` (non-platform) and login → overview
+  (platform) flows, mirroring `admin-client/tests/e2e`.
+- **Accept:** E2E runs against a seeded environment.
