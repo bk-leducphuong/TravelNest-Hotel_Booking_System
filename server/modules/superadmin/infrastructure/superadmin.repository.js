@@ -8,6 +8,7 @@ const {
   reviews: Reviews,
   hotel_users: HotelUsers,
   user_roles: UserRoles,
+  roles: Roles,
   hotel_rating_summaries: HotelRatingSummaries,
 } = require('@platform/database');
 
@@ -149,6 +150,29 @@ function userListAttributes() {
   ];
 }
 
+/**
+ * User ids that hold a given global role.
+ *
+ * Done as a separate lookup rather than a nested `users -> user_roles -> roles`
+ * include: that single query produced `Unknown column 'roles.role_id'`, because
+ * the `roles` association alias collides with the `roles` table name.
+ */
+async function findUserIdsWithRole(roleName) {
+  const role = await Roles.findOne({ where: { name: roleName }, attributes: ['id'] });
+
+  if (!role) {
+    return [];
+  }
+
+  const rows = await UserRoles.findAll({
+    where: { role_id: role.id },
+    attributes: ['user_id'],
+    raw: true,
+  });
+
+  return rows.map((row) => row.user_id);
+}
+
 async function listUsers({ search, status, role, limit, offset } = {}) {
   const where = {};
 
@@ -163,24 +187,20 @@ async function listUsers({ search, status, role, limit, offset } = {}) {
     ];
   }
 
-  const include = [];
   if (role) {
-    include.push({
-      association: 'roles',
-      required: true,
-      attributes: ['id'],
-      include: [{ association: 'role', where: { name: role }, attributes: ['id', 'name'] }],
-    });
+    const userIds = await findUserIdsWithRole(role);
+    if (userIds.length === 0) {
+      return { rows: [], count: 0 };
+    }
+    where.id = { [Op.in]: userIds };
   }
 
   return await Users.findAndCountAll({
     where,
     attributes: userListAttributes(),
-    include,
     order: [['created_at', 'DESC']],
     limit,
     offset,
-    distinct: true,
   });
 }
 
