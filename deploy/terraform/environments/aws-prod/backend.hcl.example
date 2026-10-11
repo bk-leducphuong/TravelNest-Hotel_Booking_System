@@ -1,0 +1,10 @@
+# Copy to backend.hcl and fill in from `terraform output` of bootstrap/.
+#   cd deploy/terraform/environments/aws-prod
+#   terraform init -backend-config=backend.hcl
+#
+# backend.hcl is gitignored.
+
+bucket         = "travelnest-tfstate-<account-id>"
+region         = "ap-southeast-1"
+dynamodb_table = "travelnest-tfstate-lock"
+encrypt        = true

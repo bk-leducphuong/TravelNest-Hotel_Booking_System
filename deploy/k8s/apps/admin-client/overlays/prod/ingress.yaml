@@ -2,8 +2,14 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: admin-client
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - admin.deployserver.work
+      secretName: admin-client-tls
   rules:
     - host: admin.deployserver.work
       http:
