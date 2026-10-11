@@ -312,22 +312,30 @@ module.exports = router;
 ## 8. Phasing & task list
 
 ### Phase 0 — Foundations
-- [ ] Create `server/modules/superadmin/` skeleton (`api` / `application` / `infrastructure` / `index.js`)
-- [ ] Add `platform.*` permissions to `constants/permissions.js` + descriptions + role grants
-- [ ] Run permission seeder; verify grants for `admin` and `support_agent`
-- [ ] Mount `/api/v1/superadmin` in `server/routes/v1/index.js`
-- [ ] Shared **ownership guard** + apply to entity-detail reads
-- [ ] `application/pii.js` masking helper + audit-on-PII-access
-- [ ] `superadmin-client/` scaffold: workspace, Nuxt config, Keycloak client, auth/http/permissions, layout, middleware, CI, Docker/nginx/k8s, DNS
+- [x] Create `server/modules/superadmin/` skeleton (`api` / `application` / `infrastructure` / `index.js`)
+- [x] Add `platform.*` permissions to `constants/permissions.js` + descriptions + role grants
+- [x] Verify grants for `admin` and `support_agent` (unit test; run the seeder in a real env)
+- [x] Mount `/api/v1/superadmin` in `server/routes/v1/index.js`
+- [x] Shared **ownership guard** helper (`helpers/ownership.helper.js`)
+- [ ] Roll the ownership guard out to the legacy admin entity-detail routes (R-F1/S-F1/T-F1)
+- [x] `application/pii.js` masking helper
+- [ ] Record PII access in the audit trail
+- [x] `superadmin-client/` scaffold: workspace, Nuxt config, auth/http/permissions, layout, middleware, CI, Docker/nginx
+- [ ] Keycloak client + DNS + k8s/Argo CD manifests (provisioning)
 
 ### Phase 1 — Read-only monitoring
-- [ ] `GET /superadmin/overview` (aggregates via analytics service)
-- [ ] `GET /superadmin/hotels` + `GET /superadmin/hotels/:hotelId`
-- [ ] `GET /superadmin/users` + `GET /superadmin/users/:userId` (PII masked)
-- [ ] `GET /superadmin/audit`
-- [ ] Frontend pages for the above
-- [ ] Joi schemas + unit tests per service/repository
+- [x] `GET /superadmin/overview`
+- [x] `GET /superadmin/hotels` + `GET /superadmin/hotels/:hotelId`
+- [x] `GET /superadmin/users` + `GET /superadmin/users/:userId` (PII masked)
+- [x] `GET /superadmin/audit`
+- [x] Frontend pages for the above
+- [x] Joi schemas + unit tests per service (hotel/user admin, controller PII wiring)
 - [ ] Integration test: support_agent can read, cannot read PII unmasked; non-platform user gets 403
+
+> **Progress:** Phase 0 and Phase 1 implemented in the `feat/superadmin` worktree
+> (commit `c444d41` + Phase 1). Backend unit suite 374/374; superadmin-client unit tests
+> 12/12 and `nuxt build` green. Overview aggregates still read MySQL counts directly —
+> move to the analytics service when the finance KPIs land.
 
 ### Phase 2 — Finances (read-only)
 - [ ] `GET /superadmin/finance/{overview,payments,refunds,payouts,ledger}`

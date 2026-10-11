@@ -7,9 +7,11 @@ export interface SuperadminNavItem {
 /**
  * Sidebar navigation. Items are hidden when the user lacks the permission.
  *
- * Phase 1 adds Hotels / Users / Audit; Phase 2 adds Finance. Only implemented
- * pages are listed here so the sidebar never links to a missing route.
+ * Finance (Phase 2) will be added here when its pages land.
  */
 export const SUPERADMIN_NAV: SuperadminNavItem[] = [
   { label: "Overview", to: "/", permission: "platform.overview.read" },
+  { label: "Hotels", to: "/hotels", permission: "platform.hotel.read" },
+  { label: "Users", to: "/users", permission: "platform.user.read" },
+  { label: "Audit log", to: "/audit", permission: "platform.audit.read" },
 ];
