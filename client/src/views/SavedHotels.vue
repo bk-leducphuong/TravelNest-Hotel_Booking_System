@@ -81,6 +81,11 @@ export default {
       const slider = event.target
       this.sliderPosition = slider.scrollLeft
     },
+    // Render `hotel_class` (1-5) as filled stars.
+    starString(hotelClass) {
+      const count = Math.max(0, Math.min(5, parseInt(hotelClass, 10) || 0));
+      return '★'.repeat(count) || '—';
+    },
     getFirstImageUrl
   },
   async mounted() {
@@ -93,26 +98,6 @@ export default {
   <div class="header-container">
     <div class="header-title">
       Saved hotels <span class="info-label">( {{ hotels.length }} properties saved )</span>
-    </div>
-    <div class="header">
-      <div class="header-left">
-        <select class="dropdown" id="trip-list">
-          <option value="my-next-trip">My next trip</option>
-          <option value="summer-trip">Summer Trip</option>
-          <option value="weekend-getaway">Weekend Getaway</option>
-        </select>
-        <button class="btn primary-btn">Share the list</button>
-        <button class="btn secondary-btn">Create a list</button>
-      </div>
-      <div class="header-right">
-        <div class="info-group">
-          <input type="text" class="date-picker" value="1 Feb - 5 Feb" readonly />
-        </div>
-        <div class="info-group">
-          <input type="text" class="guest-picker" value="1 adult · 1 room" readonly />
-        </div>
-        <button class="btn map-btn">Show on map</button>
-      </div>
     </div>
   </div>
   <div class="slider-container">
@@ -129,10 +114,17 @@ export default {
         <div>
           <img
             :src="getFirstImageUrl(hotel.hotelInformation.image_urls)"
-            alt="BlackPink HomeStay"
+            :alt="hotel.hotelInformation.name"
             class="hotel-image"
           />
-          <button class="close-button" @click="deleteSavedHotel(hotel.hotel_id)"><i class="fa fa-times" aria-hidden="true"></i></button>
+          <button
+            class="close-button"
+            type="button"
+            :aria-label="`Remove ${hotel.hotelInformation.name} from saved hotels`"
+            @click="deleteSavedHotel(hotel.hotel_id)"
+          >
+            <i class="fa fa-times" aria-hidden="true"></i>
+          </button>
         </div>
         <div
           class="hotel-info"
@@ -140,15 +132,18 @@ export default {
         >
           <div>
             <h3 class="hotel-name">{{ hotel.hotelInformation.name }}</h3>
-            <div class="star-rating">★★★</div>
-            <div>
+            <div
+              class="star-rating"
+              :aria-label="`${hotel.hotelInformation.hotel_class || 0} star property`"
+            >
+              {{ starString(hotel.hotelInformation.hotel_class) }}
+            </div>
+            <div v-if="hotel.hotelInformation.overall_rating">
               <span class="rating">{{ hotel.hotelInformation.overall_rating }}</span>
-              <span class="review-text">Exceptional · 319 reviews</span>
             </div>
             <div class="location">
               <span><i class="fa fa-map-marker" aria-hidden="true"></i> {{ hotel.hotelInformation.address }}</span>
             </div>
-            <div class="distance">2.8 km from centre</div>
           </div>
         </div>
       </div>

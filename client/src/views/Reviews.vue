@@ -2,7 +2,7 @@
 import TheHeader from '../components/Header.vue'
 import SkeletonGrid from '@/components/common/SkeletonGrid.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
-import { mapGetters } from 'vuex'
+import { mapGetters, mapActions } from 'vuex'
 import { useToast } from 'vue-toastification'
 import errorHandler from '@/request/errorHandler'
 import { ReviewService } from '@/services/review.service'
@@ -59,6 +59,7 @@ export default {
     }
   },
   methods: {
+    ...mapActions('user', ['retrieveUserInformation']),
     async load() {
       this.isLoading = true
       try {
@@ -84,7 +85,10 @@ export default {
     getImageUrl
   },
   async mounted() {
-    await this.load()
+    await Promise.all([
+      this.load(),
+      this.retrieveUserInformation().catch(() => {})
+    ])
   }
 }
 </script>

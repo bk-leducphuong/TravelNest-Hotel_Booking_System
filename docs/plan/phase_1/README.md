@@ -8,23 +8,23 @@
 
 | ID | Feature | Tier | Status | S1 | S2 | S3 | S4 |
 |----|---------|------|--------|----|----|----|----|
-| [A](./A-public-discovery/) | Public Discovery & Content | 2 | 🟡 Partial | | | 6 | 2 |
-| [B](./B-search/) | Search | 2 | 🟡 Partial | | | 2 | 3 |
-| [C](./C-hotel-details-rooms/) | Hotel Details, Rooms & Policies | 2 | 🟡 Partial | | | 2 | 1 |
-| [D](./D-authentication-session/) | Authentication & Session | 0 | 🟡 Partial | | | 2 | 2 |
-| [E](./E-account-profile/) | Account & Profile | 0 | 🟡 Partial | | | 1 | 1 |
-| [F](./F-favorites-saved-hotels/) | Favorites / Saved Hotels | 2 | 🟡 Partial | | | 4 | 1 |
+| [A](./A-public-discovery/) | Public Discovery & Content | 2 | 🟡 Partial | | | 3 | 0 |
+| [B](./B-search/) | Search | 2 | 🟡 Partial | | | 1 | 0 |
+| [C](./C-hotel-details-rooms/) | Hotel Details, Rooms & Policies | 2 | 🟡 Partial | | | 1 | 0 |
+| [D](./D-authentication-session/) | Authentication & Session | 0 | 🟡 Partial | | | 1 | 2 |
+| [E](./E-account-profile/) | Account & Profile | 0 | 🟡 Partial | | | | 1 |
+| [F](./F-favorites-saved-hotels/) | Favorites / Saved Hotels | 2 | ✅ Ready | | | | |
 | [G](./G-holds/) | Holds | 1 | ✅ Ready | | | | |
-| [H](./H-bookings-guest/) | Bookings (Guest) | 1 | 🟡 Partial | | | 3 | 1 |
+| [H](./H-bookings-guest/) | Bookings (Guest) | 1 | 🟡 Partial | | | 1 | 0 |
 | [I](./I-payments-guest-webhook/) | Payments (Guest) & Stripe Webhook | 1 | ⏸ Blocked | | | | |
-| [J](./J-reviews-guest/) | Reviews (Guest) | 2 | 🟡 Partial | | | 2 | 0 |
-| [K](./K-notifications-realtime/) | Notifications & Realtime | 2 | 🟡 Partial | | | 2 | 2 |
+| [J](./J-reviews-guest/) | Reviews (Guest) | 2 | ✅ Ready | | | | |
+| [K](./K-notifications-realtime/) | Notifications & Realtime | 2 | 🟡 Partial | | | | 1 |
 | [L](./L-media-images/) | Media / Images | 4 | 🟡 Partial | | | | 2 |
 | [M](./M-onboarding-become-a-host/) | Onboarding / Become a Host | 4 | 🟡 Partial | | | | 1 |
 | [N](./N-analytics-guest/) | Analytics (Guest) | 4 | ✅ Ready | | | | |
-| [O](./O-admin-auth-session-rbac/) | Admin Auth, Session & RBAC | 0 | 🟡 Partial | | | | 2 |
+| [O](./O-admin-auth-session-rbac/) | Admin Auth, Session & RBAC | 0 | 🟡 Partial | | | | 1 |
 | [P](./P-admin-dashboard/) | Admin Dashboard | 3 | ✅ Ready | | | | |
-| [Q](./Q-admin-properties-catalog/) | Admin Properties / Catalog | 3 | 🟡 Partial | | | 1 | 0 |
+| [Q](./Q-admin-properties-catalog/) | Admin Properties / Catalog | 3 | ✅ Ready | | | | |
 | [R](./R-admin-inventory-availability/) | Admin Inventory / Availability | 1 | 🟡 Partial | | | | 1 |
 | [S](./S-admin-bookings/) | Admin Bookings | 1 | ✅ Ready | | | | |
 | [T](./T-admin-payments-refunds/) | Admin Payments & Refunds | 1 | ✅ Ready | | | | |

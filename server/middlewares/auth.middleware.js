@@ -29,7 +29,7 @@ async function authenticateRequest(req) {
   let verifiedToken;
 
   try {
-    verifiedToken = verifyJwt(token);
+    verifiedToken = await verifyJwt(token);
   } catch (error) {
     throw new ApiError(401, 'INVALID_TOKEN', error.message || 'Bearer token is invalid');
   }
@@ -167,9 +167,11 @@ function requirePermission(permissionName, options = {}) {
       }
 
       if (!hotelId) {
-        return res.status(400).json({
+        // Authenticated but with no hotel access — an authorization failure,
+        // not a malformed request.
+        return res.status(403).json({
           success: false,
-          message: 'Hotel context is required for this operation.',
+          message: 'You do not have access to this operation without a hotel context.',
         });
       }
 
@@ -267,9 +269,9 @@ function requireEntityInHotel(resolveHotelId) {
 
       const hotelContextId = req.hotelContext?.hotelId || resolveRequestedHotelId(req);
       if (!hotelContextId) {
-        return res.status(400).json({
+        return res.status(403).json({
           success: false,
-          message: 'Hotel context is required for this operation.',
+          message: 'You do not have access to this resource without a hotel context.',
         });
       }
 

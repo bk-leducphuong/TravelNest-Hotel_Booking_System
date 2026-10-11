@@ -6,6 +6,22 @@ function recentSearchKey(userId) {
 }
 
 /**
+ * Trim, strip markup/control characters and cap length before persisting
+ * user-supplied text (defense-in-depth; output is also escaped client-side).
+ */
+function sanitizeText(value, maxLength = 100) {
+  if (typeof value !== 'string') return null;
+
+  const cleaned = value
+    .replace(/[<>]/g, '')
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u001F\u007F]/g, '')
+    .trim();
+
+  return cleaned ? cleaned.slice(0, maxLength) : null;
+}
+
+/**
  * Store a compact representation of the user's recent search in Redis.
  */
 async function recordRecentSearch(
@@ -20,8 +36,8 @@ async function recordRecentSearch(
   const payload = {
     cityId: rawParams.cityId ?? null,
     countryId: rawParams.countryId ?? null,
-    city: rawParams.city || null,
-    country: rawParams.country || null,
+    city: sanitizeText(rawParams.city),
+    country: sanitizeText(rawParams.country),
     latitude: rawParams.latitude ?? null,
     longitude: rawParams.longitude ?? null,
     radius: rawParams.radius ?? null,

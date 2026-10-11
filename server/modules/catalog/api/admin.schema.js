@@ -1,6 +1,6 @@
 const Joi = require('joi');
 
-const { POLICY_TYPES } = require('@constants/hotels');
+const { POLICY_TYPES, IANA_TIMEZONES } = require('@constants/hotels');
 
 /**
  * Catalog module validation schemas (admin / host property management).
@@ -47,7 +47,11 @@ const updateHotel = {
     checkOutPolicy: Joi.string().allow('', null),
     minPrice: Joi.number().min(0),
     status: hotelStatus,
-    timezone: Joi.string().max(64),
+    timezone: Joi.string()
+      .valid(...IANA_TIMEZONES)
+      .messages({
+        'any.only': 'timezone must be a supported IANA timezone',
+      }),
   })
     .min(1)
     .required(),

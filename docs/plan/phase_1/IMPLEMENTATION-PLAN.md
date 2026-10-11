@@ -92,7 +92,40 @@ re-tested live against the running stack.
 **Verification:** `318/318` unit tests, `arch:check` clean, client **build** passes, lint clean;
 H/J/M/E flows exercised in the browser.
 
-### M4–M5 — pending
+### M4 — Contract/UX, a11y/i18n & data/config (WP4 + WP5 + WP6) — ✅ implemented (2026-10-11)
+
+**Closed (contract/error UX — WP4):**
+- Double-cancel now returns a single **409 `BOOKING_ALREADY_CANCELLED`** on both paths (H-F4).
+- Non-eligible review → **409 `REVIEW_NOT_ELIGIBLE`** (was 404) (J-F3).
+- Missing hotel context → **403** (was 400) (O-F2).
+- Search filter failures are **surfaced** (error alert) instead of a silent "0 hotels" (B-F8).
+- Inventory price-inheritance documented (R-F2).
+
+**Closed (UI/UX, a11y, i18n — WP5):**
+- `SavedHotelIcon` `hotelId` prop `Number → String` (A-F4/F-F5); aria-labels on favorite/remove
+  buttons + search/date inputs (A-F5/F-F4); hotel cards keyboard-operable.
+- Page `<title>` set; footer partner logos no longer broken `<img>` (A-F6/C-F7).
+- Hard-coded Vietnamese strings moved to locale files; card titles off `<h2>` (A-F7/A-F8).
+- Booking **status labels** localized (H-F3); reviews page loads the user name (J-F4).
+- Notifications: **real relative timestamp**, **read state persisted on click**, dead "See all"
+  removed (K-F1/K-F2/K-F3).
+- Saved hotels: **real card data** (stars from `hotel_class`, no fake reviews/distance), heart
+  reflects saved state, dead header controls removed (F-F1/F-F2/F-F3).
+
+**Closed (data/config — WP6):**
+- Timezone allowlist expanded (incl. `Asia/Ho_Chi_Minh`) + Joi validation → 400 not 500
+  (Q-F1/Q-F2); recent-search and profile text sanitised (B-F5/E-F2); **JWKS** key resolution with
+  static-PEM fallback (D-F5).
+
+**Verification:** 318/318 unit, 82/83 e2e (Stripe-webhook only), arch + lint clean, client build
+passes; key fixes re-checked in the browser.
+
+**Still open (deferred):** response-envelope unification (A-F1/C-F5/L-F2/M-F4/D-F6), the Keycloak
+`parseCallbackUrl` console error (A-F9/D-F2/B-F6), `/hotels/batch` input validation (A-F3), the
+unknown-field message (E-F3), placeholder booking-detail links (H-F5), raw ISO in notification
+messages (K-F4), invalid-entity-type ordering (L-F3), `generate eligible` 500 (U-F2).
+
+### M5 — Verify & closure — pending
 
 ---
 

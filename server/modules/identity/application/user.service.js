@@ -6,6 +6,23 @@ const ApiError = require('@utils/ApiError');
 const userRepository = require('../infrastructure/user.repository');
 
 /**
+ * Trim, strip markup/control characters and cap length on profile text.
+ * Output is also escaped client-side; this keeps stored values clean.
+ */
+function sanitizeProfileText(value, maxLength = 500) {
+  if (typeof value !== 'string') return value;
+
+  return (
+    value
+      .replace(/[<>]/g, '')
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\u0000-\u001F\u007F]/g, '')
+      .trim()
+      .slice(0, maxLength)
+  );
+}
+
+/**
  * User Service - Contains main business logic
  * Follows RESTful API standards
  */
@@ -56,7 +73,13 @@ class UserService {
       }
     }
 
-    await userRepository.updateById(userId, updateData);
+    // Sanitize free-text fields before persisting.
+    const sanitized = {};
+    for (const [field, value] of Object.entries(updateData)) {
+      sanitized[field] = typeof value === 'string' ? sanitizeProfileText(value) : value;
+    }
+
+    await userRepository.updateById(userId, sanitized);
   }
 
   /**

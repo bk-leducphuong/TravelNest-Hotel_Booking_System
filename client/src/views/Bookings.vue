@@ -77,6 +77,13 @@ export default {
 
       router.push({ name: 'BookingDetails', params: { bookingCode: bookingCode } })
     },
+    // Localized label for a booking status enum.
+    statusLabel(status) {
+      if (!status) return ''
+      const key = `bookingStatus.${status}`
+      const label = this.$t(key)
+      return label === key ? status.replace(/_/g, ' ') : label
+    },
     // Format a `YYYY-MM-DD` date without a timezone shift (avoids rendering
     // the previous day for negative-offset zones).
     formatDate(value) {
@@ -198,7 +205,7 @@ export default {
                   cancel: booking.status === 'cancelled'
                 }"
               >
-                {{ booking.status }}
+                {{ statusLabel(booking.status) }}
               </p>
             </div>
             <div class="content price-container">

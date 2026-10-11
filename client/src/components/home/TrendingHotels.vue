@@ -16,7 +16,11 @@
               class="hotel-card"
               v-for="(hotel, index) in group"
               :key="hotel.id || index"
+              role="button"
+              tabindex="0"
               @click="redirectToHotelDetails(hotel)"
+              @keydown.enter="redirectToHotelDetails(hotel)"
+              @keydown.space.prevent="redirectToHotelDetails(hotel)"
             >
               <div class="hotel-image">
                 <img
@@ -27,11 +31,13 @@
                 <SavedHotelIcon :hotel-id="hotel.id" />
               </div>
               <div class="hotel-content">
-                <h2 class="hotel-name">{{ hotel.name }}</h2>
+                <div class="hotel-name">{{ hotel.name }}</div>
                 <p class="hotel-location">{{ displayAddress(hotel.address) }}</p>
                 <div class="hotel-rating" v-if="hotel.ratingSummary">
                   <span class="rating-badge">{{ hotel.ratingSummary.overallRating }}</span>
-                  <span class="review-count">{{ hotel.ratingSummary.totalReviews }} đánh giá</span>
+                  <span class="review-count">{{
+                    $t('userHome.reviewCount', { count: hotel.ratingSummary.totalReviews })
+                  }}</span>
                 </div>
               </div>
             </div>

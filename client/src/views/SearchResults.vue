@@ -38,6 +38,7 @@
         searchQuery: '',
         filteredHotels: [],
         isLoading: false,
+        searchError: null,
         pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
         lastSavedSearchKey: '',
         filters: {
@@ -344,11 +345,17 @@
             total: pag.total ?? 0,
             totalPages: pag.totalPages ?? 0,
           };
+          this.searchError = null;
           this.noResultsFound = list.length === 0;
         } catch (error) {
           errorHandler(error);
+          // Surface the failure instead of showing a misleading "0 hotels".
+          this.searchError =
+            error?.response?.data?.error?.message ||
+            error?.response?.data?.message ||
+            'Could not load results. Please adjust your filters and try again.';
           this.hotels = [];
-          this.noResultsFound = true;
+          this.noResultsFound = false;
         }
       },
       // close the map popup
@@ -499,6 +506,15 @@
                   </button>
                 </div>
               </div>
+
+              <el-alert
+                v-if="searchError"
+                type="error"
+                :closable="false"
+                :title="searchError"
+                class="search-error"
+                show-icon
+              />
 
               <SkeletonGrid v-if="isLoading" :count="4" image-height="200px" />
 

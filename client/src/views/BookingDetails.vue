@@ -23,7 +23,14 @@ export default {
     }
   },
   methods: {
-    getFirstImageUrl
+    getFirstImageUrl,
+    // Localized label for a booking status enum.
+    statusLabel(status) {
+      if (!status) return ''
+      const key = `bookingStatus.${status}`
+      const label = this.$t(key)
+      return label === key ? status.replace(/_/g, ' ') : label
+    }
   }
 }
 </script>
@@ -63,7 +70,7 @@ export default {
 
   <div class="confirmation-container" v-if="getBookingInformation.status != 'confirmed'">
     <h1 class="greeting">Thank you for using our service!</h1>
-    <h2 class="confirmation-title">Your booking in {{ getBookingInformation.hotel.name }} is {{ getBookingInformation.status }}.</h2>
+    <h2 class="confirmation-title">Your booking in {{ getBookingInformation.hotel?.name }} is {{ statusLabel(getBookingInformation.status) }}.</h2>
   </div>
 
   <h1 class="section-title">Check Your Details</h1>
