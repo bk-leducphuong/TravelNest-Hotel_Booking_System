@@ -50,13 +50,20 @@ function silentCheckSsoRedirectUri(): string {
 }
 
 function absoluteRedirectUri(path?: string): string {
+  // Never carry a URL fragment into the OIDC redirect URI. On the auth callback
+  // the current URL contains `#state=…&code=…`; reusing it as the redirect
+  // target makes the fragment grow on every attempt (redirect loop).
+  const stripFragment = (value: string) => value.split("#")[0];
+
   if (!path) {
     return `${window.location.origin}/`;
   }
   if (/^https?:\/\//.test(path)) {
-    return path;
+    return stripFragment(path);
   }
-  return `${window.location.origin}${path.startsWith("/") ? path : `/${path}`}`;
+  return stripFragment(
+    `${window.location.origin}${path.startsWith("/") ? path : `/${path}`}`
+  );
 }
 
 export async function initializeKeycloak(): Promise<boolean> {
