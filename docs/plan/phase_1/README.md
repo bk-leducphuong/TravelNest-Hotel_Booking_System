@@ -30,7 +30,7 @@
 | [T](./T-admin-payments-refunds/) | Admin Payments & Refunds | 1 | ✅ Ready |  | 1 | 1 |  |
 | [U](./U-admin-payouts-stripe-connect/) | Admin Payouts & Stripe Connect | 1 | ✅ Ready |  | 1 | 1 |  |
 | [V](./V-admin-reviews-moderation/) | Admin Reviews & Moderation | 3 | ✅ Ready |  | 1 |  | 1 |
-| [W](./W-superadmin-platform/) | Superadmin Platform (console + API) | 0 | 🟡 Partial |  | 1 | 2 | 1 |
+| [W](./W-superadmin-platform/) | Superadmin Platform (console + API) | 0 | ✅ Ready |  | 1 | 2 | 1 |
 | [X](./X-search-infrastructure/) | Search Infrastructure | 5 | ⬜ |  |  |  |  |
 | [Y](./Y-microservices-eventing/) | Microservices & Eventing | 5 | ⬜ |  |  |  |  |
 | [Z](./Z-platform-infra-ops/) | Platform, Infra & Ops | 0 | ⬜ |  |  |  |  |
@@ -55,10 +55,10 @@
   `succeeded`). See [`I-payments-guest-webhook/`](./I-payments-guest-webhook/).
 - **Not yet reviewed:** **X** (Search Infrastructure), **Y** (Microservices & Eventing),
   **Z** (Platform, Infra & Ops).
-- **W — Superadmin Platform** (console + API, `feat/superadmin`) — **🟡 Partial**: reviewed
-  2026-10-11; 4 findings (1×S2 `?role=` 500, plus dead `owner` field, a console error, and an audit
-  casing inconsistency). The old “Internal Superadmin API” placeholder was dropped; this W replaces
-  it. See [`W-superadmin-platform/`](./W-superadmin-platform/).
+- **W — Superadmin Platform** (console + API, `feat/superadmin`) — **✅ Ready**: reviewed
+  2026-10-11; 4 findings found (1×S2 `?role=` 500, dead `owner` field, a console error, an audit
+  casing inconsistency) and **all fixed in M7**. The old “Internal Superadmin API” placeholder was
+  dropped; this W replaces it. See [`W-superadmin-platform/`](./W-superadmin-platform/).
 - **M4 regression (K-F5) fixed**: the JWKS change made `verifyJwt` async, breaking every
   authenticated WebSocket namespace until the socket middleware was given its missing `await`.
   Surfaced during the feature-I UI run.

@@ -89,10 +89,33 @@ const getUserHandler = asyncHandler(async (req, res) => {
   res.status(200).json({ data });
 });
 
+/**
+ * Camel-case serializer for audit rows — the rest of the superadmin module
+ * returns camelCase, so the audit view should too (previously raw snake_case).
+ */
+function serializeAuditEntry(row) {
+  const plain = typeof row.toJSON === 'function' ? row.toJSON() : row;
+  return {
+    id: plain.id,
+    actorUserId: plain.actor_user_id,
+    actorType: plain.actor_type,
+    action: plain.action,
+    entityType: plain.entity_type,
+    entityId: plain.entity_id,
+    hotelId: plain.hotel_id,
+    before: plain.before,
+    after: plain.after,
+    reason: plain.reason,
+    requestId: plain.request_id,
+    metadata: plain.metadata,
+    createdAt: plain.created_at,
+  };
+}
+
 const listAuditHandler = asyncHandler(async (req, res) => {
   const data = await auditService.list(req.query);
   res.status(200).json({
-    data: data.entries,
+    data: data.entries.map(serializeAuditEntry),
     meta: { page: data.page, limit: data.limit, total: data.total },
   });
 });

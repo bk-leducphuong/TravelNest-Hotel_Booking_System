@@ -188,18 +188,34 @@ card entry → **Pay** → `/book/complete` ("Your booking is confirmed!"); serv
 **Verification:** `329/329` unit (62 suites), **`84/84` e2e**, `arch:check` + `schema:check` clean,
 client lint + build pass; socket reconnect confirmed live (`[userSocket] connected`).
 
+### M7 — Superadmin Platform review fixes — ✅ done (2026-10-11)
+
+Executed [`SUPERADMIN_TEST_PLAN.md`](../../../SUPERADMIN_TEST_PLAN.md) against the new cross-tenant
+superadmin console (`server/modules/superadmin` + `superadmin-client`); reviewed as feature **W**
+(→ [`W-superadmin-platform/`](./W-superadmin-platform/)).
+
+**Closed:**
+- **W-F1 (S2)** — `GET /superadmin/users?role=<role>` returned 500 (`Unknown column 'roles.role_id'`);
+  the nested include alias collided with the `roles` table. Now resolves the role's user ids in a
+  separate `UserRoles` query.
+- **W-F2 (S3)** — hotel detail `owner` was hardcoded `null`; now looked up (and masked for support).
+- **W-F3 (S3)** — the console logged the Keycloak `parseCallbackUrl` error; ported the guest fix
+  (`guardNonStringMessages`) to the `superadmin-client` and `admin-client` keycloak services.
+- **W-F4 (S4)** — the audit endpoint returned snake_case; added a camelCase serializer (+ client).
+
+**Verification:** `390/390` server unit, superadmin-client 16/16, admin-client 38/38; prettier +
+`arch:check` + typecheck clean; superadmin + admin builds pass; browser console **0 errors**.
+
 ## Outcome
 
-**All findings recorded for A–V are resolved** (fixed in M1–M6, or by-design), and the per-feature
+**All findings recorded for A–W are resolved** (fixed in M1–M7, or by-design), and the per-feature
 `review.md`/`improvements.md` Status columns plus the [index](./README.md) now reflect that — every
 reviewed feature is **✅ Ready**. This includes the previously deferred response-envelope unification,
 the Keycloak console error, the S3/S4 polish set, feature **I**'s in-browser payment element
-(I-UI-01), and the two regressions surfaced during that run (**K-F5**, **C-F9**).
+(I-UI-01), the two regressions surfaced during that run (**K-F5**, **C-F9**), and the four Superadmin
+Platform findings (**W-F1..W-F4**).
 
 **Still open / not done:**
-- **W — Superadmin Platform** (console + API) — **reviewed 2026-10-11, 4 findings open**
-  (W-F1 S2 `users?role=` 500; W-F2 dead hotel-detail `owner`; W-F3 console Keycloak error; W-F4
-  audit casing). See [`W-superadmin-platform/`](./W-superadmin-platform/).
 - **X, Y, Z** (Search Infrastructure, Microservices & Eventing, Platform/Infra/Ops) — **not reviewed**.
 - **K-F4** (notification timestamp formatting) is fixed in source but needs a **notification
   container rebuild** to take effect in a running stack.

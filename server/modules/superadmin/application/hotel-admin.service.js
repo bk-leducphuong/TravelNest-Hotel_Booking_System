@@ -57,16 +57,17 @@ async function getHotel(hotelId, options = {}) {
     throw new ApiError(404, 'NOT_FOUND', 'Hotel not found.');
   }
 
-  const [members, counts, rating] = await Promise.all([
+  const [members, counts, rating, owners] = await Promise.all([
     repository.findHotelMembers(hotelId),
     repository.getHotelCounts(hotelId),
     repository.getHotelRating(hotelId),
+    repository.findPrimaryOwnersByHotelIds([hotelId]),
   ]);
 
   const plain = hotel.toJSON();
 
   return {
-    ...serializeHotel(hotel, null, options),
+    ...serializeHotel(hotel, owners.get(String(hotelId)) || null, options),
     description: plain.description,
     address: plain.address,
     phoneNumber: plain.phone_number,

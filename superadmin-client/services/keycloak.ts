@@ -66,15 +66,39 @@ function absoluteRedirectUri(path?: string): string {
   );
 }
 
+/**
+ * keycloak-js's silent-check listener treats every same-origin message as a URL
+ * and calls `new URL(event.data)`. Non-string messages (from browser extensions
+ * or devtools) make that throw `Failed to construct 'URL': Invalid URL`. Drop
+ * same-origin non-string messages while the silent check runs.
+ */
+function guardNonStringMessages(): () => void {
+  const handler = (event: MessageEvent) => {
+    if (
+      typeof event.data !== "string" &&
+      event.origin === window.location.origin
+    ) {
+      event.stopImmediatePropagation();
+    }
+  };
+
+  window.addEventListener("message", handler, true);
+  return () => window.removeEventListener("message", handler, true);
+}
+
 export async function initializeKeycloak(): Promise<boolean> {
   if (!initPromise) {
     const client = ensureClient();
-    initPromise = client.init({
-      onLoad: "check-sso",
-      pkceMethod: "S256",
-      checkLoginIframe: false,
-      silentCheckSsoRedirectUri: silentCheckSsoRedirectUri(),
-    });
+    const releaseMessageGuard = guardNonStringMessages();
+
+    initPromise = client
+      .init({
+        onLoad: "check-sso",
+        pkceMethod: "S256",
+        checkLoginIframe: false,
+        silentCheckSsoRedirectUri: silentCheckSsoRedirectUri(),
+      })
+      .finally(releaseMessageGuard);
   }
   return initPromise;
 }

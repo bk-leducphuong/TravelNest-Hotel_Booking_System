@@ -101,4 +101,50 @@ describe('superadmin controller - PII permission wiring', () => {
 
     expect(auditService.recordFromRequest).not.toHaveBeenCalled();
   });
+
+  it('serializes audit entries to camelCase (W-F4)', async () => {
+    auditService.list.mockResolvedValue({
+      entries: [
+        {
+          id: 'a1',
+          actor_user_id: 'u1',
+          actor_type: 'user',
+          action: 'platform.pii.read',
+          entity_type: 'user',
+          entity_id: 'u9',
+          hotel_id: null,
+          reason: null,
+          request_id: 'r1',
+          metadata: { scope: 'detail' },
+          created_at: '2024-01-01T00:00:00.000Z',
+        },
+      ],
+      page: 1,
+      limit: 50,
+      total: 1,
+    });
+    const req = requestWithPermissions(['platform.audit.read']);
+    const res = global.testUtils.mockResponse();
+
+    await controller.listAuditHandler(req, res, jest.fn());
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.data[0]).toEqual(
+      expect.objectContaining({
+        id: 'a1',
+        actorUserId: 'u1',
+        actorType: 'user',
+        action: 'platform.pii.read',
+        entityType: 'user',
+        entityId: 'u9',
+        hotelId: null,
+        reason: null,
+        requestId: 'r1',
+        metadata: { scope: 'detail' },
+        createdAt: '2024-01-01T00:00:00.000Z',
+      })
+    );
+    expect(body.data[0].actor_user_id).toBeUndefined();
+    expect(body.meta).toEqual({ page: 1, limit: 50, total: 1 });
+  });
 });

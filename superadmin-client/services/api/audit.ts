@@ -2,15 +2,16 @@ import { apiFetch } from "~/services/http";
 
 export interface AuditEntry {
   id: string;
-  actor_user_id: string | null;
-  actor_type: string;
+  actorUserId: string | null;
+  actorType: string;
   action: string;
-  entity_type: string;
-  entity_id: string | null;
-  hotel_id: string | null;
+  entityType: string | null;
+  entityId: string | null;
+  hotelId: string | null;
   reason: string | null;
-  request_id: string | null;
-  created_at: string;
+  requestId: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
 }
 
 export interface Paged<T> {

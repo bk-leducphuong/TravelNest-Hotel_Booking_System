@@ -162,21 +162,21 @@ async function listUsers({ search, status, role, limit, offset } = {}) {
       { last_name: { [Op.like]: `%${search}%` } },
     ];
   }
-
-  const include = [];
   if (role) {
-    include.push({
-      association: 'roles',
-      required: true,
-      attributes: ['id'],
-      include: [{ association: 'role', where: { name: role }, attributes: ['id', 'name'] }],
+    // Resolve the ids that hold this global role in a separate query. A nested
+    // `Users -> roles(user_roles) -> role(roles)` include aliases the outer
+    // user_roles as `roles`, which collides with the `roles` table and makes
+    // Sequelize generate `roles.role_id` ("Unknown column 'roles.role_id'").
+    const roleRows = await UserRoles.findAll({
+      attributes: ['user_id'],
+      include: [{ association: 'role', where: { name: role }, attributes: [], required: true }],
     });
+    where.id = { [Op.in]: roleRows.map((row) => row.user_id) };
   }
 
   return await Users.findAndCountAll({
     where,
     attributes: userListAttributes(),
-    include,
     order: [['created_at', 'DESC']],
     limit,
     offset,
