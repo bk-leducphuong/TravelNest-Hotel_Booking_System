@@ -125,7 +125,25 @@ passes; key fixes re-checked in the browser.
 unknown-field message (E-F3), placeholder booking-detail links (H-F5), raw ISO in notification
 messages (K-F4), invalid-entity-type ordering (L-F3), `generate eligible` 500 (U-F2).
 
-### M5 — Verify & closure — pending
+### M5 — Verify & closure — ✅ done (2026-10-11)
+
+- **Admin UI coverage gap filled** — features **O–V** were driven in the admin client
+  (Playwright, signed in as `owner@travelnest.local`); see
+  [`ADMIN-UI-VERIFICATION.md`](./ADMIN-UI-VERIFICATION.md). All pages render correctly.
+- **Regression tests added** — `requireEntityInHotel` guard (5 cases) and the
+  `validate.middleware` custom-message / `_form` behaviour (3 cases). The date-specific price
+  filter already had coverage (`search/domain/filters.test.js`).
+- **Suites re-run:** `326/326` unit (61 suites), `82/83` e2e (only the Stripe-webhook test),
+  `arch:check` + `schema:check` clean, client build passes.
+- **Feature I (Payments guest + Stripe webhook)** remains **⏸ Blocked** (Stripe CLI unavailable);
+  the guest e2e payment/webhook test is the single failing e2e.
+
+## Outcome
+
+All of **M1–M5** are implemented. The index shows **F, G, J, N, P, Q, S, T = ✅ Ready**; the
+remaining features are 🟡 Partial, carrying only **deferred/non-blocking** items (response-envelope
+unification, the Keycloak `parseCallbackUrl` console error, and a handful of S3/S4 polish items
+listed above).
 
 ---
 
