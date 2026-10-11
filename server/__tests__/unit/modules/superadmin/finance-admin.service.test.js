@@ -5,6 +5,10 @@ jest.mock('@modules/superadmin/infrastructure/finance.repository', () => ({
   listPayouts: jest.fn(),
   listLedgerEntries: jest.fn(),
 }));
+jest.mock('@modules/superadmin/infrastructure/cache', () => ({
+  get: jest.fn(),
+  set: jest.fn(),
+}));
 
 const repository = require('@modules/superadmin/infrastructure/finance.repository');
 const finance = require('@modules/superadmin/application/finance-admin.service');
@@ -57,7 +61,12 @@ function ledgerRow() {
       event_type: 'payment_succeeded',
       description: 'Payment captured',
       posted_at: '2024-01-01T00:00:00.000Z',
-      ledger_account: { id: 'a1', name: 'Platform Cash', account_type: 'platform_cash', currency: 'USD' },
+      ledger_account: {
+        id: 'a1',
+        name: 'Platform Cash',
+        account_type: 'platform_cash',
+        currency: 'USD',
+      },
       hotel: { id: 'h1', name: 'Grand Hotel' },
       booking_id: 'b1',
       transaction_id: 't1',

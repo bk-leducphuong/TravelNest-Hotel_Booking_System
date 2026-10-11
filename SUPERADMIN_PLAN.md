@@ -416,7 +416,7 @@ Items intentionally left out of Phases 0–1, each with enough context to pick u
   a request without a `platform.*` permission gets 403.
 - **Accept:** runs in CI when Docker is available.
 
-### D4 — Move overview aggregates to the analytics service
+### D4 — Move overview aggregates to the analytics service — 🟡 Redis cache added; analytics migration pending
 - **Context:** `GET /superadmin/overview` currently runs `COUNT(*)` queries directly against
   MySQL (`superadmin.repository.getPlatformOverview`).
 - **Do:** source platform KPIs (and later GMV/refund/payout) from the analytics service /
@@ -454,7 +454,7 @@ Items intentionally left out of Phases 0–1, each with enough context to pick u
   `continue-on-error` flags in `.github/workflows/superadmin-client.yml`.
 - **Accept:** `typecheck` and `lint` pass in CI.
 
-### D9 — superadmin-client E2E coverage
+### D9 — superadmin-client E2E coverage — 🟡 specs added; not run against a live env
 - **Context:** Playwright is configured but no specs exist.
 - **Do:** add `tests/e2e` specs for the login → `/403` (non-platform) and login → overview
   (platform) flows, mirroring `admin-client/tests/e2e`.

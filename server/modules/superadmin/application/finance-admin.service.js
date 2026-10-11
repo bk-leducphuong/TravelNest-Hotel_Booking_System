@@ -1,4 +1,5 @@
 const repository = require('../infrastructure/finance.repository');
+const cache = require('../infrastructure/cache');
 const { maskUser } = require('./pii');
 
 /**
@@ -109,9 +110,21 @@ function serializeLedgerEntry(row) {
   };
 }
 
+const FINANCE_OVERVIEW_CACHE_KEY = 'superadmin:finance:overview';
+const FINANCE_OVERVIEW_TTL_SECONDS = 60;
+
 async function getFinanceOverview() {
+  const cached = await cache.get(FINANCE_OVERVIEW_CACHE_KEY);
+  if (cached) {
+    return cached;
+  }
+
   const overview = await repository.getFinanceOverview();
-  return { ...overview, generatedAt: new Date().toISOString() };
+  const result = { ...overview, generatedAt: new Date().toISOString() };
+
+  await cache.set(FINANCE_OVERVIEW_CACHE_KEY, result, FINANCE_OVERVIEW_TTL_SECONDS);
+
+  return result;
 }
 
 async function listPayments(filters = {}, options = {}) {

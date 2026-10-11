@@ -86,7 +86,13 @@ describe('hotel-admin.service', () => {
           is_primary_owner: true,
           created_at: '2024-01-01T00:00:00.000Z',
           role: { name: 'owner' },
-          user: { id: 'u1', email: 'owner@example.com', first_name: 'Owner', last_name: 'One', status: 'active' },
+          user: {
+            id: 'u1',
+            email: 'owner@example.com',
+            first_name: 'Owner',
+            last_name: 'One',
+            status: 'active',
+          },
         },
       ]);
       repository.getHotelCounts.mockResolvedValue({ rooms: 10, bookings: 42, reviews: 7 });
