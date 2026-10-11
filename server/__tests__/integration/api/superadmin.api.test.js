@@ -103,10 +103,9 @@ describe('Superadmin API integration', () => {
       .set('Authorization', 'Bearer valid.token');
 
     expect(res.status).toBe(200);
-    expect(listUsers).toHaveBeenCalledWith(
-      expect.objectContaining({ page: 1, limit: 20 }),
-      { unmaskPii: false }
-    );
+    expect(listUsers).toHaveBeenCalledWith(expect.objectContaining({ page: 1, limit: 20 }), {
+      unmaskPii: false,
+    });
     expect(auditService.recordFromRequest).not.toHaveBeenCalled();
   });
 
@@ -122,10 +121,9 @@ describe('Superadmin API integration', () => {
       .set('Authorization', 'Bearer valid.token');
 
     expect(res.status).toBe(200);
-    expect(listUsers).toHaveBeenCalledWith(
-      expect.objectContaining({ page: 1, limit: 20 }),
-      { unmaskPii: true }
-    );
+    expect(listUsers).toHaveBeenCalledWith(expect.objectContaining({ page: 1, limit: 20 }), {
+      unmaskPii: true,
+    });
     expect(auditService.recordFromRequest).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ action: 'platform.pii.read', entityType: 'user' })

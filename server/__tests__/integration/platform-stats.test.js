@@ -22,7 +22,11 @@ async function sumByCurrency(Model, where) {
   });
 
   return rows
-    .map((row) => ({ currency: row.currency, count: Number(row.count), amount: Number(row.amount) }))
+    .map((row) => ({
+      currency: row.currency,
+      count: Number(row.count),
+      amount: Number(row.amount),
+    }))
     .sort((a, b) => a.currency.localeCompare(b.currency));
 }
 
