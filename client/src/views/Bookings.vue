@@ -1,8 +1,8 @@
 <script>
 import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
-import Loading from 'vue-loading-overlay'
-import 'vue-loading-overlay/dist/css/index.css'
+import SkeletonGrid from '@/components/common/SkeletonGrid.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { mapActions } from 'vuex'
 import router from '@/router/index.js'
 import { getFirstImageUrl } from '@/utils/images'
@@ -11,8 +11,9 @@ import { BookingService } from '@/services/booking.service'
 export default {
   components: {
     Header,
-    Loading,
-    Footer
+    Footer,
+    SkeletonGrid,
+    EmptyState
   },
   data() {
     return {
@@ -76,9 +77,25 @@ export default {
 
       router.push({ name: 'BookingDetails', params: { bookingCode: bookingCode } })
     },
+    // Localized label for a booking status enum.
+    statusLabel(status) {
+      if (!status) return ''
+      const key = `bookingStatus.${status}`
+      const label = this.$t(key)
+      return label === key ? status.replace(/_/g, ' ') : label
+    },
+    // Format a `YYYY-MM-DD` date without a timezone shift (avoids rendering
+    // the previous day for negative-offset zones).
+    formatDate(value) {
+      if (!value) return ''
+      const s = String(value).slice(0, 10)
+      const [y, m, d] = s.split('-')
+      if (!y || !m || !d) return s
+      return `${d}/${m}/${y}`
+    },
     arrangeBookings(criteria) {
       switch (criteria) {
-        case 'all':
+        case 'all': {
           this.arrangedBookings = this.bookings
           // Ngày hiện tại
           const today = new Date()
@@ -96,6 +113,7 @@ export default {
           })
 
           break
+        }
         case 'today':
           this.arrangedBookings = this.bookings
           this.arrangedBookings = this.arrangedBookings.filter(
@@ -144,7 +162,7 @@ export default {
     <div class="header-title">Bookings & Trips</div>
     <div class="header">
       <div class="header-left">
-        <select class="dropdown" id="trip-list" @change="arrangeBookings($event.target.value)">
+        <select class="dropdown" id="trip-list" aria-label="Filter trips" @change="arrangeBookings($event.target.value)">
           <option value="all">Tất cả</option>
           <option value="today">Hôm nay</option>
           <option value="last-week">1 tuần trước</option>
@@ -155,15 +173,18 @@ export default {
     </div>
   </div>
   <div class="account-settings">
-    <Loading v-model:active="isLoading" :color="`#003b95`" :is-full-page="false" />
-    <br />
-    <div v-if="bookings.length == 0" class="no-bookings-found">
-      <div>Bạn chưa có đặt phòng nào</div>
-    </div>
-    <div class="booking-container" v-for="booking in arrangedBookings" :key="booking.booking_id">
-      <h3 style="margin-bottom: 5px; font-weight: 700">{{ booking.hotel.city }}</h3>
+    <SkeletonGrid v-if="isLoading" :count="3" image-height="110px" />
+    <EmptyState
+      v-else-if="bookings.length === 0"
+      title="No bookings yet"
+      message="When you book a stay, it will appear here."
+      icon="fa-solid fa-suitcase-rolling"
+    />
+    <template v-else>
+      <div class="booking-container" v-for="booking in arrangedBookings" :key="booking.booking_id">
+      <h3 style="margin-bottom: 5px; font-weight: 700">{{ booking.hotel.name }}</h3>
       <p>
-        {{ new Date(booking.bookedOn).toDateString() }}
+        Booked on {{ formatDate(booking.bookedOn) }}
       </p>
       <div class="booking-content-container">
         <div class="section">
@@ -172,10 +193,10 @@ export default {
           </div>
           <div style="flex: 1; display: flex; justify-content: space-between">
             <div class="content">
-              <h2>{{ booking.hotel.name }}</h2>
+              <h2>{{ booking.hotel.city }}</h2>
               <p>
-                {{ new Date(booking.checkInDate).toString().split(' ').slice(0, 4).join(' ') }} -
-                {{ new Date(booking.checkOutDate).toString().split(' ').slice(0, 4).join(' ') }}
+                {{ formatDate(booking.checkInDate) }} -
+                {{ formatDate(booking.checkOutDate) }}
               </p>
               <p>Free cancellation</p>
               <p
@@ -184,7 +205,7 @@ export default {
                   cancel: booking.status === 'cancelled'
                 }"
               >
-                {{ booking.status }}
+                {{ statusLabel(booking.status) }}
               </p>
             </div>
             <div class="content price-container">
@@ -199,6 +220,7 @@ export default {
         </div>
       </div>
     </div>
+    </template>
   </div>
   <Footer />
 </template>
@@ -391,5 +413,41 @@ button {
 
 .cancel {
   color: #ff2c2c !important;
+}
+
+@media (max-width: 768px) {
+  .header-container {
+    padding: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .header-left,
+  .header-right {
+    flex-wrap: wrap;
+  }
+
+  .account-settings {
+    padding: 16px;
+  }
+
+  .section {
+    flex-direction: column;
+  }
+
+  .hotel-image-container {
+    width: 100%;
+    height: 180px;
+    margin: 0 0 12px 0;
+  }
+
+  .price-container {
+    flex-direction: row !important;
+    justify-content: space-between;
+  }
 }
 </style>

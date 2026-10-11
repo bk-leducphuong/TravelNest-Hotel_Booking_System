@@ -1,5 +1,11 @@
 const identityService = require('./application/identity.service');
 const userService = require('./application/user.service');
+const {
+  extractUserRoles,
+  extractUserPermissions,
+  extractHotelRoles,
+  hasHotelRole,
+} = require('./application/user.helpers');
 const userRepository = require('./infrastructure/user.repository');
 const keycloakUserInfoService = require('./infrastructure/keycloak-userinfo.client');
 const authRoutes = require('./api/auth.routes');
@@ -22,6 +28,11 @@ async function getFavoriteHotelIds(userId, hotelIds) {
   return await userRepository.findFavoriteHotelIds(userId, hotelIds);
 }
 
+/** Link a user to a hotel as its (primary) owner (used by partner onboarding). */
+async function assignHotelOwner(userId, hotelId, options = {}) {
+  return await identityService.assignHotelOwner(userId, hotelId, options);
+}
+
 module.exports = {
   // HTTP edge (mounted by routes/v1/index.js).
   authRoutes,
@@ -37,4 +48,13 @@ module.exports = {
 
   // Keycloak userinfo client (used by the auth middleware).
   keycloak: keycloakUserInfoService,
+
+  // User role/permission extraction (used by the realtime socket auth).
+  extractUserRoles,
+  extractUserPermissions,
+  extractHotelRoles,
+  hasHotelRole,
+
+  // Hotel ownership (used by partner onboarding).
+  assignHotelOwner,
 };

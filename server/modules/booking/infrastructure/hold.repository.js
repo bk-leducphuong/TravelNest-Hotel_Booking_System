@@ -1,4 +1,4 @@
-const { Holds, HoldRooms } = require('@models/index.js');
+const { Holds, HoldRooms } = require('@platform/database');
 const { Op } = require('sequelize');
 const logger = require('@config/logger.config');
 

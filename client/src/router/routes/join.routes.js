@@ -11,6 +11,9 @@ export default [
   {
     path: '/join/become-a-host',
     name: 'JoinForm',
-    component: JoinForm
+    component: JoinForm,
+    // The partner-onboarding API requires authentication, so send anonymous
+    // visitors through login first (they return here afterwards).
+    meta: { requiresAuth: true }
   }
 ]

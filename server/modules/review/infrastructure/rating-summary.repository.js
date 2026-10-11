@@ -1,4 +1,4 @@
-const { hotel_rating_summaries: HotelRatingSummaries } = require('@models/index.js');
+const { hotel_rating_summaries: HotelRatingSummaries } = require('@platform/database');
 
 /**
  * Rating summary repository - the projection table owned by the review module.

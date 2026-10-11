@@ -20,7 +20,11 @@ async function getHotelPaymentSummary(hotelId) {
     }
   }
 
-  const refundedAmount = await refundRepository.sumSucceededForHotel(hotelId);
+  // Refunds come from the refunds table (source of truth); add transactions
+  // marked `refunded` that have no refund record so they still reduce net.
+  const succeededRefunds = await refundRepository.sumSucceededForHotel(hotelId);
+  const orphanedRefunds = await transactionRepository.sumFullyRefundedWithoutRecord(hotelId);
+  const refundedAmount = succeededRefunds + orphanedRefunds;
 
   return {
     hotelId,

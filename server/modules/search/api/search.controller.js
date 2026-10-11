@@ -2,6 +2,7 @@ const searchUseCases = {
   searchHotels: require('../application/searchHotels').searchHotels,
   getHotelAvailability: require('../application/getHotelAvailability').getHotelAvailability,
   getRecentSearches: require('../application/recentSearches').getRecentSearches,
+  recordRecentSearch: require('../application/recentSearches').recordRecentSearch,
   getTrendingDestinations: require('../application/getTrendingDestinations')
     .getTrendingDestinations,
   getAutocompleteSuggestions: require('../application/autocomplete').getAutocompleteSuggestions,

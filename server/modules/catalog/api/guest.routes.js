@@ -23,7 +23,7 @@ router.get(
   getRecentlyViewedHotels
 );
 
-router.post('/batch', getHotelsByIds);
+router.post('/batch', validate(hotelSchema.getHotelsByIds), getHotelsByIds);
 
 router.get('/trending', validate(hotelSchema.getTrendingHotels), getTrendingHotels);
 

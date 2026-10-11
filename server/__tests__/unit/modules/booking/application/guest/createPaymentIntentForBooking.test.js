@@ -1,22 +1,18 @@
 jest.mock('@modules/booking/infrastructure/booking.repository', () => ({
   findPaymentContextByIdAndBuyerId: jest.fn(),
 }));
-jest.mock('@modules/payment', () => ({ updateTransaction: jest.fn() }));
-jest.mock('@adapters/payment/stripePayment.adapter', () => {
-  const instance = { getPayment: jest.fn(), createPayment: jest.fn() };
-  const StripePaymentAdapter = jest.fn(() => instance);
-  StripePaymentAdapter.instance = instance;
-  return StripePaymentAdapter;
-});
+jest.mock('@modules/payment', () => ({
+  updateTransaction: jest.fn(),
+  paymentProvider: { getPayment: jest.fn(), createPayment: jest.fn(), cancelPayment: jest.fn() },
+}));
 
 const bookingRepository = require('@modules/booking/infrastructure/booking.repository');
 const paymentModule = require('@modules/payment');
-const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
 const {
   createPaymentIntentForBooking,
 } = require('@modules/booking/application/guest/createPaymentIntentForBooking');
 
-const provider = StripePaymentAdapter.instance;
+const provider = paymentModule.paymentProvider;
 
 const bookingData = {
   id: 5,

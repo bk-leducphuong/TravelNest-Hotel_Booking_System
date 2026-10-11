@@ -7,8 +7,8 @@
   import { useToast } from 'vue-toastification';
   import SavedHotelIcon from '@/components/SavedHotelIcon.vue';
   import { SearchService } from '@/services/search.service';
-  import Loading from 'vue-loading-overlay';
-  import 'vue-loading-overlay/dist/css/index.css';
+  import SkeletonGrid from '@/components/common/SkeletonGrid.vue';
+  import EmptyState from '@/components/common/EmptyState.vue';
   import errorHandler from '@/request/errorHandler';
   import { getImageUrl } from '@/utils/images';
 
@@ -19,7 +19,8 @@
       TheFooter,
       HotelFilterSidebar,
       SavedHotelIcon,
-      Loading,
+      SkeletonGrid,
+      EmptyState,
     },
     setup() {
       // Get toast interface
@@ -37,6 +38,7 @@
         searchQuery: '',
         filteredHotels: [],
         isLoading: false,
+        searchError: null,
         pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
         lastSavedSearchKey: '',
         filters: {
@@ -102,6 +104,18 @@
       },
       hasCoordinates() {
         return Boolean(this.$route.query.latitude && this.$route.query.longitude);
+      },
+      // The stay length is derived from the dates when the URL omits
+      // `numberOfDays` (e.g. a shared link), instead of silently failing.
+      computedNumberOfDays() {
+        const days = parseInt(this.$route.query.numberOfDays, 10);
+        if (Number.isFinite(days) && days > 0) return days;
+        const { checkInDate, checkOutDate } = this.$route.query;
+        if (!checkInDate || !checkOutDate) return undefined;
+        const inD = new Date(`${String(checkInDate).slice(0, 10)}T00:00:00`);
+        const outD = new Date(`${String(checkOutDate).slice(0, 10)}T00:00:00`);
+        const diff = Math.round((outD - inD) / 86400000);
+        return diff > 0 ? diff : undefined;
       },
     },
     watch: {
@@ -176,7 +190,7 @@
           this.$route.query.adults &&
           this.$route.query.children &&
           this.$route.query.rooms &&
-          this.$route.query.numberOfDays
+          this.computedNumberOfDays
           ? true
           : false;
       },
@@ -184,7 +198,7 @@
         this.updateLocation(this.$route.query.location);
         this.updateCheckInDate(this.$route.query.checkInDate);
         this.updateCheckOutDate(this.$route.query.checkOutDate);
-        this.updateNumberOfDays(this.$route.query.numberOfDays);
+        this.updateNumberOfDays(this.computedNumberOfDays);
         this.updateAdults(this.$route.query.adults);
         this.updateRooms(this.$route.query.rooms);
         this.updateChildren(this.$route.query.children);
@@ -331,11 +345,17 @@
             total: pag.total ?? 0,
             totalPages: pag.totalPages ?? 0,
           };
+          this.searchError = null;
           this.noResultsFound = list.length === 0;
         } catch (error) {
           errorHandler(error);
+          // Surface the failure instead of showing a misleading "0 hotels".
+          this.searchError =
+            error?.response?.data?.error?.message ||
+            error?.response?.data?.message ||
+            'Could not load results. Please adjust your filters and try again.';
           this.hotels = [];
-          this.noResultsFound = true;
+          this.noResultsFound = false;
         }
       },
       // close the map popup
@@ -384,11 +404,24 @@
         const name = (h) => (h.hotel_name || h.name || '').toLowerCase();
         this.filteredHotels = this.hotels.filter((hotel) => name(hotel).includes(query));
       },
+      escapeHtml(value) {
+        return String(value ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      },
       highlightMatch(name) {
-        const query = this.searchQuery.trim();
-        if (!query) return name;
-        const regex = new RegExp(`(${query})`, 'gi');
-        return name.replace(regex, '<mark style="background-color: #5dabff;">$1</mark>');
+        // Escape for HTML *and* regex: hotel names are data (host-controlled)
+        // and the search query is user input, so neither can be trusted inside
+        // v-html / `new RegExp`.
+        const escapedName = this.escapeHtml(name);
+        const query = (this.searchQuery || '').trim();
+        if (!query) return escapedName;
+        const escapedQuery = this.escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${escapedQuery})`, 'gi');
+        return escapedName.replace(regex, '<mark style="background-color: #5dabff;">$1</mark>');
       },
       serverHost() {
         return import.meta.env.VITE_SERVER_HOST;
@@ -405,12 +438,6 @@
   <!-- inforSearch -->
   <div class="inforSearch">
     <div class="container">
-      <Loading
-        v-model:active="isLoading"
-        :can-cancel="true"
-        :color="`#003b95`"
-        :is-full-page="false"
-      />
       <div class="inner-wrap">
         <div class="row">
           <div class="col-3">
@@ -427,7 +454,7 @@
                     d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
                   />
                 </svg>
-                Hiển thị trên bản đồ
+                {{ $t('searchResults.showOnMap') }}
               </button>
             </div>
             <HotelFilterSidebar
@@ -450,20 +477,24 @@
               <div class="arrange">
                 <div class="selection-search">
                   <i class="fa-solid fa-repeat"></i>
-                  <span>Sắp xếp theo:</span>
+                  <span>{{ $t('searchResults.sortBy') }}</span>
                   <!-- Sorting Controls -->
-                  <select v-model="sortCriteria" @change="handleSort">
-                    <option value="">Lựa chọn hàng đầu của chúng tôi</option>
-                    <option value="priceLowToHigh">Giá (ưu tiên thấp nhất)</option>
-                    <option value="priceHighToLow">Giá (ưu tiên cao nhất)</option>
-                    <option value="ratingHighToLow">Xếp hạng chỗ nghỉ (Cao đến thấp)</option>
+                  <select
+                    v-model="sortCriteria"
+                    :aria-label="$t('searchResults.sortBy')"
+                    @change="handleSort"
+                  >
+                    <option value="">{{ $t('searchResults.sortTop') }}</option>
+                    <option value="priceLowToHigh">{{ $t('searchResults.sortPriceAsc') }}</option>
+                    <option value="priceHighToLow">{{ $t('searchResults.sortPriceDesc') }}</option>
+                    <option value="ratingHighToLow">{{ $t('searchResults.sortRating') }}</option>
                   </select>
                 </div>
                 <div class="type-search">
                   <input
                     type="text"
                     v-model="searchQuery"
-                    placeholder="Search hotels..."
+                    :placeholder="$t('searchResults.searchPlaceholder')"
                     @input="filterHotels"
                   />
                   <button>
@@ -476,18 +507,24 @@
                 </div>
               </div>
 
-              <div v-if="noResultsFound">
-                <p>
-                  No hotels found matching your criteria. Please try adjusting your search filters.
-                </p>
-              </div>
+              <el-alert
+                v-if="searchError"
+                type="error"
+                :closable="false"
+                :title="searchError"
+                class="search-error"
+                show-icon
+              />
 
-              <div
-                class="room-infor"
-                v-for="hotel in displayHotels"
-                :key="hotel.hotel_id"
-                @click="redirectToHotelDetails(hotel.hotel_id)"
-              >
+              <SkeletonGrid v-if="isLoading" :count="4" image-height="200px" />
+
+              <template v-else-if="displayHotels.length > 0">
+                <div
+                  class="room-infor"
+                  v-for="hotel in displayHotels"
+                  :key="hotel.hotel_id"
+                  @click="redirectToHotelDetails(hotel.hotel_id)"
+                >
                 <div class="inner-img">
                   <SavedHotelIcon
                     :hotel-id="hotel.hotel_id"
@@ -575,6 +612,14 @@
                   </div>
                 </div>
               </div>
+              </template>
+
+              <EmptyState
+                v-else
+                title="No hotels found"
+                message="Try adjusting your dates, location or filters."
+                icon="fa-solid fa-magnifying-glass"
+              />
 
               <div v-if="showPagination" class="pagination-wrapper">
                 <p class="pagination-summary">
@@ -588,7 +633,7 @@
                     :disabled="pagination.page <= 1 || isLoading"
                     @click="changePage(pagination.page - 1)"
                   >
-                    Trước
+                    {{ $t('searchResults.prev') }}
                   </button>
 
                   <template v-for="page in pageNumbers" :key="page">
@@ -612,7 +657,7 @@
                     :disabled="pagination.page >= pagination.totalPages || isLoading"
                     @click="changePage(pagination.page + 1)"
                   >
-                    Sau
+                    {{ $t('searchResults.next') }}
                   </button>
                 </nav>
               </div>
@@ -1181,5 +1226,41 @@
     position: relative;
     height: 100%;
     width: 100%;
+  }
+
+  @media (max-width: 768px) {
+    .col-3,
+    .col-9 {
+      flex: 0 0 100%;
+      max-width: 100%;
+    }
+
+    .inner-content {
+      padding: 10px 0;
+    }
+
+    .arrange {
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .type-search input {
+      width: 100%;
+    }
+
+    .room-infor {
+      flex-direction: column;
+      height: auto;
+    }
+
+    .room-infor .inner-img {
+      width: 100%;
+      height: 200px;
+      margin-bottom: 12px;
+    }
+
+    .room-infor .inner-show {
+      padding: 0;
+    }
   }
 </style>

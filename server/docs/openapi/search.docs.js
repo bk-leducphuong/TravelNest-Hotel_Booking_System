@@ -18,6 +18,9 @@
  *       1. Elasticsearch finds candidate hotels based on location, price, amenities, etc.
  *       2. Database verifies date-specific room availability
  *       3. Results are merged, ranked, and paginated
+ *
+ *       Authentication is optional (`optionalAuthenticate`): when a bearer token is supplied
+ *       the search is recorded against the user and favourite status is attached to results.
  *     tags:
  *       - Search
  *     parameters:
@@ -38,6 +41,13 @@
  *           maxLength: 100
  *         description: Country name
  *         example: "United States"
+ *       - in: query
+ *         name: location
+ *         schema:
+ *           type: string
+ *           minLength: 2
+ *           maxLength: 100
+ *         description: Legacy location text; treated as `city` when `city` is absent
  *       - in: query
  *         name: latitude
  *         schema:
@@ -146,7 +156,9 @@
  *                 type: integer
  *                 minimum: 1
  *                 maximum: 5
- *         description: Hotel star rating (1-5) or array of ratings
+ *             - type: string
+ *               pattern: '^[1-5](,[1-5])*$'
+ *         description: Hotel star rating (1-5), an array of ratings, or a comma-separated string
  *         example: "4,5"
  *       - in: query
  *         name: amenities
@@ -243,9 +255,18 @@
  *                           primary_image_url:
  *                             type: string
  *                             nullable: true
+ *                           total_bookings:
+ *                             type: integer
+ *                           view_count:
+ *                             type: integer
  *                           min_price_for_dates:
  *                             type: number
  *                             description: Minimum price for selected date range
+ *                           min_price_per_night:
+ *                             type: number
+ *                             nullable: true
+ *                           total_available_rooms:
+ *                             type: integer
  *                           available_rooms:
  *                             type: array
  *                             items:
@@ -292,6 +313,9 @@
  *                         search_time_ms:
  *                           type: integer
  *                           description: Total search time in milliseconds
+ *                         timestamp:
+ *                           type: string
+ *                           format: date-time
  *       400:
  *         description: Validation error
  *       500:
@@ -503,7 +527,10 @@
  * /search/log:
  *   post:
  *     summary: Save search information to analytics logs
- *     description: Records search queries for analytics and personalization (optional endpoint)
+ *     description: |
+ *       Records search queries for analytics and personalization. Authentication is optional
+ *       (`optionalAuthenticate`): when a bearer token is supplied the search log is attributed
+ *       to the user.
  *     tags:
  *       - Search
  *     requestBody:
@@ -550,8 +577,11 @@
  *                   properties:
  *                     message:
  *                       type: string
- *                     searchLog:
- *                       type: object
+ *                       example: Search log published for analytics
+ *                     eventId:
+ *                       type: string
+ *                       format: uuid
+ *                       nullable: true
  *       400:
  *         description: Validation error
  */
@@ -587,50 +617,90 @@
  *                   type: boolean
  *                   example: true
  *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                         format: uuid
- *                       city:
- *                         type: string
- *                         nullable: true
- *                       country:
- *                         type: string
- *                         nullable: true
- *                       latitude:
- *                         type: number
- *                         nullable: true
- *                       longitude:
- *                         type: number
- *                         nullable: true
- *                       checkIn:
- *                         type: string
- *                         format: date
- *                         nullable: true
- *                       checkOut:
- *                         type: string
- *                         format: date
- *                         nullable: true
- *                       adults:
- *                         type: integer
- *                       children:
- *                         type: integer
- *                       rooms:
- *                         type: integer
- *                       nights:
- *                         type: integer
- *                       searchedAt:
- *                         type: string
- *                         format: date-time
+ *                   type: object
+ *                   properties:
+ *                     searches:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           cityId:
+ *                             type: string
+ *                             format: uuid
+ *                             nullable: true
+ *                           countryId:
+ *                             type: string
+ *                             format: uuid
+ *                             nullable: true
+ *                           city:
+ *                             type: string
+ *                             nullable: true
+ *                           country:
+ *                             type: string
+ *                             nullable: true
+ *                           latitude:
+ *                             type: number
+ *                             nullable: true
+ *                           longitude:
+ *                             type: number
+ *                             nullable: true
+ *                           radius:
+ *                             type: number
+ *                             nullable: true
+ *                           checkIn:
+ *                             type: string
+ *                             format: date-time
+ *                           checkOut:
+ *                             type: string
+ *                             format: date-time
+ *                           adults:
+ *                             type: integer
+ *                           children:
+ *                             type: integer
+ *                           rooms:
+ *                             type: integer
+ *                           sortBy:
+ *                             type: string
+ *                           minPrice:
+ *                             type: number
+ *                             nullable: true
+ *                           maxPrice:
+ *                             type: number
+ *                             nullable: true
+ *                           minRating:
+ *                             type: number
+ *                             nullable: true
+ *                           hotelClass:
+ *                             type: array
+ *                             nullable: true
+ *                             items:
+ *                               type: integer
+ *                           amenities:
+ *                             type: array
+ *                             nullable: true
+ *                             items:
+ *                               type: string
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                           image:
+ *                             type: object
+ *                             nullable: true
+ *                             properties:
+ *                               objectKey:
+ *                                 type: string
  *       401:
  *         description: Unauthorized - authentication required
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
  */
 
 /**
@@ -672,27 +742,58 @@
  *                   type: boolean
  *                   example: true
  *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       city:
- *                         type: string
- *                       country:
- *                         type: string
- *                       booking_count:
- *                         type: integer
- *                         description: Total bookings in the period
- *                       revenue:
- *                         type: number
- *                         description: Total revenue for the period
- *                       avg_booking_value:
- *                         type: number
- *                         description: Average booking value
- *                       image_url:
- *                         type: string
- *                         nullable: true
- *                         description: Featured city image URL
+ *                   type: object
+ *                   properties:
+ *                     destinations:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             format: uuid
+ *                           type:
+ *                             type: string
+ *                             enum: [city, country]
+ *                           cityId:
+ *                             type: string
+ *                             format: uuid
+ *                             nullable: true
+ *                           countryId:
+ *                             type: string
+ *                             format: uuid
+ *                             nullable: true
+ *                           displayName:
+ *                             type: string
+ *                           countryName:
+ *                             type: string
+ *                             nullable: true
+ *                           searchCount:
+ *                             type: integer
+ *                             description: Number of searches in the period
+ *                           uniqueUsers:
+ *                             type: integer
+ *                           images:
+ *                             type: object
+ *                             nullable: true
+ *                             properties:
+ *                               primary:
+ *                                 type: object
+ *                                 nullable: true
+ *                                 properties:
+ *                                   id:
+ *                                     type: string
+ *                                     format: uuid
+ *                                   objectKey:
+ *                                     type: string
+ *                                   width:
+ *                                     type: integer
+ *                                     nullable: true
+ *                                   height:
+ *                                     type: integer
+ *                                     nullable: true
+ *                                   isPrimary:
+ *                                     type: boolean
  *       400:
  *         description: Validation error
  */

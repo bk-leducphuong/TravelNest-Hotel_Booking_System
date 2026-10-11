@@ -59,10 +59,17 @@ exports.searchHotels = {
       'number.base': 'minPrice must be a number',
       'number.min': 'minPrice cannot be negative',
     }),
-    maxPrice: Joi.number().min(0).greater(Joi.ref('minPrice')).messages({
-      'number.base': 'maxPrice must be a number',
-      'number.greater': 'maxPrice must be greater than minPrice',
-    }),
+    maxPrice: Joi.number()
+      .min(0)
+      // `maxPrice` is valid on its own; only compare to `minPrice` when present.
+      .when('minPrice', {
+        is: Joi.exist(),
+        then: Joi.number().min(0).greater(Joi.ref('minPrice')),
+      })
+      .messages({
+        'number.base': 'maxPrice must be a number',
+        'number.greater': 'maxPrice must be greater than minPrice',
+      }),
     minRating: Joi.number().min(0).max(5).messages({
       'number.base': 'minRating must be a number',
       'number.min': 'minRating must be at least 0',

@@ -1,4 +1,4 @@
-const { Transactions } = require('@models/index.js');
+const { Transactions } = require('@platform/database');
 
 /**
  * Transaction lookups/mutations scoped to a booking.

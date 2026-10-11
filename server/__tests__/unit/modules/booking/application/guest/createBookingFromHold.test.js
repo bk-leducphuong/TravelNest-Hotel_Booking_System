@@ -4,6 +4,7 @@ jest.mock('@modules/payment', () => ({
   createTransaction: jest.fn(),
   completeIdempotencyRecord: jest.fn(),
   failIdempotencyRecord: jest.fn(),
+  touchIdempotencyRecord: jest.fn(),
 }));
 jest.mock('@modules/booking/infrastructure/hold.repository', () => ({
   findByIdWithRooms: jest.fn(),
@@ -16,7 +17,7 @@ jest.mock('@modules/booking/application/hold.service', () => ({ releaseHold: jes
 jest.mock('@modules/booking/application/pricing.service', () => ({ quote: jest.fn() }));
 jest.mock('@modules/inventory', () => ({ reserveRooms: jest.fn() }));
 jest.mock('@config/database.config', () => ({ transaction: jest.fn() }));
-jest.mock('@utils/booking.utils', () => ({ generateBookingCode: () => 'CODE1' }));
+jest.mock('@modules/booking/domain/booking-code', () => ({ generateBookingCode: () => 'CODE1' }));
 
 const paymentModule = require('@modules/payment');
 const holdRepository = require('@modules/booking/infrastructure/hold.repository');
@@ -118,12 +119,47 @@ describe('booking/application/guest/createBookingFromHold', () => {
     paymentModule.findIdempotencyRecord.mockResolvedValue({
       request_hash: hashRequest(data),
       status: 'processing',
+      updated_at: new Date(),
     });
 
     await expect(createBookingFromHold(USER_ID, data, IDEMPOTENCY_KEY)).rejects.toMatchObject({
       statusCode: 409,
       code: 'REQUEST_IN_PROGRESS',
     });
+  });
+
+  it('takes over a stale in-progress record (recovery after a crash)', async () => {
+    primeHappyPath();
+    paymentModule.findIdempotencyRecord.mockResolvedValue({
+      id: 77,
+      request_hash: hashRequest(data),
+      status: 'processing',
+      updated_at: new Date(Date.now() - 10 * 60 * 1000),
+    });
+
+    const result = await createBookingFromHold(USER_ID, data, IDEMPOTENCY_KEY);
+
+    expect(paymentModule.touchIdempotencyRecord).toHaveBeenCalledWith(
+      77,
+      expect.objectContaining({ requestHash: hashRequest(data) })
+    );
+    expect(paymentModule.createIdempotencyRecord).not.toHaveBeenCalled();
+    expect(result.bookingCode).toBe('CODE1');
+  });
+
+  it('retries a previously failed idempotency record', async () => {
+    primeHappyPath();
+    paymentModule.findIdempotencyRecord.mockResolvedValue({
+      id: 88,
+      request_hash: hashRequest(data),
+      status: 'failed',
+      updated_at: new Date(),
+    });
+
+    const result = await createBookingFromHold(USER_ID, data, IDEMPOTENCY_KEY);
+
+    expect(paymentModule.touchIdempotencyRecord).toHaveBeenCalledWith(88, expect.any(Object));
+    expect(result.bookingCode).toBe('CODE1');
   });
 
   it('fails and marks the idempotency record failed when the hold is missing', async () => {

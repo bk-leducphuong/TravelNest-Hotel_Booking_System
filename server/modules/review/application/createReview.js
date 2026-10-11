@@ -47,7 +47,11 @@ async function createReview(userId, { hotelId, bookingCode, ratings, title, comm
   });
 
   if (!booking) {
-    throw new ApiError(404, 'BOOKING_NOT_FOUND', 'Booking not found or not eligible for review');
+    throw new ApiError(
+      409,
+      'REVIEW_NOT_ELIGIBLE',
+      'This booking is not eligible for review (it must be completed and belong to you)'
+    );
   }
 
   const existingReview = await reviewRepository.findByBookingId(booking.id);

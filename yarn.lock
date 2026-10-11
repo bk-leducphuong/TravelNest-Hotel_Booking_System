@@ -5881,6 +5881,7 @@ __metadata:
     express: "npm:^4.21.0"
     express-rate-limit: "npm:^7.5.0"
     globals: "npm:^16.5.0"
+    helmet: "npm:^8.3.0"
     html-to-text: "npm:^9.0.5"
     jest: "npm:^30.2.0"
     joi: "npm:^18.0.2"
@@ -5895,6 +5896,7 @@ __metadata:
     pino: "npm:^10.1.1"
     pino-pretty: "npm:^13.1.3"
     prettier: "npm:^3.7.4"
+    rate-limit-redis: "npm:^6.0.1"
     redis: "npm:^5.12.1"
     sequelize: "npm:^6.37.7"
     sequelize-cli: "npm:^6.6.5"
@@ -5908,6 +5910,34 @@ __metadata:
     testcontainers: "npm:^11.12.0"
     uuid: "npm:^10.0.0"
     uuidv7: "npm:^1.1.0"
+  languageName: unknown
+  linkType: soft
+
+"@travelnest/superadmin-client@workspace:superadmin-client":
+  version: 0.0.0-use.local
+  resolution: "@travelnest/superadmin-client@workspace:superadmin-client"
+  dependencies:
+    "@element-plus/nuxt": "npm:^1.1.5"
+    "@nuxt/eslint": "npm:^1.15.2"
+    "@nuxt/test-utils": "npm:^4.0.0"
+    "@nuxtjs/tailwindcss": "npm:^6.14.0"
+    "@pinia/nuxt": "npm:^0.11.3"
+    "@playwright/test": "npm:^1.58.2"
+    "@vue/test-utils": "npm:^2.4.6"
+    dotenv: "npm:^17.3.1"
+    element-plus: "npm:^2.13.2"
+    eslint-config-prettier: "npm:^10.1.5"
+    happy-dom: "npm:^20.7.0"
+    keycloak-js: "npm:^26.2.4"
+    nuxt: "npm:^4.3.1"
+    pinia: "npm:^3.0.4"
+    playwright-core: "npm:^1.58.2"
+    prettier: "npm:^3.5.3"
+    typescript: "npm:^5.9.2"
+    vitest: "npm:^4.0.18"
+    vue: "npm:^3.5.28"
+    vue-router: "npm:^4.6.4"
+    vue-tsc: "npm:^2.2.0"
   languageName: unknown
   linkType: soft
 
@@ -12460,6 +12490,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"helmet@npm:^8.3.0":
+  version: 8.3.0
+  resolution: "helmet@npm:8.3.0"
+  checksum: 10c0/69f33ca716ed3ce34f1f2f48ce8618846dfa9c89e3a15d6bccefc882541e8b028517448c6b0e7450792fd23e5580bfe6d410d4f22bedc2a94f6b1188817a059a
+  languageName: node
+  linkType: hard
+
 "help-me@npm:^5.0.0":
   version: 5.0.0
   resolution: "help-me@npm:5.0.0"
@@ -17567,6 +17604,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"rate-limit-redis@npm:^6.0.1":
+  version: 6.0.1
+  resolution: "rate-limit-redis@npm:6.0.1"
+  peerDependencies:
+    express-rate-limit: ">= 8.6.0"
+  checksum: 10c0/54033642f2d1d7ae6d421121b22662a6c03707546daa82e5440a9119121a70e5e6a06cba3ee35a3f3ff8ba7ba1c59f541ec7180127efb438e39aa4873ad4fcb5
+  languageName: node
+  linkType: hard
+
 "raw-body@npm:~2.5.3":
   version: 2.5.3
   resolution: "raw-body@npm:2.5.3"
@@ -20269,6 +20315,26 @@ __metadata:
   version: 0.0.6
   resolution: "typedarray@npm:0.0.6"
   checksum: 10c0/6005cb31df50eef8b1f3c780eb71a17925f3038a100d82f9406ac2ad1de5eb59f8e6decbdc145b3a1f8e5836e17b0c0002fb698b9fe2516b8f9f9ff602d36412
+  languageName: node
+  linkType: hard
+
+"typescript@npm:^5.9.2":
+  version: 5.9.3
+  resolution: "typescript@npm:5.9.3"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/6bd7552ce39f97e711db5aa048f6f9995b53f1c52f7d8667c1abdc1700c68a76a308f579cd309ce6b53646deb4e9a1be7c813a93baaf0a28ccd536a30270e1c5
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@npm%3A^5.9.2#optional!builtin<compat/typescript>":
+  version: 5.9.3
+  resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/ad09fdf7a756814dce65bc60c1657b40d44451346858eea230e10f2e95a289d9183b6e32e5c11e95acc0ccc214b4f36289dcad4bf1886b0adb84d711d336a430
   languageName: node
   linkType: hard
 

@@ -1,4 +1,4 @@
-const { connected_payment_accounts: ConnectedPaymentAccounts } = require('@models/index.js');
+const { connected_payment_accounts: ConnectedPaymentAccounts } = require('@platform/database');
 
 /**
  * Payout module repository for provider connected accounts (Stripe Connect).

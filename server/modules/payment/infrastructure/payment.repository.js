@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 
-const { Transactions, Payments, Bookings, Hotels } = require('@models/index.js');
+const { Transactions, Payments, Hotels } = require('@platform/database');
 
 /**
  * Payment Repository - Contains all database operations for payments
@@ -183,17 +183,8 @@ class PaymentRepository {
    * Find payment by booking ID
    */
   async findPaymentByBookingId(bookingId) {
-    const booking = await Bookings.findOne({
-      where: { id: bookingId },
-      attributes: ['booking_code'],
-    });
-
-    if (!booking) {
-      return null;
-    }
-
     return await Transactions.findOne({
-      where: { booking_code: booking.booking_code },
+      where: { booking_id: bookingId },
       include: [
         {
           model: Payments,

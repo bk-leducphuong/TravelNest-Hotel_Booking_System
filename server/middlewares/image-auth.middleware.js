@@ -79,9 +79,11 @@ async function authorizeImageEntityWrite(req, res, next) {
       return next();
     }
 
+    const message = 'You do not have permission to manage images for this entity.';
     return res.status(403).json({
       success: false,
-      message: 'You do not have permission to manage images for this entity.',
+      message,
+      error: { code: 'IMAGE_WRITE_FORBIDDEN', message },
     });
   } catch (error) {
     return next(error);
@@ -111,9 +113,11 @@ async function authorizeImageDelete(req, res, next) {
       return next();
     }
 
+    const message = 'You do not have permission to manage images for this entity.';
     return res.status(403).json({
       success: false,
-      message: 'You do not have permission to manage images for this entity.',
+      message,
+      error: { code: 'IMAGE_WRITE_FORBIDDEN', message },
     });
   } catch (error) {
     return next(error);

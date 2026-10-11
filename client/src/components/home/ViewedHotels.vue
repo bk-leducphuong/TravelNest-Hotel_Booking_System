@@ -1,13 +1,8 @@
 <template>
-  <div class="hotel-container container" v-if="viewedHotels.length > 0">
+  <div class="hotel-container container" v-if="isLoading || viewedHotels.length > 0">
     <h2 class="h2">{{ $t('userHome.viewedHotels') }}</h2>
-    <div class="slider-container">
-      <Loading
-        v-model:active="isLoading"
-        :can-cancel="true"
-        :color="`#003b95`"
-        :is-full-page="false"
-      />
+    <SkeletonGrid v-if="isLoading" :count="itemsPerSlide" image-height="220px" />
+    <div v-else class="slider-container">
       <ElCarousel
         :interval="0"
         :arrow="groupedHotels.length > 1 ? 'hover' : 'never'"
@@ -49,9 +44,8 @@
 
 <script>
   import { mapActions, mapGetters } from 'vuex';
-  import Loading from 'vue-loading-overlay';
-  import 'vue-loading-overlay/dist/css/index.css';
   import SavedHotelIcon from '@/components/SavedHotelIcon.vue';
+  import SkeletonGrid from '@/components/common/SkeletonGrid.vue';
   import { HotelService } from '@/services/hotel.service';
   import errorHandler from '@/request/errorHandler.js';
   import { getImageUrl } from '@/utils/images';
@@ -59,8 +53,8 @@
   export default {
     name: 'ViewedHotels',
     components: {
-      Loading,
       SavedHotelIcon,
+      SkeletonGrid,
     },
     data() {
       return {

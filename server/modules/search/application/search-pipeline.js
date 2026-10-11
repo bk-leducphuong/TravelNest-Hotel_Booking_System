@@ -1,5 +1,5 @@
 const logger = require('@config/logger.config');
-const elasticsearchHelper = require('@helpers/elasticsearch.helper');
+const elasticsearchHelper = require('../infrastructure/elasticsearch.helper');
 const searchRepository = require('../infrastructure/search.repository');
 
 const { normalizeList } = require('../domain/filters');

@@ -2,7 +2,7 @@ const logger = require('@config/logger.config');
 const { publish, INTEGRATION_EVENTS } = require('@platform/events');
 
 /**
- * Email (and email test-broadcast) integration event producers.
+ * Email integration event producers.
  *
  * Emit through the EventPublisher port so the transport stays an adapter
  * detail.
@@ -40,21 +40,6 @@ async function publishPaymentFailure(context, options = {}) {
   );
 }
 
-async function publishTestBroadcast(context, options = {}) {
-  return emit(
-    'test_broadcast',
-    {
-      email: context.email,
-      subject: context.subject,
-      message: context.message,
-      recipientName: context.recipientName || 'Traveler',
-      metadata: context.metadata || {},
-      triggeredByAdminId: context.triggeredByAdminId || null,
-    },
-    options.sourceEventId || context.eventId || context.email
-  );
-}
-
 async function emit(type, data, baseID) {
   const outcome = await publish(
     INTEGRATION_EVENTS.EMAIL_REQUESTED,
@@ -75,5 +60,4 @@ async function emit(type, data, baseID) {
 module.exports = {
   publishBookingConfirmation,
   publishPaymentFailure,
-  publishTestBroadcast,
 };

@@ -18,7 +18,12 @@ function base64UrlToBuffer(value) {
 }
 
 function base64UrlToJson(value) {
-  return JSON.parse(base64UrlToBuffer(value).toString('utf8'));
+  try {
+    return JSON.parse(base64UrlToBuffer(value).toString('utf8'));
+  } catch {
+    // Do not leak the underlying JSON parse error to clients.
+    throwJwtError('Malformed JWT');
+  }
 }
 
 function normalizePublicKey(publicKey) {
@@ -41,6 +46,63 @@ function normalizePublicKey(publicKey) {
 
   const lines = normalized.match(/.{1,64}/g) || [];
   return `-----BEGIN PUBLIC KEY-----\n${lines.join('\n')}\n-----END PUBLIC KEY-----`;
+}
+
+// ---------------------------------------------------------------------------
+// JWKS (supports Keycloak key rotation without a redeploy). Falls back to the
+// static PEM when no JWKS URI is configured or the fetch fails.
+// ---------------------------------------------------------------------------
+
+const JWKS_TTL_MS = 10 * 60 * 1000;
+let jwksCache = { fetchedAt: 0, keys: [] };
+
+function getJwksUri() {
+  if (process.env.KEYCLOAK_JWKS_URI) {
+    return process.env.KEYCLOAK_JWKS_URI;
+  }
+  if (process.env.KEYCLOAK_ISSUER) {
+    return `${process.env.KEYCLOAK_ISSUER.replace(/\/$/, '')}/protocol/openid-connect/certs`;
+  }
+  return null;
+}
+
+async function fetchJwks(uri) {
+  const now = Date.now();
+  if (jwksCache.keys.length > 0 && now - jwksCache.fetchedAt < JWKS_TTL_MS) {
+    return jwksCache.keys;
+  }
+
+  const response = await fetch(uri, { signal: AbortSignal.timeout(3000) });
+  if (!response.ok) {
+    throw new Error(`JWKS request failed: HTTP ${response.status}`);
+  }
+
+  const body = await response.json();
+  jwksCache = { fetchedAt: now, keys: Array.isArray(body.keys) ? body.keys : [] };
+  return jwksCache.keys;
+}
+
+/**
+ * Resolve the RSA public key for a token: the JWKS key matching the token's
+ * `kid` when available, otherwise the configured static PEM.
+ */
+async function resolvePublicKey(header) {
+  const jwksUri = getJwksUri();
+
+  if (jwksUri) {
+    try {
+      const keys = await fetchJwks(jwksUri);
+      const jwk =
+        keys.find((key) => key.kid === header.kid) || (keys.length === 1 ? keys[0] : null);
+      if (jwk) {
+        return nodeCrypto.createPublicKey({ key: jwk, format: 'jwk' });
+      }
+    } catch (error) {
+      logger.warn({ error: error.message }, 'JWKS fetch failed; falling back to static PEM');
+    }
+  }
+
+  return normalizePublicKey(process.env.KEYCLOAK_PUBLIC_KEY_PEM || process.env.KEYCLOAK_PUBLIC_KEY);
 }
 
 function getRequiredAudience() {
@@ -72,7 +134,7 @@ function validateTimeClaim(claimValue, comparator) {
   return comparator(Number(claimValue));
 }
 
-function verifyJwt(token) {
+async function verifyJwt(token) {
   if (!token || typeof token !== 'string') {
     throwJwtError('Bearer token is required');
   }
@@ -90,13 +152,11 @@ function verifyJwt(token) {
     throwJwtError(`Unsupported JWT algorithm: ${header.alg}`, { algorithm: header.alg });
   }
 
+  const publicKey = await resolvePublicKey(header);
+
   const verifier = nodeCrypto.createVerify('RSA-SHA256');
   verifier.update(`${encodedHeader}.${encodedPayload}`);
   verifier.end();
-
-  const publicKey = normalizePublicKey(
-    process.env.KEYCLOAK_PUBLIC_KEY_PEM || process.env.KEYCLOAK_PUBLIC_KEY
-  );
 
   const signatureIsValid = verifier.verify(publicKey, base64UrlToBuffer(encodedSignature));
   if (!signatureIsValid) {

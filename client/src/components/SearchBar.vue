@@ -20,6 +20,7 @@
               v-model="selectedLocation"
               :fetch-suggestions="querySearch"
               :placeholder="$t('userHeader.locationInputPlaceholder')"
+              :aria-label="$t('userHeader.locationInputPlaceholder')"
               :prefix-icon="LocationIcon"
               clearable
               @select="handleSelect"
@@ -42,6 +43,7 @@
               range-separator="đến"
               start-placeholder="Nhận phòng"
               end-placeholder="Trả phòng"
+              aria-label="Check-in and check-out dates"
               :prefix-icon="CalendarIcon"
               :disabled-date="disabledDate"
               format="DD/MM/YYYY"
@@ -57,6 +59,7 @@
               type="text"
               v-model="guestDetails"
               class="search-input"
+              :aria-label="$t('userHeader.guestInputLabel')"
               @click="toggleGuestSelector"
               readonly
             />

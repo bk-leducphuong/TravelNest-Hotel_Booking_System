@@ -36,13 +36,6 @@ const options = {
           bearerFormat: 'JWT',
           description: 'Deprecated name retained for existing docs; use a Keycloak access token.',
         },
-        internalSuperadminToken: {
-          type: 'apiKey',
-          in: 'header',
-          name: 'x-internal-superadmin-token',
-          description:
-            'Internal superadmin token. Alternatively, use an admin bearer token issued by Keycloak.',
-        },
       },
       schemas: {
         Error: {
@@ -90,11 +83,15 @@ const options = {
       { name: 'Reviews', description: 'Review operations' },
       { name: 'Search', description: 'Search operations' },
       { name: 'Images', description: 'Image upload and management' },
-      {
-        name: 'Internal Superadmin',
-        description:
-          'Internal operational endpoints for database, Elasticsearch, and MongoDB setup and seeding',
-      },
+      { name: 'Notifications', description: 'User notification inbox' },
+      { name: 'Payments', description: 'Payments and refunds' },
+      { name: 'Payouts', description: 'Hotel payouts and Stripe Connect accounts' },
+      { name: 'Inventory', description: 'Room inventory and availability' },
+      { name: 'Analytics', description: 'Search demand and user analytics' },
+      { name: 'Onboarding', description: 'Become-a-host onboarding' },
+      { name: 'Admin', description: 'Admin / back-office (BFF) operations' },
+      { name: 'Webhooks', description: 'Third-party webhook receivers' },
+      { name: 'Health', description: 'Liveness and readiness probes' },
     ],
   },
   apis: [

@@ -1,13 +1,14 @@
 <script>
-import {mapActions } from 'vuex'
 export default {
+  name: 'LanguageSwitch',
+  emits: ['close-language-popup'],
   methods: {
     chooseLanguage(language) {
-      localStorage.setItem('language', language) 
+      localStorage.setItem('language', language)
       this.$emit('close-language-popup')
       window.location.reload()
-    }
-  }
+    },
+  },
 }
 </script>
 <template>
@@ -15,30 +16,18 @@ export default {
   <div id="language-popup" class="popup">
     <div class="popup-content">
       <div class="popup-header">
-        <h2>Chọn ngôn ngữ của bạn</h2>
+        <h2>{{ $t('language.selectTitle') }}</h2>
         <button class="close-popup-btn" @click="this.$emit('close-language-popup')">✖</button>
       </div>
-      <p class="recommended-text">Được đề xuất cho bạn</p>
+      <p class="recommended-text">{{ $t('language.recommended') }}</p>
       <div class="languages">
-        <div class="language">
-          <img src="https://flagcdn.com/w40/gb.png" alt="English (UK)" />
-          <span>English (UK)</span>
+        <div class="language" @click="chooseLanguage('en')">
+          <img src="https://flagcdn.com/w40/us.png" :alt="$t('language.english')" />
+          <span>{{ $t('language.english') }}</span>
         </div>
-        <div class="language" @click="chooseLanguage('en-US')">
-          <img src="https://flagcdn.com/w40/us.png" alt="English (US)" />
-          <span>English (US)</span>
-        </div>
-        <div class="language">
-          <img src="https://flagcdn.com/w40/kr.png" alt="한국어" />
-          <span>한국어</span>
-        </div>
-        <div class="language">
-          <img src="https://flagcdn.com/w40/fr.png" alt="Français" />
-          <span>Français</span>
-        </div>
-        <div class="language" @click="chooseLanguage('vi-VN')">
-          <img src="https://flagcdn.com/w40/vn.png" alt="Vietnamese" />
-          <span>Vietnamese</span>
+        <div class="language" @click="chooseLanguage('vi')">
+          <img src="https://flagcdn.com/w40/vn.png" :alt="$t('language.vietnamese')" />
+          <span>{{ $t('language.vietnamese') }}</span>
         </div>
       </div>
     </div>

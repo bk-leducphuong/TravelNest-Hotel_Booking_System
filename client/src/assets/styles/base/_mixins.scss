@@ -40,3 +40,22 @@
   justify-content: space-between;
   align-items: center;
 }
+
+// Responsive helpers
+@mixin respond-below($breakpoint) {
+  @media (max-width: $breakpoint) {
+    @content;
+  }
+}
+
+@mixin mobile {
+  @include respond-below($bp-md) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @include respond-below($bp-lg) {
+    @content;
+  }
+}

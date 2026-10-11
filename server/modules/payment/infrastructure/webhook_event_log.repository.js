@@ -1,4 +1,4 @@
-const { webhook_event_logs: WebhookEventLog } = require('@models/index');
+const { webhook_event_logs: WebhookEventLog } = require('@platform/database');
 const logger = require('@config/logger.config');
 
 /**

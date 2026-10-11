@@ -1,7 +1,5 @@
 const logger = require('@config/logger.config');
-const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
-
-const stripeAdapter = new StripePaymentAdapter();
+const { paymentModule } = require('../../infrastructure/payment.client');
 
 /**
  * Best-effort cancellation of the Stripe PaymentIntent attached to an expired
@@ -10,7 +8,7 @@ const stripeAdapter = new StripePaymentAdapter();
  */
 async function cancelExpiredPaymentIntent(paymentIntentId, bookingId) {
   try {
-    const payment = await stripeAdapter.getPayment(paymentIntentId);
+    const payment = await paymentModule().paymentProvider.getPayment(paymentIntentId);
     const cancellableStatuses = ['pending', 'processing', 'requires_payment_method'];
 
     if (!cancellableStatuses.includes(payment.status) && payment.status !== 'requires_action') {
@@ -22,7 +20,7 @@ async function cancelExpiredPaymentIntent(paymentIntentId, bookingId) {
       return null;
     }
 
-    return await stripeAdapter.cancelPayment(paymentIntentId);
+    return await paymentModule().paymentProvider.cancelPayment(paymentIntentId);
   } catch (error) {
     logger.warn('Failed to cancel expired booking payment intent', {
       bookingId,

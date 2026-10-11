@@ -2,6 +2,7 @@ const {
   authenticate,
   optionalAuthenticate,
   requirePermission,
+  requireEntityInHotel,
   authenticateRequest,
 } = require('@middlewares/auth.middleware');
 
@@ -143,6 +144,7 @@ describe('Auth Middleware', () => {
       expect(res.json).toHaveBeenCalledWith({
         success: false,
         message: 'Authentication required.',
+        error: { code: 'AUTHENTICATION_REQUIRED', message: 'Authentication required.' },
       });
       expect(next).not.toHaveBeenCalled();
     });
@@ -243,6 +245,7 @@ describe('Auth Middleware', () => {
       expect(res.json).toHaveBeenCalledWith({
         success: false,
         message: 'Authentication required.',
+        error: { code: 'AUTHENTICATION_REQUIRED', message: 'Authentication required.' },
       });
     });
 
@@ -336,6 +339,92 @@ describe('Auth Middleware', () => {
 
       expect(next).toHaveBeenCalled();
       expect(req.hotelContext).toMatchObject({ hotelId: 'hotel-1', isPlatformAdmin: true });
+    });
+
+    it('authorizes against the path hotel, not the X-Hotel-Id header', async () => {
+      req.user = {
+        roles: [],
+        hotel_roles: [
+          {
+            hotel_id: 'hotel-1',
+            role_id: 'role-1',
+            role: { name: 'owner' },
+            is_primary_owner: true,
+          },
+        ],
+      };
+      req.auth = { roles: ['user'] };
+      // The caller presents their own hotel in the header but targets another
+      // hotel in the path; the path hotel must be the one authorized.
+      req.params = { hotelId: 'hotel-other' };
+      req.get = jest.fn((header) =>
+        header.toLowerCase() === 'x-hotel-id' ? 'hotel-1' : undefined
+      );
+
+      const middleware = requirePermission('booking.read', { requireHotelContext: true });
+      await middleware(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('requireEntityInHotel', () => {
+    it('allows when the entity hotel matches the context', async () => {
+      req.auth = { roles: ['user'] };
+      req.hotelContext = { hotelId: 'hotel-1' };
+
+      const middleware = requireEntityInHotel(async () => 'hotel-1');
+      await middleware(req, res, next);
+
+      expect(next).toHaveBeenCalledWith();
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it('blocks (403) when the entity belongs to another hotel', async () => {
+      req.auth = { roles: ['user'] };
+      req.hotelContext = { hotelId: 'hotel-1' };
+
+      const middleware = requireEntityInHotel(async () => 'hotel-2');
+      await middleware(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('blocks (403) when there is no hotel context', async () => {
+      req.auth = { roles: ['user'] };
+      req.user = { hotel_roles: [] };
+      req.get = jest.fn(() => undefined);
+
+      const middleware = requireEntityInHotel(async () => 'hotel-1');
+      await middleware(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+    });
+
+    it('bypasses the check for platform staff', async () => {
+      req.auth = { roles: ['admin'] };
+      const resolver = jest.fn(async () => 'hotel-2');
+
+      const middleware = requireEntityInHotel(resolver);
+      await middleware(req, res, next);
+
+      expect(next).toHaveBeenCalledWith();
+      expect(resolver).not.toHaveBeenCalled();
+    });
+
+    it('forwards resolver errors to next', async () => {
+      req.auth = { roles: ['user'] };
+      req.hotelContext = { hotelId: 'hotel-1' };
+      const error = new Error('boom');
+
+      const middleware = requireEntityInHotel(async () => {
+        throw error;
+      });
+      await middleware(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(error);
     });
   });
 });

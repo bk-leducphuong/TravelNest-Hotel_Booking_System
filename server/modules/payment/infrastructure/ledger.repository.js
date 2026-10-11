@@ -1,4 +1,4 @@
-const { LedgerAccounts, LedgerEntries, HotelUsers } = require('@models/index.js');
+const { LedgerAccounts, LedgerEntries, HotelUsers } = require('@platform/database');
 const logger = require('@config/logger.config');
 
 class LedgerRepository {

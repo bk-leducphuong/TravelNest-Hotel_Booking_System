@@ -7,11 +7,17 @@ jest.mock('@modules/identity/infrastructure/auth.repository', () => ({
   bindKeycloakUserId: jest.fn(),
   findRolesByNames: jest.fn(),
   replaceManagedUserRoles: jest.fn(),
+  findRoleByName: jest.fn(),
   updateLastLogin: jest.fn(),
   getUserWithContext: jest.fn(),
 }));
 
+jest.mock('@modules/identity/infrastructure/hotel-membership.repository', () => ({
+  upsertHotelRole: jest.fn(),
+}));
+
 const authRepository = require('@modules/identity/infrastructure/auth.repository');
+const hotelMembershipRepository = require('@modules/identity/infrastructure/hotel-membership.repository');
 const identityService = require('@modules/identity/application/identity.service');
 
 describe('IdentityService', () => {
@@ -146,6 +152,33 @@ describe('IdentityService', () => {
       ).rejects.toMatchObject({
         statusCode: 500,
         code: 'USER_CREATE_FAILED',
+      });
+    });
+  });
+
+  describe('assignHotelOwner', () => {
+    it('links the user to the hotel with the owner role', async () => {
+      authRepository.findRoleByName.mockResolvedValue({ id: 'role-owner', name: 'owner' });
+      hotelMembershipRepository.upsertHotelRole.mockResolvedValue({ id: 'membership-1' });
+
+      const result = await identityService.assignHotelOwner('user-1', 'hotel-1');
+
+      expect(authRepository.findRoleByName).toHaveBeenCalledWith('owner');
+      expect(hotelMembershipRepository.upsertHotelRole).toHaveBeenCalledWith({
+        userId: 'user-1',
+        hotelId: 'hotel-1',
+        roleId: 'role-owner',
+        isPrimaryOwner: true,
+      });
+      expect(result).toEqual({ id: 'membership-1' });
+    });
+
+    it('rejects when the owner role is not provisioned', async () => {
+      authRepository.findRoleByName.mockResolvedValue(null);
+
+      await expect(identityService.assignHotelOwner('user-1', 'hotel-1')).rejects.toMatchObject({
+        statusCode: 500,
+        code: 'OWNER_ROLE_MISSING',
       });
     });
   });

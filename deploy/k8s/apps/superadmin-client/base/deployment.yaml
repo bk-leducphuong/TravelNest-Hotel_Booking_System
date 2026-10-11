@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: superadmin-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: superadmin-client
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: superadmin-client
+    spec:
+      containers:
+        - name: superadmin-client
+          image: travelnest-superadmin:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            # The superadmin image is the Nuxt node server (NITRO_PORT=3000),
+            # unlike the nginx-served frontend. Keep this aligned with the
+            # image so probes and traffic actually reach the process.
+            - containerPort: 3000
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi

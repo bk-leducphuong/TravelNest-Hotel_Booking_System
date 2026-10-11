@@ -7,6 +7,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const helmet = require('helmet');
 
 /** ********************* Config ************************ */
 const logger = require('@config/logger.config');
@@ -45,6 +46,19 @@ const createApp = async () => {
 
   const app = express();
 
+  // Security headers. CSP is intentionally left to the edge/CDN: this service
+  // returns JSON and serves Swagger UI (which needs inline scripts). The rest
+  // of the helmet defaults (nosniff, frameguard, HSTS, referrer policy) are
+  // safe here. `crossOriginResourcePolicy: cross-origin` keeps image/asset
+  // responses loadable from the separate guest/admin origins.
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    })
+  );
+
   // Initialize s3 bucket
   await initBucket();
 
@@ -64,10 +78,13 @@ const createApp = async () => {
   const allowedOrigins = [
     process.env.CLIENT_HOST,
     process.env.ADMIN_CLIENT_HOST,
+    process.env.SUPERADMIN_CLIENT_HOST,
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
+    'http://localhost:8100',
+    'http://127.0.0.1:8100',
     'http://localhost:3000',
   ]
     .map(normalizeOrigin)
@@ -152,8 +169,42 @@ const createApp = async () => {
   // Health check routes (root-level)
   app.use('/health', healthRoutes);
 
+  // Normalise the success envelope for /api/v1: bodies that only carry `data`
+  // get an explicit `success: true` (additive — clients that read `data`
+  // continue to work). Errors already use `{ error: { code, message } }`.
+  app.use('/api/v1', (req, res, next) => {
+    const originalJson = res.json.bind(res);
+    res.json = (body) => {
+      if (
+        res.statusCode >= 200 &&
+        res.statusCode < 300 &&
+        body &&
+        typeof body === 'object' &&
+        !Array.isArray(body) &&
+        !('success' in body) &&
+        'data' in body
+      ) {
+        return originalJson({ success: true, ...body });
+      }
+      return originalJson(body);
+    };
+    next();
+  });
+
   // API v1 routes
   app.use('/api/v1', v1Routes);
+
+  // JSON 404 for unmatched API routes (Express would otherwise return an HTML
+  // error page, which breaks JSON clients and path-param regex mismatches).
+  app.use('/api', (req, res) => {
+    res.status(404).json({
+      error: {
+        code: 'NOT_FOUND',
+        message: `Cannot ${req.method} ${req.originalUrl}`,
+      },
+    });
+  });
+
   app.use(errorMiddleware);
 
   // Default route

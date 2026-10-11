@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 
-const { Bookings, BookingRooms } = require('@models/index.js');
+const { Bookings, BookingRooms } = require('@platform/database');
 const sequelize = require('@config/database.config');
 
 /**

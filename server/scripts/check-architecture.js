@@ -72,16 +72,24 @@ const LAYER_LEAKS = [
 ];
 
 /**
- * Module couplings that are expected while the modular migration is in flight
- * (a module wrapping the shared repository or a not-yet-migrated service).
- * Reported for trend, never failed: blocking these would fight the migration.
+ * Couplings that are forbidden outright (hard zero). Modules reach the shared
+ * model registry through the platform seam (`@platform/database`); importing the
+ * legacy central path from a module is not allowed.
  */
-const WATCHLIST_LEAKS = [
+const BLOCKING_LEAKS = [
   {
     key: 'modules -> @models',
     dir: 'modules',
     imports: [/^@models(\/|$)/],
   },
+];
+
+/**
+ * Module couplings that are expected while the modular migration is in flight
+ * (a module wrapping the shared repository or a not-yet-migrated service).
+ * Reported for trend, never failed: blocking these would fight the migration.
+ */
+const WATCHLIST_LEAKS = [
   {
     key: 'modules -> @repositories',
     dir: 'modules',
@@ -132,6 +140,7 @@ function importsOf(source) {
 function collect() {
   const files = walk(SERVER_ROOT, []);
   const crossModule = [];
+  const blocking = [];
   const layerLeaks = Object.fromEntries(LAYER_LEAKS.map((leak) => [leak.key, 0]));
   const watchlist = Object.fromEntries(WATCHLIST_LEAKS.map((leak) => [leak.key, 0]));
   const godFiles = {};
@@ -145,6 +154,11 @@ function collect() {
     for (const specifier of specifiers) {
       if (CROSS_MODULE_INTERNAL.test(specifier)) {
         crossModule.push({ file: relPath, specifier });
+      }
+      for (const leak of BLOCKING_LEAKS) {
+        if (segment === leak.dir && leak.imports.some((pattern) => pattern.test(specifier))) {
+          blocking.push({ key: leak.key, file: relPath, specifier });
+        }
       }
       for (const leak of LAYER_LEAKS) {
         if (segment === leak.dir && leak.imports.some((pattern) => pattern.test(specifier))) {
@@ -164,7 +178,7 @@ function collect() {
     }
   }
 
-  return { crossModule, layerLeaks, watchlist, godFiles };
+  return { crossModule, blocking, layerLeaks, watchlist, godFiles };
 }
 
 function loadBaseline() {
@@ -196,6 +210,17 @@ function report(current, baseline) {
     );
     for (const violation of current.crossModule) {
       console.log(`  x ${violation.file} -> ${violation.specifier}`);
+    }
+  }
+
+  // Rule 1b: blocked couplings, hard zero.
+  if (current.blocking.length > 0) {
+    failures.push(
+      `Blocked module couplings (${current.blocking.length}). ` +
+        'Reach the model registry through @platform/database instead.'
+    );
+    for (const item of current.blocking) {
+      console.log(`  x ${item.file} -> ${item.specifier}  (${item.key})`);
     }
   }
 

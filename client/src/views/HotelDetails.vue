@@ -5,8 +5,8 @@ import MapComponent from '@/components/map/MapComponent.vue'
 import { mapActions, mapGetters } from 'vuex'
 import ImageGallery from '@/components/hotel-image/ImageGallery.vue'
 import { useToast } from 'vue-toastification'
-import Loading from 'vue-loading-overlay'
-import 'vue-loading-overlay/dist/css/index.css'
+import SkeletonGrid from '@/components/common/SkeletonGrid.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { HotelService } from '@/services/hotel.service'
 import { getImagePath, getImageUrl } from '@/utils/images'
 
@@ -15,6 +15,8 @@ import ReviewValidation from '@/components/review/ReviewValidation.vue'
 
 import errorHandler from '@/request/errorHandler'
 import { HoldService } from '@/services/hold.service'
+import flatpickr from 'flatpickr'
+import 'flatpickr/dist/flatpickr.min.css'
 
 export default {
   components: {
@@ -22,7 +24,8 @@ export default {
     TheFooter,
     MapComponent,
     ImageGallery,
-    Loading,
+    SkeletonGrid,
+    EmptyState,
     // ReviewForm,
     ReviewValidation
   },
@@ -104,6 +107,22 @@ export default {
       'updateRooms',
       'updateChildren'
     ]),
+    // Format a date as DD/MM/YYYY without a timezone shift. A bare
+    // `new Date('2026-10-26')` is parsed as UTC midnight and can render the
+    // previous day in negative-offset zones.
+    formatDate(value) {
+      if (!value) return ''
+      if (value instanceof Date) {
+        const y = value.getFullYear()
+        const m = String(value.getMonth() + 1).padStart(2, '0')
+        const d = String(value.getDate()).padStart(2, '0')
+        return `${d}/${m}/${y}`
+      }
+      const s = String(value).slice(0, 10)
+      const [y, m, d] = s.split('-')
+      if (!y || !m || !d) return s
+      return `${d}/${m}/${y}`
+    },
     calculateNumberOfDays(checkInDateString, checkOutDateString) {
       const checkInDate = new Date(checkInDateString)
       const checkOutDate = new Date(checkOutDateString)
@@ -424,16 +443,15 @@ export default {
       this.checkOutDate = this.getSearchData.checkOutDate
       this.selectedLocation = this.getSearchData.location
       if (this.getSearchData.checkInDate && this.getSearchData.checkOutDate) {
-        let checkInDate = new Date(this.getSearchData.checkInDate).toLocaleDateString('vi-VN')
-        let checkOutDate = new Date(this.getSearchData.checkOutDate).toLocaleDateString('vi-VN')
+        const startOfToday = new Date().setHours(0, 0, 0, 0)
+        let checkInDate = this.formatDate(this.getSearchData.checkInDate)
+        let checkOutDate = this.formatDate(this.getSearchData.checkOutDate)
 
-        if (new Date(this.getSearchData.checkInDate).getTime() < new Date().getTime()) {
-          checkInDate = new Date().toLocaleDateString('vi-VN')
+        if (new Date(this.getSearchData.checkInDate).getTime() < startOfToday) {
+          checkInDate = this.formatDate(new Date())
         }
-        if (new Date(this.getSearchData.checkOutDate).getTime() < new Date().getTime()) {
-          checkOutDate = new Date(new Date().getTime() + 1000 * 60 * 60 * 24).toLocaleDateString(
-            'vi-VN'
-          )
+        if (new Date(this.getSearchData.checkOutDate).getTime() < startOfToday) {
+          checkOutDate = this.formatDate(new Date(Date.now() + 1000 * 60 * 60 * 24))
         }
 
         this.dateRange =
@@ -460,13 +478,11 @@ export default {
     // date picker popup
     flatpickr(this.$refs.dateInput, {
       dateFormat: 'd/m/Y', // Định dạng ngày
-      locale: 'vn', // Ngôn ngữ tiếng Việt cho tên ngày tháng
       mode: 'range', // Cho phép chọn dải ngày
 
       minDate: 'today', // Không cho phép chọn ngày trong quá khứ
       showMonths: 2, // Hiển thị 2 tháng cạnh nhau
       onChange: function (selectedDates, dateStr, instance) {},
-      mode: 'range',
       locale: {
         rangeSeparator: ' đến ' // Thay "to" bằng "đến"
       },
@@ -667,6 +683,7 @@ export default {
               type="text"
               v-model="guestDetails"
               class="search-input"
+              :aria-label="$t('userHeader.guestInputLabel')"
               @click="toggleGuestSelector"
               readonly
             />
@@ -756,7 +773,7 @@ export default {
               </ul>
             </td>
             <td>
-              <select @change="handleRoomSelection($event, room)">
+              <select aria-label="Number of rooms" @change="handleRoomSelection($event, room)">
                 <option value="0" selected>0</option>
                 <option v-for="n in room.available_rooms" :key="n" :value="n">
                   {{ n }} (USD {{ parseInt(n * room.price_per_night).toLocaleString('en-US') }})
@@ -780,10 +797,13 @@ export default {
           </tr>
         </tbody>
       </table>
-      <Loading v-model:active="isSearchRoomLoading" :color="`#003b95`" :is-full-page="false" />
-      <div v-if="room_list.length == 0" class="no-room-found">
-        <h5>Không tìm thấy phòng phù hợp với lựa chọn của bạn.</h5>
-      </div>
+      <SkeletonGrid v-if="isSearchRoomLoading" :count="2" image-height="90px" />
+      <EmptyState
+        v-else-if="room_list.length === 0"
+        title="No rooms available"
+        message="Try different dates or guest counts."
+        icon="fa-solid fa-bed"
+      />
     </div>
 
     <!-- end price -->
@@ -811,7 +831,7 @@ export default {
           <strong>Hạng mục</strong>
           <div class="review__process--bar">
             <div class="row">
-              <div class="col-lg-4 col-md-6 col-12" v-for="review in reviewCriterias">
+              <div class="col-lg-4 col-md-6 col-12" v-for="review in reviewCriterias" :key="review.criteria_name">
                 <div class="category">
                   <div>{{ review.criteria_name }}</div>
                   <div>
@@ -831,7 +851,7 @@ export default {
           <ul>
             <li>
               <p>Khách đánh giá</p>
-              <select name="" id="">
+              <select name="" id="" aria-label="Khách đánh giá">
                 <option value="">Tất cả({{ this.reviews.length }})</option>
                 <option value="">Gia đình(11)</option>
                 <option value="">Cặp đôi(2)</option>
@@ -841,7 +861,7 @@ export default {
             </li>
             <li>
               <p>Điểm đánh giá</p>
-              <select name="" id="">
+              <select name="" id="" aria-label="Điểm đánh giá">
                 <option value="">Tất cả({{ this.reviews.length }})</option>
                 <option value="">Tuyệt hảo: 9+ (19)</option>
                 <option value="">Tốt: 7-9 (2)</option>
@@ -851,7 +871,7 @@ export default {
             </li>
             <li>
               <p>Ngôn ngữ</p>
-              <select name="" id="">
+              <select name="" id="" aria-label="Ngôn ngữ">
                 <option value="">Tất cả ({{ this.reviews.length }})</option>
                 <option value="">Tiếng Việt (6)</option>
                 <option value="">Tiếng Anh (6)</option>
@@ -861,7 +881,7 @@ export default {
             </li>
             <li>
               <p>Thời gian trong năm</p>
-              <select name="" id="">
+              <select name="" id="" aria-label="Thời gian trong năm">
                 <option value="">Tất cả({{ this.reviews.length }})</option>
                 <option value="">Tháng 3-5</option>
                 <option value="">Tháng 6-8</option>
@@ -967,7 +987,7 @@ export default {
             <strong>Hạng mục</strong>
             <div class="review__process--bar">
               <div class="row">
-                <div class="col-lg-4 col-md-6 col-12" v-for="review in reviewCriterias">
+                <div class="col-lg-4 col-md-6 col-12" v-for="review in reviewCriterias" :key="review.criteria_name">
                   <div class="category">
                     <div>{{ review.criteria_name }}</div>
                     <div>

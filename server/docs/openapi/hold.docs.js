@@ -17,7 +17,7 @@
  *     tags:
  *       - Hold
  *     security:
- *       - sessionAuth: []
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -49,6 +49,10 @@
  *                 minimum: 1
  *                 default: 1
  *                 description: Number of guests
+ *               numberOfDays:
+ *                 type: integer
+ *                 minimum: 1
+ *                 description: Optional number of nights (otherwise inferred from the date range)
  *               rooms:
  *                 type: array
  *                 minItems: 1
@@ -68,10 +72,10 @@
  *                       description: Number of units of this room type
  *               currency:
  *                 type: string
- *                 length: 3
+ *                 enum: [USD]
  *                 default: USD
  *                 example: USD
- *                 description: Currency code for total price
+ *                 description: Currency code for the total price
  *     responses:
  *       201:
  *         description: Hold created successfully
@@ -102,6 +106,25 @@
  *                       format: double
  *                     currency:
  *                       type: string
+ *                     subtotal:
+ *                       type: number
+ *                       format: double
+ *                     taxAmount:
+ *                       type: number
+ *                       format: double
+ *                     serviceFeeAmount:
+ *                       type: number
+ *                       format: double
+ *                     platformCommissionAmount:
+ *                       type: number
+ *                       format: double
+ *                     priceBreakdown:
+ *                       type: object
+ *                       description: Full pricing breakdown returned by the pricing service
+ *                     cancellationPolicy:
+ *                       type: object
+ *                       nullable: true
+ *                       description: Cancellation policy snapshot captured with the quote
  *                     status:
  *                       type: string
  *                       enum: [active]
@@ -124,6 +147,16 @@
  *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
  *       409:
  *         description: Rooms not available for the given dates
  *         content:
@@ -141,7 +174,7 @@
  *     tags:
  *       - Hold
  *     security:
- *       - sessionAuth: []
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of active holds
@@ -179,6 +212,16 @@
  *                             quantity: { type: integer }
  *       401:
  *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
  */
 
 /**
@@ -190,7 +233,7 @@
  *     tags:
  *       - Hold
  *     security:
- *       - sessionAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: holdId
@@ -232,6 +275,16 @@
  *                           quantity: { type: integer }
  *       401:
  *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
  *       403:
  *         description: Not the owner of this hold
  *         content:
@@ -257,7 +310,7 @@
  *     tags:
  *       - Hold
  *     security:
- *       - sessionAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: holdId
@@ -285,6 +338,16 @@
  *                       enum: [released]
  *       401:
  *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
  *       403:
  *         description: Not the owner of this hold
  *         content:

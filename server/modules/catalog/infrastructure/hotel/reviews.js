@@ -4,7 +4,7 @@ const {
   HotelRatingSummaries,
   ReviewReplies,
   ReviewMedia,
-} = require('@models/index.js');
+} = require('@platform/database');
 
 /**
  * Hotel review queries.

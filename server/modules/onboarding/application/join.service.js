@@ -1,6 +1,7 @@
 const { mediaProxy: mediaProxyService } = require('@modules/media');
 const catalogModule = require('@modules/catalog');
 const inventoryModule = require('@modules/inventory');
+const identityModule = require('@modules/identity');
 const ApiError = require('@utils/ApiError');
 
 /**
@@ -90,13 +91,19 @@ class JoinService {
       latitude: lat.toString(),
       longitude: lng.toString(),
       rating: rating ? parseFloat(rating) : null,
-      checkInTime: `${checkInFrom}-${checkInTo}`,
-      checkOutTime: `${checkOutFrom}-${checkOutTo}`,
+      // `check_in_time`/`check_out_time` are TIME columns (a single time, not a
+      // range). Store the start of each window; the window bounds
+      // (checkInTo/checkOutTo) are validated but not persisted here.
+      checkInTime: checkInFrom,
+      checkOutTime: checkOutFrom,
       amenities: services ? JSON.stringify(services) : null,
     });
 
     // Extract hotel ID from Sequelize instance
     const hotelId = hotel.id || hotel.get?.('id') || hotel.dataValues?.id || hotel.hotel_id;
+
+    // Link the owner so the property is manageable in the admin client.
+    await identityModule.assignHotelOwner(ownerId, hotelId);
 
     // Create room
     const room = await catalogModule.createRoom({

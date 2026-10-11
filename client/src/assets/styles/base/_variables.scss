@@ -22,6 +22,18 @@ $spacing-xxl: 40px;
 // Border radius
 $border-radius-sm: 4px;
 $border-radius-md: 5px;
+$border-radius-lg: 8px;
+$border-radius-xl: 14px;
+
+// Elevation
+$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+$shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+// Breakpoints
+$bp-sm: 480px;
+$bp-md: 768px;
+$bp-lg: 1024px;
+$bp-xl: 1200px;
 
 // Font sizes
 $font-size-xs: 12px;

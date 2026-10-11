@@ -9,7 +9,7 @@ const {
   transactions: Transactions,
   payments: Payments,
   refunds: Refunds,
-} = require('@models/index.js');
+} = require('@platform/database');
 
 /**
  * Booking module (admin) repository. Owns booking reads/writes for the
@@ -123,6 +123,26 @@ class BookingAdminRepository {
       group: ['status'],
       raw: true,
       ...options,
+    });
+  }
+
+  /** Bookings created per day over the last `days` days (for the dashboard trend). */
+  async getDailyCounts(hotelId, { days = 14 } = {}) {
+    const since = new Date();
+    since.setUTCHours(0, 0, 0, 0);
+    since.setUTCDate(since.getUTCDate() - (days - 1));
+
+    const dateExpr = fn('DATE', col('created_at'));
+
+    return await Bookings.findAll({
+      attributes: [
+        [dateExpr, 'date'],
+        [fn('COUNT', col('id')), 'count'],
+      ],
+      where: { hotel_id: hotelId, created_at: { [Op.gte]: since } },
+      group: [dateExpr],
+      order: [[dateExpr, 'ASC']],
+      raw: true,
     });
   }
 

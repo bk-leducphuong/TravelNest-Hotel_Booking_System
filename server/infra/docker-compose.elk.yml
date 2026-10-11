@@ -33,22 +33,22 @@ services:
       timeout: 10s
       retries: 5
 
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.11.3
-    container_name: kibana
-    env_file: .env
-    environment:
-      - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_HOSTS}
-      # Kibana 8+ cannot use "elastic" superuser; must use kibana_system
-      - ELASTICSEARCH_USERNAME=kibana_system
-      - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
-    ports:
-      - '5601:5601'
-    networks:
-      - elk
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
+  # kibana:
+  #   image: docker.elastic.co/kibana/kibana:8.11.3
+  #   container_name: kibana
+  #   env_file: .env
+  #   environment:
+  #     - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_HOSTS}
+  #     # Kibana 8+ cannot use "elastic" superuser; must use kibana_system
+  #     - ELASTICSEARCH_USERNAME=kibana_system
+  #     - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
+  #   ports:
+  #     - '5601:5601'
+  #   networks:
+  #     - elk
+  #   depends_on:
+  #     elasticsearch:
+  #       condition: service_healthy
   #
   # logstash:
   #   image: docker.elastic.co/logstash/logstash:8.11.3

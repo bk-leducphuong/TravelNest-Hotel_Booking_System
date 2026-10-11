@@ -1,8 +1,13 @@
 const express = require('express');
 
-const { authenticate, requirePermission } = require('@middlewares/auth.middleware');
+const {
+  authenticate,
+  requirePermission,
+  requireEntityInHotel,
+} = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
 const { PERMISSIONS } = require('@constants/permissions');
+const { Bookings } = require('@platform/database');
 
 const schema = require('./schemas');
 const controller = require('./admin.controller');
@@ -12,6 +17,16 @@ const router = express.Router();
 // Bookings are always scoped to a hotel (platform staff may omit it for global views).
 const requireHotelPermission = (permission) =>
   requirePermission(permission, { requireHotelContext: true });
+
+// `/bookings/:bookingId*` has no hotelId in the path, so assert the booking
+// belongs to the caller's hotel context (closes the cross-hotel IDOR).
+const bookingInHotel = requireEntityInHotel(async (req) => {
+  const booking = await Bookings.findOne({
+    where: { id: req.params.bookingId },
+    attributes: ['hotel_id'],
+  });
+  return booking?.hotel_id;
+});
 
 /**
  * Admin booking routes (mounted at /api/v1/admin/bookings).
@@ -34,9 +49,17 @@ router.get(
 );
 
 router.get(
+  '/hotels/:hotelId/trend',
+  requireHotelPermission(PERMISSIONS.BOOKING_READ),
+  validate(schema.getBookingTrend),
+  controller.getBookingTrendHandler
+);
+
+router.get(
   '/:bookingId',
   requireHotelPermission(PERMISSIONS.BOOKING_READ),
   validate(schema.getBooking),
+  bookingInHotel,
   controller.getBookingHandler
 );
 
@@ -44,6 +67,7 @@ router.patch(
   '/:bookingId/status',
   requireHotelPermission(PERMISSIONS.BOOKING_MANAGE),
   validate(schema.updateBookingStatus),
+  bookingInHotel,
   controller.updateBookingStatusHandler
 );
 
@@ -51,6 +75,7 @@ router.post(
   '/:bookingId/cancel',
   requireHotelPermission(PERMISSIONS.BOOKING_CANCEL),
   validate(schema.cancelBooking),
+  bookingInHotel,
   controller.cancelBookingHandler
 );
 

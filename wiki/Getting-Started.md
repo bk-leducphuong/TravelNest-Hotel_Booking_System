@@ -103,7 +103,7 @@ From the repository root, you can use Yarn workspace commands:
 
 ```bash
 yarn dev:server          # Start backend API
-yarn dev:client          # Start user client
+yarn dev:guest          # Start user client
 yarn dev:admin           # Start admin client
 yarn dev:bullmq-worker   # Start background worker
 yarn lint                # Lint all packages

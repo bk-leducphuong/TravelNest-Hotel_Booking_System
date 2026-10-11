@@ -97,7 +97,8 @@ async function cancelBooking(bookingId, userId, options = {}) {
   const bookingData = booking.toJSON ? booking.toJSON() : booking;
 
   if (bookingData.status === 'cancelled') {
-    throw new ApiError(400, 'ALREADY_CANCELLED', 'Booking is already cancelled');
+    // Same conflict as the concurrent path below (one code/status for both).
+    throw new ApiError(409, 'BOOKING_ALREADY_CANCELLED', 'Booking is already cancelled');
   }
 
   if (bookingData.status === 'completed') {
@@ -132,7 +133,10 @@ async function cancelBooking(bookingId, userId, options = {}) {
     });
 
     if (updatedCount === 0) {
-      throw new ApiError(500, 'UPDATE_FAILED', 'Failed to cancel booking');
+      // A concurrent cancel (or an already-cancelled booking) means the status
+      // row no longer matches the expected precondition. That is a conflict,
+      // not a server error — and the transaction rollback keeps inventory sane.
+      throw new ApiError(409, 'BOOKING_ALREADY_CANCELLED', 'Booking is already cancelled');
     }
   });
 

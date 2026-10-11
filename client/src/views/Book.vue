@@ -36,6 +36,7 @@
         isHoldConvertedToBooking: false,
         isReleasingHold: false,
         userSocket: null,
+        phoneNumber: '',
       };
     },
     computed: {
@@ -60,10 +61,23 @@
         return this.getUserInformation || {};
       },
     },
+    watch: {
+      // Prefill the phone number from the profile, but keep it editable so a
+      // user without a saved phone can still complete checkout.
+      getUserInformation: {
+        immediate: true,
+        handler(user) {
+          if (user && user.phone_number && !this.phoneNumber) {
+            this.phoneNumber = user.phone_number;
+          }
+        },
+      },
+    },
     methods: {
       checkFormFulfillment() {
-        const { full_name, email, phone_number } = this.bookingUser;
-        return Boolean(full_name && email && phone_number);
+        const { full_name, email } = this.bookingUser;
+        const phoneNumber = this.phoneNumber || this.bookingUser.phone_number;
+        return Boolean(full_name && email && phoneNumber);
       },
       async nextStep() {
         if (this.currentStep < this.steps.length) {
@@ -296,14 +310,12 @@
                 <option selected>VN +84</option>
               </select>
               <input
-                v-if="getUserInformation"
-                disabled
-                :placeholder="getUserInformation.phone_number"
-                type="text"
+                v-model="phoneNumber"
+                type="tel"
+                placeholder="Your phone number"
                 class="phone-number"
                 required
               />
-              <input type="text" v-else placeholder="Your phone number" class="phone-number" />
             </div>
             <div class="helper-text">Needed by the property to validate your booking</div>
           </div>
@@ -373,7 +385,7 @@
           :userInfor="{
             fullName: bookingUser.full_name,
             email: bookingUser.email,
-            phoneNumber: bookingUser.phone_number,
+            phoneNumber: phoneNumber || bookingUser.phone_number,
           }"
           @booking-created="handleBookingCreated"
         />

@@ -1,13 +1,8 @@
 <template>
-  <div class="hotel-container container" v-if="trendingHotels.length > 0">
+  <div class="hotel-container container" v-if="isLoading || trendingHotels.length > 0">
     <h2 class="h2">{{ $t('userHome.trendingHotels') }}</h2>
-    <Loading
-      v-model:active="isLoading"
-      :can-cancel="true"
-      :color="`#003b95`"
-      :is-full-page="false"
-    />
-    <div class="slider-container">
+    <SkeletonGrid v-if="isLoading" :count="itemsPerSlide" image-height="220px" />
+    <div v-else class="slider-container">
       <ElCarousel
         :interval="0"
         :arrow="groupedHotels.length > 1 ? 'hover' : 'never'"
@@ -21,7 +16,11 @@
               class="hotel-card"
               v-for="(hotel, index) in group"
               :key="hotel.id || index"
+              role="button"
+              tabindex="0"
               @click="redirectToHotelDetails(hotel)"
+              @keydown.enter="redirectToHotelDetails(hotel)"
+              @keydown.space.prevent="redirectToHotelDetails(hotel)"
             >
               <div class="hotel-image">
                 <img
@@ -32,11 +31,13 @@
                 <SavedHotelIcon :hotel-id="hotel.id" />
               </div>
               <div class="hotel-content">
-                <h2 class="hotel-name">{{ hotel.name }}</h2>
+                <div class="hotel-name">{{ hotel.name }}</div>
                 <p class="hotel-location">{{ displayAddress(hotel.address) }}</p>
                 <div class="hotel-rating" v-if="hotel.ratingSummary">
                   <span class="rating-badge">{{ hotel.ratingSummary.overallRating }}</span>
-                  <span class="review-count">{{ hotel.ratingSummary.totalReviews }} đánh giá</span>
+                  <span class="review-count">{{
+                    $t('userHome.reviewCount', { count: hotel.ratingSummary.totalReviews })
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -49,9 +50,8 @@
 
 <script>
   import { mapActions } from 'vuex';
-  import Loading from 'vue-loading-overlay';
-  import 'vue-loading-overlay/dist/css/index.css';
   import SavedHotelIcon from '@/components/SavedHotelIcon.vue';
+  import SkeletonGrid from '@/components/common/SkeletonGrid.vue';
   import { HotelService } from '@/services/hotel.service';
   import errorHandler from '@/request/errorHandler';
   import { getImageUrl } from '@/utils/images';
@@ -59,8 +59,8 @@
   export default {
     name: 'TrendingHotels',
     components: {
-      Loading,
       SavedHotelIcon,
+      SkeletonGrid,
     },
     data() {
       return {

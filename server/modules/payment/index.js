@@ -14,6 +14,8 @@ const transactionRepository = require('./infrastructure/transaction.repository')
 const ledgerRepository = require('./infrastructure/ledger.repository');
 const idempotencyRepository = require('./infrastructure/idempotency.repository');
 const ledgerService = require('./application/ledger.service');
+const StripePaymentAdapter = require('./infrastructure/adapters/stripe-payment.adapter');
+const stripePaymentAdapter = new StripePaymentAdapter();
 
 // Register once per process (guarded).
 registerPaymentSubscribers();
@@ -60,6 +62,11 @@ async function failIdempotencyRecord(id, options = {}) {
   return await idempotencyRepository.markFailed(id, options);
 }
 
+/** Re-claim a stale/failed idempotency record (recovery after a crash). */
+async function touchIdempotencyRecord(id, data = {}, options = {}) {
+  return await idempotencyRepository.touchProcessing(id, data, options);
+}
+
 // --- Ledger (payout reads the account owner) ---
 async function getPrimaryOwnerByHotelId(hotelId, options = {}) {
   return await ledgerRepository.findPrimaryOwnerByHotelId(hotelId, options);
@@ -67,6 +74,17 @@ async function getPrimaryOwnerByHotelId(hotelId, options = {}) {
 
 /** Webhook event log used by the Stripe webhook edge (idempotency + audit). */
 const webhookEventLog = require('./infrastructure/webhook-event-log');
+
+/**
+ * Stripe provider operations for the contexts that drive Stripe on the booking
+ * side (booking creates/reads/cancels the PaymentIntent). Exposing these keeps
+ * the Stripe adapter inside payment instead of leaking it to booking.
+ */
+const paymentProvider = {
+  getPayment: (paymentId) => stripePaymentAdapter.getPayment(paymentId),
+  createPayment: (params) => stripePaymentAdapter.createPayment(params),
+  cancelPayment: (paymentId) => stripePaymentAdapter.cancelPayment(paymentId),
+};
 
 module.exports = {
   adminRoutes,
@@ -93,8 +111,12 @@ module.exports = {
   createIdempotencyRecord,
   completeIdempotencyRecord,
   failIdempotencyRecord,
+  touchIdempotencyRecord,
   getPrimaryOwnerByHotelId,
   webhookEventLog,
+
+  // Stripe provider operations (booking's payment flow).
+  paymentProvider,
 
   // Ledger posting (payout + payment webhooks).
   ledger: ledgerService,

@@ -7,6 +7,7 @@ RUN corepack enable
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY server/package.json server/
 COPY client/package.json client/
+COPY superadmin-client/package.json superadmin-client/
 # The workspace source must be present before installing: the admin-client
 # `postinstall` script runs `nuxt prepare`, which reads nuxt.config.ts.
 COPY admin-client/ ./admin-client/

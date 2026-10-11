@@ -10,7 +10,7 @@
     },
     props: {
       hotelId: {
-        type: Number,
+        type: String,
         required: true,
       },
       initialIsFavorite: {
@@ -48,7 +48,7 @@
               this.isFavorite = true;
             }
           } else {
-            this.toast.error('Vui lòng đăng nhập để thêm vào danh sách yêu thích');
+            this.toast.error(this.$t('savedHotel.loginRequired'));
           }
         } catch (error) {
           if (error?.response?.status === 409) {
@@ -59,13 +59,13 @@
         }
       },
       async checkFavoriteHotel() {
-        if (this.isUserAuthenticated) {
-          // try {
-          //   const response = await UserService.isFavoriteHotel(this.hotelId)
-          //   this.isFavorite = response?.data?.isFavorite ?? false
-          // } catch (error) {
-          //   console.error(error)
-          // }
+        if (!this.isUserAuthenticated) return;
+
+        try {
+          const response = await UserService.isFavoriteHotel(this.hotelId);
+          this.isFavorite = response?.data?.isFavorite ?? false;
+        } catch (error) {
+          // Non-fatal: leave the heart in its default (unsaved) state.
         }
       },
       async deleteFavoriteHotel() {
@@ -85,9 +85,15 @@
   };
 </script>
 <template>
-  <button class="favorite-button" @click.stop="saveFavoriteHotel()">
-    <i class="fa-solid fa-heart" style="color: #e70d0d" v-if="isFavorite"></i>
-    <i class="fa-regular fa-heart" v-else></i>
+  <button
+    class="favorite-button"
+    type="button"
+    :aria-label="isFavorite ? 'Remove from saved hotels' : 'Save to saved hotels'"
+    :aria-pressed="isFavorite"
+    @click.stop="saveFavoriteHotel()"
+  >
+    <i class="fa-solid fa-heart" style="color: #e70d0d" v-if="isFavorite" aria-hidden="true"></i>
+    <i class="fa-regular fa-heart" v-else aria-hidden="true"></i>
   </button>
 </template>
 <style scoped>

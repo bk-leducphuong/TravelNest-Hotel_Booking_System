@@ -1,8 +1,19 @@
 <script setup lang="ts">
-import { fetchBookingStats, type BookingStats } from "~/services/api/bookings";
-import { fetchPaymentSummary, type PaymentSummary } from "~/services/api/payments";
+import {
+  fetchBookingStats,
+  fetchBookingTrend,
+  type BookingStats,
+  type BookingTrend,
+} from "~/services/api/bookings";
+import {
+  fetchPaymentSummary,
+  type PaymentSummary,
+} from "~/services/api/payments";
 import { fetchPayoutSummary, type PayoutSummary } from "~/services/api/payouts";
-import { fetchOccupancy, type OccupancySummary } from "~/services/api/inventory";
+import {
+  fetchOccupancy,
+  type OccupancySummary,
+} from "~/services/api/inventory";
 import { fetchReviewSummary, type ReviewSummary } from "~/services/api/reviews";
 
 const auth = useAuthStore();
@@ -10,6 +21,7 @@ const { can } = usePermissions();
 
 const loading = ref(false);
 const bookingStats = ref<BookingStats | null>(null);
+const bookingTrend = ref<BookingTrend | null>(null);
 const paymentSummary = ref<PaymentSummary | null>(null);
 const payoutSummary = ref<PayoutSummary | null>(null);
 const occupancy = ref<OccupancySummary | null>(null);
@@ -59,7 +71,9 @@ const cards = computed(() => [
   {
     label: "Pending payouts",
     value: money(payoutSummary.value?.pendingAmount),
-    hint: payoutSummary.value?.payoutReady ? "Payouts ready" : "Onboarding incomplete",
+    hint: payoutSummary.value?.payoutReady
+      ? "Payouts ready"
+      : "Onboarding incomplete",
     show: can("payment.read"),
   },
 ]);
@@ -74,7 +88,47 @@ const bookingStatusRows = computed(() => {
     .map(([status, count]) => ({ status, count }));
 });
 
-const unwind = (promise: Promise<unknown> | null) => promise ?? Promise.resolve();
+const trendPoints = computed(
+  () =>
+    bookingTrend.value?.points.map((point) => ({
+      label: point.date.slice(5),
+      value: point.count,
+    })) ?? []
+);
+
+const occupancySegments = computed(() => {
+  const booked = occupancy.value?.bookedRooms ?? 0;
+  const total = occupancy.value?.totalRooms ?? 0;
+  return [
+    { label: "Booked", value: booked, color: "#059669" },
+    {
+      label: "Available",
+      value: Math.max(total - booked, 0),
+      color: "#cbd5e1",
+    },
+  ];
+});
+
+const revenueBars = computed(() => [
+  {
+    label: "Gross",
+    value: paymentSummary.value?.grossAmount ?? 0,
+    color: "#059669",
+  },
+  {
+    label: "Net",
+    value: paymentSummary.value?.netAmount ?? 0,
+    color: "#0284c7",
+  },
+  {
+    label: "Refunded",
+    value: paymentSummary.value?.refundedAmount ?? 0,
+    color: "#e11d48",
+  },
+]);
+
+const unwind = (promise: Promise<unknown> | null) =>
+  promise ?? Promise.resolve();
 
 const load = async () => {
   if (!auth.activeHotelId) {
@@ -88,6 +142,11 @@ const load = async () => {
       ? fetchBookingStats(hotelId)
           .then((data) => (bookingStats.value = data))
           .catch(() => (bookingStats.value = null))
+      : unwind(null),
+    can("booking.read")
+      ? fetchBookingTrend(hotelId, 14)
+          .then((data) => (bookingTrend.value = data))
+          .catch(() => (bookingTrend.value = null))
       : unwind(null),
     can("payment.read")
       ? fetchPaymentSummary(hotelId)
@@ -121,13 +180,21 @@ watch(() => auth.activeHotelId, load, { immediate: true });
   <section class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h2>
+        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">
+          Dashboard
+        </h2>
         <p class="mt-1 text-sm text-slate-500">
           {{ auth.activeHotel?.name || "No hotel selected" }}
-          <span v-if="occupancy">· {{ occupancy.startDate }} → {{ occupancy.endDate }}</span>
+          <span v-if="occupancy"
+            >· {{ occupancy.startDate }} → {{ occupancy.endDate }}</span
+          >
         </p>
       </div>
-      <el-button :loading="loading" :disabled="!auth.activeHotelId" @click="load">
+      <el-button
+        :loading="loading"
+        :disabled="!auth.activeHotelId"
+        @click="load"
+      >
         Refresh
       </el-button>
     </div>
@@ -145,9 +212,63 @@ watch(() => auth.activeHotelId, load, { immediate: true });
           v-loading="loading"
           class="shadow-sm"
         >
-          <p class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ card.label }}</p>
-          <p class="mt-1 text-2xl font-semibold text-slate-900">{{ card.value }}</p>
+          <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
+            {{ card.label }}
+          </p>
+          <p class="mt-1 text-2xl font-semibold text-slate-900">
+            {{ card.value }}
+          </p>
           <p class="mt-1 text-xs text-slate-500">{{ card.hint }}</p>
+        </el-card>
+      </div>
+
+      <el-card v-if="can('booking.read')" v-loading="loading" class="shadow-sm">
+        <template #header>
+          <span class="font-medium">Bookings — last 14 days</span>
+        </template>
+        <el-empty
+          v-if="
+            !bookingTrend ||
+            bookingTrend.points.every((point) => point.count === 0)
+          "
+          description="No bookings in this period"
+          :image-size="60"
+        />
+        <TrendChart v-else :points="trendPoints" />
+      </el-card>
+
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <el-card v-if="can('room.read')" v-loading="loading" class="shadow-sm">
+          <template #header>
+            <span class="font-medium">Occupancy</span>
+          </template>
+          <el-empty
+            v-if="!occupancy"
+            description="No occupancy data"
+            :image-size="60"
+          />
+          <DonutChart
+            v-else
+            :segments="occupancySegments"
+            :center-value="`${occupancy.occupancyRate}%`"
+            center-label="occupied"
+          />
+        </el-card>
+
+        <el-card
+          v-if="can('payment.read')"
+          v-loading="loading"
+          class="shadow-sm"
+        >
+          <template #header>
+            <span class="font-medium">Revenue</span>
+          </template>
+          <el-empty
+            v-if="!paymentSummary"
+            description="No payment data"
+            :image-size="60"
+          />
+          <BarChart v-else :bars="revenueBars" :value-formatter="money" />
         </el-card>
       </div>
 
@@ -166,13 +287,21 @@ watch(() => auth.activeHotelId, load, { immediate: true });
             :key="row.status"
             class="flex items-center justify-between gap-4"
           >
-            <span class="w-40 text-sm text-slate-600">{{ statusLabel(row.status) }}</span>
+            <span class="w-40 text-sm text-slate-600">{{
+              statusLabel(row.status)
+            }}</span>
             <el-progress
-              :percentage="Math.round((row.count / Math.max(bookingStats?.total ?? 1, 1)) * 100)"
+              :percentage="
+                Math.round(
+                  (row.count / Math.max(bookingStats?.total ?? 1, 1)) * 100
+                )
+              "
               :stroke-width="10"
               class="flex-1"
             />
-            <span class="w-10 text-right text-sm font-medium text-slate-900">{{ row.count }}</span>
+            <span class="w-10 text-right text-sm font-medium text-slate-900">{{
+              row.count
+            }}</span>
           </li>
         </ul>
       </el-card>

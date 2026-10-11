@@ -15,7 +15,6 @@ const (
 	PayoutFailedSubject     = "payment.payout.failed.v1"
 	BookingExpiredSubject   = "booking.booking.expired.v1"
 	EmailRequestedSubject   = "notification.email.requested.v1"
-	TestInAppSubject        = "notification.test.inapp.requested.v1"
 	RealtimeDispatchSubject = "notification.realtime.dispatch.v1"
 )
 
@@ -85,21 +84,6 @@ type EmailRequested struct {
 	Data       map[string]any `json:"data"`
 }
 
-type TestInAppRequested struct {
-	EventID            string         `json:"eventId"`
-	OccurredAt         time.Time      `json:"occurredAt"`
-	ReceiverIDs        []string       `json:"receiverIds"`
-	Title              string         `json:"title"`
-	Message            string         `json:"message"`
-	Category           string         `json:"category"`
-	Priority           string         `json:"priority"`
-	ActionURL          string         `json:"actionUrl"`
-	ActionLabel        string         `json:"actionLabel"`
-	Metadata           map[string]any `json:"metadata"`
-	SenderID           string         `json:"senderId"`
-	TriggeredByAdminID string         `json:"triggeredByAdminId"`
-}
-
 type RealtimeDispatch struct {
 	EventID       string                       `json:"eventId"`
 	OccurredAt    time.Time                    `json:"occurredAt"`
@@ -165,17 +149,6 @@ func DecodeEmailRequested(data []byte) (EmailRequested, error) {
 	return event, nil
 }
 
-func DecodeTestInAppRequested(data []byte) (TestInAppRequested, error) {
-	var event TestInAppRequested
-	if err := decodeEvent(data, TestInAppSubject, &event); err != nil {
-		return event, err
-	}
-	if event.EventID == "" || len(event.ReceiverIDs) == 0 || event.Title == "" || event.Message == "" {
-		return event, errors.New("missing required test notification fields")
-	}
-	return event, nil
-}
-
 func decodeEvent(data []byte, expectedType string, target any) error {
 	var envelope Envelope
 	if err := json.Unmarshal(data, &envelope); err == nil && envelope.Payload != nil {
@@ -199,9 +172,6 @@ func decodeEvent(data []byte, expectedType string, target any) error {
 			t.EventID = first(t.EventID, envelope.EventID)
 			t.OccurredAt = firstTime(t.OccurredAt, envelope.OccurredAt)
 		case *EmailRequested:
-			t.EventID = first(t.EventID, envelope.EventID)
-			t.OccurredAt = firstTime(t.OccurredAt, envelope.OccurredAt)
-		case *TestInAppRequested:
 			t.EventID = first(t.EventID, envelope.EventID)
 			t.OccurredAt = firstTime(t.OccurredAt, envelope.OccurredAt)
 		}

@@ -11,7 +11,8 @@ const {
   images,
   rooms,
   hotel_rating_summaries,
-} = require('@models');
+  hotel_cancellation_rules,
+} = require('@platform/database');
 
 /**
  * HotelSearchSnapshot Repository - Contains all database operations for hotel search snapshots
@@ -137,10 +138,25 @@ class HotelSearchSnapshotRepository {
   }
 
   /**
-   * Check if hotel has any free cancellation options
+   * Check if hotel has any free cancellation options.
+   *
+   * A hotel offers free cancellation when it has an active, refundable
+   * cancellation rule with a free-cancellation window (a deadline before
+   * check-in).
    */
   async checkFreeCancellation(hotelId) {
-    return { has_free_cancellation: false };
+    const rule = await hotel_cancellation_rules.findOne({
+      where: {
+        hotel_id: hotelId,
+        is_active: true,
+        is_refundable: true,
+        free_cancellation_until_hours_before_checkin: { [Op.ne]: null },
+      },
+      attributes: ['id'],
+      raw: true,
+    });
+
+    return { has_free_cancellation: Boolean(rule) };
   }
 
   /**

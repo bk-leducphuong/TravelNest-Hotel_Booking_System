@@ -6,7 +6,7 @@ const {
   review_media: ReviewMedia,
   users: Users,
   hotels: Hotels,
-} = require('@models/index.js');
+} = require('@platform/database');
 const sequelize = require('@config/database.config');
 
 /**

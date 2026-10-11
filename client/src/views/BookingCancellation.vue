@@ -1,10 +1,12 @@
 <script>
 import Header from '@/components/Header.vue'
-import { mapGetters } from 'vuex'
-import LoadingPopup from '@/components/LoadingPopup.vue';
+import LoadingPopup from '@/components/LoadingPopup.vue'
 import errorHandler from '@/request/errorHandler.js'
-import axios from 'axios';
+import { BookingService } from '@/services/booking.service'
 import { getFirstImageUrl } from '@/utils/images'
+
+// Statuses the API allows cancelling.
+const CANCELLABLE_STATUSES = ['pending_payment', 'confirmed', 'payment_failed', 'checked_in']
 
 export default {
   components: {
@@ -15,6 +17,7 @@ export default {
     return {
       step: 1,
       reason: '',
+      booking: null,
       isLoading: false,
       isLoaded: false,
       startTitle: 'Canceling your booking, please wait!',
@@ -25,42 +28,69 @@ export default {
     }
   },
   computed: {
-    ...mapGetters('booking', ['getBookingInformation'])
+    // Normalize the API booking to the shape the template uses.
+    getBookingInformation() {
+      const b = this.booking
+      if (!b) return {}
+
+      const rooms = (b.bookingRooms || b.rooms || []).map((room) => ({
+        roomId: room.room_id || room.roomId,
+        roomName: room.room?.room_name || room.room_name || room.roomName,
+        quantity: room.quantity || 1
+      }))
+
+      return {
+        ...b,
+        checkInDate: b.check_in_date || b.checkInDate,
+        checkOutDate: b.check_out_date || b.checkOutDate,
+        totalPrice: b.total_price ?? b.totalPrice,
+        rooms
+      }
+    },
+    canCancel() {
+      return CANCELLABLE_STATUSES.includes(this.getBookingInformation.status)
+    }
   },
   methods: {
     nextStep() {
-      this.step++
+      if (this.canCancel) {
+        this.step++
+      }
     },
     backStep() {
       this.step--
     },
-    async cancelBooking() {
+    async loadBooking() {
       try {
-        // check whether the booking is confirmed
-        if (this.getBookingInformation.status !== 'confirmed') {
-          return
-        }
-        
-        this.isLoading = true
-        this.disableCancelBtn = true
-
-        const response = await axios.post(`${import.meta.env.VITE_SERVER_HOST}/api/cancel-bookings`, {
-          bookingInformation: this.getBookingInformation,
-        }, {
-          withCredentials: true
-        })
-        if (response.data.success) {
-          this.isLoading = false
-          this.isLoaded = true
-        }else {
-          this.fail = true
-        }
-      }catch(error) {
+        const response = await BookingService.getBookingByCode(this.$route.params.bookingCode)
+        this.booking = response?.data || null
+      } catch (error) {
         errorHandler(error)
+      }
+    },
+    async cancelBooking() {
+      if (!this.booking?.id) {
         this.fail = true
-      }   
+        return
+      }
+
+      this.isLoading = true
+      this.disableCancelBtn = true
+
+      try {
+        await BookingService.cancelBooking(this.booking.id, false)
+        this.isLoading = false
+        this.isLoaded = true
+      } catch (error) {
+        errorHandler(error)
+        this.isLoading = false
+        this.fail = true
+      }
     },
     getFirstImageUrl
+  },
+  async mounted() {
+    await this.loadBooking()
   }
 }
 </script>
@@ -77,7 +107,7 @@ export default {
       <p class="reason-desc">
         We can help you find alternative solutions if you need to make changes to your booking.
       </p>
-      <form>
+      <form @submit.prevent>
         <label for="reason" class="reason-label">Reason</label>
         <select id="reason" class="reason-select" v-model="reason">
           <option value="Change of dates or destination">Change of dates or destination</option>

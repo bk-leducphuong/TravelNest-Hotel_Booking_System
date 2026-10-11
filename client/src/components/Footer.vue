@@ -71,11 +71,11 @@
       <p>Copyright © 1996–2024 TravelNest™. All rights reserved.</p>
     </div>
     <div class="brand-logos">
-      <img src="" alt="TravelNest" />
-      <img src="" alt="Priceline" />
-      <img src="" alt="Kayak" />
-      <img src="" alt="Agoda" />
-      <img src="" alt="OpenTable" />
+      <span class="brand-name">TravelNest</span>
+      <span class="brand-name">Priceline</span>
+      <span class="brand-name">Kayak</span>
+      <span class="brand-name">Agoda</span>
+      <span class="brand-name">OpenTable</span>
     </div>
   </div>
 </template>
@@ -151,5 +151,12 @@
 .brand-logos img {
   height: 20px;
   margin: 0 10px;
+}
+
+.brand-name {
+  margin: 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
 }
 </style>

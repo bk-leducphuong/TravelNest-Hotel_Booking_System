@@ -159,19 +159,28 @@ function formatPolicies(policies = []) {
 }
 
 function formatRooms(rooms = [], numberOfNights) {
-  return (rooms || []).map((room) => ({
-    roomId: room.id || room.room_id,
-    roomName: room.room_name,
-    maxGuests: room.max_guests,
-    roomImageUrls: room.room_image_urls,
-    roomAmenities: room.room_amenities,
-    pricePerNight: parseFloat(room.price_per_night) || 0,
-    availableRooms: room.available_rooms || 0,
-    totalPrice:
-      numberOfNights && room.price_per_night
-        ? parseFloat((parseFloat(room.price_per_night) * numberOfNights).toFixed(2))
-        : null,
-  }));
+  return (rooms || []).map((room) => {
+    const pricePerNight = parseFloat(room.price_per_night) || 0;
+
+    // Prefer the stay total computed by the query (SUM over the date range);
+    // fall back to per-night × nights when it isn't provided.
+    const hasTotal = room.total_price !== null && room.total_price !== undefined;
+    let totalPrice = hasTotal ? parseFloat(room.total_price) : null;
+    if (totalPrice === null && numberOfNights && pricePerNight) {
+      totalPrice = parseFloat((pricePerNight * numberOfNights).toFixed(2));
+    }
+
+    return {
+      roomId: room.id || room.room_id,
+      roomName: room.room_name,
+      maxGuests: room.max_guests,
+      roomImageUrls: room.room_image_urls,
+      roomAmenities: room.room_amenities,
+      pricePerNight,
+      availableRooms: room.available_rooms || 0,
+      totalPrice,
+    };
+  });
 }
 
 module.exports = {

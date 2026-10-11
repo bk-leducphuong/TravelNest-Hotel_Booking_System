@@ -6,11 +6,11 @@ const paymentModule = {
     .handleRefundSucceeded,
   webhookEventLog: require('../infrastructure/webhook-event-log'),
 };
-const StripePaymentAdapter = require('@adapters/payment/stripePayment.adapter');
-const StripeWebhookAdapter = require('@adapters/webhooks/stripeWebhook.adapter');
 const emailPublisher = require('@platform/events/producers/email');
 const notificationPublisher = require('@platform/events/producers/notification');
 const logger = require('@config/logger.config');
+const StripeWebhookAdapter = require('../infrastructure/adapters/stripe-webhook.adapter');
+const StripePaymentAdapter = require('../infrastructure/adapters/stripe-payment.adapter');
 
 // Initialize adapters
 const paymentAdapter = new StripePaymentAdapter();

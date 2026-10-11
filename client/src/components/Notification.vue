@@ -55,15 +55,11 @@
                   <span>{{ notification.message }}</span>
                 </ElBadge>
               </div>
-              <p class="notification-time">2 hrs ago</p>
+              <p class="notification-time">{{ formatTime(notification.created_at) }}</p>
             </div>
           </div>
         </div>
 
-        <!-- Notification Footer -->
-        <div class="notification-footer" v-if="notifications.length > 0">
-          <ElButton text type="primary" @click="handleSeeAll">See all</ElButton>
-        </div>
       </div>
     </template>
   </ElPopover>
@@ -161,25 +157,37 @@
           console.error(error);
         }
       },
-      viewDetails(notification) {
-        // Mark notification as read when clicked
+      formatTime(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+
+        const diffMs = Date.now() - date.getTime();
+        const minutes = Math.round(diffMs / 60000);
+        if (minutes < 1) return 'just now';
+        if (minutes < 60) return `${minutes} min ago`;
+        const hours = Math.round(minutes / 60);
+        if (hours < 24) return `${hours} hr${hours === 1 ? '' : 's'} ago`;
+        const days = Math.round(hours / 24);
+        if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`;
+        return date.toLocaleDateString();
+      },
+      async viewDetails(notification) {
+        // Mark notification as read when clicked (persist to the backend).
         if (!notification.is_read) {
           notification.is_read = true;
           this.calculateNumerOfNewNotifications();
-          // You can add API call here to update backend
+
+          try {
+            await NotificationService.markAsRead(notification.id);
+          } catch (error) {
+            // Non-fatal: keep the optimistic local state.
+            console.error('Failed to mark notification as read:', error);
+          }
         }
-        
+
         // Close popover
         this.isNotificationPopupVisible = false;
-        
-        // Add navigation or detailed view logic here if needed
-        console.log('View notification details:', notification);
-      },
-      handleSeeAll() {
-        this.isNotificationPopupVisible = false;
-        // Add navigation to notifications page if exists
-        // this.$router.push('/notifications');
-        console.log('Navigate to all notifications');
       },
     },
     async mounted() {

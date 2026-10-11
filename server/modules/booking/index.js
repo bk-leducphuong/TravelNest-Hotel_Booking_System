@@ -1,5 +1,6 @@
 const bookingRepository = require('./infrastructure/booking.repository');
 const holdService = require('./application/hold.service');
+const { generateBookingCode } = require('./domain/booking-code');
 
 const adminRoutes = require('./api/admin.routes');
 const guestRoutes = require('./api/guest.routes');
@@ -82,4 +83,7 @@ module.exports = {
 
   // Background jobs (queues + worker factories) owned by booking.
   jobs,
+
+  // Domain helpers other contexts may need (payment generates booking codes).
+  generateBookingCode,
 };

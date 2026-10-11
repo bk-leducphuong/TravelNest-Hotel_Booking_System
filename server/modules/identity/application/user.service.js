@@ -1,9 +1,26 @@
 const bcrypt = require('bcryptjs');
 
 const { mediaProxy: mediaProxyService } = require('@modules/media');
-const { AuthAccounts } = require('@models/index.js');
+const { AuthAccounts } = require('@platform/database');
 const ApiError = require('@utils/ApiError');
 const userRepository = require('../infrastructure/user.repository');
+
+/**
+ * Trim, strip markup/control characters and cap length on profile text.
+ * Output is also escaped client-side; this keeps stored values clean.
+ */
+function sanitizeProfileText(value, maxLength = 500) {
+  if (typeof value !== 'string') return value;
+
+  return (
+    value
+      .replace(/[<>]/g, '')
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\u0000-\u001F\u007F]/g, '')
+      .trim()
+      .slice(0, maxLength)
+  );
+}
 
 /**
  * User Service - Contains main business logic
@@ -56,7 +73,13 @@ class UserService {
       }
     }
 
-    await userRepository.updateById(userId, updateData);
+    // Sanitize free-text fields before persisting.
+    const sanitized = {};
+    for (const [field, value] of Object.entries(updateData)) {
+      sanitized[field] = typeof value === 'string' ? sanitizeProfileText(value) : value;
+    }
+
+    await userRepository.updateById(userId, sanitized);
   }
 
   /**
@@ -123,7 +146,17 @@ class UserService {
       throw new ApiError(409, 'HOTEL_ALREADY_FAVORITE', 'Hotel already in favorites');
     }
 
-    await userRepository.createSavedHotel(userId, hotelId);
+    try {
+      await userRepository.createSavedHotel(userId, hotelId);
+    } catch (err) {
+      // `saved_hotels.hotel_id` has an FK to `hotels`. A missing hotel (or a
+      // hotel deleted between the check and the insert) surfaces as a foreign
+      // key error — map it to a clean 404 instead of a 500.
+      if (err && err.name === 'SequelizeForeignKeyConstraintError') {
+        throw new ApiError(404, 'HOTEL_NOT_FOUND', 'Hotel not found');
+      }
+      throw err;
+    }
   }
 
   /**

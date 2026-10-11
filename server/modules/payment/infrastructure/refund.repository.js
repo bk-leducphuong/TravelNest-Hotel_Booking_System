@@ -6,7 +6,7 @@ const {
   bookings: Bookings,
   hotels: Hotels,
   users: Users,
-} = require('@models/index.js');
+} = require('@platform/database');
 
 const { ACTIVE_REFUND_STATUSES } = require('../domain/refund-rules');
 

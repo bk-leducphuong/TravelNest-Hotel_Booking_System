@@ -1,14 +1,14 @@
 const logger = require('@config/logger.config');
 const ApiError = require('@utils/ApiError');
 const { ROLES } = require('@constants/roles');
-const { identity: identityService } = require('@modules/identity');
-const { verifyJwt } = require('@utils/jwt.util');
 const {
+  identity: identityService,
   extractUserRoles,
   extractUserPermissions,
   extractHotelRoles,
   hasHotelRole,
-} = require('@helpers/user.helpers');
+} = require('@modules/identity');
+const { verifyJwt } = require('@utils/jwt.util');
 
 function getSocketToken(socket) {
   const authToken = socket.handshake.auth?.token;
@@ -33,7 +33,7 @@ const socketAuthentication = async (socket, next) => {
       return next(new ApiError(401, 'UNAUTHORIZED', 'Authentication token required'));
     }
 
-    const verifiedToken = verifyJwt(token);
+    const verifiedToken = await verifyJwt(token);
     const user = await identityService.resolveAuthenticatedUser(verifiedToken);
 
     socket.auth = {
