@@ -8,6 +8,7 @@ COPY package.json yarn.lock .yarnrc.yml ./
 COPY server/package.json server/
 COPY client/package.json client/
 COPY admin-client/package.json admin-client/
+COPY superadmin-client/package.json superadmin-client/
 # Install the frontend workspace including dev deps (vite, etc.).
 RUN yarn workspaces focus @travelnest/client
 
