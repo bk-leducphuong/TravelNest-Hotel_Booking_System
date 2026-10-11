@@ -322,6 +322,7 @@ module.exports = router;
 - [ ] Record PII access in the audit trail
 - [x] `superadmin-client/` scaffold: workspace, Nuxt config, auth/http/permissions, layout, middleware, CI, Docker/nginx
 - [ ] Keycloak client + DNS + k8s/Argo CD manifests (provisioning)
+- [ ] Internal ops API hardening: token-only for destructive routes, drop dead guard comments (D7)
 
 ### Phase 1 — Read-only monitoring
 - [x] `GET /superadmin/overview`
