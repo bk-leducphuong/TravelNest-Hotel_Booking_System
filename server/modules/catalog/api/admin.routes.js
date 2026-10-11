@@ -1,6 +1,10 @@
 const express = require('express');
 
-const { authenticate, requirePermission } = require('@middlewares/auth.middleware');
+const {
+  authenticate,
+  requirePermission,
+  requirePlatformStaffOrHotels,
+} = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
 const { PERMISSIONS } = require('@constants/permissions');
 
@@ -21,7 +25,9 @@ router.use(authenticate);
 
 router.get(
   '/',
-  requirePermission(PERMISSIONS.HOTEL_READ),
+  // The admin catalog list must not be reachable by ordinary guests: allow
+  // platform staff (global) or scope to the caller's hotels.
+  requirePlatformStaffOrHotels,
   validate(schema.listHotels),
   controller.listHotelsHandler
 );

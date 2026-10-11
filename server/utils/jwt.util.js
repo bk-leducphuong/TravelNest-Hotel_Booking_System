@@ -18,7 +18,12 @@ function base64UrlToBuffer(value) {
 }
 
 function base64UrlToJson(value) {
-  return JSON.parse(base64UrlToBuffer(value).toString('utf8'));
+  try {
+    return JSON.parse(base64UrlToBuffer(value).toString('utf8'));
+  } catch {
+    // Do not leak the underlying JSON parse error to clients.
+    throwJwtError('Malformed JWT');
+  }
 }
 
 function normalizePublicKey(publicKey) {

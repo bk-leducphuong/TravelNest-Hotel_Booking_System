@@ -19,6 +19,38 @@ Turn the recorded findings into a prioritized, low-risk implementation program, 
 
 ---
 
+## Progress
+
+### M1 — Security + foundations (WP0 + WP1) — ✅ implemented (2026-10-11)
+
+**Closed:**
+- **Shared hotel-ownership guard** `requireEntityInHotel` applied to inventory rooms, bookings,
+  payment transactions/refunds, payouts + connected accounts, and reviews →
+  **R-F1, S-F1, T-F1, U-F1, V-F1** (cross-hotel IDOR). Verified: foreign entity → `403`,
+  own entity → `200`, platform staff → global.
+- **Admin catalog list gating + per-hotel scoping** → **O-F1** (guest → `403`; owner → only their
+  hotels).
+- **Central error mapping** (Sequelize validation / Multer / plain errors → 4xx) → **Q-F1, L-F1**.
+- **JSON 404** for unmatched `/api/*` (and bad path params) → **A-F2, C-F4**.
+- **Joi custom-message + field-key fix** (central, in `validate.middleware.js`) →
+  **B-F3, C-F3, E-F4, G-F1**.
+- **Clean malformed-JWT message** → **D-F1**.
+- **Owner-override documented** → **V-F2**.
+
+**Deferred from WP0 (still open):**
+- **Response-envelope unification** (**A-F1, C-F5, L-F2, M-F4, D-F6**) — deferred: it requires
+  coordinated client changes and is high-risk; track as its own work package.
+- **U-F2** (generate-eligible `500`) — needs a domain `ApiError` in the payout service; not covered
+  by the central mapping.
+
+**Verification:** `334/334` unit tests, `82/83` e2e (the 1 failure is the Stripe-webhook test that
+needs the Stripe CLI), `arch:check` + lint clean; IDOR / 404 / validation / error-mapping fixes
+re-tested live against the running stack.
+
+### M2–M5 — pending
+
+---
+
 ## WP0 — Cross-cutting foundations (do first)
 
 | Task | Findings fixed | Effort |

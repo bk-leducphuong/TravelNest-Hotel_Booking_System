@@ -15,7 +15,12 @@ const { deletePolicy } = require('../application/admin/deletePolicy');
 const actor = (req) => ({ actorUserId: req.user?.id, requestId: req.id });
 
 const listHotelsHandler = asyncHandler(async (req, res) => {
-  const { hotels, page, limit, total } = await listHotels(req.query);
+  // `hotelScopeIds` is set for non-staff callers (their hotels); platform staff
+  // get `undefined` and therefore a global list.
+  const { hotels, page, limit, total } = await listHotels({
+    ...req.query,
+    hotelIds: req.hotelScopeIds,
+  });
   res.status(200).json({ data: hotels, meta: { page, limit, total } });
 });
 

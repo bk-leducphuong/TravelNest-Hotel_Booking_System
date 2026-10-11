@@ -8,28 +8,28 @@
 
 | ID | Feature | Tier | Status | S1 | S2 | S3 | S4 |
 |----|---------|------|--------|----|----|----|----|
-| [A](./A-public-discovery/) | Public Discovery & Content | 2 | 🟡 Partial | | | 7 | 2 |
-| [B](./B-search/) | Search | 2 | 🟡 Partial | | 2 | 3 | 3 |
-| [C](./C-hotel-details-rooms/) | Hotel Details, Rooms & Policies | 2 | 🟡 Partial | | 1 | 6 | 1 |
-| [D](./D-authentication-session/) | Authentication & Session | 0 | 🟡 Partial | | | 3 | 2 |
-| [E](./E-account-profile/) | Account & Profile | 0 | 🟡 Partial | | | 2 | 2 |
+| [A](./A-public-discovery/) | Public Discovery & Content | 2 | 🟡 Partial | | | 6 | 2 |
+| [B](./B-search/) | Search | 2 | 🟡 Partial | | 2 | 2 | 3 |
+| [C](./C-hotel-details-rooms/) | Hotel Details, Rooms & Policies | 2 | 🟡 Partial | | 1 | 4 | 1 |
+| [D](./D-authentication-session/) | Authentication & Session | 0 | 🟡 Partial | | | 2 | 2 |
+| [E](./E-account-profile/) | Account & Profile | 0 | 🟡 Partial | | | 2 | 1 |
 | [F](./F-favorites-saved-hotels/) | Favorites / Saved Hotels | 2 | 🟡 Partial | | | 4 | 1 |
-| [G](./G-holds/) | Holds | 1 | 🟡 Partial | | | 1 | 0 |
+| [G](./G-holds/) | Holds | 1 | ✅ Ready | | | | |
 | [H](./H-bookings-guest/) | Bookings (Guest) | 1 | 🟡 Partial | | 2 | 3 | 1 |
 | [I](./I-payments-guest-webhook/) | Payments (Guest) & Stripe Webhook | 1 | ⏸ Blocked | | | | |
 | [J](./J-reviews-guest/) | Reviews (Guest) | 2 | 🟡 Partial | | 2 | 2 | 0 |
 | [K](./K-notifications-realtime/) | Notifications & Realtime | 2 | 🟡 Partial | | | 2 | 2 |
-| [L](./L-media-images/) | Media / Images | 4 | 🟡 Partial | | | 1 | 2 |
+| [L](./L-media-images/) | Media / Images | 4 | 🟡 Partial | | | | 2 |
 | [M](./M-onboarding-become-a-host/) | Onboarding / Become a Host | 4 | 🟡 Partial | | 2 | 1 | 1 |
 | [N](./N-analytics-guest/) | Analytics (Guest) | 4 | ✅ Ready | | | | |
-| [O](./O-admin-auth-session-rbac/) | Admin Auth, Session & RBAC | 0 | 🟡 Partial | | | 1 | 2 |
+| [O](./O-admin-auth-session-rbac/) | Admin Auth, Session & RBAC | 0 | 🟡 Partial | | | | 2 |
 | [P](./P-admin-dashboard/) | Admin Dashboard | 3 | 🟡 Partial | | | 1 | 0 |
-| [Q](./Q-admin-properties-catalog/) | Admin Properties / Catalog | 3 | 🟡 Partial | | | 2 | 0 |
-| [R](./R-admin-inventory-availability/) | Admin Inventory / Availability | 1 | 🟡 Partial | | 1 | | 1 |
-| [S](./S-admin-bookings/) | Admin Bookings | 1 | 🟡 Partial | | 1 | | |
-| [T](./T-admin-payments-refunds/) | Admin Payments & Refunds | 1 | 🟡 Partial | | 1 | 1 | |
-| [U](./U-admin-payouts-stripe-connect/) | Admin Payouts & Stripe Connect | 1 | 🟡 Partial | | 1 | 1 | |
-| [V](./V-admin-reviews-moderation/) | Admin Reviews & Moderation | 3 | 🟡 Partial | | 1 | | 1 |
+| [Q](./Q-admin-properties-catalog/) | Admin Properties / Catalog | 3 | 🟡 Partial | | | 1 | 0 |
+| [R](./R-admin-inventory-availability/) | Admin Inventory / Availability | 1 | 🟡 Partial | | | | 1 |
+| [S](./S-admin-bookings/) | Admin Bookings | 1 | ✅ Ready | | | | |
+| [T](./T-admin-payments-refunds/) | Admin Payments & Refunds | 1 | 🟡 Partial | | | 1 | |
+| [U](./U-admin-payouts-stripe-connect/) | Admin Payouts & Stripe Connect | 1 | 🟡 Partial | | | 1 | |
+| [V](./V-admin-reviews-moderation/) | Admin Reviews & Moderation | 3 | 🟡 Partial | | | | 1 |
 | [W](./W-internal-superadmin-api/) | Internal Superadmin API | 0 | ⬜ | | | | |
 | [X](./X-search-infrastructure/) | Search Infrastructure | 5 | ⬜ | | | | |
 | [Y](./Y-microservices-eventing/) | Microservices & Eventing | 5 | ⬜ | | | | |
@@ -45,10 +45,12 @@
   **"⚠️ Test-coverage gap (admin UI not exercised)"** section with the pages to re-run.
 - **I (Payments guest + Stripe webhook)** is **⏸ Blocked** — Stripe CLI unavailable (see
   `I-payments-guest-webhook/BLOCKED.md`).
-- **Systemic security pattern**: admin routes scoped by entity id (`/rooms/:roomId`,
-  `/bookings/:bookingId`, `/payments/transactions/:transactionId`) authorize against the
-  `X-Hotel-Id` header only and do **not** verify the entity belongs to that hotel →
-  cross-hotel IDOR in **R-F1**, **S-F1**, **T-F1**. Recommend one shared ownership guard.
-- **Systemic client drift**: legacy `/api/<x>` calls that now 404 (H, J, M).
-- **Systemic contract issues**: inconsistent response envelopes (A/B/C/D/L/M/T) and the broken
-  `any.custom` validation message (B/C/E/G).
+- **Systemic security pattern** (cross-hotel IDOR on entity-scoped admin routes): **✅ FIXED in
+  M1** — the shared `requireEntityInHotel` guard now closes **R-F1, S-F1, T-F1, U-F1, V-F1**.
+  See [`IMPLEMENTATION-PLAN.md`](./IMPLEMENTATION-PLAN.md#progress).
+- **Systemic client drift**: legacy `/api/<x>` calls that now 404 (H, J, M) — **open** (WP3).
+- **Systemic contract issues**: broken `any.custom` validation message (B/C/E/G) — **✅ FIXED in
+  M1**; inconsistent response envelopes (A/C/D/L/M) — **deferred** (needs client changes).
+- **M1 also fixed**: JSON 404 for bad params (A-F2/C-F4), malformed-JWT message (D-F1),
+  timezone/Sequelize 500→400 (Q-F1), non-image upload 500→400 (L-F1), guest admin-catalog access
+  (O-F1).

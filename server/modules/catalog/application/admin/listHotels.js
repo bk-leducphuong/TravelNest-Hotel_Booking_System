@@ -11,6 +11,7 @@ async function listHotels(filters = {}) {
     search: filters.search,
     status: filters.status,
     cityId: filters.cityId,
+    hotelIds: filters.hotelIds,
     limit,
     offset: (page - 1) * limit,
   });

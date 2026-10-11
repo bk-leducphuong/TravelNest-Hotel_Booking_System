@@ -168,6 +168,18 @@ const createApp = async () => {
 
   // API v1 routes
   app.use('/api/v1', v1Routes);
+
+  // JSON 404 for unmatched API routes (Express would otherwise return an HTML
+  // error page, which breaks JSON clients and path-param regex mismatches).
+  app.use('/api', (req, res) => {
+    res.status(404).json({
+      error: {
+        code: 'NOT_FOUND',
+        message: `Cannot ${req.method} ${req.originalUrl}`,
+      },
+    });
+  });
+
   app.use(errorMiddleware);
 
   // Default route
