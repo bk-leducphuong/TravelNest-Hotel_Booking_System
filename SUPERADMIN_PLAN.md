@@ -446,7 +446,7 @@ Items intentionally left out of Phases 0–1, each with enough context to pick u
   `*/seeders/*`, `elasticsearch/*`, `mongodb/*`).
 - **Accept:** an `admin` browser session can no longer trigger seeders / DB init.
 
-### D8 — Frontend typecheck / ESLint tooling
+### D8 — Frontend typecheck / ESLint tooling — 🟡 dependency added; CI flags pending verification
 - **Context:** `superadmin-client` mirrors `admin-client`, which does not declare
   `typescript` as a devDependency — so `eslint`/`vue-tsc` fail locally and CI marks them
   `continue-on-error`.
