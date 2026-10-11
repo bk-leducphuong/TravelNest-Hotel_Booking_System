@@ -11,7 +11,7 @@
     "scrape_data"
   ],
   "scripts": {
-    "dev:client": "yarn workspace @travelnest/client dev",
+    "dev:guest": "yarn workspace @travelnest/client dev",
     "dev:server": "yarn workspace @travelnest/server dev",
     "dev:admin": "yarn workspace @travelnest/admin-client dev",
     "dev:superadmin": "yarn workspace @travelnest/superadmin-client dev",
@@ -22,7 +22,7 @@
     "build:analytics": "cd services/analytics && go build -o analytics/analytics ./cmd/api/main.go",
     "build:media": "cd services/media && go build -o media/media ./cmd/api/main.go",
     "build:notification": "cd services/notification && go build -o notification/notification ./cmd/api/main.go",
-    "build:client": "yarn workspace @travelnest/client build",
+    "build:guest": "yarn workspace @travelnest/client build",
     "build:server": "yarn workspace @travelnest/server build",
     "build:admin": "yarn workspace @travelnest/admin-client build",
     "build:superadmin": "yarn workspace @travelnest/superadmin-client build",

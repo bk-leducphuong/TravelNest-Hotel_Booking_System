@@ -78,7 +78,7 @@ describe('hotel-admin.service', () => {
       await expect(getHotel('missing', {})).rejects.toBeInstanceOf(ApiError);
     });
 
-    it('returns members (masked), counts and rating', async () => {
+    it('returns members (masked), counts, rating and the masked owner', async () => {
       repository.findHotelById.mockResolvedValue(hotelRow());
       repository.findHotelMembers.mockResolvedValue([
         {
@@ -97,6 +97,9 @@ describe('hotel-admin.service', () => {
       ]);
       repository.getHotelCounts.mockResolvedValue({ rooms: 10, bookings: 42, reviews: 7 });
       repository.getHotelRating.mockResolvedValue({ overall_rating: '8.75', total_reviews: 7 });
+      repository.findPrimaryOwnersByHotelIds.mockResolvedValue(
+        new Map([['h1', { id: 'u1', email: 'owner@example.com', name: 'Owner One' }]])
+      );
 
       const result = await getHotel('h1', {});
 
@@ -105,6 +108,9 @@ describe('hotel-admin.service', () => {
       expect(result.members[0].user.email).toBe('ow•••@example.com');
       expect(result.counts).toEqual({ rooms: 10, bookings: 42, reviews: 7 });
       expect(result.rating).toEqual({ overall: 8.75, total: 7 });
+      // The detail owner is looked up (not hardcoded null) and masked for support.
+      expect(result.owner.email).toBe('ow•••@example.com');
+      expect(repository.findPrimaryOwnersByHotelIds).toHaveBeenCalledWith(['h1']);
     });
   });
 });

@@ -122,7 +122,7 @@ yarn install
 yarn dev:server
 
 # Start the user client (in another terminal)
-yarn dev:client
+yarn dev:guest
 
 # Start the admin client (in another terminal)
 yarn dev:admin

@@ -20,7 +20,7 @@ with evidence.
 Note: i brough up the local dev stack and ran the backend, frontend (guest and admin)
 
 - **Bring-up:** docker-compose infra (MySQL, Redis, Elasticsearch, MongoDB,
-  MinIO, NATS) + Keycloak, then `yarn dev:server`, `yarn dev:client`,
+  MinIO, NATS) + Keycloak, then `yarn dev:server`, `yarn dev:guest`,
   `yarn dev:admin`; Go services `analytics`/`media`/`notification`; Stripe CLI
   (`stripe listen`) for webhooks. Set `RATE_LIMIT_ENABLED` deliberately per test.
 - **Test data:** `yarn demo:seed` (server seeders: database/elasticsearch/mongodb).
@@ -182,8 +182,13 @@ _Risk: duplicate/incorrect payouts._
 moderation policy, reply CRUD, rating projection updates, hotel scoping.
 _Risk: moderating other hotels' reviews._
 
-**W. Internal superadmin API — ❌ dropped.** The `platform/internal` superadmin surface was
-removed and is **out of scope** (no longer needed). _Not reviewed._
+**W. Superadmin Platform (console + API).** `server/modules/superadmin` + `superadmin-client` —
+cross-tenant monitoring: overview KPIs, hotels, users (+PII masking/auditing), finance
+(payments/refunds/payouts/ledger), audit log. → Check RBAC, PII masking + unmask auditing, snapshot
+freshness, the read-only guarantee, rate limiting. _Risk: cross-tenant exposure, raw PII to
+non-privileged staff._ _(The old `platform/internal` “Internal Superadmin API” was removed — this W
+replaces that placeholder.)_ **Reviewed 2026-10-11** →
+[`W-superadmin-platform/`](./W-superadmin-platform/).
 
 **X. Search infrastructure** — Elasticsearch indexer, seeders, hybrid search.
 → Check index/DB drift, reindex procedure, degradation when ES down (R10).
@@ -209,7 +214,7 @@ a11y sweep, responsive 390px, PII redaction in logs, and N+1/query counts.
 
 ## 7. Execution order
 
-1. **Tier 0 – Foundations:** Z, D, O (auth, RBAC, config). _(W dropped.)_
+1. **Tier 0 – Foundations:** Z, D, O, W (auth, RBAC, config, platform console).
 2. **Tier 1 – Money & inventory (highest risk):** G, H, I, R, S, T, U.
 3. **Tier 2 – Guest core:** A, B, C, F, J, K.
 4. **Tier 3 – Admin core:** P, Q, V.

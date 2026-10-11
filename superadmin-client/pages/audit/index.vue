@@ -83,7 +83,7 @@ onMounted(load);
 
     <el-table v-loading="loading" :data="entries" stripe>
       <el-table-column label="When" min-width="180">
-        <template #default="{ row }">{{ formatDate(row.created_at) }}</template>
+        <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
       </el-table-column>
       <el-table-column label="Action" min-width="200">
         <template #default="{ row }">
@@ -92,17 +92,15 @@ onMounted(load);
       </el-table-column>
       <el-table-column label="Entity" min-width="160">
         <template #default="{ row }">
-          {{ row.entity_type }}
-          <span v-if="row.entity_id" class="text-slate-400">
-            · {{ row.entity_id.slice(0, 8) }}
+          {{ row.entityType }}
+          <span v-if="row.entityId" class="text-slate-400">
+            · {{ row.entityId.slice(0, 8) }}
           </span>
         </template>
       </el-table-column>
       <el-table-column label="Actor" min-width="180">
         <template #default="{ row }">
-          {{
-            row.actor_user_id ? row.actor_user_id.slice(0, 8) : row.actor_type
-          }}
+          {{ row.actorUserId ? row.actorUserId.slice(0, 8) : row.actorType }}
         </template>
       </el-table-column>
       <el-table-column label="Reason" min-width="220">

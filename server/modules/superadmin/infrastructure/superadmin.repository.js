@@ -8,7 +8,6 @@ const {
   reviews: Reviews,
   hotel_users: HotelUsers,
   user_roles: UserRoles,
-  roles: Roles,
   hotel_rating_summaries: HotelRatingSummaries,
 } = require('@platform/database');
 
@@ -150,29 +149,6 @@ function userListAttributes() {
   ];
 }
 
-/**
- * User ids that hold a given global role.
- *
- * Done as a separate lookup rather than a nested `users -> user_roles -> roles`
- * include: that single query produced `Unknown column 'roles.role_id'`, because
- * the `roles` association alias collides with the `roles` table name.
- */
-async function findUserIdsWithRole(roleName) {
-  const role = await Roles.findOne({ where: { name: roleName }, attributes: ['id'] });
-
-  if (!role) {
-    return [];
-  }
-
-  const rows = await UserRoles.findAll({
-    where: { role_id: role.id },
-    attributes: ['user_id'],
-    raw: true,
-  });
-
-  return rows.map((row) => row.user_id);
-}
-
 async function listUsers({ search, status, role, limit, offset } = {}) {
   const where = {};
 
@@ -186,13 +162,16 @@ async function listUsers({ search, status, role, limit, offset } = {}) {
       { last_name: { [Op.like]: `%${search}%` } },
     ];
   }
-
   if (role) {
-    const userIds = await findUserIdsWithRole(role);
-    if (userIds.length === 0) {
-      return { rows: [], count: 0 };
-    }
-    where.id = { [Op.in]: userIds };
+    // Resolve the ids that hold this global role in a separate query. A nested
+    // `Users -> roles(user_roles) -> role(roles)` include aliases the outer
+    // user_roles as `roles`, which collides with the `roles` table and makes
+    // Sequelize generate `roles.role_id` ("Unknown column 'roles.role_id'").
+    const roleRows = await UserRoles.findAll({
+      attributes: ['user_id'],
+      include: [{ association: 'role', where: { name: role }, attributes: [], required: true }],
+    });
+    where.id = { [Op.in]: roleRows.map((row) => row.user_id) };
   }
 
   return await Users.findAndCountAll({
@@ -201,6 +180,7 @@ async function listUsers({ search, status, role, limit, offset } = {}) {
     order: [['created_at', 'DESC']],
     limit,
     offset,
+    distinct: true,
   });
 }
 

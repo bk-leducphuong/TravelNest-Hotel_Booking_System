@@ -78,7 +78,7 @@ yarn workspace @travelnest/server dev
 yarn workspace @travelnest/admin-client dev
 
 # Or use the convenience scripts from root:
-yarn dev:client
+yarn dev:guest
 yarn dev:server
 yarn dev:admin
 ```
@@ -90,7 +90,7 @@ yarn workspace @travelnest/client build
 yarn workspace @travelnest/admin-client build
 
 # Or use convenience scripts:
-yarn build:client
+yarn build:guest
 yarn build:admin
 ```
 
@@ -236,7 +236,7 @@ For GitHub Actions or other CI systems:
 
 - name: Build all
   run: |
-    yarn build:client
+    yarn build:guest
     yarn build:admin
 ```
 
