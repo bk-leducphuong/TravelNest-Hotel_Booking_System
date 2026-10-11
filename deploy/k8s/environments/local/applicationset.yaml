@@ -33,7 +33,7 @@ spec:
             path: deploy/k8s/infra/keycloak/overlays/local
             wave: "10"
           - name: travelnest-mongodb
-            path: deploy/k8s/local/mongodb
+            path: deploy/k8s/infra/mongodb
             wave: "10"
           - name: travelnest-elasticsearch
             path: deploy/k8s/local/elasticsearch

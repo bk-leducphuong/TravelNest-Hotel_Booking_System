@@ -39,13 +39,11 @@ Steady state ≈ 4–5 GB. Fits, but keep MySQL's buffer pool modest and monitor
 
 ## 2. Key architectural finding
 
-The **prod** environment root is **not self-contained**. Its ApplicationSet deploys only NATS, Keycloak and the applications, assuming **RDS MySQL, ElastiCache Redis and S3/MinIO are managed AWS services**.
+The **prod** environment root was a frame that assumed **RDS MySQL, ElastiCache Redis and S3/MinIO were managed AWS services**, so it deployed only NATS, Keycloak and the applications.
 
 The **local** environment root deploys the full in-cluster set (mysql, redis, minio, nats, keycloak, mongodb, elasticsearch).
 
-➡️ The VPS needs a **new `vps` environment root** — a hybrid:
-- **prod's app overlays** (they already hardcode `deployserver.work` domains ✅)
-- **local's in-cluster infra**, **minus** the in-cluster Elasticsearch (ES is external)
+➡️ **Decision: repurpose `environments/prod` as the single self-contained VPS environment — no new `vps` root.** It now deploys MySQL, Redis, MinIO, MongoDB, NATS and Keycloak in-cluster; only Elasticsearch stays external (Elastic Cloud). The prod app overlays already hardcode `deployserver.work`.
 
 **Good news:** the prod frontend already bakes `https://api.deployserver.work`, so keeping the domain means the existing CI frontend image works unchanged.
 
@@ -94,25 +92,23 @@ Infra images are already multi-arch and fine: `mysql:8.0`, `redis:7-alpine`, `mo
 ### Phase 2 — Multi-arch ARM64 images (prerequisite)
 See section 3.
 
-### Phase 3 — New `vps` environment (manifest work)
-Create, modelled on `environments/prod` + `environments/local`:
-- `deploy/k8s/environments/vps/kustomization.yaml` + `applicationset.yaml` → elements:
-  - *in-cluster infra (wave 10):* `infra/mysql`, `infra/redis`, `infra/minio`, `infra/nats`, `infra/keycloak`, `local/mongodb`
-  - *apps (waves 20–40):* analytics, media, notification, api, worker, frontend, admin-client, superadmin-client — reuse the **prod** overlays (correct domains)
-  - **no** `local/elasticsearch` (external)
-  - `targetRevision:` deploy branch (e.g. `master`)
-- `deploy/k8s/bootstrap/argocd/root-application-vps.yaml` → points at `deploy/k8s/environments/vps`
-- Infra overlay source: `infra/*/overlays/local` exist for mysql/minio/keycloak (k3s-compatible). **Avoid `infra/mysql/overlays/prod`** (adds an S3 backup CronJob). Verify local overlays don't hardcode k3d-specific values; if they do, add thin `overlays/vps`.
-- App secrets: **recommend** dedicated `apps/*/overlays/vps/` + a `seal-vps-secrets.sh` (keeps prod and test values separate). Alternative: reuse prod overlays + `seal-prod-secrets.sh`.
+### Phase 3 — Repurpose the `prod` environment
+`environments/prod` now deploys the self-contained stack:
+- *in-cluster infra (wave 10):* `infra/mysql/overlays/prod`, `infra/redis`, `infra/minio/overlays/prod`, `infra/mongodb`, `infra/nats`, `infra/keycloak/overlays/prod`
+- *apps (waves 20–40):* analytics, media, notification, api, worker, frontend, admin-client, superadmin-client (prod overlays, correct domains)
+- **no** in-cluster Elasticsearch (external)
+- MongoDB moved from `local/mongodb` → `infra/mongodb` (shared by the prod and local roots)
+
+The existing `infra/mysql/overlays/prod` backup CronJob already targets **in-cluster MinIO** (`http://minio:9000`), so it works self-contained — no AWS dependency.
 
 ### Phase 4 — Secrets
-- `deploy/k8s/.env.vps` (copy of `.env.prod.example`) with **in-cluster** values:
-  - `DB_HOST=mysql`, `REDIS_HOST=redis`, `MINIO_ENDPOINT=minio:9000`, `MINIO_USE_SSL=false`
+- `deploy/k8s/.env.prod` (copy of the updated `.env.prod.example`) now uses **in-cluster** values:
+  - `DB_HOST=mysql`, `REDIS_HOST=redis`, `MINIO_ENDPOINT=minio`, `MINIO_PORT=9000`, `MINIO_USE_SSL=false`, `MEDIA_MINIO_ENDPOINT=minio:9000`
   - `MONGODB_URI=mongodb://mongodb:27017/travelnest_analytics`
-  - `ELASTICSEARCH_ENDPOINT=https://<id>.es.<region>.aws.cloud.es.io`
-  - `ELASTICSEARCH_HOSTS=...`, `ELASTICSEARCH_API_KEY=<base64 key>`
-  - `KC_DB_URL_HOST=mysql`, JWT/session secrets, Keycloak admin, etc.
-- `deploy/scripts/secrets/init-age-key.sh`; then a `seal-vps-secrets.sh` (copy of the prod/local sealer pointed at vps paths).
+  - `KC_DB_URL_HOST=mysql`
+  - `ELASTICSEARCH_ENDPOINT/HOSTS/API_KEY` = Elastic Cloud
+  - JWT/session secrets, Keycloak admin, etc.
+- `deploy/scripts/secrets/init-age-key.sh`, then `deploy/scripts/secrets/seal-prod-secrets.sh` renders + encrypts the prod `secret.enc.yaml` files.
 - **Keep the age private key off the VPS.**
 
 ### Phase 5 — Elastic Cloud trial
@@ -124,7 +120,7 @@ Create, modelled on `environments/prod` + `environments/local`:
 ### Phase 6 — k3s + Argo CD
 1. Install k3s on Ubuntu 24.04 ARM; confirm Traefik + a default local-path StorageClass (both required by the manifests).
 2. Install Argo CD; patch for KSOPS (`deploy/scripts/secrets/install-argo-ksops.sh`).
-3. `kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application-vps.yaml`.
+3. `kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application.yaml` (the existing prod root, which points at `environments/prod`).
 4. Sync is not wave-ordered → let it converge via selfHeal. Optionally enable progressive syncs + `RollingSync`.
 
 ### Phase 7 — Data bootstrap
@@ -135,10 +131,11 @@ Create, modelled on `environments/prod` + `environments/local`:
 1. Install `cloudflared`; route the tunnel to Traefik for all 6 hostnames.
 2. Import the Keycloak realm (ships without users — register, or run the migration scripts under `server/scripts/keycloak/`).
 3. Confirm the CI frontend image works (domain matches). Admin/superadmin likewise.
+4. **Ingress TLS / cert-manager** — the `keycloak`, `api`, `frontend` and `admin-client` Ingresses carry `cert-manager.io/cluster-issuer: letsencrypt-prod` + `tls:` blocks, but there is no cert-manager on the VPS (Cloudflare Tunnel terminates TLS). Strip those annotations and `tls:` blocks, or install cert-manager if in-cluster TLS is wanted.
 
 ### Phase 9 — Validate / harden
 - Pod-level: no OOMKills; `kubectl top pods` steady state within budget.
-- Backups: enable Hetzner snapshots; add MySQL/MinIO backups (repoint or skip the prod S3 CronJob).
+- Backups: enable Hetzner snapshots; the in-cluster MySQL→MinIO backup CronJob (`infra/mysql/overlays/prod`) already runs.
 - Storage is node-local (k3s local-path) — fine for a single-node test.
 
 ---
@@ -147,21 +144,20 @@ Create, modelled on `environments/prod` + `environments/local`:
 
 | Action | Path |
 |---|---|
-| Modify ×7 | `.github/workflows/{backend,frontend,admin-client,superadmin-client,analytics-service,media-service,notification-service}.yml` |
-| New | `deploy/k8s/environments/vps/{kustomization.yaml,applicationset.yaml}` |
-| New | `deploy/k8s/bootstrap/argocd/root-application-vps.yaml` |
-| New | `deploy/k8s/apps/*/overlays/vps/**` (if dedicated overlays) |
-| New | `deploy/k8s/.env.vps` + `deploy/scripts/secrets/seal-vps-secrets.sh` |
-| Verify | `deploy/k8s/infra/*/overlays/local` k3s-compat (or add `overlays/vps`) |
+| Done ×7 | `.github/workflows/{backend,frontend,admin-client,superadmin-client,analytics-service,media-service,notification-service}.yml` |
+| Updated | `deploy/k8s/environments/prod/applicationset.yaml` (add in-cluster infra) |
+| Moved | `deploy/k8s/local/mongodb` → `deploy/k8s/infra/mongodb` |
+| Updated | `deploy/k8s/environments/local/applicationset.yaml` (mongodb path) |
+| Updated | `deploy/k8s/.env.prod.example` (in-cluster values) |
+| Updated | `deploy/k8s/README.md` |
 
 ---
 
 ## 6. Open items to resolve during implementation
 
 1. **ES auth mode** in the server code (API key vs basic auth) — align with Elastic Cloud.
-2. **Which git revision** the `vps` root tracks (`master` after merge vs `develop`).
-3. **Dedicated `vps` app overlays vs reusing `prod`** — affects where sealed secrets live.
-4. **superadmin host** — confirm `superadmin.deployserver.work` and add to the tunnel.
+2. **superadmin host** — confirm `superadmin.deployserver.work` and add it to the tunnel.
+3. **targetRevision** — the prod root tracks `master`; merge the manifest changes before the first sync (or temporarily point it at the branch under test).
 
 ---
 
