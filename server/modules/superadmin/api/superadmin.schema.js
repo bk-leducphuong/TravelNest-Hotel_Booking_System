@@ -1,5 +1,8 @@
 const Joi = require('joi');
 
+const { LEDGER_ENTRY_DIRECTIONS, LEDGER_EVENT_TYPES } = require('@constants/ledger');
+const { PAYOUT_STATUSES } = require('@constants/payment');
+
 /**
  * Superadmin module validation schemas.
  * IDs are UUIDs (v4/v5/v7); list endpoints are paginated.
@@ -55,6 +58,65 @@ const listAudit = {
   }).unknown(false),
 };
 
+// ---------------------------------------------------------------------------
+// Finance
+// ---------------------------------------------------------------------------
+
+const currency = Joi.string().length(3).uppercase();
+const dateRange = {
+  from: Joi.date().iso(),
+  to: Joi.date().iso(),
+};
+
+const listPayments = {
+  query: Joi.object({
+    status: Joi.string().valid(
+      'pending',
+      'processing',
+      'completed',
+      'failed',
+      'cancelled',
+      'refunded',
+      'partially_refunded'
+    ),
+    currency,
+    hotelId: uuid,
+    ...dateRange,
+    ...pagination,
+  }).unknown(false),
+};
+
+const listRefunds = {
+  query: Joi.object({
+    status: Joi.string().valid('pending', 'processing', 'succeeded', 'failed', 'cancelled'),
+    currency,
+    hotelId: uuid,
+    ...dateRange,
+    ...pagination,
+  }).unknown(false),
+};
+
+const listPayouts = {
+  query: Joi.object({
+    status: Joi.string().valid(...PAYOUT_STATUSES),
+    currency,
+    hotelId: uuid,
+    ...dateRange,
+    ...pagination,
+  }).unknown(false),
+};
+
+const listLedger = {
+  query: Joi.object({
+    direction: Joi.string().valid(...LEDGER_ENTRY_DIRECTIONS),
+    eventType: Joi.string().valid(...LEDGER_EVENT_TYPES),
+    currency,
+    hotelId: uuid,
+    ...dateRange,
+    ...pagination,
+  }).unknown(false),
+};
+
 module.exports = {
   uuid,
   pagination,
@@ -63,4 +125,8 @@ module.exports = {
   listUsers,
   userParams,
   listAudit,
+  listPayments,
+  listRefunds,
+  listPayouts,
+  listLedger,
 };

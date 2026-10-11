@@ -6,6 +6,7 @@ const { auditService } = require('@platform/audit');
 const { getOverview } = require('../application/overview.service');
 const { listHotels, getHotel } = require('../application/hotel-admin.service');
 const { listUsers, getUser } = require('../application/user-admin.service');
+const finance = require('../application/finance-admin.service');
 
 /**
  * Session bootstrap for the superadmin console: who the caller is, their global
@@ -65,9 +66,41 @@ const getUserHandler = asyncHandler(async (req, res) => {
 
 const listAuditHandler = asyncHandler(async (req, res) => {
   const data = await auditService.list(req.query);
-  res
-    .status(200)
-    .json({ data: data.entries, meta: { page: data.page, limit: data.limit, total: data.total } });
+  res.status(200).json({
+    data: data.entries,
+    meta: { page: data.page, limit: data.limit, total: data.total },
+  });
+});
+
+const getFinanceOverviewHandler = asyncHandler(async (req, res) => {
+  const data = await finance.getFinanceOverview();
+  res.status(200).json({ data });
+});
+
+const listPaymentsHandler = asyncHandler(async (req, res) => {
+  const { payments, page, limit, total } = await finance.listPayments(req.query, {
+    unmaskPii: canUnmaskPii(req),
+  });
+  res.status(200).json({ data: payments, meta: { page, limit, total } });
+});
+
+const listRefundsHandler = asyncHandler(async (req, res) => {
+  const { refunds, page, limit, total } = await finance.listRefunds(req.query, {
+    unmaskPii: canUnmaskPii(req),
+  });
+  res.status(200).json({ data: refunds, meta: { page, limit, total } });
+});
+
+const listPayoutsHandler = asyncHandler(async (req, res) => {
+  const { payouts, page, limit, total } = await finance.listPayouts(req.query, {
+    unmaskPii: canUnmaskPii(req),
+  });
+  res.status(200).json({ data: payouts, meta: { page, limit, total } });
+});
+
+const listLedgerHandler = asyncHandler(async (req, res) => {
+  const { entries, page, limit, total } = await finance.listLedgerEntries(req.query);
+  res.status(200).json({ data: entries, meta: { page, limit, total } });
 });
 
 module.exports = {
@@ -78,4 +111,9 @@ module.exports = {
   listUsersHandler,
   getUserHandler,
   listAuditHandler,
+  getFinanceOverviewHandler,
+  listPaymentsHandler,
+  listRefundsHandler,
+  listPayoutsHandler,
+  listLedgerHandler,
 };

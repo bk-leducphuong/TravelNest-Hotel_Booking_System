@@ -65,4 +65,40 @@ router.get(
   controller.listAuditHandler
 );
 
+// ---------------------------------------------------------------------------
+// Finance (read-only)
+// ---------------------------------------------------------------------------
+
+const requireFinance = requirePermission(PERMISSIONS.PLATFORM_FINANCE_READ);
+
+router.get('/finance/overview', requireFinance, controller.getFinanceOverviewHandler);
+
+router.get(
+  '/finance/payments',
+  requireFinance,
+  validate(schema.listPayments),
+  controller.listPaymentsHandler
+);
+
+router.get(
+  '/finance/refunds',
+  requireFinance,
+  validate(schema.listRefunds),
+  controller.listRefundsHandler
+);
+
+router.get(
+  '/finance/payouts',
+  requireFinance,
+  validate(schema.listPayouts),
+  controller.listPayoutsHandler
+);
+
+router.get(
+  '/finance/ledger',
+  requireFinance,
+  validate(schema.listLedger),
+  controller.listLedgerHandler
+);
+
 module.exports = router;

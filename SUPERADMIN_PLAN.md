@@ -339,9 +339,14 @@ module.exports = router;
 > move to the analytics service when the finance KPIs land.
 
 ### Phase 2 — Finances (read-only)
-- [ ] `GET /superadmin/finance/{overview,payments,refunds,payouts,ledger}`
-- [ ] Frontend finance pages
-- [ ] Reconciliation view + tests
+- [x] `GET /superadmin/finance/{overview,payments,refunds,payouts,ledger}`
+- [x] Frontend finance pages (overview, payments, refunds, payouts, ledger)
+- [x] Read-only ledger view + service tests
+
+> **Progress:** Phase 2 implemented. Backend unit suite 380/380; superadmin-client
+> unit tests 14/14 and `nuxt build` green. The overview aggregates sum per currency
+> directly on MySQL — move to analytics (D4). Deeper reconciliation (matching ledger
+> postings to payments/refunds) is still future work.
 
 ### Phase 3 — Actions (separate plan)
 - [ ] `platform.hotel.suspend`, `platform.user.ban`, `platform.finance.refund`
