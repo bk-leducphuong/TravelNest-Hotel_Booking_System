@@ -17,11 +17,12 @@ jest.mock('@modules/superadmin/application/finance-admin.service', () => ({
   listLedgerEntries: jest.fn(),
 }));
 jest.mock('@platform/audit', () => ({
-  auditService: { list: jest.fn() },
+  auditService: { list: jest.fn(), recordFromRequest: jest.fn() },
 }));
 
 const { listUsers, getUser } = require('@modules/superadmin/application/user-admin.service');
 const { listPayments } = require('@modules/superadmin/application/finance-admin.service');
+const { auditService } = require('@platform/audit');
 const controller = require('@modules/superadmin/api/superadmin.controller');
 
 function requestWithPermissions(permissions) {
@@ -29,7 +30,9 @@ function requestWithPermissions(permissions) {
     user: {
       id: 'actor-1',
       email: 'actor@example.com',
-      roles: [{ role: { name: 'support_agent', permissions: permissions.map((name) => ({ name })) } }],
+      roles: [
+        { role: { name: 'support_agent', permissions: permissions.map((name) => ({ name })) } },
+      ],
     },
     query: {},
   });
@@ -68,5 +71,34 @@ describe('superadmin controller - PII permission wiring', () => {
 
     expect(listPayments).toHaveBeenCalledWith({}, { unmaskPii: false });
     expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('records a PII-access audit entry when unmasked PII is returned', async () => {
+    getUser.mockResolvedValue({ id: 'u1' });
+    const req = requestWithPermissions(['platform.user.read', 'platform.user.pii_read']);
+    req.params = { userId: 'u1' };
+    const res = global.testUtils.mockResponse();
+
+    await controller.getUserHandler(req, res, jest.fn());
+
+    expect(auditService.recordFromRequest).toHaveBeenCalledWith(
+      req,
+      expect.objectContaining({
+        action: 'platform.pii.read',
+        entityType: 'user',
+        entityId: 'u1',
+      })
+    );
+  });
+
+  it('does not record a PII-access entry when PII stays masked', async () => {
+    getUser.mockResolvedValue({ id: 'u1' });
+    const req = requestWithPermissions(['platform.user.read']);
+    req.params = { userId: 'u1' };
+    const res = global.testUtils.mockResponse();
+
+    await controller.getUserHandler(req, res, jest.fn());
+
+    expect(auditService.recordFromRequest).not.toHaveBeenCalled();
   });
 });

@@ -6,7 +6,11 @@
 const express = require('express');
 const router = express.Router();
 
-const { authLimiter, writeLimiter } = require('@middlewares/rate-limitter.middleware');
+const {
+  authLimiter,
+  writeLimiter,
+  adminReadLimiter,
+} = require('@middlewares/rate-limitter.middleware');
 
 // Import all route modules
 const adminBff = require('@bff/admin');
@@ -37,7 +41,7 @@ router.use('/bookings', writeLimiter, bookingModule.guestRoutes);
 router.use('/hold', writeLimiter, bookingModule.holdRoutes);
 router.use('/notifications', notificationModule.notificationRoutes);
 router.use('/internal/superadmin', internalSuperadminRoutes);
-router.use('/superadmin', superadminModule.superadminRoutes);
+router.use('/superadmin', adminReadLimiter, superadminModule.superadminRoutes);
 router.use('/admin', adminBff);
 
 module.exports = router;

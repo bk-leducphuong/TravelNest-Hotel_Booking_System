@@ -61,7 +61,27 @@ async function requireInternalSuperadmin(req, res, next) {
   }
 }
 
+/**
+ * Token-only guard for destructive maintenance routes (DB init, seeders,
+ * Elasticsearch/Mongo seeding). An `admin` bearer session must NOT be able to
+ * trigger these; only a caller presenting the configured internal token may.
+ */
+function requireInternalSuperadminToken(req, res, next) {
+  if (hasConfiguredTokenAccess(req)) {
+    return next();
+  }
+
+  return next(
+    new ApiError(
+      403,
+      'INTERNAL_SUPERADMIN_TOKEN_REQUIRED',
+      'A configured internal superadmin token is required for this operation.'
+    )
+  );
+}
+
 module.exports = {
   requireInternalSuperadmin,
+  requireInternalSuperadminToken,
   safeEqual,
 };

@@ -1,47 +1,73 @@
 const express = require('express');
 
 const asyncHandler = require('@utils/asyncHandler');
-const { requireInternalSuperadmin } = require('@middlewares/internal-superadmin.middleware');
+const {
+  requireInternalSuperadmin,
+  requireInternalSuperadminToken,
+} = require('@middlewares/internal-superadmin.middleware');
 const controller = require('./internalSuperadmin.controller');
 
 const router = express.Router();
 
-// Auth is enforced for the whole router: either a configured internal token or
-// a Keycloak bearer token with the admin role.
+// Every route requires a valid caller: either the configured internal token or
+// a Keycloak bearer token with the `admin` role.
 router.use(requireInternalSuperadmin);
 
-router.get(
-  '/notifications/test/targets',
-  // requireInternalSuperadmin,
-  asyncHandler(controller.previewNotificationTargets)
-);
-
-router.post(
-  '/notifications/test/inapp',
-  // requireInternalSuperadmin,
-  asyncHandler(controller.sendTestNotification)
-);
-
-router.post(
-  '/notifications/test/email',
-  // requireInternalSuperadmin,
-  asyncHandler(controller.sendTestEmail)
-);
+// --- Read-only / safe helpers (admin bearer allowed) -----------------------
 
 router.get('/tasks', asyncHandler(controller.listTasks));
 
-router.post('/database/init', asyncHandler(controller.initDatabase));
+router.get('/notifications/test/targets', asyncHandler(controller.previewNotificationTargets));
 
-router.post('/database/seeders/:seeder', asyncHandler(controller.runDatabaseSeeder));
+router.post('/notifications/test/inapp', asyncHandler(controller.sendTestNotification));
 
-router.post('/images/seed', asyncHandler(controller.runImageSeeder));
+router.post('/notifications/test/email', asyncHandler(controller.sendTestEmail));
 
-router.post('/city-images/seed', asyncHandler(controller.runCityImageSeeder));
+// --- Destructive maintenance (internal token ONLY) -------------------------
+//
+// These mutate data or infrastructure, so an `admin` browser session must not
+// be able to trigger them. They require the configured internal token.
 
-router.post('/elasticsearch/setup/:target', asyncHandler(controller.setupElasticsearch));
+router.post(
+  '/database/init',
+  requireInternalSuperadminToken,
+  asyncHandler(controller.initDatabase)
+);
 
-router.post('/elasticsearch/seeders/:target', asyncHandler(controller.runElasticsearchSeeder));
+router.post(
+  '/database/seeders/:seeder',
+  requireInternalSuperadminToken,
+  asyncHandler(controller.runDatabaseSeeder)
+);
 
-router.post('/mongodb/seeders/:target', asyncHandler(controller.runMongodbSeeder));
+router.post(
+  '/images/seed',
+  requireInternalSuperadminToken,
+  asyncHandler(controller.runImageSeeder)
+);
+
+router.post(
+  '/city-images/seed',
+  requireInternalSuperadminToken,
+  asyncHandler(controller.runCityImageSeeder)
+);
+
+router.post(
+  '/elasticsearch/setup/:target',
+  requireInternalSuperadminToken,
+  asyncHandler(controller.setupElasticsearch)
+);
+
+router.post(
+  '/elasticsearch/seeders/:target',
+  requireInternalSuperadminToken,
+  asyncHandler(controller.runElasticsearchSeeder)
+);
+
+router.post(
+  '/mongodb/seeders/:target',
+  requireInternalSuperadminToken,
+  asyncHandler(controller.runMongodbSeeder)
+);
 
 module.exports = router;

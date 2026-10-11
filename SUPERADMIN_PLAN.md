@@ -319,10 +319,10 @@ module.exports = router;
 - [x] Shared **ownership guard** helper (`helpers/ownership.helper.js`)
 - [ ] Roll the ownership guard out to the legacy admin entity-detail routes (R-F1/S-F1/T-F1)
 - [x] `application/pii.js` masking helper
-- [ ] Record PII access in the audit trail
+- [x] Record PII access in the audit trail
 - [x] `superadmin-client/` scaffold: workspace, Nuxt config, auth/http/permissions, layout, middleware, CI, Docker/nginx
 - [ ] Keycloak client + DNS + k8s/Argo CD manifests (provisioning)
-- [ ] Internal ops API hardening: token-only for destructive routes, drop dead guard comments (D7)
+- [x] Internal ops API hardening: token-only for destructive routes, drop dead guard comments (D7)
 
 ### Phase 1 — Read-only monitoring
 - [x] `GET /superadmin/overview`
@@ -403,7 +403,7 @@ Items intentionally left out of Phases 0–1, each with enough context to pick u
 - **Accept:** cross-hotel entity id returns 404; same-hotel still works; regression tests
   added. Coordinate the blast radius before merging.
 
-### D2 — Record PII access in the audit trail (security)
+### D2 — Record PII access in the audit trail (security) — ✅ done
 - **Context:** §7.3 requires logging reads of sensitive PII; not implemented.
 - **Do:** in the superadmin controller/service, when `platform.user.pii_read` is exercised
   (or on any user-detail read), call `auditService.recordFromRequest` with
@@ -424,7 +424,7 @@ Items intentionally left out of Phases 0–1, each with enough context to pick u
   ClickHouse / summary tables; cache in Redis with a short TTL.
 - **Accept:** overview no longer issues per-status count queries on the primary DB.
 
-### D5 — Rate-limit the aggregate endpoints
+### D5 — Rate-limit the aggregate endpoints — ✅ done
 - **Context:** §7.5. `/superadmin/overview` is unbounded-ish and expensive.
 - **Do:** add a dedicated limiter for the superadmin router (or at least `/overview`) and
   confirm all lists stay paginated (already default 20, max 100).
@@ -439,7 +439,7 @@ Items intentionally left out of Phases 0–1, each with enough context to pick u
   `.github/workflows/superadmin-client.yml`.
 - **Accept:** the console is reachable in an environment and can complete a login.
 
-### D7 — Internal ops API hardening (separate from this feature)
+### D7 — Internal ops API hardening (separate from this feature) — ✅ done
 - **Context:** see §2 "Internal ops routes stay put".
 - **Do:** (a) delete the redundant commented `// requireInternalSuperadmin,` lines in
   `platform/internal/api/internalSuperadmin.routes.js`; (b) require the configured **token**

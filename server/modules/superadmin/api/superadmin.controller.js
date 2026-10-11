@@ -40,15 +40,38 @@ function canUnmaskPii(req) {
   return permissions.has(PERMISSIONS.PLATFORM_USER_PII_READ);
 }
 
+/**
+ * Record that a caller viewed unmasked PII. Only fires when the caller actually
+ * holds `platform.user.pii_read` (i.e. the response contained raw PII).
+ * Best-effort: the audit service never throws.
+ */
+async function recordPiiAccess(
+  req,
+  { entityType, entityId = null, scope = 'detail', total = null }
+) {
+  if (!canUnmaskPii(req)) {
+    return;
+  }
+
+  await auditService.recordFromRequest(req, {
+    action: 'platform.pii.read',
+    entityType,
+    entityId,
+    metadata: { scope, ...(total === null ? {} : { total }) },
+  });
+}
+
 const listHotelsHandler = asyncHandler(async (req, res) => {
   const { hotels, page, limit, total } = await listHotels(req.query, {
     unmaskPii: canUnmaskPii(req),
   });
+  await recordPiiAccess(req, { entityType: 'hotel', scope: 'list', total });
   res.status(200).json({ data: hotels, meta: { page, limit, total } });
 });
 
 const getHotelHandler = asyncHandler(async (req, res) => {
   const data = await getHotel(req.params.hotelId, { unmaskPii: canUnmaskPii(req) });
+  await recordPiiAccess(req, { entityType: 'hotel', entityId: req.params.hotelId });
   res.status(200).json({ data });
 });
 
@@ -56,11 +79,13 @@ const listUsersHandler = asyncHandler(async (req, res) => {
   const { users, page, limit, total } = await listUsers(req.query, {
     unmaskPii: canUnmaskPii(req),
   });
+  await recordPiiAccess(req, { entityType: 'user', scope: 'list', total });
   res.status(200).json({ data: users, meta: { page, limit, total } });
 });
 
 const getUserHandler = asyncHandler(async (req, res) => {
   const data = await getUser(req.params.userId, { unmaskPii: canUnmaskPii(req) });
+  await recordPiiAccess(req, { entityType: 'user', entityId: req.params.userId });
   res.status(200).json({ data });
 });
 
@@ -81,6 +106,7 @@ const listPaymentsHandler = asyncHandler(async (req, res) => {
   const { payments, page, limit, total } = await finance.listPayments(req.query, {
     unmaskPii: canUnmaskPii(req),
   });
+  await recordPiiAccess(req, { entityType: 'payment', scope: 'list', total });
   res.status(200).json({ data: payments, meta: { page, limit, total } });
 });
 
@@ -88,6 +114,7 @@ const listRefundsHandler = asyncHandler(async (req, res) => {
   const { refunds, page, limit, total } = await finance.listRefunds(req.query, {
     unmaskPii: canUnmaskPii(req),
   });
+  await recordPiiAccess(req, { entityType: 'refund', scope: 'list', total });
   res.status(200).json({ data: refunds, meta: { page, limit, total } });
 });
 
@@ -95,6 +122,7 @@ const listPayoutsHandler = asyncHandler(async (req, res) => {
   const { payouts, page, limit, total } = await finance.listPayouts(req.query, {
     unmaskPii: canUnmaskPii(req),
   });
+  await recordPiiAccess(req, { entityType: 'payout', scope: 'list', total });
   res.status(200).json({ data: payouts, meta: { page, limit, total } });
 });
 
