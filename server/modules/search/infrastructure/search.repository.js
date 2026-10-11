@@ -11,6 +11,20 @@ const {
 const sequelize = require('@config/database.config');
 
 /**
+ * Normalize a date-ish value to a `YYYY-MM-DD` string.
+ *
+ * `checkIn`/`checkOut` arrive as JS `Date` objects (Joi `date().iso()` converts
+ * them). Passing a `Date` to a MySQL `DATE` comparison lets the session timezone
+ * shift the window, so the availability/pricing queries see different dates than
+ * the catalog (which passes date strings). Normalizing to a date-only string
+ * keeps both paths on the same window.
+ */
+function toDateOnly(value) {
+  const d = value instanceof Date ? value : new Date(value);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
  * Search Repository - Contains all database operations for search
  * Only repositories may import Sequelize models
  */
@@ -166,8 +180,8 @@ class SearchRepository {
     const results = await sequelize.query(query, {
       replacements: {
         hotelIds,
-        checkIn,
-        checkOut,
+        checkIn: toDateOnly(checkIn),
+        checkOut: toDateOnly(checkOut),
         requiredRooms,
         totalGuests,
         totalNights,
@@ -224,8 +238,8 @@ class SearchRepository {
     const rooms = await sequelize.query(query, {
       replacements: {
         hotelId,
-        checkIn,
-        checkOut,
+        checkIn: toDateOnly(checkIn),
+        checkOut: toDateOnly(checkOut),
         requiredRooms,
         totalGuests,
         totalNights,
@@ -277,8 +291,6 @@ class SearchRepository {
     const {
       city,
       country,
-      minPrice,
-      maxPrice,
       minRating,
       hotelClass,
       amenities,
@@ -300,11 +312,9 @@ class SearchRepository {
       where.country = country;
     }
 
-    if (minPrice !== undefined || maxPrice !== undefined) {
-      where.min_price = {};
-      if (minPrice !== undefined) where.min_price[Op.gte] = minPrice;
-      if (maxPrice !== undefined) where.min_price[Op.lte] = maxPrice;
-    }
+    // Price range is filtered post-merge on the date-specific price (see
+    // domain/filters.js `applyDateSpecificFilters`), not on the static
+    // snapshot `min_price` — filtering on the latter returned wrong results.
 
     if (minRating !== undefined) {
       where.avg_rating = { [Op.gte]: minRating };

@@ -47,7 +47,32 @@ Turn the recorded findings into a prioritized, low-risk implementation program, 
 needs the Stripe CLI), `arch:check` + lint clean; IDOR / 404 / validation / error-mapping fixes
 re-tested live against the running stack.
 
-### M2–M5 — pending
+### M2 — Money & pricing correctness (WP2) — ✅ implemented (2026-10-11)
+
+**Closed:**
+- **Price filter (B-F1)** — removed the Elasticsearch/DB `min_price` range filter (a static
+  "from" price that returned wrong/empty results); the date-specific filter
+  (`domain/filters.js applyDateSpecificFilters`) now does the work. Verified: `minPrice=90` →
+  196, `maxPrice=120` → 38, `minPrice=10` → all.
+- **`maxPrice` without `minPrice` (B-F2)** — Joi `when(minPrice)` conditional → valid.
+- **Room price parity (C-F1)** — the catalog `/rooms` query used `SUM(price_per_night)` labelled
+  as per-night; now `AVG` (per-night) + `SUM` (total). Also normalized the search dates to
+  `YYYY-MM-DD` (Joi passed `Date` objects that shifted the MySQL window). Verified: `/rooms` and
+  `/search` now return **identical** prices for the same room + dates.
+- **`/rooms` `totalPrice` (C-F2)** — now populated from the query.
+- **`has_free_cancellation` (C-F6)** — derived from active refundable cancellation rules
+  (snapshot SQL + runtime `checkFreeCancellation`); snapshots rebuilt + ES reindexed.
+  Verified: `freeCancellation=true` → 142 hotels.
+- **Refunds in the payment summary (P-F1, T-F2)** — `refundedAmount` now includes transactions
+  marked `refunded` without a refund record (the seed case) without double-counting the normal
+  case. Verified: net = gross − refunded.
+
+**Data operations:** rebuilt `hotel_search_snapshots` (12,600) and reindexed the `hotels` ES index.
+
+**Verification:** `318/318` unit tests, `82/83` e2e (the 1 failure is the Stripe-webhook test),
+`arch:check` + lint clean.
+
+### M3–M5 — pending
 
 ---
 

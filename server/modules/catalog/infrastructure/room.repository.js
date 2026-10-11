@@ -18,7 +18,8 @@ class RoomRepository {
     const inventoryQuery = `
       SELECT
         ri.room_id,
-        SUM(ri.price_per_night) AS price_per_night,
+        AVG(ri.price_per_night) AS price_per_night,
+        SUM(ri.price_per_night) AS total_price,
         MIN(ri.total_rooms - ri.booked_rooms - COALESCE(ri.held_rooms, 0)) AS available_rooms
       FROM room_inventory ri
       INNER JOIN rooms r ON r.id = ri.room_id
@@ -46,6 +47,8 @@ class RoomRepository {
         r.room_id,
         {
           price_per_night: Number(r.price_per_night) || 0,
+          total_price:
+            r.total_price === null || r.total_price === undefined ? null : Number(r.total_price),
           available_rooms: Number(r.available_rooms) || 0,
         },
       ])
@@ -116,6 +119,7 @@ class RoomRepository {
         room_size: roomData.room_size,
         room_type: roomData.room_type,
         price_per_night: prices.price_per_night,
+        total_price: prices.total_price,
         available_rooms: prices.available_rooms,
         room_amenities: roomData.amenities || [],
         room_image_urls: roomData.images || [],

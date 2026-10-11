@@ -90,16 +90,11 @@ class ElasticsearchHelper {
       });
     }
 
-    // Price range filter
-    if (minPrice !== undefined || maxPrice !== undefined) {
-      const priceRange = {};
-      if (minPrice !== undefined) priceRange.gte = parseFloat(minPrice);
-      if (maxPrice !== undefined) priceRange.lte = parseFloat(maxPrice);
-
-      query.bool.filter.push({
-        range: { min_price: priceRange },
-      });
-    }
+    // Price range is intentionally NOT filtered here. The indexed `min_price`
+    // is a static "from" price that does not match the date-specific price the
+    // guest sees, so filtering on it returned wrong/empty results. The
+    // date-specific price filter runs post-merge in the search pipeline
+    // (see domain/filters.js `applyDateSpecificFilters`).
 
     // Rating filter
     if (minRating !== undefined) {
