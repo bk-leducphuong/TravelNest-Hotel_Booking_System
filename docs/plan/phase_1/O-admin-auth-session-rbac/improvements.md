@@ -4,9 +4,9 @@
 
 | # | Finding | Severity | Proposed fix | Effort | Owner | Status |
 |---|---------|----------|--------------|--------|-------|--------|
-| O-F1 | Guest can list the admin catalog (`GET /admin/hotels` → 200) | S3 | Require platform staff or hotel membership for the admin catalog list (don't rely on the broad `hotel.read`), or scope the list to the caller's hotels | S | | Open |
-| O-F2 | Hotel-scoped routes return 400 (not 403) when a caller has no hotel context | S4 | Return `403` (insufficient permissions) when the caller is authenticated but lacks any hotel access; reserve `400` for a missing-but-required id | S | | Open |
-| O-F3 | Soft-deleted rooms still listed | S4 | Filter `status='active'` in the admin rooms list (or show a "deleted" badge) | XS | | Open |
+| O-F1 | Guest can list the admin catalog (`GET /admin/hotels` → 200) | S3 | Require platform staff or hotel membership for the admin catalog list (don't rely on the broad `hotel.read`), or scope the list to the caller's hotels | S | | ✅ Fixed (M1) |
+| O-F2 | Hotel-scoped routes return 400 (not 403) when a caller has no hotel context | S4 | Return `403` (insufficient permissions) when the caller is authenticated but lacks any hotel access; reserve `400` for a missing-but-required id | S | | ✅ Fixed (M4) |
+| O-F3 | Soft-deleted rooms still listed | S4 | Filter `status='active'` in the admin rooms list (or show a "deleted" badge) | XS | | ✅ By design (documented) |
 
 ## Notes
 

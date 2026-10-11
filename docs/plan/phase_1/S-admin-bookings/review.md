@@ -7,7 +7,7 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/notes.m
 
 | # | Sev | Axis | Symptom | Root cause | Evidence | Status |
 |---|-----|------|---------|-----------|----------|--------|
-| S-F1 | **S2** | Security/authz | **Cross-hotel IDOR on `/admin/bookings/:bookingId` — read, status write, and cancel.** A manager of hotel A can, by sending their own `X-Hotel-Id`: (a) `GET` hotel B's booking → **200**, (b) `PATCH …/status` → **200**, (c) `POST …/cancel` → **200**. | The routes have no `hotelId` param; `requireHotelPermission(BOOKING_READ/MANAGE/CANCEL)` resolves the hotel from the **`X-Hotel-Id` header only**, and the use-cases (`getBooking`, `updateBookingStatus`, `forceCancelBooking`) take only the `bookingId` — they never assert the booking's `hotel_id` equals the hotel context. | api.md S-IDOR-READ/WRITE/CANCEL | Open |
+| S-F1 | **S2** | Security/authz | **Cross-hotel IDOR on `/admin/bookings/:bookingId` — read, status write, and cancel.** A manager of hotel A can, by sending their own `X-Hotel-Id`: (a) `GET` hotel B's booking → **200**, (b) `PATCH …/status` → **200**, (c) `POST …/cancel` → **200**. | The routes have no `hotelId` param; `requireHotelPermission(BOOKING_READ/MANAGE/CANCEL)` resolves the hotel from the **`X-Hotel-Id` header only**, and the use-cases (`getBooking`, `updateBookingStatus`, `forceCancelBooking`) take only the `bookingId` — they never assert the booking's `hotel_id` equals the hotel context. | api.md S-IDOR-READ/WRITE/CANCEL | ✅ Fixed (M1) |
 
 ## Positives
 
@@ -27,3 +27,7 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/notes.m
 correct, but **S-F1** is a serious cross-tenant hole: a manager can read, mutate, or cancel
 another hotel's bookings. Fix by resolving the booking's `hotel_id` and asserting it equals the
 hotel context (a shared `requireBookingInHotel` guard, mirroring the R-F1 fix).
+
+---
+
+> **Update — 2026-10-11 (M1–M6):** every finding recorded above is now **✅ fixed** (see the Status column) or **by-design**. The verdict above reflects the **original** review; the current index marks this feature **✅ Ready**.

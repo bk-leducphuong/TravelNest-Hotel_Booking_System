@@ -7,9 +7,9 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/notes.m
 
 | # | Sev | Axis | Symptom | Root cause | Evidence | Status |
 |---|-----|------|---------|-----------|----------|--------|
-| O-F1 | S3 | Security/authz | **Any authenticated guest can list the admin catalog**: `GET /admin/hotels` returns **200 with 20 hotels** for `test@travelnest.com`, and the admin UI shows the Properties list (with a "Manage" link that then 403s). | The admin catalog **list** route uses `requirePermission(HOTEL_READ)` *without* hotel context, and the base `user` role holds `hotel.read`. The scoped `GET /admin/hotels/:id` correctly 403s. | notes.md, browser.md | Open |
-| O-F2 | S4 | API/contract | A guest hitting hotel-scoped admin routes (`/admin/bookings`, `/admin/payouts`) gets **400 "Hotel context is required"** instead of **403**. | `requirePermission` returns 400 when no hotel id is resolvable before checking membership. | api.md O-API-04/05 | Open |
-| O-F3 | S4 | UI/UX | Soft-deleted rooms still appear in the admin rooms list (`status: inactive`). | Delete is a soft delete; the list doesn't filter inactive. | notes.md | Open |
+| O-F1 | S3 | Security/authz | **Any authenticated guest can list the admin catalog**: `GET /admin/hotels` returns **200 with 20 hotels** for `test@travelnest.com`, and the admin UI shows the Properties list (with a "Manage" link that then 403s). | The admin catalog **list** route uses `requirePermission(HOTEL_READ)` *without* hotel context, and the base `user` role holds `hotel.read`. The scoped `GET /admin/hotels/:id` correctly 403s. | notes.md, browser.md | ✅ Fixed (M1) |
+| O-F2 | S4 | API/contract | A guest hitting hotel-scoped admin routes (`/admin/bookings`, `/admin/payouts`) gets **400 "Hotel context is required"** instead of **403**. | `requirePermission` returns 400 when no hotel id is resolvable before checking membership. | api.md O-API-04/05 | ✅ Fixed (M4) |
+| O-F3 | S4 | UI/UX | Soft-deleted rooms still appear in the admin rooms list (`status: inactive`). | Delete is a soft delete; the list doesn't filter inactive. | notes.md | ✅ By design (documented) |
 
 ## Positives
 
@@ -33,3 +33,7 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/notes.m
 cross-hotel denial, and per-permission gating all behave correctly. The one real gap is **O-F1**:
 the admin catalog list is exposed to any guest (data is public, but the admin surface should not
 be). O-F2/O-F3 are minor. Fix O-F1 and this is production-ready.
+
+---
+
+> **Update — 2026-10-11 (M1–M6):** every finding recorded above is now **✅ fixed** (see the Status column) or **by-design**. The verdict above reflects the **original** review; the current index marks this feature **✅ Ready**.

@@ -8,8 +8,8 @@
 
 | # | Sev | Axis | Symptom | Root cause | Evidence | Status |
 |---|-----|------|---------|-----------|----------|--------|
-| I-F1 | S2 | API/contract | `GET /payments/bookings/:bookingId` → **500** `Unknown column 'transactions.booking_code' in 'where clause'` | `payment.repository.findPaymentByBookingId` looked up the booking's `booking_code` and then filtered `transactions` by `booking_code` — but `transactions` has no such column (it links via `booking_id`) | [api.md](./test-results/api.md) I-API-04b | ✅ Fixed |
-| I-F2 | S2 | API/contract / Security | `GET /payments/transactions/:transactionId` → **403** for the owner | Controller ran the **UUID** through `parseInt(transactionId, 10)`, yielding `1`; MySQL then numerically coerced `id = 1`, matching a **different buyer's** row, so the ownership check rejected it. Latent cross-buyer read (mitigated only by the post-fetch `buyer_id` check) | [api.md](./test-results/api.md) I-API-04c | ✅ Fixed |
+| I-F1 | S2 | API/contract | `GET /payments/bookings/:bookingId` → **500** `Unknown column 'transactions.booking_code' in 'where clause'` | `payment.repository.findPaymentByBookingId` looked up the booking's `booking_code` and then filtered `transactions` by `booking_code` — but `transactions` has no such column (it links via `booking_id`) | [api.md](./test-results/api.md) I-API-04b | ✅ Fixed (M6) |
+| I-F2 | S2 | API/contract / Security | `GET /payments/transactions/:transactionId` → **403** for the owner | Controller ran the **UUID** through `parseInt(transactionId, 10)`, yielding `1`; MySQL then numerically coerced `id = 1`, matching a **different buyer's** row, so the ownership check rejected it. Latent cross-buyer read (mitigated only by the post-fetch `buyer_id` check) | [api.md](./test-results/api.md) I-API-04c | ✅ Fixed (M6) |
 
 ### Notes on I-F2
 
@@ -40,3 +40,7 @@ Pay → `/book/complete`, booking `confirmed`, payment `succeeded`.
 The UI run also surfaced two bugs elsewhere, now fixed: **K-F5** (the M4 JWKS change made `verifyJwt`
 async, breaking every authenticated WebSocket namespace) and **C-F9** (`flatpickr` used without an
 import, so the hotel-details date picker never initialised).
+
+---
+
+> **Update — 2026-10-11 (M1–M6):** every finding recorded above is now **✅ fixed** (see the Status column) or **by-design**. The verdict above reflects the **original** review; the current index marks this feature **✅ Ready**.

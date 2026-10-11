@@ -7,8 +7,8 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/notes.m
 
 | # | Sev | Axis | Symptom | Root cause | Evidence | Status |
 |---|-----|------|---------|-----------|----------|--------|
-| V-F1 | **S2** | Security/authz | **Cross-hotel IDOR on `/admin/reviews/:reviewId`.** An owner of hotel A (own `X-Hotel-Id`) can (a) `GET` hotel B's review → **200**, and (b) `POST /:reviewId/reply` → **201** (a reply was actually created on a foreign review). | Route has no `hotelId`; `requireHotelPermission(REVIEW_READ/REPLY)` resolves the hotel from `X-Hotel-Id` only; `getReview`/`replyToReview` take only the review id — no check that the review's `hotel_id` matches. | api.md V-IDOR-READ/REPLY | Open |
-| V-F2 | S4 | Security/design | The **hotel `owner` role bypasses all hotel-scoped permission checks** — e.g. an owner can set review status (moderate) despite the `owner` role not holding `review.moderate` (`V-API-04` → 200, expected 403). | `hasHotelPermission = hotelRoleName === ROLES.OWNER \|\| permissionNames.some(...)` in `requirePermission`. | api.md V-API-04 | Open |
+| V-F1 | **S2** | Security/authz | **Cross-hotel IDOR on `/admin/reviews/:reviewId`.** An owner of hotel A (own `X-Hotel-Id`) can (a) `GET` hotel B's review → **200**, and (b) `POST /:reviewId/reply` → **201** (a reply was actually created on a foreign review). | Route has no `hotelId`; `requireHotelPermission(REVIEW_READ/REPLY)` resolves the hotel from `X-Hotel-Id` only; `getReview`/`replyToReview` take only the review id — no check that the review's `hotel_id` matches. | api.md V-IDOR-READ/REPLY | ✅ Fixed (M1) |
+| V-F2 | S4 | Security/design | The **hotel `owner` role bypasses all hotel-scoped permission checks** — e.g. an owner can set review status (moderate) despite the `owner` role not holding `review.moderate` (`V-API-04` → 200, expected 403). | `hasHotelPermission = hotelRoleName === ROLES.OWNER \|\| permissionNames.some(...)` in `requirePermission`. | api.md V-API-04 | ✅ Fixed (M1) |
 
 ## Positives
 
@@ -32,3 +32,7 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/notes.m
 **🟡 Partial (S2).** Moderation and reply flows are well-built, but the review routes repeat the
 cross-tenant IDOR (V-F1, same root as R-F1/S-F1/T-F1/U-F1). Fix with the shared hotel-ownership
 guard; decide on V-F2 (owner override).
+
+---
+
+> **Update — 2026-10-11 (M1–M6):** every finding recorded above is now **✅ fixed** (see the Status column) or **by-design**. The verdict above reflects the **original** review; the current index marks this feature **✅ Ready**.

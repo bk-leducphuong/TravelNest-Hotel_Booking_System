@@ -7,10 +7,10 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/notes.m
 
 | # | Sev | Axis | Symptom | Root cause | Evidence | Status |
 |---|-----|------|---------|-----------|----------|--------|
-| D-F1 | S3 | Security/error | A malformed token on a **protected** route returns `401` with a raw internal message: `Unexpected token '�', "��" is not valid JSON`. | `verifyJwt` lets the `JSON.parse` SyntaxError message propagate and `authenticate` echoes `error.message`. | api.md D-API-08 | Open |
-| D-F2 | S3 | UI/UX | 3× `TypeError: Failed to construct 'URL': Invalid URL` at `keycloak-js` `parseCallbackUrl` on **every page load** (home, search, hotel). | Keycloak silent-check / postMessage handling; the served `silent-check-sso.html` is clean, so the cause is elsewhere (callback URL / iframe message). | notes.md | Open |
-| D-F5 | S3 | Security (infra) | JWT verified against a **static PEM** (`KEYCLOAK_PUBLIC_KEY_PEM`); no JWKS/`kid`. Key rotation requires a redeploy (R1). | `jwt.util.js` uses `crypto.createVerify` with a fixed key. | review + code | Open |
-| D-F6 | S4 | API/contract | Auth errors use `{success:false,message}` while validation errors use `{error:{code,message,fields}}` — inconsistent envelope. | No shared error envelope (same as A-F1). | api.md | Open |
+| D-F1 | S3 | Security/error | A malformed token on a **protected** route returns `401` with a raw internal message: `Unexpected token '�', "��" is not valid JSON`. | `verifyJwt` lets the `JSON.parse` SyntaxError message propagate and `authenticate` echoes `error.message`. | api.md D-API-08 | ✅ Fixed (M1) |
+| D-F2 | S3 | UI/UX | 3× `TypeError: Failed to construct 'URL': Invalid URL` at `keycloak-js` `parseCallbackUrl` on **every page load** (home, search, hotel). | Keycloak silent-check / postMessage handling; the served `silent-check-sso.html` is clean, so the cause is elsewhere (callback URL / iframe message). | notes.md | ✅ Fixed (M6) |
+| D-F5 | S3 | Security (infra) | JWT verified against a **static PEM** (`KEYCLOAK_PUBLIC_KEY_PEM`); no JWKS/`kid`. Key rotation requires a redeploy (R1). | `jwt.util.js` uses `crypto.createVerify` with a fixed key. | review + code | ✅ Fixed (M4) |
+| D-F6 | S4 | API/contract | Auth errors use `{success:false,message}` while validation errors use `{error:{code,message,fields}}` — inconsistent envelope. | No shared error envelope (same as A-F1). | api.md | ✅ Fixed (M6) |
 
 ## Positives
 
@@ -42,3 +42,7 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/notes.m
 **🟡 Partial.** Security fundamentals are solid — this is the strongest area so far. The
 open items are production-hardening: move to **JWKS** for key rotation (D-F5/R1), normalise
 the malformed-token error (D-F1), and resolve the recurring Keycloak console error (D-F2).
+
+---
+
+> **Update — 2026-10-11 (M1–M6):** every finding recorded above is now **✅ fixed** (see the Status column) or **by-design**. The verdict above reflects the **original** review; the current index marks this feature **✅ Ready**.

@@ -4,9 +4,9 @@
 
 | # | Finding | Severity | Proposed fix | Effort | Owner | Status |
 |---|---------|----------|--------------|--------|-------|--------|
-| L-F1 | Non-image upload → 500 | S3 | Wrap the multer fileFilter error as a `400 INVALID_FILE_TYPE` (custom Multer error → 4xx in the error handler) | XS | | Open |
-| L-F2 | Envelope `{success,message,data}` differs | S4 | Align with the shared response envelope (A-F1) | S | | Open |
-| L-F3 | Invalid entity type → 403 not 400 | S4 | Validate `entityType` before the authz middleware, or map it in authz | XS | | Open |
+| L-F1 | Non-image upload → 500 | S3 | Wrap the multer fileFilter error as a `400 INVALID_FILE_TYPE` (custom Multer error → 4xx in the error handler) | XS | | ✅ Fixed (M1) |
+| L-F2 | Envelope `{success,message,data}` differs | S4 | Align with the shared response envelope (A-F1) | S | | ✅ Fixed (M6) |
+| L-F3 | Invalid entity type → 403 not 400 | S4 | Validate `entityType` before the authz middleware, or map it in authz | XS | | ✅ Fixed (M6) |
 
 ## Notes
 

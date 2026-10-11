@@ -4,7 +4,7 @@
 
 | # | Finding | Severity | Proposed fix | Effort | Owner | Status |
 |---|---------|----------|--------------|--------|-------|--------|
-| P-F1 | Refunded/Net revenue understate refunds | S3 | Ensure refunded transactions contribute to `refundedAmount` (or exclude them from `grossAmount`); re-verify net = gross − refunded. Shared with feature T. | S | | Open |
+| P-F1 | Refunded/Net revenue understate refunds | S3 | Ensure refunded transactions contribute to `refundedAmount` (or exclude them from `grossAmount`); re-verify net = gross − refunded. Shared with feature T. | S | | ✅ Fixed (M2) |
 
 ## Notes
 

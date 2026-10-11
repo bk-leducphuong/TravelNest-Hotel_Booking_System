@@ -7,10 +7,10 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/notes.m
 
 | # | Sev | Axis | Symptom | Root cause | Evidence | Status |
 |---|-----|------|---------|-----------|----------|--------|
-| E-F1 | S3 | UI/UX | **Security settings is stale.** `SecuritySettings.vue` shows a "Change password" form that calls `UserService.updatePassword()` → `PATCH /api/v1/user/password`, which now returns **410 PASSWORD_FLOW_REMOVED**. **Browser-confirmed**: submitting the form fires the request and the toast shows "Password changes are now managed through Keycloak account management." The copy even instructs users to use `PATCH /api/v1/user/password`. | Client not updated after the backend password flow was moved to Keycloak account management. | browser.md, code | Open |
-| E-F2 | S3 | Data hygiene | `address` (and other free-text profile fields) accept and store arbitrary HTML (e.g. `<b>probe</b>`), returned raw in JSON. Rendered safely today (Vue interpolation), but there is no server-side sanitisation. | No input sanitisation/normalisation on profile text. | api.md E-API-03b, notes.md | Open |
-| E-F3 | S4 | API/contract | `PATCH /user` with only unknown fields returns a **misleading** message: `"At least one field must be provided for update"` even though fields were sent (they were stripped). | Unknown keys are stripped, then `.min(1)` fires. | api.md E-API-08 | Open |
-| E-F4 | S4 | API/contract | Empty-body `PATCH /user` error uses an empty field key `""`. | `object.min` message attached to the object (same as B-F4). | api.md E-API-04 | Open |
+| E-F1 | S3 | UI/UX | **Security settings is stale.** `SecuritySettings.vue` shows a "Change password" form that calls `UserService.updatePassword()` → `PATCH /api/v1/user/password`, which now returns **410 PASSWORD_FLOW_REMOVED**. **Browser-confirmed**: submitting the form fires the request and the toast shows "Password changes are now managed through Keycloak account management." The copy even instructs users to use `PATCH /api/v1/user/password`. | Client not updated after the backend password flow was moved to Keycloak account management. | browser.md, code | ✅ Fixed (M3) |
+| E-F2 | S3 | Data hygiene | `address` (and other free-text profile fields) accept and store arbitrary HTML (e.g. `<b>probe</b>`), returned raw in JSON. Rendered safely today (Vue interpolation), but there is no server-side sanitisation. | No input sanitisation/normalisation on profile text. | api.md E-API-03b, notes.md | ✅ Fixed (M4) |
+| E-F3 | S4 | API/contract | `PATCH /user` with only unknown fields returns a **misleading** message: `"At least one field must be provided for update"` even though fields were sent (they were stripped). | Unknown keys are stripped, then `.min(1)` fires. | api.md E-API-08 | ✅ Fixed (M6) |
+| E-F4 | S4 | API/contract | Empty-body `PATCH /user` error uses an empty field key `""`. | `object.min` message attached to the object (same as B-F4). | api.md E-API-04 | ✅ Fixed (M1) |
 
 ## Positives
 
@@ -37,3 +37,7 @@ replaced with a link to Keycloak) before production.
 > renders (6 sections), personal-details fields render, the phone edit saves and persists,
 > invalid input does not persist, the avatar modal opens, and the security password form
 > returns 410. See [browser.md](./test-results/browser.md).
+
+---
+
+> **Update — 2026-10-11 (M1–M6):** every finding recorded above is now **✅ fixed** (see the Status column) or **by-design**. The verdict above reflects the **original** review; the current index marks this feature **✅ Ready**.

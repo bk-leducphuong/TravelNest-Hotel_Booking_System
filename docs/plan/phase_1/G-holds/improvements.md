@@ -4,7 +4,7 @@
 
 | # | Finding | Severity | Proposed fix | Effort | Owner | Status |
 |---|---------|----------|--------------|--------|-------|--------|
-| G-F1 | Broken custom-validation message (empty reason + empty field key) | S3 | Wire `helpers.error('any.custom', { message })` correctly — shared fix with B-F3/C-F3/E-F4 | S | | Open |
+| G-F1 | Broken custom-validation message (empty reason + empty field key) | S3 | Wire `helpers.error('any.custom', { message })` correctly — shared fix with B-F3/C-F3/E-F4 | S | | ✅ Fixed (M1) |
 
 ## Notes
 

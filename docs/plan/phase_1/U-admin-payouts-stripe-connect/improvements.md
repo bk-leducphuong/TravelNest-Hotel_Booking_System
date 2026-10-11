@@ -4,8 +4,8 @@
 
 | # | Finding | Severity | Proposed fix | Effort | Owner | Status |
 |---|---------|----------|--------------|--------|-------|--------|
-| U-F1 | Cross-hotel IDOR on payout/account routes | S2 | Resolve the payout/account `hotel_id`/`owner_id` and assert it matches the hotel context before get/process/status/link/sync; `403` on mismatch. Shared guard (see R-F1/S-F1/T-F1). | M | | Open |
-| U-F2 | `generate eligible` 500s (and can hang) with no ready account | S3 | Throw an `ApiError` (e.g. `409 NO_PAYOUT_READY_ACCOUNT`) or return `200 {generated:0}`; add a timeout around Stripe calls. | S | | Open |
+| U-F1 | Cross-hotel IDOR on payout/account routes | S2 | Resolve the payout/account `hotel_id`/`owner_id` and assert it matches the hotel context before get/process/status/link/sync; `403` on mismatch. Shared guard (see R-F1/S-F1/T-F1). | M | | ✅ Fixed (M1) |
+| U-F2 | `generate eligible` 500s (and can hang) with no ready account | S3 | Throw an `ApiError` (e.g. `409 NO_PAYOUT_READY_ACCOUNT`) or return `200 {generated:0}`; add a timeout around Stripe calls. | S | | ✅ Fixed (M6) |
 
 ## ⚠️ Test-coverage gap (admin UI not exercised)
 

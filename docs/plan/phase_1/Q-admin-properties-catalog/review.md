@@ -7,8 +7,8 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/notes.m
 
 | # | Sev | Axis | Symptom | Root cause | Evidence | Status |
 |---|-----|------|---------|-----------|----------|--------|
-| Q-F1 | S3 | Error/edge | `PATCH /admin/hotels/:id` with an **unlisted timezone** returns `500 INTERNAL_ERROR`. Server log: `SequelizeValidationError: Validation isIn on timezone failed`. | The Joi schema allows any string ≤64 for `timezone`, but the model validates against `IANA_TIMEZONES`; the mismatch surfaces as an unhandled Sequelize error instead of a `400`. | api.md Q-API-03/04, notes.md | Open |
-| Q-F2 | S3 | Data integrity | The timezone allowlist (`constants/hotels.js` `IANA_TIMEZONES`, ~12 zones: America/New_York, Europe/London, Asia/Tokyo, …) **omits `Asia/Ho_Chi_Minh`** and most IANA zones, despite the product being Vietnam-focused. A hotel cannot be set to the local timezone (it 500s). | Hardcoded, incomplete allowlist. | notes.md | Open |
+| Q-F1 | S3 | Error/edge | `PATCH /admin/hotels/:id` with an **unlisted timezone** returns `500 INTERNAL_ERROR`. Server log: `SequelizeValidationError: Validation isIn on timezone failed`. | The Joi schema allows any string ≤64 for `timezone`, but the model validates against `IANA_TIMEZONES`; the mismatch surfaces as an unhandled Sequelize error instead of a `400`. | api.md Q-API-03/04, notes.md | ✅ Fixed (M1) |
+| Q-F2 | S3 | Data integrity | The timezone allowlist (`constants/hotels.js` `IANA_TIMEZONES`, ~12 zones: America/New_York, Europe/London, Asia/Tokyo, …) **omits `Asia/Ho_Chi_Minh`** and most IANA zones, despite the product being Vietnam-focused. A hotel cannot be set to the local timezone (it 500s). | Hardcoded, incomplete allowlist. | notes.md | ✅ Fixed (M4) |
 
 ## Positives
 
@@ -30,3 +30,7 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/notes.m
 handling: an unlisted value 500s (Q-F1) and the list omits Vietnam's zone (Q-F2). Both are small
 fixes (validate the timezone in Joi against the same list → `400`; expand the list to the full IANA
 set).
+
+---
+
+> **Update — 2026-10-11 (M1–M6):** every finding recorded above is now **✅ fixed** (see the Status column) or **by-design**. The verdict above reflects the **original** review; the current index marks this feature **✅ Ready**.

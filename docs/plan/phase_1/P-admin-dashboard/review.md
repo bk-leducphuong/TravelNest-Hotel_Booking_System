@@ -7,7 +7,7 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/browser
 
 | # | Sev | Axis | Symptom | Root cause | Evidence | Status |
 |---|-----|------|---------|-----------|----------|--------|
-| P-F1 | S3 | Data integrity | The dashboard's **"Refunded" bar is $0 and "Net revenue" equals "Gross"** even though the payments summary reports `byStatus.refunded: 2`. A refunded booking doesn't reduce net revenue on the dashboard. | `getHotelPaymentSummary` computes `grossAmount` over statuses incl. `refunded`, but `refundedAmount = refundRepository.sumSucceededForHotel` returns 0 (no succeeded refund records), so `net = gross`. Shared with **feature T**. | api.md P-API-03, browser.md | Open |
+| P-F1 | S3 | Data integrity | The dashboard's **"Refunded" bar is $0 and "Net revenue" equals "Gross"** even though the payments summary reports `byStatus.refunded: 2`. A refunded booking doesn't reduce net revenue on the dashboard. | `getHotelPaymentSummary` computes `grossAmount` over statuses incl. `refunded`, but `refundedAmount = refundRepository.sumSucceededForHotel` returns 0 (no succeeded refund records), so `net = gross`. Shared with **feature T**. | api.md P-API-03, browser.md | ✅ Fixed (M2) |
 
 ## Positives
 
@@ -30,3 +30,7 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/browser
 **🟡 Partial.** The dashboard is a well-built composition: correct, scoped, gated, and fast. The
 single issue is **P-F1** — refunds are not reflected in the revenue figures (a payments-summary
 data gap, tracked with feature T). No S1/S2.
+
+---
+
+> **Update — 2026-10-11 (M1–M6):** every finding recorded above is now **✅ fixed** (see the Status column) or **by-design**. The verdict above reflects the **original** review; the current index marks this feature **✅ Ready**.

@@ -8,34 +8,39 @@
 
 | ID | Feature | Tier | Status | S1 | S2 | S3 | S4 |
 |----|---------|------|--------|----|----|----|----|
-| [A](./A-public-discovery/) | Public Discovery & Content | 2 | 🟡 Partial | | | 3 | 0 |
-| [B](./B-search/) | Search | 2 | 🟡 Partial | | | 1 | 0 |
-| [C](./C-hotel-details-rooms/) | Hotel Details, Rooms & Policies | 2 | 🟡 Partial | | | 1 | 0 |
-| [D](./D-authentication-session/) | Authentication & Session | 0 | 🟡 Partial | | | 1 | 2 |
-| [E](./E-account-profile/) | Account & Profile | 0 | 🟡 Partial | | | | 1 |
-| [F](./F-favorites-saved-hotels/) | Favorites / Saved Hotels | 2 | ✅ Ready | | | | |
-| [G](./G-holds/) | Holds | 1 | ✅ Ready | | | | |
-| [H](./H-bookings-guest/) | Bookings (Guest) | 1 | 🟡 Partial | | | 1 | 0 |
-| [I](./I-payments-guest-webhook/) | Payments (Guest) & Stripe Webhook | 1 | 🟡 Partial | | 2 | | |
-| [J](./J-reviews-guest/) | Reviews (Guest) | 2 | ✅ Ready | | | | |
-| [K](./K-notifications-realtime/) | Notifications & Realtime | 2 | 🟡 Partial | | | | 1 |
-| [L](./L-media-images/) | Media / Images | 4 | 🟡 Partial | | | | 2 |
-| [M](./M-onboarding-become-a-host/) | Onboarding / Become a Host | 4 | 🟡 Partial | | | | 1 |
-| [N](./N-analytics-guest/) | Analytics (Guest) | 4 | ✅ Ready | | | | |
-| [O](./O-admin-auth-session-rbac/) | Admin Auth, Session & RBAC | 0 | 🟡 Partial | | | | 1 |
-| [P](./P-admin-dashboard/) | Admin Dashboard | 3 | ✅ Ready | | | | |
-| [Q](./Q-admin-properties-catalog/) | Admin Properties / Catalog | 3 | ✅ Ready | | | | |
-| [R](./R-admin-inventory-availability/) | Admin Inventory / Availability | 1 | 🟡 Partial | | | | 1 |
-| [S](./S-admin-bookings/) | Admin Bookings | 1 | ✅ Ready | | | | |
-| [T](./T-admin-payments-refunds/) | Admin Payments & Refunds | 1 | ✅ Ready | | | | |
-| [U](./U-admin-payouts-stripe-connect/) | Admin Payouts & Stripe Connect | 1 | 🟡 Partial | | | 1 | |
-| [V](./V-admin-reviews-moderation/) | Admin Reviews & Moderation | 3 | 🟡 Partial | | | | 1 |
-| [W](./W-internal-superadmin-api/) | Internal Superadmin API | 0 | ⬜ | | | | |
-| [X](./X-search-infrastructure/) | Search Infrastructure | 5 | ⬜ | | | | |
-| [Y](./Y-microservices-eventing/) | Microservices & Eventing | 5 | ⬜ | | | | |
-| [Z](./Z-platform-infra-ops/) | Platform, Infra & Ops | 0 | ⬜ | | | | |
+| [A](./A-public-discovery/) | Public Discovery & Content | 2 | ✅ Ready |  |  | 7 | 2 |
+| [B](./B-search/) | Search | 2 | ✅ Ready |  | 2 | 4 | 2 |
+| [C](./C-hotel-details-rooms/) | Hotel Details, Rooms & Policies | 2 | ✅ Ready |  | 1 | 7 | 1 |
+| [D](./D-authentication-session/) | Authentication & Session | 0 | ✅ Ready |  |  | 3 | 1 |
+| [E](./E-account-profile/) | Account & Profile | 0 | ✅ Ready |  |  | 2 | 2 |
+| [F](./F-favorites-saved-hotels/) | Favorites / Saved Hotels | 2 | ✅ Ready |  |  | 4 | 1 |
+| [G](./G-holds/) | Holds | 1 | ✅ Ready |  |  | 1 |  |
+| [H](./H-bookings-guest/) | Bookings (Guest) | 1 | ✅ Ready |  | 2 | 3 | 1 |
+| [I](./I-payments-guest-webhook/) | Payments (Guest) & Stripe Webhook | 1 | ✅ Ready |  | 2 |  |  |
+| [J](./J-reviews-guest/) | Reviews (Guest) | 2 | ✅ Ready |  | 2 | 2 |  |
+| [K](./K-notifications-realtime/) | Notifications & Realtime | 2 | ✅ Ready |  | 1 | 2 | 2 |
+| [L](./L-media-images/) | Media / Images | 4 | ✅ Ready |  |  | 1 | 2 |
+| [M](./M-onboarding-become-a-host/) | Onboarding / Become a Host | 4 | ✅ Ready |  | 2 | 1 | 1 |
+| [N](./N-analytics-guest/) | Analytics (Guest) | 4 | ✅ Ready |  |  |  |  |
+| [O](./O-admin-auth-session-rbac/) | Admin Auth, Session & RBAC | 0 | ✅ Ready |  |  | 1 | 2 |
+| [P](./P-admin-dashboard/) | Admin Dashboard | 3 | ✅ Ready |  |  | 1 |  |
+| [Q](./Q-admin-properties-catalog/) | Admin Properties / Catalog | 3 | ✅ Ready |  |  | 2 |  |
+| [R](./R-admin-inventory-availability/) | Admin Inventory / Availability | 1 | ✅ Ready |  | 1 |  | 1 |
+| [S](./S-admin-bookings/) | Admin Bookings | 1 | ✅ Ready |  | 1 |  |  |
+| [T](./T-admin-payments-refunds/) | Admin Payments & Refunds | 1 | ✅ Ready |  | 1 | 1 |  |
+| [U](./U-admin-payouts-stripe-connect/) | Admin Payouts & Stripe Connect | 1 | ✅ Ready |  | 1 | 1 |  |
+| [V](./V-admin-reviews-moderation/) | Admin Reviews & Moderation | 3 | ✅ Ready |  | 1 |  | 1 |
+| ~~W~~ | Internal Superadmin API | — | ❌ Dropped | | | | |
+| [X](./X-search-infrastructure/) | Search Infrastructure | 5 | ⬜ |  |  |  |  |
+| [Y](./Y-microservices-eventing/) | Microservices & Eventing | 5 | ⬜ |  |  |  |  |
+| [Z](./Z-platform-infra-ops/) | Platform, Infra & Ops | 0 | ⬜ |  |  |  |  |
 
 > Tier = execution order from plan §7 (0 = foundations, 1 = money/inventory, 2 = guest core, 3 = admin core, 4 = content/support, 5 = platform services).
+>
+> **Status:** ✅ Ready = reviewed and **all recorded findings resolved** (fixed in M1–M6, or by-design);
+> ⬜ = not yet reviewed; ❌ Dropped = removed from scope. The **S1–S4** columns are the findings the
+> review *recorded* (all now resolved — see each feature's `review.md` Status column for the milestone).
+> _Reconciled 2026-10-11 (M6)._
 
 ## Coverage notes
 
@@ -43,11 +48,13 @@
   client browser (as guest, then as owner). **Q, R, S, T** were reviewed **API-only** — the admin
   UI pages were **not** exercised; each of those folders' `improvements.md` has a
   **"⚠️ Test-coverage gap (admin UI not exercised)"** section with the pages to re-run.
-- **I (Payments guest + Stripe webhook)** is **🟡 Partial — unblocked & fully verified** (Stripe CLI
-  available on 2026-10-11). The webhook round-trip was exercised; **2 S2 endpoint bugs found & fixed**
+- **I (Payments guest + Stripe webhook)** is **✅ Ready — fully verified** (Stripe CLI available on
+  2026-10-11). The webhook round-trip was exercised; **2 S2 endpoint bugs found & fixed**
   (I-F1 lookup-by-booking 500, I-F2 lookup-by-transaction 403), and the **in-browser payment element
   (I-UI-01) was driven end-to-end** (card → Pay → `/book/complete`; booking `confirmed`, payment
   `succeeded`). See [`I-payments-guest-webhook/`](./I-payments-guest-webhook/).
+- **Not yet reviewed:** **X** (Search Infrastructure), **Y** (Microservices & Eventing),
+  **Z** (Platform, Infra & Ops). **W** (Internal Superadmin API) was **dropped** (removed from scope).
 - **M4 regression (K-F5) fixed**: the JWKS change made `verifyJwt` async, breaking every
   authenticated WebSocket namespace until the socket middleware was given its missing `await`.
   Surfaced during the feature-I UI run.

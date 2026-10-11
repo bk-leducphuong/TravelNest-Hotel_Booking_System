@@ -4,8 +4,8 @@
 
 | # | Finding | Severity | Proposed fix | Effort | Owner | Status |
 |---|---------|----------|--------------|--------|-------|--------|
-| V-F1 | Cross-hotel IDOR on `/admin/reviews/:reviewId` (read + reply) | S2 | Resolve the review's `hotel_id` and assert it matches the hotel context before get/status/reply; `403` on mismatch. Shared guard (see R-F1/S-F1/T-F1/U-F1). | M | | Open |
-| V-F2 | Owner role bypasses hotel-scoped permission checks | S4 | Decide: keep (owner = superuser) or enforce per-permission checks for owners too; document the choice | S | | Open |
+| V-F1 | Cross-hotel IDOR on `/admin/reviews/:reviewId` (read + reply) | S2 | Resolve the review's `hotel_id` and assert it matches the hotel context before get/status/reply; `403` on mismatch. Shared guard (see R-F1/S-F1/T-F1/U-F1). | M | | ✅ Fixed (M1) |
+| V-F2 | Owner role bypasses hotel-scoped permission checks | S4 | Decide: keep (owner = superuser) or enforce per-permission checks for owners too; document the choice | S | | ✅ Fixed (M1) |
 
 ## ⚠️ Test-coverage gap (admin UI not exercised)
 

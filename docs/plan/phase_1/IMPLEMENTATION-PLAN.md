@@ -190,11 +190,17 @@ client lint + build pass; socket reconnect confirmed live (`[userSocket] connect
 
 ## Outcome
 
-All of **M1–M6** are implemented. The index shows **F, G, J, N, P, Q, S, T = ✅ Ready**; the
-remaining features are 🟡 Partial, carrying only **non-blocking** S3/S4 polish items. The previously
-deferred response-envelope unification, Keycloak console error and the S3/S4 polish set are closed,
-feature **I** is fully verified including its in-browser payment element (I-UI-01), and the two
-regressions surfaced during that run (**K-F5**, **C-F9**) are fixed.
+**All findings recorded for A–V are resolved** (fixed in M1–M6, or by-design), and the per-feature
+`review.md`/`improvements.md` Status columns plus the [index](./README.md) now reflect that — every
+reviewed feature is **✅ Ready**. This includes the previously deferred response-envelope unification,
+the Keycloak console error, the S3/S4 polish set, feature **I**'s in-browser payment element
+(I-UI-01), and the two regressions surfaced during that run (**K-F5**, **C-F9**).
+
+**Still out of scope / not done:**
+- **X, Y, Z** (Search Infrastructure, Microservices & Eventing, Platform/Infra/Ops) — **not reviewed**.
+- **W** (Internal Superadmin API) — **dropped** (removed).
+- **K-F4** (notification timestamp formatting) is fixed in source but needs a **notification
+  container rebuild** to take effect in a running stack.
 
 ---
 

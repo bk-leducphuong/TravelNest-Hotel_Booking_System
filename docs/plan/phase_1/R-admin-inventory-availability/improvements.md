@@ -4,8 +4,8 @@
 
 | # | Finding | Severity | Proposed fix | Effort | Owner | Status |
 |---|---------|----------|--------------|--------|-------|--------|
-| R-F1 | Cross-hotel IDOR on `/admin/inventory/rooms/:roomId` (read + write) | S2 | Resolve the room's `hotel_id` and assert it equals the resolved hotel context (X-Hotel-Id / param) before proceeding; apply to GET and PATCH. Audit other `rooms/:roomId` admin routes for the same gap. | M | | Open |
-| R-F2 | New date without price silently inherits | S4 | Document the inheritance, or require an explicit price when `entries`/range creates rows | XS | | Open |
+| R-F1 | Cross-hotel IDOR on `/admin/inventory/rooms/:roomId` (read + write) | S2 | Resolve the room's `hotel_id` and assert it equals the resolved hotel context (X-Hotel-Id / param) before proceeding; apply to GET and PATCH. Audit other `rooms/:roomId` admin routes for the same gap. | M | | ✅ Fixed (M1) |
+| R-F2 | New date without price silently inherits | S4 | Document the inheritance, or require an explicit price when `entries`/range creates rows | XS | | ✅ Fixed (M4) |
 
 ## Notes
 

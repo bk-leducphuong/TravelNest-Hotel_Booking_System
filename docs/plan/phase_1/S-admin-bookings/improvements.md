@@ -4,7 +4,7 @@
 
 | # | Finding | Severity | Proposed fix | Effort | Owner | Status |
 |---|---------|----------|--------------|--------|-------|--------|
-| S-F1 | Cross-hotel IDOR on `/admin/bookings/:bookingId` (read/write/cancel) | S2 | Resolve the booking's `hotel_id` and assert it equals the hotel context before get/update/cancel; `403` on mismatch. Add a shared `requireBookingInHotel` guard. | M | | Open |
+| S-F1 | Cross-hotel IDOR on `/admin/bookings/:bookingId` (read/write/cancel) | S2 | Resolve the booking's `hotel_id` and assert it equals the hotel context before get/update/cancel; `403` on mismatch. Add a shared `requireBookingInHotel` guard. | M | | ✅ Fixed (M1) |
 
 ## Notes
 

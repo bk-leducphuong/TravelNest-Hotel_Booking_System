@@ -7,9 +7,9 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/browser
 
 | # | Sev | Axis | Symptom | Root cause | Evidence | Status |
 |---|-----|------|---------|-----------|----------|--------|
-| L-F1 | S3 | Error/edge | Uploading a **non-image** file returns `500 INTERNAL_ERROR` instead of `400`. | `config/multer.config.js` `fileFilter` throws a plain `Error('Not an image…')`; it is not converted to a 4xx by the error handler. | api.md L-API-07 | Open |
-| L-F2 | S4 | API/contract | Image endpoints use a third envelope `{success, message, data}` — different from the catalog `{data}` and error `{error:{code,…}}` shapes used elsewhere. | Module-local response style (same class as A-F1). | api.md | Open |
-| L-F3 | S4 | API/contract | An **invalid entity type** (`/images/foo/…`) returns `403` (authz) rather than the service's `400 INVALID_ENTITY_TYPE`. The service validation is unreachable for non-admins. | `authorizeImageEntityWrite` runs before entity-type validation. | api.md L-API-08 | Open |
+| L-F1 | S3 | Error/edge | Uploading a **non-image** file returns `500 INTERNAL_ERROR` instead of `400`. | `config/multer.config.js` `fileFilter` throws a plain `Error('Not an image…')`; it is not converted to a 4xx by the error handler. | api.md L-API-07 | ✅ Fixed (M1) |
+| L-F2 | S4 | API/contract | Image endpoints use a third envelope `{success, message, data}` — different from the catalog `{data}` and error `{error:{code,…}}` shapes used elsewhere. | Module-local response style (same class as A-F1). | api.md | ✅ Fixed (M6) |
+| L-F3 | S4 | API/contract | An **invalid entity type** (`/images/foo/…`) returns `403` (authz) rather than the service's `400 INVALID_ENTITY_TYPE`. The service validation is unreachable for non-admins. | `authorizeImageEntityWrite` runs before entity-type validation. | api.md L-API-08 | ✅ Fixed (M6) |
 
 ## Positives
 
@@ -34,3 +34,7 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/browser
 **🟡 Partial.** Media is in good shape — authz is comprehensive and correct, reads work, and the
 storage pipeline is wired. Only a non-image upload returning `500` (L-F1) plus two cosmetic
 contract issues remain. No S1/S2.
+
+---
+
+> **Update — 2026-10-11 (M1–M6):** every finding recorded above is now **✅ fixed** (see the Status column) or **by-design**. The verdict above reflects the **original** review; the current index marks this feature **✅ Ready**.

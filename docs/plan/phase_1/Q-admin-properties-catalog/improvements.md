@@ -4,8 +4,8 @@
 
 | # | Finding | Severity | Proposed fix | Effort | Owner | Status |
 |---|---------|----------|--------------|--------|-------|--------|
-| Q-F1 | Unlisted timezone → 500 | S3 | Validate `timezone` in the Joi schema against the same allowlist → `400` with valid values; map `SequelizeValidationError` to `400` centrally | S | | Open |
-| Q-F2 | Allowlist omits `Asia/Ho_Chi_Minh` (and most zones) | S3 | Expand `IANA_TIMEZONES` to the full IANA set (or drop the strict allowlist and validate format) | S | | Open |
+| Q-F1 | Unlisted timezone → 500 | S3 | Validate `timezone` in the Joi schema against the same allowlist → `400` with valid values; map `SequelizeValidationError` to `400` centrally | S | | ✅ Fixed (M1) |
+| Q-F2 | Allowlist omits `Asia/Ho_Chi_Minh` (and most zones) | S3 | Expand `IANA_TIMEZONES` to the full IANA set (or drop the strict allowlist and validate format) | S | | ✅ Fixed (M4) |
 
 ## Notes
 

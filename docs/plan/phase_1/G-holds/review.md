@@ -7,7 +7,7 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/browser
 
 | # | Sev | Axis | Symptom | Root cause | Evidence | Status |
 |---|-----|------|---------|-----------|----------|--------|
-| G-F1 | S3 | API/contract | `POST /hold` with `checkOutDate <= checkInDate` returns 400 with `"value" failed custom validation because ` (empty reason) and an empty field key `""`. | `helpers.error('any.custom', { message })` not wired to `.messages()` — **same class as B-F3 / C-F3 / E-F4** (systemic). | api.md G-API-07 | Open |
+| G-F1 | S3 | API/contract | `POST /hold` with `checkOutDate <= checkInDate` returns 400 with `"value" failed custom validation because ` (empty reason) and an empty field key `""`. | `helpers.error('any.custom', { message })` not wired to `.messages()` — **same class as B-F3 / C-F3 / E-F4** (systemic). | api.md G-API-07 | ✅ Fixed (M1) |
 
 ## Positives
 
@@ -28,3 +28,7 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/browser
 **🟡 Partial.** This is one of the strongest features: correct lifecycle, authz, oversell
 protection, and a working UI create/abandon flow. The only defect is the shared
 **custom-validation message** bug (G-F1). No S1/S2.
+
+---
+
+> **Update — 2026-10-11 (M1–M6):** every finding recorded above is now **✅ fixed** (see the Status column) or **by-design**. The verdict above reflects the **original** review; the current index marks this feature **✅ Ready**.

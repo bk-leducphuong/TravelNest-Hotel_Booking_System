@@ -7,10 +7,10 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/browser
 
 | # | Sev | Axis | Symptom | Root cause | Evidence | Status |
 |---|-----|------|---------|-----------|----------|--------|
-| M-F1 | **S2** | Data/API | A **valid** join submission returns `500 INTERNAL_ERROR`. Server log: `Incorrect time value: '14:00-22:00' for column 'check_in_time' at row 1`. | `join.service.js` passes `checkInTime: "${checkInFrom}-${checkInTo}"` (a range) to `catalogModule.upsertHotel`, but `hotels.check_in_time` is a MySQL `TIME` (single value). | api.md M-API-06, server error.log | Open |
-| M-F2 | **S2** | UI/UX | The wizard's final step posts to **legacy `/api/join`** and **`/api/join/upload-photos`** (no `/v1`) → **404**. The working `/api/v1/join` is never called. | `Form6.vue` uses raw `axios` + `VITE_SERVER_HOST}/api/join…` (post-refactor drift). | browser.md | Open |
-| M-F3 | S3 | Security/UX | `/join` requires authentication (`router.use(authenticate)`), but "Become a host" is a **public** page; an anonymous prospective host gets `401` and cannot apply, and the page doesn't prompt login. | Public onboarding gated behind auth. | api.md M-API-01, browser.md | Open |
-| M-F4 | S4 | API/contract | Response envelope `{data}` (join) vs `{success,message,data}` (media) vs `{error}` — inconsistent (same class as A-F1). | No shared envelope. | api.md | Open |
+| M-F1 | **S2** | Data/API | A **valid** join submission returns `500 INTERNAL_ERROR`. Server log: `Incorrect time value: '14:00-22:00' for column 'check_in_time' at row 1`. | `join.service.js` passes `checkInTime: "${checkInFrom}-${checkInTo}"` (a range) to `catalogModule.upsertHotel`, but `hotels.check_in_time` is a MySQL `TIME` (single value). | api.md M-API-06, server error.log | ✅ Fixed (M3) |
+| M-F2 | **S2** | UI/UX | The wizard's final step posts to **legacy `/api/join`** and **`/api/join/upload-photos`** (no `/v1`) → **404**. The working `/api/v1/join` is never called. | `Form6.vue` uses raw `axios` + `VITE_SERVER_HOST}/api/join…` (post-refactor drift). | browser.md | ✅ Fixed (M3) |
+| M-F3 | S3 | Security/UX | `/join` requires authentication (`router.use(authenticate)`), but "Become a host" is a **public** page; an anonymous prospective host gets `401` and cannot apply, and the page doesn't prompt login. | Public onboarding gated behind auth. | api.md M-API-01, browser.md | ✅ Fixed (M3) |
+| M-F4 | S4 | API/contract | Response envelope `{data}` (join) vs `{success,message,data}` (media) vs `{error}` — inconsistent (same class as A-F1). | No shared envelope. | api.md | ✅ Fixed (M6) |
 
 ## Positives
 
@@ -30,3 +30,7 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/browser
 endpoint (M-F2) and the backend crashes on a valid payload (M-F1). Auth/validation are fine, but
 the core outcome — a new host registering a property — does not work. M-F1 + M-F2 must be fixed
 before production; M-F3 needs a product decision (require login first, or make the flow public).
+
+---
+
+> **Update — 2026-10-11 (M1–M6):** every finding recorded above is now **✅ fixed** (see the Status column) or **by-design**. The verdict above reflects the **original** review; the current index marks this feature **✅ Ready**.

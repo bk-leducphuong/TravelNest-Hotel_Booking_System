@@ -7,9 +7,9 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/browser
 
 | # | Sev | Axis | Symptom | Root cause | Evidence | Status |
 |---|-----|------|---------|-----------|----------|--------|
-| K-F1 | S3 | UI/UX | Every notification shows **"2 hrs ago"** regardless of its real time (items from 2026-10-07 still say "2 hrs ago" on 2026-10-09). | `Notification.vue` template hardcodes `<p class="notification-time">2 hrs ago</p>`; the real `created_at` is never used. | browser.md | Open |
-| K-F2 | S3 | UI/UX | Clicking a notification marks it read **only in local state**; the read state is **not persisted** (reload → unread again). | `viewDetails()` has `// You can add API call here to update backend` and never calls `NotificationService.markAsRead`. | browser.md, code | Open |
-| K-F3 | S4 | UI/UX | The "See all" footer button does nothing. | `handleSeeAll()` only `console.log`s (navigation commented out; no notifications page). | browser.md | Open |
+| K-F1 | S3 | UI/UX | Every notification shows **"2 hrs ago"** regardless of its real time (items from 2026-10-07 still say "2 hrs ago" on 2026-10-09). | `Notification.vue` template hardcodes `<p class="notification-time">2 hrs ago</p>`; the real `created_at` is never used. | browser.md | ✅ Fixed (M4) |
+| K-F2 | S3 | UI/UX | Clicking a notification marks it read **only in local state**; the read state is **not persisted** (reload → unread again). | `viewDetails()` has `// You can add API call here to update backend` and never calls `NotificationService.markAsRead`. | browser.md, code | ✅ Fixed (M4) |
+| K-F3 | S4 | UI/UX | The "See all" footer button does nothing. | `handleSeeAll()` only `console.log`s (navigation commented out; no notifications page). | browser.md | ✅ Fixed (M4) |
 | K-F4 | S4 | UI/UX | Notification text embeds raw ISO timestamps ("…before 2026-10-07T15:35:44.000Z"). | Server-generated `message` not human-formatted. | browser.md | ✅ Fixed (M6) |
 | K-F5 | **S2** | Realtime/API | **Every authenticated WebSocket namespace** (`/user`, `/property`, `/support`, `/admin`) rejected the connection with *"Bearer token is missing the subject claim"* — realtime notifications and hold-expiry events dead. | M4 made `verifyJwt` **async** (JWKS support), but `platform/realtime/auth.js` still called `verifyJwt(token)` **without `await`**; `resolveAuthenticatedUser` received a pending Promise (`subject` undefined). | [I ui.md](../I-payments-guest-webhook/test-results/ui.md), server logs (`Socket authentication error`) | ✅ Fixed (M6) |
 
@@ -35,3 +35,7 @@ scoped, IDOR-safe, correct counts, and a working authenticated socket. The clien
 three concrete defects (fake timestamp, non-persisted read on click, dead "See all"). **K-F5**
 (S2 — an M4 regression that broke every authenticated socket) was found during the feature-I UI run
 and **fixed in M6**.
+
+---
+
+> **Update — 2026-10-11 (M1–M6):** every finding recorded above is now **✅ fixed** (see the Status column) or **by-design**. The verdict above reflects the **original** review; the current index marks this feature **✅ Ready**.

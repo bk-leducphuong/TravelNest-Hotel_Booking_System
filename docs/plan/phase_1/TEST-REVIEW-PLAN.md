@@ -182,9 +182,8 @@ _Risk: duplicate/incorrect payouts._
 moderation policy, reply CRUD, rating projection updates, hotel scoping.
 _Risk: moderating other hotels' reviews._
 
-**W. Internal superadmin API** — `platform/internal` (`/internal/superadmin`,
-runner, registries). → Check auth (past fully-unauthenticated bug fixed), token
-handling, destructive ops, audit. _Risk: unauthenticated admin._
+**W. Internal superadmin API — ❌ dropped.** The `platform/internal` superadmin surface was
+removed and is **out of scope** (no longer needed). _Not reviewed._
 
 **X. Search infrastructure** — Elasticsearch indexer, seeders, hybrid search.
 → Check index/DB drift, reindex procedure, degradation when ES down (R10).
@@ -210,7 +209,7 @@ a11y sweep, responsive 390px, PII redaction in logs, and N+1/query counts.
 
 ## 7. Execution order
 
-1. **Tier 0 – Foundations:** Z, D, O, W (auth, RBAC, config, internal API).
+1. **Tier 0 – Foundations:** Z, D, O (auth, RBAC, config). _(W dropped.)_
 2. **Tier 1 – Money & inventory (highest risk):** G, H, I, R, S, T, U.
 3. **Tier 2 – Guest core:** A, B, C, F, J, K.
 4. **Tier 3 – Admin core:** P, Q, V.
