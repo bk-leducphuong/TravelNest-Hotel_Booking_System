@@ -21,11 +21,11 @@ Run from the repository root:
 ```bash
 yarn install
 yarn dev:server
-yarn dev:client
+yarn dev:guest
 yarn dev:admin
 yarn dev:bullmq-worker
 yarn build:server
-yarn build:client
+yarn build:guest
 yarn build:admin
 yarn lint
 yarn lint:fix

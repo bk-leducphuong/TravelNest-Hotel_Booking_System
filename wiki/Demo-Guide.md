@@ -41,7 +41,7 @@ yarn workspace @travelnest/server seed:all:quick
 
 ```bash
 yarn dev:server          # API            http://localhost:3000
-yarn dev:client          # guest app      http://localhost:5173
+yarn dev:guest          # guest app      http://localhost:5173
 yarn dev:admin           # admin console  http://localhost:8000
 yarn dev:bullmq-worker   # background jobs (hold/booking expiry)
 

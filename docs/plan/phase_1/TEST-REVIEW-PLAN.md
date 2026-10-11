@@ -20,7 +20,7 @@ with evidence.
 Note: i brough up the local dev stack and ran the backend, frontend (guest and admin)
 
 - **Bring-up:** docker-compose infra (MySQL, Redis, Elasticsearch, MongoDB,
-  MinIO, NATS) + Keycloak, then `yarn dev:server`, `yarn dev:client`,
+  MinIO, NATS) + Keycloak, then `yarn dev:server`, `yarn dev:guest`,
   `yarn dev:admin`; Go services `analytics`/`media`/`notification`; Stripe CLI
   (`stripe listen`) for webhooks. Set `RATE_LIMIT_ENABLED` deliberately per test.
 - **Test data:** `yarn demo:seed` (server seeders: database/elasticsearch/mongodb).
