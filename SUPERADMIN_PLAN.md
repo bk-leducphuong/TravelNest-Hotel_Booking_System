@@ -369,6 +369,9 @@ module.exports = router;
 Follow existing Jest (backend) and Vitest/Playwright (frontend) conventions. Add authz tests
 explicitly covering the `support_agent` (masked) vs `admin` (unmasked) PII boundary.
 
+> **Manual test plan:** [`SUPERADMIN_TEST_PLAN.md`](./SUPERADMIN_TEST_PLAN.md) — API (curl), data,
+> security and UI/UX acceptance criteria for local execution.
+
 ---
 
 ## 10. Open questions / risks
