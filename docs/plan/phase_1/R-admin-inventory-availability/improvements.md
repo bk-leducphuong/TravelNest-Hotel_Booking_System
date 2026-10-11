@@ -15,13 +15,11 @@
 - Consider a shared guard used by every `:roomId` admin route (inventory, media, catalog).
 - Re-test: manager `PATCH/GET` a foreign room with own `X-Hotel-Id` → `403`.
 
-## ⚠️ Test-coverage gap (admin UI not exercised)
+## ✅ Admin-UI coverage (gap filled in M5)
 
-This feature was reviewed **API-only** (curl) plus reading the `admin-client` service layer — the
-admin **UI pages were NOT driven via Playwright** in this pass (the admin client was rendering as
-the guest for Q–T). This is a **coverage gap**, not a pass.
+This feature was reviewed **API-only** in the first pass; the admin **UI pages were then driven via Playwright in M5** (signed in as `owner@travelnest.local`) — see [`ADMIN-UI-VERIFICATION.md`](../ADMIN-UI-VERIFICATION.md).
 
-**TODO — re-run in the admin client signed in as `owner@travelnest.local`** and verify:
+**Pages exercised:**
 - `/availability` (inventory editor: date range, price, allotment, status, bulk apply)
 - that the oversell guard surfaces as a clear error in the UI
 - that a staff member (has `room.manage_inventory`) can edit, and a role without it cannot

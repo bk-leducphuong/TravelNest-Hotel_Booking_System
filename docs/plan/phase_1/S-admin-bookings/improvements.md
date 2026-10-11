@@ -16,13 +16,11 @@
   reviews (`/admin/reviews/:reviewId`), payments (`/admin/payments/...`), payouts.
 - Re-test: manager GET/PATCH/cancel a foreign booking with own `X-Hotel-Id` → `403`.
 
-## ⚠️ Test-coverage gap (admin UI not exercised)
+## ✅ Admin-UI coverage (gap filled in M5)
 
-This feature was reviewed **API-only** (curl) plus reading the `admin-client` service layer — the
-admin **UI pages were NOT driven via Playwright** in this pass (the admin client was rendering as
-the guest for Q–T). This is a **coverage gap**, not a pass.
+This feature was reviewed **API-only** in the first pass; the admin **UI pages were then driven via Playwright in M5** (signed in as `owner@travelnest.local`) — see [`ADMIN-UI-VERIFICATION.md`](../ADMIN-UI-VERIFICATION.md).
 
-**TODO — re-run in the admin client signed in as `owner@travelnest.local`** and verify:
+**Pages exercised:**
 - `/bookings` (list, filters, pagination, status tags)
 - `/bookings/[bookingId]` (detail, status-change control, force-cancel action + refund option)
 - that status-change options respect the state machine and the `booking.manage`/`booking.cancel`

@@ -7,13 +7,11 @@
 | T-F1 | Cross-hotel IDOR on transaction/refund routes | S2 | Resolve the transaction's (and refund's) `hotel_id` and assert it equals the hotel context before read/refund/retry; `403` on mismatch. Shared `requireTransactionInHotel` guard (see R-F1/S-F1). | M | | ✅ Fixed (M1) |
 | T-F2 | Refunded amount not reflected in summary | S3 | Ensure refunded transactions contribute to `refundedAmount` (or exclude them from `grossAmount`); shared with P-F1. | S | | ✅ Fixed (M2) |
 
-## ⚠️ Test-coverage gap (admin UI not exercised)
+## ✅ Admin-UI coverage (gap filled in M5)
 
-This feature was reviewed **API-only** (curl) plus reading the `admin-client` service layer — the
-admin **UI pages were NOT driven via Playwright** in this pass (the admin client was rendering as
-the guest for Q–T). This is a **coverage gap**, not a pass.
+This feature was reviewed **API-only** in the first pass; the admin **UI pages were then driven via Playwright in M5** (signed in as `owner@travelnest.local`) — see [`ADMIN-UI-VERIFICATION.md`](../ADMIN-UI-VERIFICATION.md).
 
-**TODO — re-run in the admin client signed in as `owner@travelnest.local`** and verify:
+**Pages exercised:**
 - `/payments` (transactions list, filters, summary cards)
 - `/payments/refunds` (refunds list + initiate-refund flow)
 - `/payments/transactions/[transactionId]` (detail; refund action gating by `payment.refund`)

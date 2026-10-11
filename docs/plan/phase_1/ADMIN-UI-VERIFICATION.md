@@ -23,7 +23,7 @@ Fills the **admin UI coverage gap** flagged for features **O–V**. The admin cl
 ## Notes
 
 - All pages loaded with **no page errors**; the only console noise was the recurring Keycloak
-  `parseCallbackUrl` error (A-F9/D-F2 — still open).
+  `parseCallbackUrl` error (A-F9/D-F2 — **✅ fixed in M6**).
 - Screenshots timed out in the harness ("waiting for fonts"); evidence is DOM-based.
 - The admin client shares the realm SSO, so signing in as **owner** required logging out of the
   guest session first.

@@ -13,13 +13,11 @@
 - Also address **O-F1** (guest-accessible admin catalog list) — same feature area.
 - Re-test: `PATCH` hotel with `Asia/Ho_Chi_Minh` → `200`; with a garbage value → `400`.
 
-## ⚠️ Test-coverage gap (admin UI not exercised)
+## ✅ Admin-UI coverage (gap filled in M5)
 
-This feature was reviewed **API-only** (curl) plus reading the `admin-client` service layer — the
-admin **UI pages were NOT driven via Playwright** in this pass (the admin client was rendering as
-the guest for Q–T). This is a **coverage gap**, not a pass.
+This feature was reviewed **API-only** in the first pass; the admin **UI pages were then driven via Playwright in M5** (signed in as `owner@travelnest.local`) — see [`ADMIN-UI-VERIFICATION.md`](../ADMIN-UI-VERIFICATION.md).
 
-**TODO — re-run in the admin client signed in as `owner@travelnest.local`** and verify:
+**Pages exercised:**
 - `/properties` (hotel list — also confirm the **O-F1** guest-access gap in the UI)
 - `/properties/[hotelId]` (hotel edit form, rooms CRUD, policies CRUD, photos)
 - that a manager can edit (has `hotel.update`) while a **staff** member sees read-only / no edit
