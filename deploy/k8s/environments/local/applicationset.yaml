@@ -59,6 +59,9 @@ spec:
           - name: travelnest-admin-client
             path: deploy/k8s/apps/admin-client/overlays/local
             wave: "40"
+          - name: travelnest-superadmin-client
+            path: deploy/k8s/apps/superadmin-client/overlays/local
+            wave: "40"
   template:
     metadata:
       name: "{{name}}"

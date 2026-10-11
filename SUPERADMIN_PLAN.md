@@ -321,8 +321,7 @@ module.exports = router;
 - [x] `application/pii.js` masking helper
 - [x] Record PII access in the audit trail
 - [x] `superadmin-client/` scaffold: workspace, Nuxt config, auth/http/permissions, layout, middleware, CI, Docker/nginx
-- [ ] Keycloak client + DNS + k8s/Argo CD manifests (provisioning)
-- [x] Internal ops API hardening: token-only for destructive routes, drop dead guard comments (D7)
+- [x] k8s/Argo CD manifests for `superadmin-client` (D6) — Keycloak client + DNS still to provision- [x] Internal ops API hardening: token-only for destructive routes, drop dead guard comments (D7)
 
 ### Phase 1 — Read-only monitoring
 - [x] `GET /superadmin/overview`
@@ -331,7 +330,7 @@ module.exports = router;
 - [x] `GET /superadmin/audit`
 - [x] Frontend pages for the above
 - [x] Joi schemas + unit tests per service (hotel/user admin, controller PII wiring)
-- [ ] Integration test: support_agent can read, cannot read PII unmasked; non-platform user gets 403
+- [x] Integration test: support_agent can read, cannot read PII unmasked; non-platform user gets 403
 
 > **Progress:** Phase 0 and Phase 1 implemented in the `feat/superadmin` worktree
 > (commit `c444d41` + Phase 1). Backend unit suite 374/374; superadmin-client unit tests
@@ -410,7 +409,7 @@ Items intentionally left out of Phases 0–1, each with enough context to pick u
   `action: 'platform.user.pii_read'`, `entityType: 'user'`, `entityId`, and the actor.
 - **Accept:** an audit row is written per PII read; best-effort (never breaks the read).
 
-### D3 — Integration test for the authz / PII boundary
+### D3 — Integration test for the authz / PII boundary — ✅ done
 - **Context:** unit tests cover the service and controller wiring, but no DB-backed test.
 - **Do:** add under `server/__tests__/integration` (Testcontainers): `support_agent` can read
   hotels/users but sees masked PII; `admin` sees unmasked; a non-platform user gets 403;
@@ -430,7 +429,7 @@ Items intentionally left out of Phases 0–1, each with enough context to pick u
   confirm all lists stay paginated (already default 20, max 100).
 - **Accept:** burst requests to `/overview` are throttled.
 
-### D6 — Keycloak client + DNS + k8s/Argo CD
+### D6 — Keycloak client + DNS + k8s/Argo CD — 🟡 manifests done; Keycloak/DNS pending
 - **Context:** the app scaffold, Dockerfile, nginx and CI workflow exist; the runtime
   provisioning does not.
 - **Do:** create the public Keycloak client `travelnest-superadmin` (PKCE S256) with redirect

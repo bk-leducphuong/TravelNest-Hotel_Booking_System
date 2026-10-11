@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: superadmin-client
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: superadmin.deployserver.work
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: superadmin-client
+                port:
+                  number: 80
