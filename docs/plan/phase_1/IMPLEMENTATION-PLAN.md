@@ -196,9 +196,11 @@ reviewed feature is **✅ Ready**. This includes the previously deferred respons
 the Keycloak console error, the S3/S4 polish set, feature **I**'s in-browser payment element
 (I-UI-01), and the two regressions surfaced during that run (**K-F5**, **C-F9**).
 
-**Still out of scope / not done:**
+**Still open / not done:**
+- **W — Superadmin Platform** (console + API) — **reviewed 2026-10-11, 4 findings open**
+  (W-F1 S2 `users?role=` 500; W-F2 dead hotel-detail `owner`; W-F3 console Keycloak error; W-F4
+  audit casing). See [`W-superadmin-platform/`](./W-superadmin-platform/).
 - **X, Y, Z** (Search Infrastructure, Microservices & Eventing, Platform/Infra/Ops) — **not reviewed**.
-- **W** (Internal Superadmin API) — **dropped** (removed).
 - **K-F4** (notification timestamp formatting) is fixed in source but needs a **notification
   container rebuild** to take effect in a running stack.
 
