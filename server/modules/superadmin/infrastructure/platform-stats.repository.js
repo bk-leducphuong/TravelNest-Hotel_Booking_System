@@ -1,4 +1,4 @@
-const db = require('@models/index.js');
+const db = require('@platform/database');
 
 const {
   sequelize,

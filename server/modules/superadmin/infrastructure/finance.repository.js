@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 
-const db = require('@models/index.js');
+const db = require('@platform/database');
 
 const {
   transactions: Transactions,

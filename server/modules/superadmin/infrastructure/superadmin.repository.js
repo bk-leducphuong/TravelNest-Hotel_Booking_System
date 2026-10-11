@@ -9,7 +9,7 @@ const {
   hotel_users: HotelUsers,
   user_roles: UserRoles,
   hotel_rating_summaries: HotelRatingSummaries,
-} = require('@models/index.js');
+} = require('@platform/database');
 
 /**
  * Superadmin repository - platform-wide (cross-tenant) reads.
