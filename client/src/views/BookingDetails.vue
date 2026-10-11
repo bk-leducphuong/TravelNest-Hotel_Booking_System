@@ -15,7 +15,12 @@ export default {
   },
   computed: {
     ...mapGetters('booking', ['getBookingInformation']),
-    ...mapGetters('user', ['getUserInformation'])
+    ...mapGetters('user', ['getUserInformation']),
+    isCancellable() {
+      return ['pending_payment', 'confirmed', 'payment_failed', 'checked_in'].includes(
+        this.getBookingInformation?.status
+      )
+    }
   },
   methods: {
     getFirstImageUrl
@@ -89,7 +94,7 @@ export default {
     </div>
 
     <!-- Right Section -->
-    <div class="details-right" v-if="getBookingInformation.status === 'confirmed'">
+    <div class="details-right" v-if="isCancellable">
       <h2 class="subheading">Is everything correct?</h2>
       <p class="note">
         You can always view or change your booking online – no registration required.
@@ -102,7 +107,7 @@ export default {
         <li><a href="#" class="action-link"><i class="fa-solid fa-wrench" style="color: #005eff;"></i> Change your room</a></li>
       </ul>
     </div>
-    <div class="details-right" v-if="getBookingInformation.status !== 'confirmed'">
+    <div class="details-right" v-if="!isCancellable">
       <h2 class="subheading">What happens next?</h2>
       <p class="note">
         

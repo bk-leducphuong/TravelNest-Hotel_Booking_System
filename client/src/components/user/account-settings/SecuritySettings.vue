@@ -1,23 +1,15 @@
 <script>
-import { useToast } from 'vue-toastification'
-import { UserService } from '@/services/user.service'
-
-const emptyPasswordForm = () => ({
-  oldPassword: '',
-  newPassword: '',
-  confirmNewPassword: '',
-})
-
 export default {
-  setup() {
-    const toast = useToast()
-    return { toast }
+  computed: {
+    // Passwords are managed by Keycloak; link to its account console.
+    accountManagementUrl() {
+      const url = import.meta.env.VITE_KEYCLOAK_URL
+      const realm = import.meta.env.VITE_KEYCLOAK_REALM
+      return url && realm ? `${url}/realms/${realm}/account` : '#'
+    },
   },
   data() {
     return {
-      isEditingPassword: false,
-      isSavingPassword: false,
-      passwordForm: emptyPasswordForm(),
       unsupportedActions: [
         {
           title: 'Two-factor authentication',
@@ -34,41 +26,6 @@ export default {
       ],
     }
   },
-  methods: {
-    resetPasswordForm() {
-      this.passwordForm = emptyPasswordForm()
-    },
-    openPasswordEditor() {
-      this.isEditingPassword = true
-      this.resetPasswordForm()
-    },
-    closePasswordEditor() {
-      this.isEditingPassword = false
-      this.resetPasswordForm()
-    },
-    getErrorMessage(error, fallbackMessage) {
-      const apiError = error?.response?.data?.error
-      const fieldMessages = apiError?.fields ? Object.values(apiError.fields) : []
-      return fieldMessages[0] || apiError?.message || fallbackMessage
-    },
-    async savePassword() {
-      if (this.passwordForm.newPassword !== this.passwordForm.confirmNewPassword) {
-        this.toast.error('New password confirmation does not match')
-        return
-      }
-
-      this.isSavingPassword = true
-      try {
-        await UserService.updatePassword(this.passwordForm)
-        this.closePasswordEditor()
-        this.toast.success('Password updated')
-      } catch (error) {
-        this.toast.error(this.getErrorMessage(error, 'Unable to update password'))
-      } finally {
-        this.isSavingPassword = false
-      }
-    },
-  },
 }
 </script>
 
@@ -76,62 +33,27 @@ export default {
   <section class="settings-panel">
     <header class="panel-header">
       <h1>Security settings</h1>
-      <p>Use the supported password endpoint now. Other security controls remain visible but unavailable.</p>
+      <p>Manage your password in the secure account portal. Other security controls remain visible but unavailable.</p>
     </header>
 
     <article class="detail-card">
       <div class="detail-header">
         <div>
           <h2>Password</h2>
-          <p>Change your password using <code>PATCH /api/v1/user/password</code>.</p>
+          <p>Your password is managed by your TravelNest account provider (Keycloak).</p>
         </div>
-        <button
-          v-if="!isEditingPassword"
-          type="button"
+        <a
           class="secondary-button"
-          @click="openPasswordEditor"
+          :href="accountManagementUrl"
+          target="_blank"
+          rel="noopener noreferrer"
         >
-          Change password
-        </button>
+          Manage password
+        </a>
       </div>
 
-      <div v-if="isEditingPassword" class="editor-grid">
-        <label class="field">
-          <span>Current password</span>
-          <input v-model="passwordForm.oldPassword" type="password" autocomplete="current-password" />
-        </label>
-        <label class="field">
-          <span>New password</span>
-          <input v-model="passwordForm.newPassword" type="password" autocomplete="new-password" />
-        </label>
-        <label class="field">
-          <span>Confirm new password</span>
-          <input
-            v-model="passwordForm.confirmNewPassword"
-            type="password"
-            autocomplete="new-password"
-          />
-        </label>
-        <div class="editor-actions">
-          <button type="button" class="secondary-button" @click="closePasswordEditor">Cancel</button>
-          <button
-            type="button"
-            class="primary-button"
-            :disabled="
-              isSavingPassword ||
-              !passwordForm.oldPassword ||
-              !passwordForm.newPassword ||
-              !passwordForm.confirmNewPassword
-            "
-            @click="savePassword"
-          >
-            {{ isSavingPassword ? 'Saving...' : 'Save password' }}
-          </button>
-        </div>
-      </div>
-
-      <div v-else class="value-row">
-        Reset your password regularly to keep your account secure.
+      <div class="value-row">
+        Use the secure account portal to change your password and review sign-in security.
       </div>
     </article>
 

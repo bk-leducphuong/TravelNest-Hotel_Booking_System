@@ -72,7 +72,27 @@ re-tested live against the running stack.
 **Verification:** `318/318` unit tests, `82/83` e2e (the 1 failure is the Stripe-webhook test),
 `arch:check` + lint clean.
 
-### M3–M5 — pending
+### M3 — Broken user flows (WP3) — ✅ implemented (2026-10-11)
+
+**Closed:**
+- **Guest cancellation (H-F1, H-F2)** — `BookingCancellation` now loads the booking by code and
+  calls `BookingService.cancelBooking(id)` (`DELETE /bookings/:id`) instead of the dead
+  `/api/cancel-bookings`; added `@submit.prevent`; `BookingDetails` shows the cancel option for
+  cancellable statuses (not only `confirmed`). Verified end-to-end in the browser.
+- **Reviews UI (J-F1, J-F2)** — `Reviews.vue` rewritten to consume the API shape (no more
+  `review.review.length` crash); `ReviewDetails`/`ReviewValidation` now use `ReviewService`
+  (`POST /reviews`, `/validate`, `/check`) with the correct body (1-5 UI → 1-10 ratings).
+  Verified: `POST /reviews → 201`, list renders the written review.
+- **Onboarding (M-F1, M-F2, M-F3)** — backend maps check-in/out to a single `TIME` value
+  (was `500`); `Form6` uses `JoinService` (`/api/v1/join`); the wizard route requires auth
+  (anonymous visitors are sent through login). Verified: join `201`.
+- **Legacy-endpoint sweep** — all `VITE_SERVER_HOST}/api/<x>` calls removed (H, J, M).
+- **Account password UI (E-F1)** — stale form replaced with a Keycloak account-console link.
+
+**Verification:** `318/318` unit tests, `arch:check` clean, client **build** passes, lint clean;
+H/J/M/E flows exercised in the browser.
+
+### M4–M5 — pending
 
 ---
 

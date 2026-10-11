@@ -12,15 +12,15 @@
 | [B](./B-search/) | Search | 2 | 🟡 Partial | | | 2 | 3 |
 | [C](./C-hotel-details-rooms/) | Hotel Details, Rooms & Policies | 2 | 🟡 Partial | | | 2 | 1 |
 | [D](./D-authentication-session/) | Authentication & Session | 0 | 🟡 Partial | | | 2 | 2 |
-| [E](./E-account-profile/) | Account & Profile | 0 | 🟡 Partial | | | 2 | 1 |
+| [E](./E-account-profile/) | Account & Profile | 0 | 🟡 Partial | | | 1 | 1 |
 | [F](./F-favorites-saved-hotels/) | Favorites / Saved Hotels | 2 | 🟡 Partial | | | 4 | 1 |
 | [G](./G-holds/) | Holds | 1 | ✅ Ready | | | | |
-| [H](./H-bookings-guest/) | Bookings (Guest) | 1 | 🟡 Partial | | 2 | 3 | 1 |
+| [H](./H-bookings-guest/) | Bookings (Guest) | 1 | 🟡 Partial | | | 3 | 1 |
 | [I](./I-payments-guest-webhook/) | Payments (Guest) & Stripe Webhook | 1 | ⏸ Blocked | | | | |
-| [J](./J-reviews-guest/) | Reviews (Guest) | 2 | 🟡 Partial | | 2 | 2 | 0 |
+| [J](./J-reviews-guest/) | Reviews (Guest) | 2 | 🟡 Partial | | | 2 | 0 |
 | [K](./K-notifications-realtime/) | Notifications & Realtime | 2 | 🟡 Partial | | | 2 | 2 |
 | [L](./L-media-images/) | Media / Images | 4 | 🟡 Partial | | | | 2 |
-| [M](./M-onboarding-become-a-host/) | Onboarding / Become a Host | 4 | 🟡 Partial | | 2 | 1 | 1 |
+| [M](./M-onboarding-become-a-host/) | Onboarding / Become a Host | 4 | 🟡 Partial | | | | 1 |
 | [N](./N-analytics-guest/) | Analytics (Guest) | 4 | ✅ Ready | | | | |
 | [O](./O-admin-auth-session-rbac/) | Admin Auth, Session & RBAC | 0 | 🟡 Partial | | | | 2 |
 | [P](./P-admin-dashboard/) | Admin Dashboard | 3 | ✅ Ready | | | | |
@@ -48,7 +48,9 @@
 - **Systemic security pattern** (cross-hotel IDOR on entity-scoped admin routes): **✅ FIXED in
   M1** — the shared `requireEntityInHotel` guard now closes **R-F1, S-F1, T-F1, U-F1, V-F1**.
   See [`IMPLEMENTATION-PLAN.md`](./IMPLEMENTATION-PLAN.md#progress).
-- **Systemic client drift**: legacy `/api/<x>` calls that now 404 (H, J, M) — **open** (WP3).
+- **Systemic client drift** (legacy `/api/<x>` calls that 404 in H, J, M): **✅ FIXED in M3** —
+  cancellation, review submission and partner onboarding now use the `services/*` layer
+  (`/api/v1`).
 - **Systemic contract issues**: broken `any.custom` validation message (B/C/E/G) — **✅ FIXED in
   M1**; inconsistent response envelopes (A/C/D/L/M) — **deferred** (needs client changes).
 - **M1 also fixed**: JSON 404 for bad params (A-F2/C-F4), malformed-JWT message (D-F1),

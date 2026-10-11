@@ -1,6 +1,6 @@
 <script>
-import axios from 'axios'
 import { useToast } from 'vue-toastification'
+import { ReviewService } from '@/services/review.service'
 
 export default {
   setup() {
@@ -26,18 +26,12 @@ export default {
     // validate user who booked the room before writing a review
     async validateUser() {
       try {
-        const response = await axios.post(
-          `${import.meta.env.VITE_SERVER_HOST}/api/review/validate-review`,
-          {
-            bookingCode: this.bookingCode,
-            hotelId: this.hotelId
-          },
-          {
-            withCredentials: true
-          }
-        )
-        if (response.data.success) {
-          // this.toast.success('Đặt phòng đã được xác nhận!')
+        const response = await ReviewService.validateReview({
+          bookingCode: this.bookingCode,
+          hotelId: this.hotelId
+        })
+
+        if (response?.data?.isValid) {
           this.$emit('close')
           this.$router.push({
             path: '/reviews/review-details',
@@ -47,10 +41,13 @@ export default {
               hn: this.hotelName
             }
           })
+        } else {
+          this.$emit('close')
+          this.toast.error('Không tìm thấy mã đặt phòng này!')
         }
       } catch (error) {
         this.$emit('close')
-        this.toast.error('Không tìm thất mã đặt phòng này!')
+        this.toast.error('Không tìm thấy mã đặt phòng này!')
       }
     }
   }
