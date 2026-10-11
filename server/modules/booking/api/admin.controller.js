@@ -1,4 +1,5 @@
 const asyncHandler = require('@utils/asyncHandler');
+const { assertHotelScopedAccess } = require('@helpers/ownership.helper');
 
 const { listBookings } = require('../application/admin/listBookings');
 const { getBooking } = require('../application/admin/getBooking');
@@ -21,6 +22,7 @@ const listBookingsHandler = asyncHandler(async (req, res) => {
 
 const getBookingHandler = asyncHandler(async (req, res) => {
   const booking = await getBooking(req.params.bookingId);
+  assertHotelScopedAccess(req, booking, { entityType: 'Booking' });
 
   res.status(200).json({ data: booking });
 });
@@ -38,6 +40,9 @@ const getBookingTrendHandler = asyncHandler(async (req, res) => {
 });
 
 const updateBookingStatusHandler = asyncHandler(async (req, res) => {
+  const booking = await getBooking(req.params.bookingId);
+  assertHotelScopedAccess(req, booking, { entityType: 'Booking' });
+
   const result = await updateBookingStatus(req.params.bookingId, {
     status: req.body.status,
     actorUserId: req.user.id,
@@ -48,6 +53,9 @@ const updateBookingStatusHandler = asyncHandler(async (req, res) => {
 });
 
 const cancelBookingHandler = asyncHandler(async (req, res) => {
+  const booking = await getBooking(req.params.bookingId);
+  assertHotelScopedAccess(req, booking, { entityType: 'Booking' });
+
   const result = await forceCancelBooking(req.params.bookingId, {
     reason: req.body.reason,
     processRefund: req.body.processRefund,

@@ -1,4 +1,6 @@
 const asyncHandler = require('@utils/asyncHandler');
+const catalog = require('@modules/catalog');
+const { assertHotelScopedAccess } = require('@helpers/ownership.helper');
 
 const { listRoomInventory } = require('../application/admin/listRoomInventory');
 const { getRoomInventory } = require('../application/admin/getRoomInventory');
@@ -15,6 +17,9 @@ const listRoomsHandler = asyncHandler(async (req, res) => {
 });
 
 const getRoomInventoryHandler = asyncHandler(async (req, res) => {
+  const room = await catalog.getRoomById(req.params.roomId);
+  assertHotelScopedAccess(req, room, { entityType: 'Room' });
+
   const data = await getRoomInventory(req.params.roomId, {
     startDate: req.query.startDate,
     endDate: req.query.endDate,
@@ -24,6 +29,9 @@ const getRoomInventoryHandler = asyncHandler(async (req, res) => {
 });
 
 const updateRoomInventoryHandler = asyncHandler(async (req, res) => {
+  const room = await catalog.getRoomById(req.params.roomId);
+  assertHotelScopedAccess(req, room, { entityType: 'Room' });
+
   const data = await updateRoomInventory(req.params.roomId, req.body, {
     actorUserId: req.user.id,
     requestId: req.id,

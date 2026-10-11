@@ -1,4 +1,5 @@
 const asyncHandler = require('@utils/asyncHandler');
+const { assertHotelScopedAccess } = require('@helpers/ownership.helper');
 
 const { listReviews } = require('../application/admin/listReviews');
 const { getReview } = require('../application/admin/getReview');
@@ -20,6 +21,7 @@ const listReviewsHandler = asyncHandler(async (req, res) => {
 
 const getReviewHandler = asyncHandler(async (req, res) => {
   const review = await getReview(req.params.reviewId);
+  assertHotelScopedAccess(req, review, { entityType: 'Review' });
 
   res.status(200).json({ data: review });
 });
@@ -31,6 +33,9 @@ const getReviewSummaryHandler = asyncHandler(async (req, res) => {
 });
 
 const setReviewStatusHandler = asyncHandler(async (req, res) => {
+  const existing = await getReview(req.params.reviewId);
+  assertHotelScopedAccess(req, existing, { entityType: 'Review' });
+
   const result = await setReviewStatus(req.params.reviewId, {
     status: req.body.status,
     reason: req.body.reason,
@@ -42,6 +47,9 @@ const setReviewStatusHandler = asyncHandler(async (req, res) => {
 });
 
 const replyToReviewHandler = asyncHandler(async (req, res) => {
+  const existing = await getReview(req.params.reviewId);
+  assertHotelScopedAccess(req, existing, { entityType: 'Review' });
+
   const result = await replyToReview(req.params.reviewId, {
     reply: req.body.reply,
     actorUserId: req.user.id,
@@ -52,6 +60,9 @@ const replyToReviewHandler = asyncHandler(async (req, res) => {
 });
 
 const updateReplyHandler = asyncHandler(async (req, res) => {
+  const existing = await getReview(req.params.reviewId);
+  assertHotelScopedAccess(req, existing, { entityType: 'Review' });
+
   const result = await updateReply(req.params.reviewId, {
     reply: req.body.reply,
     actorUserId: req.user.id,
@@ -62,6 +73,9 @@ const updateReplyHandler = asyncHandler(async (req, res) => {
 });
 
 const deleteReplyHandler = asyncHandler(async (req, res) => {
+  const existing = await getReview(req.params.reviewId);
+  assertHotelScopedAccess(req, existing, { entityType: 'Review' });
+
   const result = await deleteReply(req.params.reviewId, {
     actorUserId: req.user.id,
     requestId: req.id,

@@ -1,4 +1,5 @@
 const asyncHandler = require('@utils/asyncHandler');
+const { assertHotelScopedAccess } = require('@helpers/ownership.helper');
 
 const { listTransactions } = require('../application/admin/listTransactions');
 const { getTransaction } = require('../application/admin/getTransaction');
@@ -22,6 +23,7 @@ const listTransactionsHandler = asyncHandler(async (req, res) => {
 
 const getTransactionHandler = asyncHandler(async (req, res) => {
   const transaction = await getTransaction(req.params.transactionId);
+  assertHotelScopedAccess(req, transaction, { entityType: 'Transaction' });
 
   res.status(200).json({ data: transaction });
 });
@@ -33,6 +35,9 @@ const getHotelSummaryHandler = asyncHandler(async (req, res) => {
 });
 
 const initiateRefundHandler = asyncHandler(async (req, res) => {
+  const transaction = await getTransaction(req.params.transactionId);
+  assertHotelScopedAccess(req, transaction, { entityType: 'Transaction' });
+
   const result = await initiateRefund(req.params.transactionId, req.body, {
     actorUserId: req.user.id,
     requestId: req.id,
@@ -55,11 +60,15 @@ const listRefundsHandler = asyncHandler(async (req, res) => {
 
 const getRefundHandler = asyncHandler(async (req, res) => {
   const refund = await getRefund(req.params.refundId);
+  assertHotelScopedAccess(req, refund, { entityType: 'Refund' });
 
   res.status(200).json({ data: refund });
 });
 
 const retryRefundHandler = asyncHandler(async (req, res) => {
+  const refund = await getRefund(req.params.refundId);
+  assertHotelScopedAccess(req, refund, { entityType: 'Refund' });
+
   const result = await retryRefund(req.params.refundId, {
     actorUserId: req.user.id,
     requestId: req.id,

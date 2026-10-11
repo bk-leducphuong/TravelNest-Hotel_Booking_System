@@ -103,9 +103,13 @@ async function optionalAuthenticate(req, res, next) {
 }
 
 function resolveRequestedHotelId(req) {
+  // Prefer the hotel named in the path. For routes like `/hotels/:hotelId/...`
+  // the path hotel IS the resource being addressed, so it must be the one
+  // authorized. Letting `X-Hotel-Id` win here allowed a caller to present their
+  // own hotel in the header while targeting another hotel via the path.
   return (
-    req.get?.('x-hotel-id') ||
     req.params?.hotelId ||
+    req.get?.('x-hotel-id') ||
     req.body?.hotelId ||
     req.query?.hotelId ||
     null

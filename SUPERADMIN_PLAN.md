@@ -317,7 +317,7 @@ module.exports = router;
 - [x] Verify grants for `admin` and `support_agent` (unit test; run the seeder in a real env)
 - [x] Mount `/api/v1/superadmin` in `server/routes/v1/index.js`
 - [x] Shared **ownership guard** helper (`helpers/ownership.helper.js`)
-- [ ] Roll the ownership guard out to the legacy admin entity-detail routes (R-F1/S-F1/T-F1)
+- [x] Roll the ownership guard out to the legacy admin entity-detail routes (R-F1/S-F1/T-F1)
 - [x] `application/pii.js` masking helper
 - [x] Record PII access in the audit trail
 - [x] `superadmin-client/` scaffold: workspace, Nuxt config, auth/http/permissions, layout, middleware, CI, Docker/nginx
@@ -391,7 +391,7 @@ explicitly covering the `support_agent` (masked) vs `admin` (unmasked) PII bound
 
 Items intentionally left out of Phases 0–1, each with enough context to pick up later.
 
-### D1 — Roll the ownership guard into legacy admin routes (security)
+### D1 — Roll the ownership guard into legacy admin routes (security) — ✅ done
 - **Context:** systemic cross-hotel IDOR (R-F1 / S-F1 / T-F1 in
   `docs/plan/phase_1/README.md`). Admin routes scoped by entity id authorize against
   `X-Hotel-Id` only and never verify the entity belongs to that hotel.
