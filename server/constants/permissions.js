@@ -67,6 +67,17 @@ const PERMISSIONS = {
   SUPPORT_VIEW_TICKETS: 'support.view_tickets',
   SUPPORT_RESPOND_TICKETS: 'support.respond_tickets',
   SUPPORT_VIEW_USER_DETAILS: 'support.view_user_details',
+
+  // ============ PLATFORM PERMISSIONS (cross-tenant monitoring) ============
+  // Gate the /api/v1/superadmin console. These are platform-wide (no hotel
+  // context) and read-only in v1. `platform.user.pii_read` is deliberately
+  // separate so support agents can browse users without seeing raw PII.
+  PLATFORM_OVERVIEW_READ: 'platform.overview.read',
+  PLATFORM_HOTEL_READ: 'platform.hotel.read',
+  PLATFORM_USER_READ: 'platform.user.read',
+  PLATFORM_USER_PII_READ: 'platform.user.pii_read',
+  PLATFORM_FINANCE_READ: 'platform.finance.read',
+  PLATFORM_AUDIT_READ: 'platform.audit.read',
 };
 
 /**
@@ -124,6 +135,13 @@ const PERMISSION_DESCRIPTIONS = {
   [PERMISSIONS.SUPPORT_VIEW_TICKETS]: 'View support tickets',
   [PERMISSIONS.SUPPORT_RESPOND_TICKETS]: 'Respond to support tickets',
   [PERMISSIONS.SUPPORT_VIEW_USER_DETAILS]: 'View user details for support',
+
+  [PERMISSIONS.PLATFORM_OVERVIEW_READ]: 'View platform-wide monitoring overview',
+  [PERMISSIONS.PLATFORM_HOTEL_READ]: 'View any hotel across the platform',
+  [PERMISSIONS.PLATFORM_USER_READ]: 'View any user across the platform (PII masked)',
+  [PERMISSIONS.PLATFORM_USER_PII_READ]: 'View unmasked user PII across the platform',
+  [PERMISSIONS.PLATFORM_FINANCE_READ]: 'View platform-wide finances (payments, refunds, payouts)',
+  [PERMISSIONS.PLATFORM_AUDIT_READ]: 'View the platform audit trail',
 };
 
 /**
@@ -231,6 +249,13 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.SUPPORT_VIEW_TICKETS,
     PERMISSIONS.SUPPORT_RESPOND_TICKETS,
     PERMISSIONS.SUPPORT_VIEW_USER_DETAILS,
+    // Platform monitoring (read-only). Support agents deliberately do NOT get
+    // `platform.user.pii_read`, so they see masked user data.
+    PERMISSIONS.PLATFORM_OVERVIEW_READ,
+    PERMISSIONS.PLATFORM_HOTEL_READ,
+    PERMISSIONS.PLATFORM_USER_READ,
+    PERMISSIONS.PLATFORM_FINANCE_READ,
+    PERMISSIONS.PLATFORM_AUDIT_READ,
   ],
 
   // Admin - full system access

@@ -73,3 +73,10 @@ spec:
           manifestTargets:
             kustomize:
               name: "travelnest-admin"
+    - namePattern: "travelnest-superadmin-client"
+      images:
+        - alias: "superadmin"
+          imageName: "docker.io/leducphuong/travelnest-superadmin"
+          manifestTargets:
+            kustomize:
+              name: "travelnest-superadmin"

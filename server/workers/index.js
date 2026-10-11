@@ -6,8 +6,13 @@ const { registerTransport } = require('@platform/events');
 const natsTransport = require('@events/nats.adapter');
 const redisHoldTransport = require('@platform/events/transports/redis-hold');
 const { jobs } = require('@modules/booking');
+const superadminModule = require('@modules/superadmin');
 
-const workers = [jobs.holdExpiry.createWorker(), jobs.bookingExpiry.createWorker()];
+const workers = [
+  jobs.holdExpiry.createWorker(),
+  jobs.bookingExpiry.createWorker(),
+  superadminModule.jobs.platformStatsRefresh.createWorker(),
+];
 
 let healthServer;
 
@@ -45,6 +50,7 @@ async function startWorkers() {
 
     await jobs.holdExpiry.schedule();
     await jobs.bookingExpiry.schedule();
+    await superadminModule.jobs.platformStatsRefresh.schedule();
 
     // Worker.run() is a blocking main loop that only resolves once the worker
     // closes, so start it without awaiting and wait for readiness instead —

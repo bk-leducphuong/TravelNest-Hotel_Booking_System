@@ -340,6 +340,33 @@ describe('Auth Middleware', () => {
       expect(next).toHaveBeenCalled();
       expect(req.hotelContext).toMatchObject({ hotelId: 'hotel-1', isPlatformAdmin: true });
     });
+
+    it('authorizes against the path hotel, not the X-Hotel-Id header', async () => {
+      req.user = {
+        roles: [],
+        hotel_roles: [
+          {
+            hotel_id: 'hotel-1',
+            role_id: 'role-1',
+            role: { name: 'owner' },
+            is_primary_owner: true,
+          },
+        ],
+      };
+      req.auth = { roles: ['user'] };
+      // The caller presents their own hotel in the header but targets another
+      // hotel in the path; the path hotel must be the one authorized.
+      req.params = { hotelId: 'hotel-other' };
+      req.get = jest.fn((header) =>
+        header.toLowerCase() === 'x-hotel-id' ? 'hotel-1' : undefined
+      );
+
+      const middleware = requirePermission('booking.read', { requireHotelContext: true });
+      await middleware(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+    });
   });
 
   describe('requireEntityInHotel', () => {

@@ -91,6 +91,16 @@ const writeLimiter = buildLimiter({
   message: 'Too many requests, please slow down and try again later.',
 });
 
+// Dedicated limiter for the platform monitoring console. Its endpoints run
+// cross-tenant aggregate queries, which are more expensive than typical reads.
+const adminReadLimiter = buildLimiter({
+  windowMs: FIFTEEN_MINUTES,
+  max: parseInt(process.env.RATE_LIMIT_ADMIN_READ_MAX || '120', 10),
+  prefix: 'rl:admin-read:',
+  message: 'Too many monitoring requests, please slow down and try again later.',
+});
+
 module.exports = globalLimiter;
 module.exports.authLimiter = authLimiter;
 module.exports.writeLimiter = writeLimiter;
+module.exports.adminReadLimiter = adminReadLimiter;
