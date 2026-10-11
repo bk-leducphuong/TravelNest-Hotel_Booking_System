@@ -281,6 +281,20 @@ describe('G. Payments + webhook', () => {
     expect(res.data.data.clientSecret).toBeTruthy();
     expect(res.data.data.paymentIntentId).toBeTruthy();
   });
+
+  // Regression: lookup-by-booking filtered on a non-existent `booking_code`
+  // column (500), and lookup-by-transaction ran the UUID through parseInt,
+  // matching another buyer's row (403).
+  test('G7 (P0) payment lookup by booking and by transaction returns the buyer’s payment', async () => {
+    const byBooking = await api(guest).get(`/payments/bookings/${bookingId}`);
+    expect(byBooking.status).toBe(200);
+    expect(byBooking.data.data.booking_id).toBe(bookingId);
+
+    const transactionId = byBooking.data.data.id;
+    const byTransaction = await api(guest).get(`/payments/transactions/${transactionId}`);
+    expect(byTransaction.status).toBe(200);
+    expect(byTransaction.data.data.id).toBe(transactionId);
+  });
 });
 
 describe('H. Favorites / profile', () => {

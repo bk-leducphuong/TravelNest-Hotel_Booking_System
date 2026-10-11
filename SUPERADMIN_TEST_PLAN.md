@@ -346,7 +346,7 @@ for i in 1 2 3 4; do curl -s -o /dev/null -w "%{http_code}\n" $BASE/superadmin/o
 | SEC-3 | `admin` may unmask PII and every unmask is audited. |
 | SEC-4 | Non-platform authenticated users get `403` on data routes and are routed to `/403` in the UI. |
 | SEC-5 | The internal ops token (`INTERNAL_SUPERADMIN_TOKEN`) is **not** accepted by `/superadmin/*`. |
-| SEC-6 | An `admin` bearer session can no longer trigger `/internal/superadmin/{database,seeders,elasticsearch,mongodb}/*` (D7). |
+| SEC-6 | ~~Internal ops token gating (D7)~~ — **moot**: the internal superadmin API was removed on `develop` (`418e715`); `/internal/superadmin/*` no longer exists (expect `404`). |
 | SEC-7 | Overview endpoints do not aggregate primary tables on the request path (no per-status COUNT / per-currency SUM in `superadmin.repository` / `finance.repository`). |
 
 ---
@@ -388,19 +388,23 @@ These use the hotel-scoped admin API (not superadmin). Log in as `owner@travelne
 
 | ID | Case | Expected |
 |---|---|---|
-| REG-01 | `GET /admin/bookings/:bookingId` (booking of another hotel), `X-Hotel-Id` = own hotel | `404` |
-| REG-02 | `PATCH /admin/bookings/:bookingId/status` cross-hotel | `404`, no mutation |
-| REG-03 | `GET /admin/payments/transactions/:transactionId` cross-hotel | `404` |
-| REG-04 | `POST /admin/payments/transactions/:transactionId/refunds` cross-hotel | `404`, no refund |
-| REG-05 | `GET /admin/payouts/:payoutId` cross-hotel | `404` |
-| REG-06 | `GET /admin/reviews/:reviewId` cross-hotel | `404` |
-| REG-07 | `GET /admin/inventory/rooms/:roomId` cross-hotel | `404` |
+| REG-01 | `GET /admin/bookings/:bookingId` (booking of another hotel), `X-Hotel-Id` = own hotel | `403` |
+| REG-02 | `PATCH /admin/bookings/:bookingId/status` cross-hotel | `403`, no mutation |
+| REG-03 | `GET /admin/payments/transactions/:transactionId` cross-hotel | `403` |
+| REG-04 | `POST /admin/payments/transactions/:transactionId/refunds` cross-hotel | `403`, no refund |
+| REG-05 | `GET /admin/payouts/:payoutId` cross-hotel | `403` |
+| REG-06 | `GET /admin/reviews/:reviewId` cross-hotel | `403` |
+| REG-07 | `GET /admin/inventory/rooms/:roomId` cross-hotel | `403` |
 | REG-08 | `GET /admin/bookings/hotels/:otherHotelId/stats` with `X-Hotel-Id` = own | `403` (path hotel is authorized) |
 | REG-09 | Same-hotel requests | still `200` (no regression) |
 | REG-10 | Platform admin token on any hotel | `200` (intentional bypass) |
 
+> Cross-hotel entity routes return **403** via `develop`'s route-level `requireEntityInHotel`
+> guard (M1). This branch adds the **path-hotel** fix (REG-08): the path hotel is authorized,
+> not the `X-Hotel-Id` header.
+
 **Acceptance**
-- [ ] **REG-A1** Cross-hotel entity ids return `404` (not the other tenant's data).
+- [ ] **REG-A1** Cross-hotel entity ids return `403` (not the other tenant's data).
 - [ ] **REG-A2** Path-hotel routes authorize against the path hotel, not the header.
 - [ ] **REG-A3** Same-hotel and platform-staff access unchanged.
 
@@ -424,4 +428,4 @@ These use the hotel-scoped admin API (not superadmin). Log in as `owner@travelne
 3. **`KEYCLOAK_PUBLIC_KEY_PEM` must be set** or all authenticated calls return `500`.
 4. **Snapshot freshness** is bounded by the refresh interval (default 60s); on a cold DB, run `stats:recompute` first.
 5. **Rate limiter** keys by user id (falls back to IP); lower `RATE_LIMIT_ADMIN_READ_MAX` to test `429` quickly.
-6. **Legacy `/internal/superadmin/*`** destructive routes now require the internal token (D7) — verify SEC-6 by confirming an admin bearer is rejected there.
+6. **Legacy `/internal/superadmin/*`** was removed on `develop` (`418e715`) — it no longer exists, so SEC-6 is moot.

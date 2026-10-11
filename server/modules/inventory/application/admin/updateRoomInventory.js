@@ -137,6 +137,9 @@ async function updateRoomInventory(roomId, payload = {}, { actorUserId, requestI
       }
 
       if (!existing) {
+        // Creating a new inventory row: use the supplied price, or inherit the
+        // room's most recent price. `INVENTORY_PRICE_REQUIRED` only fires when
+        // the room has no prior inventory to inherit from.
         const inheritedPrice =
           change.pricePerNight !== undefined
             ? change.pricePerNight

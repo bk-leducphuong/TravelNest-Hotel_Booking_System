@@ -3,6 +3,7 @@ const logger = require('@config/logger.config');
 const notificationModule = require('@modules/notification');
 const paymentModule = require('@modules/payment');
 const { ledger: ledgerService } = require('@modules/payment');
+const ApiError = require('@utils/ApiError');
 
 const payoutRepository = require('../infrastructure/payout.repository');
 
@@ -14,7 +15,7 @@ class PayoutService {
       payoutData.connectedPaymentAccountId || payoutData.connected_payment_account_id;
 
     if (payoutAmount <= 0) {
-      throw new Error('Payout amount must be greater than zero');
+      throw new ApiError(400, 'INVALID_PAYOUT_AMOUNT', 'Payout amount must be greater than zero');
     }
 
     const connectedAccount = requestedConnectedAccountId
@@ -28,11 +29,19 @@ class PayoutService {
         );
 
     if (!connectedAccount) {
-      throw new Error('No payout-ready connected payment account found');
+      throw new ApiError(
+        409,
+        'NO_PAYOUT_READY_ACCOUNT',
+        'No payout-ready connected payment account found'
+      );
     }
 
     if (!connectedAccount.payouts_enabled || connectedAccount.onboarding_status !== 'completed') {
-      throw new Error('Connected payment account is not ready for payouts');
+      throw new ApiError(
+        409,
+        'PAYOUT_ACCOUNT_NOT_READY',
+        'Connected payment account is not ready for payouts'
+      );
     }
 
     const ownerId = payoutData.ownerId || payoutData.owner_id || connectedAccount.user_id;
@@ -114,43 +123,57 @@ class PayoutService {
 
       if (netAmount <= 0) continue;
 
-      const payout = await this.withTransaction(async (dbTransaction) => {
-        const createdPayout = await this.createManualPayout(
-          {
-            hotelId: bookingData.hotel_id,
-            ownerId,
-            transactionId: transaction.id,
-            amount: netAmount,
-            currency: bookingData.currency,
-            platformFeeAmount,
-            periodStart: bookingData.check_in_date,
-            periodEnd: bookingData.check_out_date,
-            metadata: {
-              booking_id: bookingData.id,
-              booking_code: bookingData.booking_code,
-              payout_eligibility_cutoff: cutoffDate,
-            },
-          },
-          { transaction: dbTransaction }
-        );
-
-        await payoutRepository.createItems(
-          [
+      let payout;
+      try {
+        payout = await this.withTransaction(async (dbTransaction) => {
+          const createdPayout = await this.createManualPayout(
             {
-              payoutId: createdPayout.id,
-              bookingId: bookingData.id,
+              hotelId: bookingData.hotel_id,
+              ownerId,
               transactionId: transaction.id,
-              grossAmount,
-              platformFeeAmount,
-              netAmount,
+              amount: netAmount,
               currency: bookingData.currency,
+              platformFeeAmount,
+              periodStart: bookingData.check_in_date,
+              periodEnd: bookingData.check_out_date,
+              metadata: {
+                booking_id: bookingData.id,
+                booking_code: bookingData.booking_code,
+                payout_eligibility_cutoff: cutoffDate,
+              },
             },
-          ],
-          { transaction: dbTransaction }
-        );
+            { transaction: dbTransaction }
+          );
 
-        return createdPayout;
-      });
+          await payoutRepository.createItems(
+            [
+              {
+                payoutId: createdPayout.id,
+                bookingId: bookingData.id,
+                transactionId: transaction.id,
+                grossAmount,
+                platformFeeAmount,
+                netAmount,
+                currency: bookingData.currency,
+              },
+            ],
+            { transaction: dbTransaction }
+          );
+
+          return createdPayout;
+        });
+      } catch (error) {
+        // Owners without a payout-ready connected account are skipped, not
+        // failed — so batch generation is not blocked by onboarding gaps.
+        if (['NO_PAYOUT_READY_ACCOUNT', 'PAYOUT_ACCOUNT_NOT_READY'].includes(error.code)) {
+          logger.warn('Skipping payout; no ready connected account', {
+            bookingId: bookingData.id,
+            hotelId: bookingData.hotel_id,
+          });
+          continue;
+        }
+        throw error;
+      }
 
       created.push(payout);
     }

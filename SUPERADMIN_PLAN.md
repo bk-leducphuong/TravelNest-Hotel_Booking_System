@@ -316,12 +316,12 @@ module.exports = router;
 - [x] Add `platform.*` permissions to `constants/permissions.js` + descriptions + role grants
 - [x] Verify grants for `admin` and `support_agent` (unit test; run the seeder in a real env)
 - [x] Mount `/api/v1/superadmin` in `server/routes/v1/index.js`
-- [x] Shared **ownership guard** helper (`helpers/ownership.helper.js`)
-- [x] Roll the ownership guard out to the legacy admin entity-detail routes (R-F1/S-F1/T-F1)
+- [x] Cross-tenant IDOR fix — **already shipped on `develop` (M1)** via route-level `requireEntityInHotel`; this branch adds the complementary **path-hotel authorization** fix (`resolveRequestedHotelId` prefers the path hotel over `X-Hotel-Id`)
 - [x] `application/pii.js` masking helper
 - [x] Record PII access in the audit trail
 - [x] `superadmin-client/` scaffold: workspace, Nuxt config, auth/http/permissions, layout, middleware, CI, Docker/nginx
-- [x] k8s/Argo CD manifests for `superadmin-client` (D6) — Keycloak client + DNS still to provision- [x] Internal ops API hardening: token-only for destructive routes, drop dead guard comments (D7)
+- [x] k8s/Argo CD manifests for `superadmin-client` (D6) — Keycloak client + DNS still to provision
+- [x] ~~Internal ops API hardening (D7)~~ — **moot**: `develop` removed the internal superadmin API (`418e715`)
 
 ### Phase 1 — Read-only monitoring
 - [x] `GET /superadmin/overview`
@@ -393,17 +393,17 @@ explicitly covering the `support_agent` (masked) vs `admin` (unmasked) PII bound
 
 Items intentionally left out of Phases 0–1, each with enough context to pick up later.
 
-### D1 — Roll the ownership guard into legacy admin routes (security) — ✅ done
-- **Context:** systemic cross-hotel IDOR (R-F1 / S-F1 / T-F1 in
-  `docs/plan/phase_1/README.md`). Admin routes scoped by entity id authorize against
-  `X-Hotel-Id` only and never verify the entity belongs to that hotel.
-- **Have:** `server/helpers/ownership.helper.js` (`assertEntityBelongsToHotel`,
-  `assertHotelScopedAccess`) — created and unit-tested, but **not yet used**.
-- **Do:** resolve the entity first, then call the guard, on the entity-detail routes in
-  `modules/catalog` (`/rooms/:roomId`), `modules/booking` (`/bookings/:bookingId`),
-  `modules/payment` (`/payments/transactions/:transactionId`), and the payout equivalents.
-- **Accept:** cross-hotel entity id returns 404; same-hotel still works; regression tests
-  added. Coordinate the blast radius before merging.
+### D1 — Roll the ownership guard into legacy admin routes (security) — ✅ done on `develop` (M1); this branch keeps the path-hotel fix
+- **Resolved upstream:** `develop` commit `7f38d89` (M1) added a route-level
+  `requireEntityInHotel` guard and applied it to the entity-scoped admin routes in
+  booking / payment / payout (incl. connected accounts) / review / inventory. This branch
+  therefore **drops its duplicate controller-level guard** and defers to M1.
+- **Unique to this branch:** `resolveRequestedHotelId` now prefers the **path hotel** over
+  the `X-Hotel-Id` header, so `/hotels/:hotelId/*` routes (`stats`, `trend`, `summary`,
+  `occupancy`, …) are authorized against the hotel being addressed. M1 leaves the header
+  first, which lets a caller present their own hotel in the header while targeting another
+  hotel via the path.
+- **Accept:** path-hotel mismatch → 403; same-hotel unaffected.
 
 ### D2 — Record PII access in the audit trail (security) — ✅ done
 - **Context:** §7.3 requires logging reads of sensitive PII; not implemented.
@@ -449,13 +449,10 @@ Items intentionally left out of Phases 0–1, each with enough context to pick u
   `.github/workflows/superadmin-client.yml`.
 - **Accept:** the console is reachable in an environment and can complete a login.
 
-### D7 — Internal ops API hardening (separate from this feature) — ✅ done
-- **Context:** see §2 "Internal ops routes stay put".
-- **Do:** (a) delete the redundant commented `// requireInternalSuperadmin,` lines in
-  `platform/internal/api/internalSuperadmin.routes.js`; (b) require the configured **token**
-  (not an `admin` bearer session) for the destructive ops routes (`database/init`,
-  `*/seeders/*`, `elasticsearch/*`, `mongodb/*`).
-- **Accept:** an `admin` browser session can no longer trigger seeders / DB init.
+### D7 — Internal ops API hardening — ⚪ moot (removed upstream)
+- **Moot:** `develop` commit `418e715` removed the internal superadmin API and its test
+  tooling entirely (`server/platform/internal/**`, `server/middlewares/internal-superadmin.middleware.js`).
+  There is nothing left to harden; this branch's D7 changes were dropped during the merge.
 
 ### D8 — Frontend typecheck / ESLint tooling — 🟡 dependency added; CI flags pending verification
 - **Context:** `superadmin-client` mirrors `admin-client`, which does not declare

@@ -91,8 +91,11 @@ class JoinService {
       latitude: lat.toString(),
       longitude: lng.toString(),
       rating: rating ? parseFloat(rating) : null,
-      checkInTime: `${checkInFrom}-${checkInTo}`,
-      checkOutTime: `${checkOutFrom}-${checkOutTo}`,
+      // `check_in_time`/`check_out_time` are TIME columns (a single time, not a
+      // range). Store the start of each window; the window bounds
+      // (checkInTo/checkOutTo) are validated but not persisted here.
+      checkInTime: checkInFrom,
+      checkOutTime: checkOutFrom,
       amenities: services ? JSON.stringify(services) : null,
     });
 

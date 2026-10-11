@@ -44,7 +44,8 @@ exports.updateCurrentUser = {
   })
     .min(1)
     .messages({
-      'object.min': 'At least one field must be provided for update',
+      'object.min':
+        'Provide at least one supported field to update (name, email, phoneNumber, address, country, nationality, gender or dateOfBirth)',
     }),
 };
 

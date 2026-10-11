@@ -1,8 +1,13 @@
 const express = require('express');
 
-const { authenticate, requirePermission } = require('@middlewares/auth.middleware');
+const {
+  authenticate,
+  requirePermission,
+  requireEntityInHotel,
+} = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
 const { PERMISSIONS } = require('@constants/permissions');
+const { Payouts, ConnectedPaymentAccounts } = require('@platform/database');
 
 const schema = require('./schemas');
 const controller = require('./admin.controller');
@@ -12,6 +17,24 @@ const router = express.Router();
 // Payouts are scoped to a hotel (platform staff may omit it for global views).
 const requireHotelPermission = (permission) =>
   requirePermission(permission, { requireHotelContext: true });
+
+// `:payoutId` / `:accountId` routes have no hotelId in the path, so assert the
+// entity belongs to the caller's hotel context (closes the cross-hotel IDOR).
+const payoutInHotel = requireEntityInHotel(async (req) => {
+  const payout = await Payouts.findOne({
+    where: { id: req.params.payoutId },
+    attributes: ['hotel_id'],
+  });
+  return payout?.hotel_id;
+});
+
+const connectedAccountInHotel = requireEntityInHotel(async (req) => {
+  const account = await ConnectedPaymentAccounts.findOne({
+    where: { id: req.params.accountId },
+    attributes: ['hotel_id'],
+  });
+  return account?.hotel_id;
+});
 
 /**
  * Admin payout routes (mounted at /api/v1/admin/payouts).
@@ -68,6 +91,7 @@ router.post(
   '/connected-accounts/:accountId/link',
   requireHotelPermission(PERMISSIONS.PAYMENT_PROCESS),
   validate(schema.createAccountLink),
+  connectedAccountInHotel,
   controller.createAccountLinkHandler
 );
 
@@ -75,6 +99,7 @@ router.post(
   '/connected-accounts/:accountId/sync',
   requireHotelPermission(PERMISSIONS.PAYMENT_PROCESS),
   validate(schema.syncConnectedAccount),
+  connectedAccountInHotel,
   controller.syncConnectedAccountHandler
 );
 
@@ -83,6 +108,7 @@ router.get(
   '/:payoutId',
   requireHotelPermission(PERMISSIONS.PAYMENT_READ),
   validate(schema.getPayout),
+  payoutInHotel,
   controller.getPayoutHandler
 );
 
@@ -90,6 +116,7 @@ router.post(
   '/:payoutId/process',
   requireHotelPermission(PERMISSIONS.PAYMENT_PROCESS),
   validate(schema.processPayout),
+  payoutInHotel,
   controller.processPayoutHandler
 );
 
@@ -97,6 +124,7 @@ router.patch(
   '/:payoutId/status',
   requireHotelPermission(PERMISSIONS.PAYMENT_PROCESS),
   validate(schema.setPayoutStatus),
+  payoutInHotel,
   controller.setPayoutStatusHandler
 );
 

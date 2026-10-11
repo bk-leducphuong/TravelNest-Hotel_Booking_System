@@ -2,10 +2,11 @@
 import TheHeader from '../components/Header.vue'
 import SkeletonGrid from '@/components/common/SkeletonGrid.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
-import { mapGetters } from 'vuex'
+import { mapGetters, mapActions } from 'vuex'
 import { useToast } from 'vue-toastification'
-import errorHandler from '@/request/errorHandler';
+import errorHandler from '@/request/errorHandler'
 import { ReviewService } from '@/services/review.service'
+import { BookingService } from '@/services/booking.service'
 import { getFirstImageUrl, getImageUrl } from '@/utils/images'
 
 export default {
@@ -16,45 +17,60 @@ export default {
   },
   setup() {
     const toast = useToast()
-    return {
-      toast
-    }
+    return { toast }
   },
   data() {
     return {
       reviews: [],
+      bookings: [],
       isLoading: false,
-      notReviewed: 0,
-      reviewed: 0,
       viewMode: 'all'
     }
   },
-  watch: {
-    reviews() {
-      // calculate number of not reviewed
-      this.notReviewed = 0
-      this.reviewed = 0
+  computed: {
+    ...mapGetters('user', ['getUserInformation']),
+    // Written reviews keyed by booking id.
+    reviewsByBookingId() {
+      const map = {}
       this.reviews.forEach((review) => {
-        if (review.review.length == 0) {
-          this.notReviewed++
-        } else {
-          this.reviewed++
+        if (review.booking_id) {
+          map[review.booking_id] = review
         }
       })
+      return map
+    },
+    // Completed bookings the user hasn't reviewed yet.
+    notReviewedBookings() {
+      return this.bookings.filter(
+        (booking) => booking.status === 'completed' && !this.reviewsByBookingId[booking.id]
+      )
+    },
+    reviewed() {
+      return this.reviews.length
+    },
+    notReviewed() {
+      return this.notReviewedBookings.length
+    },
+    displayedReviews() {
+      return this.viewMode === 'notReviewed' ? [] : this.reviews
+    },
+    displayedBookings() {
+      return this.viewMode === 'reviewed' ? [] : this.notReviewedBookings
     }
   },
-  computed: {
-    ...mapGetters('user', ['getUserInformation'])
-  },
   methods: {
-    async getAllReviews() {
+    ...mapActions('user', ['retrieveUserInformation']),
+    async load() {
+      this.isLoading = true
       try {
-        this.isLoading = true
-        const response = await ReviewService.getReviews()
-        this.reviews = response?.data ?? []
+        const [reviewsResponse, bookingsResponse] = await Promise.all([
+          ReviewService.getReviews().catch(() => ({ data: [] })),
+          BookingService.getBookings(true).catch(() => ({ data: [] }))
+        ])
+        this.reviews = reviewsResponse?.data ?? []
+        this.bookings = bookingsResponse?.data ?? []
       } catch (error) {
         errorHandler(error)
-        this.reviews = []
       } finally {
         this.isLoading = false
       }
@@ -62,21 +78,17 @@ export default {
     makeReview(bookingCode, hotelId, hotelName) {
       this.$router.push({
         name: 'ReviewDetails',
-        query: {
-          bc: bookingCode,
-          hid: hotelId,
-          hn: hotelName
-        }
+        query: { bc: bookingCode, hid: hotelId, hn: hotelName }
       })
-    },
-    editReview(bookingCode, hotelId, hotelName) {
-      this.toast.info('Coming soon')
     },
     getFirstImageUrl,
     getImageUrl
   },
   async mounted() {
-    await this.getAllReviews()
+    await Promise.all([
+      this.load(),
+      this.retrieveUserInformation().catch(() => {})
+    ])
   }
 }
 </script>
@@ -118,37 +130,53 @@ export default {
     <div class="right-container">
       <SkeletonGrid v-if="isLoading" :count="2" image-height="125px" />
       <EmptyState
-        v-else-if="reviews.length === 0"
+        v-else-if="displayedReviews.length === 0 && displayedBookings.length === 0"
         title="No reviews yet"
         message="Complete a stay to leave a review."
         icon="fa-regular fa-star"
       />
       <template v-else>
-        <div class="review-card" v-for="(review, index) in reviews" :key="index">
-        <div style="display: flex; gap: 16px; align-items: start">
-          <img
-            :src="getFirstImageUrl(review.hotel.image_urls)"
-            alt="Property"
-            class="property-image"
-          />
-          <div class="review-content">
-            <h4 v-if="review.review.length == 0">You haven't reviewed your stay at {{ review.hotel.name }}</h4>
-            <h4 v-else>You have reviewed your stay at {{ review.hotel.name }}</h4>
-            <div>
-              <span class="" v-if="review.review.length == 0"
-                >You only have 60 days left to review.</span
+        <!-- Stays awaiting a review -->
+        <div class="review-card" v-for="booking in displayedBookings" :key="booking.id">
+          <div style="display: flex; gap: 16px; align-items: start">
+            <img
+              :src="getFirstImageUrl(booking.hotel?.image_urls)"
+              alt="Property"
+              class="property-image"
+            />
+            <div class="review-content">
+              <h4>You haven't reviewed your stay at {{ booking.hotel?.name }}</h4>
+              <div>
+                <span>You only have 60 days left to review.</span>
+              </div>
+              <button
+                class="review-button"
+                @click="makeReview(booking.booking_code, booking.hotel?.id, booking.hotel?.name)"
               >
-              <span class="review-status" v-else>Reviewed</span>
+                Review your stay
+              </button>
             </div>
-            <button class="review-button" v-if="review.review.length == 0" @click="makeReview(review.booking_code, review.hotel.hotel_id, review.hotel.name)">
-              Review your stay
-            </button>
-            <button class="review-button" v-else @click="editReview(review.booking_code, review.hotel.hotel_id, review.hotel.name)">
-              Edit your review
-            </button>
           </div>
         </div>
-      </div>
+
+        <!-- Written reviews -->
+        <div class="review-card" v-for="review in displayedReviews" :key="review.id">
+          <div style="display: flex; gap: 16px; align-items: start">
+            <img
+              :src="getFirstImageUrl(review.hotel?.image_urls)"
+              alt="Property"
+              class="property-image"
+            />
+            <div class="review-content">
+              <h4>You reviewed your stay at {{ review.hotel?.name }}</h4>
+              <div>
+                <span class="review-status">Reviewed</span>
+              </div>
+              <p v-if="review.title"><strong>{{ review.title }}</strong></p>
+              <p v-if="review.comment">{{ review.comment }}</p>
+            </div>
+          </div>
+        </div>
       </template>
     </div>
   </div>

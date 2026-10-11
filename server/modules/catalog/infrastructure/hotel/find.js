@@ -263,11 +263,15 @@ const ADMIN_HOTEL_ATTRIBUTES = [
  * Paginated hotel list for the back-office. Unlike `findById` this does not
  * filter on status, so owners and platform staff can see drafts/suspended rows.
  */
-async function findAllForAdmin({ search, status, cityId, limit = 20, offset = 0 } = {}) {
+async function findAllForAdmin({ search, status, cityId, hotelIds, limit = 20, offset = 0 } = {}) {
   const where = {};
 
   if (status) where.status = status;
   if (cityId) where.city_id = cityId;
+  // Non-staff callers are scoped to their own hotels.
+  if (Array.isArray(hotelIds)) {
+    where.id = { [Op.in]: hotelIds };
+  }
   if (search) {
     where[Op.or] = [
       { name: { [Op.like]: `%${search}%` } },

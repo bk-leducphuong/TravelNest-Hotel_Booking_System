@@ -33,7 +33,7 @@ const socketAuthentication = async (socket, next) => {
       return next(new ApiError(401, 'UNAUTHORIZED', 'Authentication token required'));
     }
 
-    const verifiedToken = verifyJwt(token);
+    const verifiedToken = await verifyJwt(token);
     const user = await identityService.resolveAuthenticatedUser(verifiedToken);
 
     socket.auth = {

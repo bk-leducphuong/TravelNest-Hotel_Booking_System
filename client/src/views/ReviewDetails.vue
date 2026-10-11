@@ -1,8 +1,16 @@
 <script>
 import TheHeader from '@/components/Header.vue'
-import errorHandler from '@/request/errorHandler';
-import axios from 'axios'
+import errorHandler from '@/request/errorHandler'
 import { useToast } from 'vue-toastification'
+import { ReviewService } from '@/services/review.service'
+
+// Map the UI criteria names to the API's rating fields (1-10).
+const CRITERIA_TO_RATING = {
+  Cleanliness: 'cleanliness',
+  Staff: 'service',
+  Location: 'location',
+  'Value for money': 'value'
+}
 
 export default {
   components: {
@@ -10,113 +18,100 @@ export default {
   },
   setup() {
     const toast = useToast()
-    return {
-      toast
-    }
+    return { toast }
   },
   data() {
     return {
       reviewCriteria: [
-        {
-          name: 'Cleanliness',
-          value: null
-        },
-        {
-          name: 'Staff',
-          value: null
-        },
-        {
-          name: 'Facilities',
-          value: null
-        },
-        {
-          name: 'Comfort',
-          value: null
-        },
-        {
-          name: 'Location',
-          value: null
-        },
-        {
-          name: 'Value for money',
-          value: null
-        }
+        { name: 'Cleanliness', value: null },
+        { name: 'Staff', value: null },
+        { name: 'Facilities', value: null },
+        { name: 'Comfort', value: null },
+        { name: 'Location', value: null },
+        { name: 'Value for money', value: null }
       ],
       overallRating: null,
-      comment: null
+      comment: null,
+      isSubmitting: false
+    }
+  },
+  computed: {
+    bookingCode() {
+      return this.$route.query.bc
+    },
+    hotelId() {
+      return this.$route.query.hid
     }
   },
   methods: {
     async validateReview() {
       try {
-        await axios.post(
-          `${import.meta.env.VITE_SERVER_HOST}/api/review/validate-review`,
-          {
-            bookingCode: this.$route.query.bc,
-            hotelId: this.$route.query.hid,
-            hotelName: this.$route.query.hn
-          },
-          {
-            withCredentials: true
-          }
-        )
+        const response = await ReviewService.validateReview({
+          bookingCode: this.bookingCode,
+          hotelId: this.hotelId
+        })
+        if (!response?.data?.isValid) {
+          this.toast.error('This booking is not eligible for review')
+          this.$router.push('/reviews')
+        }
       } catch (error) {
         errorHandler(error)
         this.$router.push('/reviews')
-      }
-    },
-    async postReview() {
-      try {
-        if (!this.checkValidReview()) {
-          this.toast.error('Please fill in all the required fields')
-          return
-        }
-        await axios.post(
-          `${import.meta.env.VITE_SERVER_HOST}/api/review/post-review`,
-          {
-            hotelId: this.$route.query.hid,
-            overallRating: this.overallRating,
-            comment: this.comment,
-            reviewCriteria: this.reviewCriteria,
-            bookingCode: this.$route.query.bc
-          },
-          {
-            withCredentials: true
-          }
-        )
-
-        this.toast.success('Review posted successfully')
-        this.$router.push('/reviews')
-      } catch (error) {
-        errorHandler(error);
-        this.$router.push('/reviews')
-      }
-    },
-    checkValidReview() {
-      if (this.overallRating == null || this.comment == null) {
-        return false
-      }else {
-        return true
       }
     },
     async checkAlreadyReviewed() {
       try {
-        const response = await axios.post(
-          `${import.meta.env.VITE_SERVER_HOST}/api/review/check-already-reviewed`,
-          {
-            bookingCode: this.$route.query.bc,
-            hotelId: this.$route.query.hid
-          },
-          {
-            withCredentials: true
-          }
-        )
-        if (response.data.success) {
-          //TODO: redirect to edit review page
-          this.$router.push('/reviews') // test
+        const response = await ReviewService.checkReview({
+          bookingCode: this.bookingCode,
+          hotelId: this.hotelId
+        })
+        if (response?.data?.exists) {
+          this.toast.info('You have already reviewed this stay')
+          this.$router.push('/reviews')
         }
       } catch (error) {
         errorHandler(error)
+      }
+    },
+    // The UI uses a 1-5 emoji scale; the API expects 1-10.
+    buildRatings() {
+      const ratings = {}
+      if (this.overallRating != null) {
+        ratings.overall = Number(this.overallRating) * 2
+      }
+      this.reviewCriteria.forEach((criteria) => {
+        const key = CRITERIA_TO_RATING[criteria.name]
+        if (key && criteria.value != null) {
+          ratings[key] = Number(criteria.value) * 2
+        }
+      })
+      return ratings
+    },
+    checkValidReview() {
+      return this.overallRating != null && Boolean(this.comment)
+    },
+    async postReview() {
+      if (!this.checkValidReview()) {
+        this.toast.error('Please fill in all the required fields')
+        return
+      }
+
+      this.isSubmitting = true
+      try {
+        await ReviewService.createReview({
+          hotelId: this.hotelId,
+          bookingCode: this.bookingCode,
+          ratings: this.buildRatings(),
+          comment: this.comment
+        })
+
+        this.toast.success('Review posted successfully')
+        this.$router.push('/reviews')
+      } catch (error) {
+        errorHandler(error)
+        this.$router.push('/reviews')
+      } finally {
+        this.isSubmitting = false
       }
     }
   },

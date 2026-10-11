@@ -22,7 +22,7 @@ SELECT
   h.\`id\`, h.\`name\`, h.\`city_id\`, c.\`name\`, h.\`country_id\`, co.\`name\`,
   h.\`latitude\`, h.\`longitude\`, pr.min_price, pr.max_price,
   COALESCE(hrs.\`overall_rating\`, 0), COALESCE(hrs.\`total_reviews\`, 0),
-  h.\`hotel_class\`, h.\`status\`, am.amenity_codes, 0,
+  h.\`hotel_class\`, h.\`status\`, am.amenity_codes, COALESCE(fc.has_free_cancellation, 0),
   (pr.min_price IS NOT NULL AND h.\`status\` = 'active'),
   (pr.min_price IS NOT NULL),
   img.object_key,
@@ -53,6 +53,14 @@ LEFT JOIN (
   WHERE i.\`entity_type\` = 'hotel' AND i.\`is_primary\` = 1 AND i.\`status\` = 'active'
   GROUP BY i.\`entity_id\`
 ) img ON img.entity_id = h.\`id\`
+LEFT JOIN (
+  SELECT r.\`hotel_id\` AS hotel_id, 1 AS has_free_cancellation
+  FROM \`hotel_cancellation_rules\` r
+  WHERE r.\`is_active\` = 1
+    AND r.\`is_refundable\` = 1
+    AND r.\`free_cancellation_until_hours_before_checkin\` IS NOT NULL
+  GROUP BY r.\`hotel_id\`
+) fc ON fc.hotel_id = h.\`id\`
 ON DUPLICATE KEY UPDATE
   \`hotel_name\` = VALUES(\`hotel_name\`),
   \`city_id\` = VALUES(\`city_id\`),

@@ -97,7 +97,8 @@ async function cancelBooking(bookingId, userId, options = {}) {
   const bookingData = booking.toJSON ? booking.toJSON() : booking;
 
   if (bookingData.status === 'cancelled') {
-    throw new ApiError(400, 'ALREADY_CANCELLED', 'Booking is already cancelled');
+    // Same conflict as the concurrent path below (one code/status for both).
+    throw new ApiError(409, 'BOOKING_ALREADY_CANCELLED', 'Booking is already cancelled');
   }
 
   if (bookingData.status === 'completed') {

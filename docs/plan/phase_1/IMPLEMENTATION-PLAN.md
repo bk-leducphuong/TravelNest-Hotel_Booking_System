@@ -19,6 +19,185 @@ Turn the recorded findings into a prioritized, low-risk implementation program, 
 
 ---
 
+## Progress
+
+### M1 — Security + foundations (WP0 + WP1) — ✅ implemented (2026-10-11)
+
+**Closed:**
+- **Shared hotel-ownership guard** `requireEntityInHotel` applied to inventory rooms, bookings,
+  payment transactions/refunds, payouts + connected accounts, and reviews →
+  **R-F1, S-F1, T-F1, U-F1, V-F1** (cross-hotel IDOR). Verified: foreign entity → `403`,
+  own entity → `200`, platform staff → global.
+- **Admin catalog list gating + per-hotel scoping** → **O-F1** (guest → `403`; owner → only their
+  hotels).
+- **Central error mapping** (Sequelize validation / Multer / plain errors → 4xx) → **Q-F1, L-F1**.
+- **JSON 404** for unmatched `/api/*` (and bad path params) → **A-F2, C-F4**.
+- **Joi custom-message + field-key fix** (central, in `validate.middleware.js`) →
+  **B-F3, C-F3, E-F4, G-F1**.
+- **Clean malformed-JWT message** → **D-F1**.
+- **Owner-override documented** → **V-F2**.
+
+**Deferred from WP0 (closed in M6):**
+- **Response-envelope unification** (**A-F1, C-F5, L-F2, M-F4, D-F6**) — **✅ M6** (additive;
+  `success:true` + `error:{code,message}`).
+- **U-F2** (generate-eligible `500`) — **✅ M6** (payout `ApiError` + skip non-ready owners).
+
+**Verification:** `334/334` unit tests, `82/83` e2e (the 1 failure is the Stripe-webhook test that
+needs the Stripe CLI), `arch:check` + lint clean; IDOR / 404 / validation / error-mapping fixes
+re-tested live against the running stack.
+
+### M2 — Money & pricing correctness (WP2) — ✅ implemented (2026-10-11)
+
+**Closed:**
+- **Price filter (B-F1)** — removed the Elasticsearch/DB `min_price` range filter (a static
+  "from" price that returned wrong/empty results); the date-specific filter
+  (`domain/filters.js applyDateSpecificFilters`) now does the work. Verified: `minPrice=90` →
+  196, `maxPrice=120` → 38, `minPrice=10` → all.
+- **`maxPrice` without `minPrice` (B-F2)** — Joi `when(minPrice)` conditional → valid.
+- **Room price parity (C-F1)** — the catalog `/rooms` query used `SUM(price_per_night)` labelled
+  as per-night; now `AVG` (per-night) + `SUM` (total). Also normalized the search dates to
+  `YYYY-MM-DD` (Joi passed `Date` objects that shifted the MySQL window). Verified: `/rooms` and
+  `/search` now return **identical** prices for the same room + dates.
+- **`/rooms` `totalPrice` (C-F2)** — now populated from the query.
+- **`has_free_cancellation` (C-F6)** — derived from active refundable cancellation rules
+  (snapshot SQL + runtime `checkFreeCancellation`); snapshots rebuilt + ES reindexed.
+  Verified: `freeCancellation=true` → 142 hotels.
+- **Refunds in the payment summary (P-F1, T-F2)** — `refundedAmount` now includes transactions
+  marked `refunded` without a refund record (the seed case) without double-counting the normal
+  case. Verified: net = gross − refunded.
+
+**Data operations:** rebuilt `hotel_search_snapshots` (12,600) and reindexed the `hotels` ES index.
+
+**Verification:** `318/318` unit tests, `82/83` e2e (the 1 failure is the Stripe-webhook test),
+`arch:check` + lint clean.
+
+### M3 — Broken user flows (WP3) — ✅ implemented (2026-10-11)
+
+**Closed:**
+- **Guest cancellation (H-F1, H-F2)** — `BookingCancellation` now loads the booking by code and
+  calls `BookingService.cancelBooking(id)` (`DELETE /bookings/:id`) instead of the dead
+  `/api/cancel-bookings`; added `@submit.prevent`; `BookingDetails` shows the cancel option for
+  cancellable statuses (not only `confirmed`). Verified end-to-end in the browser.
+- **Reviews UI (J-F1, J-F2)** — `Reviews.vue` rewritten to consume the API shape (no more
+  `review.review.length` crash); `ReviewDetails`/`ReviewValidation` now use `ReviewService`
+  (`POST /reviews`, `/validate`, `/check`) with the correct body (1-5 UI → 1-10 ratings).
+  Verified: `POST /reviews → 201`, list renders the written review.
+- **Onboarding (M-F1, M-F2, M-F3)** — backend maps check-in/out to a single `TIME` value
+  (was `500`); `Form6` uses `JoinService` (`/api/v1/join`); the wizard route requires auth
+  (anonymous visitors are sent through login). Verified: join `201`.
+- **Legacy-endpoint sweep** — all `VITE_SERVER_HOST}/api/<x>` calls removed (H, J, M).
+- **Account password UI (E-F1)** — stale form replaced with a Keycloak account-console link.
+
+**Verification:** `318/318` unit tests, `arch:check` clean, client **build** passes, lint clean;
+H/J/M/E flows exercised in the browser.
+
+### M4 — Contract/UX, a11y/i18n & data/config (WP4 + WP5 + WP6) — ✅ implemented (2026-10-11)
+
+**Closed (contract/error UX — WP4):**
+- Double-cancel now returns a single **409 `BOOKING_ALREADY_CANCELLED`** on both paths (H-F4).
+- Non-eligible review → **409 `REVIEW_NOT_ELIGIBLE`** (was 404) (J-F3).
+- Missing hotel context → **403** (was 400) (O-F2).
+- Search filter failures are **surfaced** (error alert) instead of a silent "0 hotels" (B-F8).
+- Inventory price-inheritance documented (R-F2).
+
+**Closed (UI/UX, a11y, i18n — WP5):**
+- `SavedHotelIcon` `hotelId` prop `Number → String` (A-F4/F-F5); aria-labels on favorite/remove
+  buttons + search/date inputs (A-F5/F-F4); hotel cards keyboard-operable.
+- Page `<title>` set; footer partner logos no longer broken `<img>` (A-F6/C-F7).
+- Hard-coded Vietnamese strings moved to locale files; card titles off `<h2>` (A-F7/A-F8).
+- Booking **status labels** localized (H-F3); reviews page loads the user name (J-F4).
+- Notifications: **real relative timestamp**, **read state persisted on click**, dead "See all"
+  removed (K-F1/K-F2/K-F3).
+- Saved hotels: **real card data** (stars from `hotel_class`, no fake reviews/distance), heart
+  reflects saved state, dead header controls removed (F-F1/F-F2/F-F3).
+
+**Closed (data/config — WP6):**
+- Timezone allowlist expanded (incl. `Asia/Ho_Chi_Minh`) + Joi validation → 400 not 500
+  (Q-F1/Q-F2); recent-search and profile text sanitised (B-F5/E-F2); **JWKS** key resolution with
+  static-PEM fallback (D-F5).
+
+**Verification:** 318/318 unit, 82/83 e2e (Stripe-webhook only), arch + lint clean, client build
+passes; key fixes re-checked in the browser.
+
+**Deferred at M4 (all ✅ closed in M6):** response-envelope unification
+(A-F1/C-F5/L-F2/M-F4/D-F6), the Keycloak `parseCallbackUrl` console error (A-F9/D-F2/B-F6),
+`/hotels/batch` input validation (A-F3), the unknown-field message (E-F3), placeholder
+booking-detail links (H-F5), raw ISO in notification messages (K-F4), invalid-entity-type ordering
+(L-F3), `generate eligible` 500 (U-F2).
+
+### M5 — Verify & closure — ✅ done (2026-10-11)
+
+- **Admin UI coverage gap filled** — features **O–V** were driven in the admin client
+  (Playwright, signed in as `owner@travelnest.local`); see
+  [`ADMIN-UI-VERIFICATION.md`](./ADMIN-UI-VERIFICATION.md). All pages render correctly.
+- **Regression tests added** — `requireEntityInHotel` guard (5 cases) and the
+  `validate.middleware` custom-message / `_form` behaviour (3 cases). The date-specific price
+  filter already had coverage (`search/domain/filters.test.js`).
+- **Suites re-run:** `326/326` unit (61 suites), `82/83` e2e (only the Stripe-webhook test),
+  `arch:check` + `schema:check` clean, client build passes.
+- **Feature I (Payments guest + Stripe webhook)** — see **M6** below (unblocked after this pass).
+
+### M6 — Deferred items + feature I closure — ✅ done (2026-10-11)
+
+**Closed (previously deferred):**
+- **Response-envelope unification (A-F1/C-F5/L-F2/M-F4/D-F6)** — done **additively** (no client
+  changes): a scoped `/api/v1` middleware injects `success:true` into bodies that only carried
+  `data`; auth/permission failures now also carry `error:{code,message}` alongside `message`.
+- **Keycloak `parseCallbackUrl` console error (A-F9/D-F2/B-F6)** — root cause: keycloak-js's
+  silent-check listener parses **every same-origin message** as a URL, so non-string payloads
+  (devtools/extensions) throw. A capture-phase guard drops same-origin non-string messages while the
+  silent check runs → **0 errors** per load.
+- **`/hotels/batch` input validation (A-F3)** — Joi schema (`ids`: UUID array, max 50); non-array →
+  400, empty/missing → 200 `[]`.
+- **Unknown-field message (E-F3)** — `object.min` now lists the supported fields instead of a
+  generic "at least one field" message.
+- **Placeholder booking-detail links (H-F5)** — dead `href="#"` action links removed; "Book another
+  room" now routes home.
+- **Raw ISO in notification messages (K-F4)** — the Go notification consumer formats RFC3339
+  timestamps (`2 Jan 2006 15:04 MST`) instead of embedding raw ISO. _(Container rebuild required to
+  take effect.)_
+- **Invalid-entity-type ordering (L-F3)** — `entityType`/`entityId` are validated **before** the
+  image authz middleware → 400 (not a misleading 403).
+- **`generate eligible` 500 (U-F2)** — payout service now throws `ApiError` (400/409) instead of
+  plain `Error`; batch generation **skips** owners without a payout-ready account rather than
+  failing the whole run.
+
+**Feature I (Payments guest + Stripe webhook) — unblocked.** The Stripe CLI became available
+(`stripe listen`), so the webhook round-trip was exercised. **2 S2 endpoint bugs found & fixed:**
+- **I-F1** — `GET /payments/bookings/:id` 500 (filtered a non-existent `transactions.booking_code`);
+  now filters by `booking_id`.
+- **I-F2** — `GET /payments/transactions/:id` 403 (UUID mangled by `parseInt` → MySQL numeric
+  coercion matched another buyer's row); now passes the UUID through.
+- Regression e2e `G7` added. See
+  [`I-payments-guest-webhook/`](./I-payments-guest-webhook/).
+
+**I-UI-01 verified (browser).** The guest **payment element** was driven end-to-end with Playwright:
+card entry → **Pay** → `/book/complete` ("Your booking is confirmed!"); server-side the booking is
+`confirmed` and a `succeeded` payment is recorded (`pi_…` / `ch_…`). Evidence:
+[`I-payments-guest-webhook/test-results/ui.md`](./I-payments-guest-webhook/test-results/ui.md).
+
+**Regressions found during the UI run and fixed:**
+- **K-F5 (S2)** — the M4 JWKS change made `verifyJwt` **async**, but `platform/realtime/auth.js`
+  called it **without `await`** → every authenticated socket namespace rejected connections
+  (*"Bearer token is missing the subject claim"*), killing realtime notifications and hold-expiry
+  events. Fixed with `await` + a regression test (`unit/platform/realtime.auth.test.js`).
+- **C-F9 (S3)** — `HotelDetails.vue` used the global `flatpickr(...)` without importing the package,
+  so the date-range picker never initialised (`ReferenceError: flatpickr is not defined`). Fixed by
+  importing `flatpickr` (+ its CSS).
+
+**Verification:** `329/329` unit (62 suites), **`84/84` e2e**, `arch:check` + `schema:check` clean,
+client lint + build pass; socket reconnect confirmed live (`[userSocket] connected`).
+
+## Outcome
+
+All of **M1–M6** are implemented. The index shows **F, G, J, N, P, Q, S, T = ✅ Ready**; the
+remaining features are 🟡 Partial, carrying only **non-blocking** S3/S4 polish items. The previously
+deferred response-envelope unification, Keycloak console error and the S3/S4 polish set are closed,
+feature **I** is fully verified including its in-browser payment element (I-UI-01), and the two
+regressions surfaced during that run (**K-F5**, **C-F9**) are fixed.
+
+---
+
 ## WP0 — Cross-cutting foundations (do first)
 
 | Task | Findings fixed | Effort |

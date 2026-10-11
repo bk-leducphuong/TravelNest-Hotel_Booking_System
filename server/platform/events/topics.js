@@ -13,7 +13,6 @@
  */
 const INTEGRATION_EVENTS = {
   EMAIL_REQUESTED: 'notification.email.requested.v1',
-  IN_APP_REQUESTED: 'notification.test.inapp.requested.v1',
   PAYMENT_SUCCEEDED: 'payment.payment.succeeded.v1',
   REFUND_CREATED: 'payment.refund.created.v1',
   PAYOUT_COMPLETED: 'payment.payout.completed.v1',

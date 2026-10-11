@@ -29,7 +29,7 @@ async function authenticateRequest(req) {
   let verifiedToken;
 
   try {
-    verifiedToken = verifyJwt(token);
+    verifiedToken = await verifyJwt(token);
   } catch (error) {
     throw new ApiError(401, 'INVALID_TOKEN', error.message || 'Bearer token is invalid');
   }
@@ -76,9 +76,11 @@ async function authenticate(req, res, next) {
     return next();
   } catch (error) {
     logger.warn({ error: error }, 'Authentication failed');
+    const message = error.message || 'Unauthorized access. Please log in.';
     return res.status(error.statusCode || 401).json({
       success: false,
-      message: error.message || 'Unauthorized access. Please log in.',
+      message,
+      error: { code: error.code || 'AUTHENTICATION_FAILED', message },
     });
   }
 }
@@ -102,6 +104,19 @@ async function optionalAuthenticate(req, res, next) {
   }
 }
 
+/**
+ * Consistent authorization-failure response: `{ success:false, message,
+ * error:{ code, message } }` (the `error` object matches the validation/error
+ * envelope so clients can read a code either way).
+ */
+function deny(res, statusCode, code, message) {
+  return res.status(statusCode).json({
+    success: false,
+    message,
+    error: { code, message },
+  });
+}
+
 function resolveRequestedHotelId(req) {
   // Prefer the hotel named in the path. For routes like `/hotels/:hotelId/...`
   // the path hotel IS the resource being addressed, so it must be the one
@@ -122,10 +137,7 @@ function requirePermission(permissionName, options = {}) {
   return async (req, res, next) => {
     try {
       if (!req.user) {
-        return res.status(401).json({
-          success: false,
-          message: 'Authentication required.',
-        });
+        return deny(res, 401, 'AUTHENTICATION_REQUIRED', 'Authentication required.');
       }
 
       const permissionNames = Array.isArray(permissionName) ? permissionName : [permissionName];
@@ -148,10 +160,7 @@ function requirePermission(permissionName, options = {}) {
           return next();
         }
 
-        return res.status(403).json({
-          success: false,
-          message: 'Insufficient permissions.',
-        });
+        return deny(res, 403, 'INSUFFICIENT_PERMISSIONS', 'Insufficient permissions.');
       }
 
       const hotelId = resolveRequestedHotelId(req);
@@ -171,10 +180,14 @@ function requirePermission(permissionName, options = {}) {
       }
 
       if (!hotelId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Hotel context is required for this operation.',
-        });
+        // Authenticated but with no hotel access — an authorization failure,
+        // not a malformed request.
+        return deny(
+          res,
+          403,
+          'HOTEL_CONTEXT_REQUIRED',
+          'You do not have access to this operation without a hotel context.'
+        );
       }
 
       const hotelUser = (req.user.hotel_roles || []).find(
@@ -182,36 +195,40 @@ function requirePermission(permissionName, options = {}) {
       );
 
       if (!hotelUser) {
-        return res.status(403).json({
-          success: false,
-          message: 'You do not have access to this hotel.',
-        });
+        return deny(res, 403, 'HOTEL_ACCESS_DENIED', 'You do not have access to this hotel.');
       }
 
       const hotelRoleName = hotelUser.role?.name?.toLowerCase();
       const requiredRoleName = hotelRole?.toLowerCase();
 
       if (hotelRole && hotelRoleName !== requiredRoleName) {
-        return res.status(403).json({
-          success: false,
-          message: `This operation requires ${hotelRole} role at the hotel.`,
-        });
+        return deny(
+          res,
+          403,
+          'HOTEL_ROLE_REQUIRED',
+          `This operation requires ${hotelRole} role at the hotel.`
+        );
       }
 
       // Hotel-scoped authorization is governed by the hotel role only. The
       // caller's global permissions must NOT be OR-ed in here, otherwise a
       // `staff` member would inherit e.g. `booking.cancel` from the global
       // `user` role. Platform staff (admin/support_agent) are handled above.
+      // The hotel OWNER is the superuser for their own hotel: they pass any
+      // hotel-scoped permission check regardless of the role's permission list.
+      // This is intentional (see docs/plan/phase_1/V-admin-reviews-moderation).
       const hotelPermissions = collectPermissionNames([{ role: hotelUser.role }]);
       const hasHotelPermission =
         hotelRoleName === ROLES.OWNER ||
         permissionNames.some((permission) => hotelPermissions.has(permission));
 
       if (!hasHotelPermission) {
-        return res.status(403).json({
-          success: false,
-          message: 'Insufficient permissions for this operation.',
-        });
+        return deny(
+          res,
+          403,
+          'INSUFFICIENT_PERMISSIONS',
+          'Insufficient permissions for this operation.'
+        );
       }
 
       req.hotelContext = {
@@ -232,10 +249,90 @@ function requirePermission(permissionName, options = {}) {
   };
 }
 
+/**
+ * Platform staff (admin/support) may act globally and on any hotel, so they
+ * bypass entity-ownership checks. Everyone else is restricted to entities that
+ * belong to their active hotel context.
+ */
+function isPlatformStaff(req) {
+  const tokenRoles = new Set(req.auth?.roles || []);
+  if (tokenRoles.has(ROLES.ADMIN) || tokenRoles.has(ROLES.SUPPORT_AGENT)) {
+    return true;
+  }
+  return (req.user?.roles || []).some((userRole) =>
+    [ROLES.ADMIN, ROLES.SUPPORT_AGENT].includes(userRole.role?.name)
+  );
+}
+
+/**
+ * Guard for admin routes addressed by an entity id (no `hotelId` in the path).
+ *
+ * Ensures the target entity belongs to the caller's hotel context, closing the
+ * cross-hotel IDOR where the hotel was resolved from `X-Hotel-Id` alone.
+ * Platform staff bypass this (they may act on any hotel).
+ *
+ * Place this AFTER `requirePermission(...)` so `req.hotelContext` is populated.
+ *
+ * @param {(req: import('express').Request) => Promise<string|null|undefined>} resolveHotelId
+ * @returns {import('express').RequestHandler}
+ */
+function requireEntityInHotel(resolveHotelId) {
+  return async (req, res, next) => {
+    try {
+      if (isPlatformStaff(req)) {
+        return next();
+      }
+
+      const hotelContextId = req.hotelContext?.hotelId || resolveRequestedHotelId(req);
+      if (!hotelContextId) {
+        return deny(
+          res,
+          403,
+          'HOTEL_CONTEXT_REQUIRED',
+          'You do not have access to this resource without a hotel context.'
+        );
+      }
+
+      const entityHotelId = await resolveHotelId(req);
+      if (!entityHotelId || String(entityHotelId) !== String(hotelContextId)) {
+        return deny(res, 403, 'RESOURCE_ACCESS_DENIED', 'You do not have access to this resource.');
+      }
+
+      return next();
+    } catch (error) {
+      logger.error({ error }, 'Entity-hotel ownership check failed');
+      return next(error);
+    }
+  };
+}
+
+/**
+ * Allows platform staff (global scope) or a user with at least one hotel
+ * membership. For non-staff it attaches `req.hotelScopeIds` (their hotel ids)
+ * so a list handler can scope its query; returns 403 when the caller has none.
+ *
+ * Use on "list" admin routes that must not be reachable by ordinary guests.
+ */
+function requirePlatformStaffOrHotels(req, res, next) {
+  if (isPlatformStaff(req)) {
+    return next();
+  }
+
+  const hotelIds = (req.user?.hotel_roles || []).map((h) => h.hotel_id).filter(Boolean);
+  if (hotelIds.length === 0) {
+    return deny(res, 403, 'NO_HOTEL_ACCESS', 'You do not have access to any hotels.');
+  }
+
+  req.hotelScopeIds = hotelIds;
+  return next();
+}
+
 module.exports = {
   authenticate,
   authenticateRequest,
   optionalAuthenticate,
   requirePermission,
+  requireEntityInHotel,
+  requirePlatformStaffOrHotels,
   collectPermissionNames,
 };

@@ -1,6 +1,55 @@
 const ApiError = require('../utils/ApiError');
 const logger = require('../config/logger.config');
 
+/**
+ * Translate known non-ApiError throwables into ApiErrors so that client errors
+ * (bad input, invalid file, constraint violations) return a proper 4xx instead
+ * of an opaque 500.
+ */
+function mapKnownError(err) {
+  if (!err) {
+    return new ApiError(500, 'INTERNAL_ERROR', 'Internal server error');
+  }
+
+  // Sequelize model-level validation (e.g. `isIn` on timezone) -> 400.
+  if (err.name === 'SequelizeValidationError' && Array.isArray(err.errors)) {
+    const fields = {};
+    err.errors.forEach((e) => {
+      fields[e.path || '_form'] = e.message;
+    });
+    return new ApiError(400, 'VALIDATION_ERROR', 'Invalid request data', fields);
+  }
+
+  // Unique-constraint races -> 409.
+  if (err.name === 'SequelizeUniqueConstraintError') {
+    const fields = {};
+    (err.errors || []).forEach((e) => {
+      fields[e.path || '_form'] = e.message;
+    });
+    return new ApiError(409, 'CONFLICT', 'Resource already exists', fields);
+  }
+
+  if (err.name === 'SequelizeForeignKeyConstraintError') {
+    return new ApiError(409, 'CONFLICT', 'Related resource constraint violated');
+  }
+
+  // Multer file-upload errors (size/limit) -> 400.
+  if (
+    err.name === 'MulterError' ||
+    (typeof err.code === 'string' && err.code.startsWith('LIMIT_'))
+  ) {
+    return new ApiError(400, 'INVALID_FILE_UPLOAD', err.message || 'Invalid file upload');
+  }
+
+  // Multer's fileFilter rejects non-images with a plain Error.
+  if (err.message === 'Not an image! Please upload an image.') {
+    return new ApiError(400, 'INVALID_FILE_TYPE', err.message);
+  }
+
+  // Anything else is an unexpected server error.
+  return new ApiError(500, 'INTERNAL_ERROR', 'Internal server error');
+}
+
 module.exports = (err, req, res, next) => {
   let apiError = err;
 
@@ -9,7 +58,7 @@ module.exports = (err, req, res, next) => {
     err instanceof ApiError || (err && typeof err.statusCode === 'number' && err.code);
 
   if (!isApiError) {
-    apiError = new ApiError(500, 'INTERNAL_ERROR', 'Internal server error');
+    apiError = mapKnownError(err);
   }
 
   // Create request-specific logger

@@ -1,9 +1,7 @@
 const asyncHandler = require('@utils/asyncHandler');
-const { assertHotelScopedAccess } = require('@helpers/ownership.helper');
 
 const { listPayouts } = require('../application/admin/listPayouts');
 const { getPayout } = require('../application/admin/getPayout');
-const { getConnectedAccount } = require('../application/admin/getConnectedAccount');
 const { getHotelPayoutSummary } = require('../application/admin/getHotelPayoutSummary');
 const { generateEligiblePayouts } = require('../application/admin/generateEligiblePayouts');
 const { processPayout } = require('../application/admin/processPayout');
@@ -28,7 +26,6 @@ const listPayoutsHandler = asyncHandler(async (req, res) => {
 
 const getPayoutHandler = asyncHandler(async (req, res) => {
   const payout = await getPayout(req.params.payoutId);
-  assertHotelScopedAccess(req, payout, { entityType: 'Payout' });
 
   res.status(200).json({ data: payout });
 });
@@ -51,9 +48,6 @@ const generateEligiblePayoutsHandler = asyncHandler(async (req, res) => {
 });
 
 const processPayoutHandler = asyncHandler(async (req, res) => {
-  const existing = await getPayout(req.params.payoutId);
-  assertHotelScopedAccess(req, existing, { entityType: 'Payout' });
-
   const payout = await processPayout(req.params.payoutId, {
     actorUserId: req.user.id,
     requestId: req.id,
@@ -63,9 +57,6 @@ const processPayoutHandler = asyncHandler(async (req, res) => {
 });
 
 const setPayoutStatusHandler = asyncHandler(async (req, res) => {
-  const existing = await getPayout(req.params.payoutId);
-  assertHotelScopedAccess(req, existing, { entityType: 'Payout' });
-
   const payout = await setPayoutStatus(req.params.payoutId, {
     status: req.body.status,
     failureCode: req.body.failureCode,
@@ -79,7 +70,7 @@ const setPayoutStatusHandler = asyncHandler(async (req, res) => {
 
 const listConnectedAccountsHandler = asyncHandler(async (req, res) => {
   const accounts = await listConnectedAccounts({
-    hotelId: req.hotelContext?.hotelId || req.query.hotelId,
+    hotelId: req.query.hotelId,
     ownerId: req.query.ownerId,
   });
 
@@ -88,7 +79,7 @@ const listConnectedAccountsHandler = asyncHandler(async (req, res) => {
 
 const checkConnectedAccountHandler = asyncHandler(async (req, res) => {
   const result = await checkConnectedAccount({
-    hotelId: req.hotelContext?.hotelId || req.query.hotelId,
+    hotelId: req.query.hotelId,
     ownerId: req.query.ownerId,
   });
 
@@ -105,9 +96,6 @@ const createConnectAccountHandler = asyncHandler(async (req, res) => {
 });
 
 const createAccountLinkHandler = asyncHandler(async (req, res) => {
-  const account = await getConnectedAccount(req.params.accountId);
-  assertHotelScopedAccess(req, account, { entityType: 'Connected account' });
-
   const link = await createAccountLink(
     {
       accountId: req.params.accountId,
@@ -121,15 +109,12 @@ const createAccountLinkHandler = asyncHandler(async (req, res) => {
 });
 
 const syncConnectedAccountHandler = asyncHandler(async (req, res) => {
-  const account = await getConnectedAccount(req.params.accountId);
-  assertHotelScopedAccess(req, account, { entityType: 'Connected account' });
-
-  const result = await syncConnectedAccount(req.params.accountId, {
+  const account = await syncConnectedAccount(req.params.accountId, {
     actorUserId: req.user.id,
     requestId: req.id,
   });
 
-  res.status(200).json({ data: result });
+  res.status(200).json({ data: account });
 });
 
 module.exports = {

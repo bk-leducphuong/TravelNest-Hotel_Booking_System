@@ -1,8 +1,8 @@
 <script>
 import { useToast } from 'vue-toastification'
-import axios from 'axios'
 import { mapGetters } from 'vuex'
 import { goToAdminApp } from '@/utils/adminApp'
+import { JoinService } from '@/services/join.service'
 
 export default {
   setup() {
@@ -113,18 +113,7 @@ export default {
       formData.append('room_id', room_id)
 
       try {
-        const response = await axios.post(
-          `${import.meta.env.VITE_SERVER_HOST}/api/join/upload-photos`,
-          formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            },
-            withCredentials: true
-          }
-        )
-
-        // response.data.success ? console.log('Upload successfully!') : console.log('Upload failed!')
+        await JoinService.uploadPhotos(formData)
       } catch (error) {
         console.error('Error uploading image:', error)
       }
@@ -155,19 +144,15 @@ export default {
         this.toast.error('Pls fill all the fields')
       } else {
         try {
-          const response = await axios.post(
-            `${import.meta.env.VITE_SERVER_HOST}/api/join`,
-            {
-              joinFormData: this.getJoinFormData,
-            },
-            {
-              withCredentials: true
-            }
-          )
-          if (response.data.success) {
+          const response = await JoinService.submitJoinForm(this.getJoinFormData)
+          const data = response?.data
+
+          if (data?.hotel_id) {
             this.toast.success('Join form submitted successfully')
-            await this.uploadImage(response.data.hotel_id, response.data.room_id)
+            await this.uploadImage(data.hotel_id, data.room_id)
             goToAdminApp('/')
+          } else {
+            this.toast.error('Error submitting join form')
           }
         } catch (error) {
           this.toast.error('Error submitting join form')

@@ -16,7 +16,11 @@ async function validateReviewEligibility(userId, { bookingCode, hotelId }) {
   });
 
   if (!booking) {
-    throw new ApiError(404, 'BOOKING_NOT_FOUND', 'Booking not found or not eligible for review');
+    throw new ApiError(
+      409,
+      'REVIEW_NOT_ELIGIBLE',
+      'This booking is not eligible for review (it must be completed and belong to you)'
+    );
   }
 
   return {

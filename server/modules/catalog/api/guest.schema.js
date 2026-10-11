@@ -169,3 +169,17 @@ exports.getTrendingHotels = {
     days: Joi.number().integer().min(1).max(365).default(2),
   }),
 };
+
+/**
+ * POST /api/v1/hotels/batch
+ * Enriched hotel cards for a list of hotel IDs.
+ */
+exports.getHotelsByIds = {
+  body: Joi.object({
+    ids: Joi.array().items(Joi.string().uuid()).max(50).default([]).messages({
+      'array.base': 'ids must be an array',
+      'array.max': 'ids cannot contain more than 50 items',
+      'string.guid': 'each id must be a valid UUID',
+    }),
+  }),
+};

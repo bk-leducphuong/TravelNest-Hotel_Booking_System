@@ -15,10 +15,22 @@ export default {
   },
   computed: {
     ...mapGetters('booking', ['getBookingInformation']),
-    ...mapGetters('user', ['getUserInformation'])
+    ...mapGetters('user', ['getUserInformation']),
+    isCancellable() {
+      return ['pending_payment', 'confirmed', 'payment_failed', 'checked_in'].includes(
+        this.getBookingInformation?.status
+      )
+    }
   },
   methods: {
-    getFirstImageUrl
+    getFirstImageUrl,
+    // Localized label for a booking status enum.
+    statusLabel(status) {
+      if (!status) return ''
+      const key = `bookingStatus.${status}`
+      const label = this.$t(key)
+      return label === key ? status.replace(/_/g, ' ') : label
+    }
   }
 }
 </script>
@@ -58,7 +70,7 @@ export default {
 
   <div class="confirmation-container" v-if="getBookingInformation.status != 'confirmed'">
     <h1 class="greeting">Thank you for using our service!</h1>
-    <h2 class="confirmation-title">Your booking in {{ getBookingInformation.hotel.name }} is {{ getBookingInformation.status }}.</h2>
+    <h2 class="confirmation-title">Your booking in {{ getBookingInformation.hotel?.name }} is {{ statusLabel(getBookingInformation.status) }}.</h2>
   </div>
 
   <h1 class="section-title">Check Your Details</h1>
@@ -81,35 +93,27 @@ export default {
         <p><strong>You booked for:</strong> {{ getBookingInformation.numberOfGuests }} adult</p>
         <p><strong>Check-in:</strong> {{ new Date(getBookingInformation.checkInDate).toString().split(' ').slice(0, 4).join(' ') }} (12:00 PM - 12:00 AM)</p>
         <p><strong>Check-out:</strong>  {{ new Date(getBookingInformation.checkOutDate).toString().split(' ').slice(0, 4).join(' ') }}  (12:00 PM - 1:00 PM)</p>
-        <div class="calendar-links">
-          <a href="#" class="calendar-link">Outlook/iCal</a>
-          <a href="#" class="calendar-link">Google calendar</a>
-        </div>
       </div>
     </div>
 
     <!-- Right Section -->
-    <div class="details-right" v-if="getBookingInformation.status === 'confirmed'">
+    <div class="details-right" v-if="isCancellable">
       <h2 class="subheading">Is everything correct?</h2>
       <p class="note">
         You can always view or change your booking online – no registration required.
       </p>
       <ul class="action-list">
         <li><RouterLink :to="{path: `/bookings/${bookingCode}/cancel`}" class="action-link"><i class="fa-solid fa-xmark" style="color: #ea1010;"></i> Cancel your booking</RouterLink></li>
-        <li><a href="#" class="action-link"><i class="fa-solid fa-pen-to-square" style="color: #0d5de7;"></i> Edit guest details</a></li>
-        <li><a href="#" class="action-link"><i class="fa-solid fa-message" style="color: #005eff;"></i> Message property</a></li>
-        <li><a href="#" class="action-link"><i class="fa-regular fa-calendar-days" style="color: #005eff;"></i> Change dates</a></li>
-        <li><a href="#" class="action-link"><i class="fa-solid fa-wrench" style="color: #005eff;"></i> Change your room</a></li>
+        <li><RouterLink to="/" class="action-link"><i class="fa-solid fa-wrench" style="color: #005eff;"></i> Book another room</RouterLink></li>
       </ul>
     </div>
-    <div class="details-right" v-if="getBookingInformation.status !== 'confirmed'">
+    <div class="details-right" v-if="!isCancellable">
       <h2 class="subheading">What happens next?</h2>
       <p class="note">
-        
+        This booking can no longer be changed. You can start a new search any time.
       </p>
       <ul class="action-list">
-        <li><a href="#" class="action-link"><i class="fa-solid fa-wrench" style="color: #005eff;"></i> Book another room</a></li>
-        <li><a href="#" class="action-link"><i class="fa-solid fa-pen-to-square" style="color: #0d5de7;"></i> Report a problem</a></li>
+        <li><RouterLink to="/" class="action-link"><i class="fa-solid fa-wrench" style="color: #005eff;"></i> Book another room</RouterLink></li>
       </ul>
     </div>
   </div>

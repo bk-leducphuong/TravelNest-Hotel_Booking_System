@@ -47,7 +47,7 @@ async function searchRooms(hotelId, searchParams) {
   });
 
   return {
-    rooms: formatRooms(rooms),
+    rooms: formatRooms(rooms, numberOfNights),
     page,
     limit: validatedLimit,
     total: rooms.length, // approximate; a full count would need a separate query

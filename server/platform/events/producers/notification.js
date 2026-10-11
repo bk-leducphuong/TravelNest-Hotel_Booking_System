@@ -75,28 +75,6 @@ async function publishBookingExpired(booking, options = {}) {
   );
 }
 
-async function publishTestInAppRequested(context, options = {}) {
-  return emit(
-    INTEGRATION_EVENTS.IN_APP_REQUESTED,
-    {
-      receiverIds: context.receiverIds,
-      title: context.title,
-      message: context.message,
-      category: context.category || 'system',
-      priority: context.priority || 'medium',
-      actionUrl: context.actionUrl || null,
-      actionLabel: context.actionLabel || null,
-      metadata: context.metadata || {},
-      senderId: context.senderId || null,
-      triggeredByAdminId: context.triggeredByAdminId || null,
-    },
-    {
-      eventId: options.sourceEventId || context.eventId,
-      correlationId: options.correlationId || options.sourceEventId || context.eventId,
-    }
-  );
-}
-
 async function publishPayout(topic, status, context, options = {}) {
   return emit(
     topic,
@@ -131,5 +109,4 @@ module.exports = {
   publishPayoutCompleted,
   publishPayoutFailed,
   publishBookingExpired,
-  publishTestInAppRequested,
 };

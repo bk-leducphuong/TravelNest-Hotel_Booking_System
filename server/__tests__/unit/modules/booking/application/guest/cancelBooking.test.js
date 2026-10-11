@@ -73,8 +73,8 @@ describe('booking/application/guest/cancelBooking', () => {
     });
 
     await expect(cancelBooking(5, 1)).rejects.toMatchObject({
-      statusCode: 400,
-      code: 'ALREADY_CANCELLED',
+      statusCode: 409,
+      code: 'BOOKING_ALREADY_CANCELLED',
     });
   });
 

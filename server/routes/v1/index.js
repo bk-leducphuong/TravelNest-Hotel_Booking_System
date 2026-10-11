@@ -25,7 +25,6 @@ const bookingModule = require('@modules/booking');
 const paymentModule = require('@modules/payment');
 const searchModule = require('@modules/search');
 const superadminModule = require('@modules/superadmin');
-const internalSuperadminRoutes = require('@platform/internal/api/internalSuperadmin.routes');
 
 // Mount all routes
 router.use('/search', searchModule.guestRoutes);
@@ -40,7 +39,6 @@ router.use('/reviews', reviewModule.guestRoutes);
 router.use('/bookings', writeLimiter, bookingModule.guestRoutes);
 router.use('/hold', writeLimiter, bookingModule.holdRoutes);
 router.use('/notifications', notificationModule.notificationRoutes);
-router.use('/internal/superadmin', internalSuperadminRoutes);
 router.use('/superadmin', adminReadLimiter, superadminModule.superadminRoutes);
 router.use('/admin', adminBff);
 

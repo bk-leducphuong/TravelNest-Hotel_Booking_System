@@ -135,6 +135,33 @@ class TransactionRepository {
       raw: true,
     });
   }
+
+  /**
+   * Sum of amounts for transactions marked `refunded` that have **no** succeeded
+   * refund record.
+   *
+   * Normally a fully-refunded transaction has a matching refund row (the refund
+   * table is the source of truth). Some transactions are marked `refunded`
+   * without a refund record (e.g. legacy/seed data); counting them here keeps
+   * the payment summary's `refundedAmount`/`netAmount` correct without
+   * double-counting the normal case.
+   */
+  async sumFullyRefundedWithoutRecord(hotelId) {
+    const sequelize = require('@config/database.config');
+    const rows = await sequelize.query(
+      `SELECT COALESCE(SUM(t.\`amount\`), 0) AS total
+         FROM \`transactions\` t
+        WHERE t.\`hotel_id\` = :hotelId
+          AND t.\`status\` = 'refunded'
+          AND NOT EXISTS (
+            SELECT 1 FROM \`refunds\` r
+             WHERE r.\`transaction_id\` = t.\`id\` AND r.\`status\` = 'succeeded'
+          )`,
+      { replacements: { hotelId }, type: sequelize.QueryTypes.SELECT }
+    );
+
+    return parseFloat(rows[0]?.total) || 0;
+  }
 }
 
 module.exports = new TransactionRepository();

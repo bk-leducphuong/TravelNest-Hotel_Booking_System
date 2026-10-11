@@ -14,7 +14,8 @@ Evidence: [`test-results/api.md`](./test-results/api.md), [`test-results/notes.m
 | C-F5 | S3 | API/contract | Response envelope inconsistent with the search module: catalog returns `{data:…}` with no `success` (same as A-F1). | No shared response helper. | api.md | Open |
 | C-F6 | S3 | Data integrity | **Free-cancellation inconsistency:** the hotel has a "Free Cancellation" policy and rooms render "Miễn phí hủy", but `/search/hotels` reports `has_free_cancellation: false` for the same hotel → the `freeCancellation` filter wrongly excludes it. | `has_free_cancellation` not derived from the hotel's cancellation policy. | notes.md, api.md C-API-04 | Open |
 | C-F7 | S4 | UI/UX | Empty-src `<img>` elements: 3 in room "name" cells (alt="") and the 5 footer brand logos; page title `Vite App`. | Missing image assets/placeholders. | notes.md | Open |
-| C-F8 | S3 | UI/UX | The client itself requests `/search/hotels?...&maxPrice=500` (no `minPrice`) and logs a **400** on the hotel page. | The app's own default filter hits B-F2. | notes.md, console | Open |
+| C-F8 | S3 | UI/UX | The client itself requests `/search/hotels?...&maxPrice=500` (no `minPrice`) and logs a **400** on the hotel page. | The app's own default filter hits B-F2. | notes.md, console | ✅ Fixed (M2) |
+| C-F9 | S3 | UI/UX | `ReferenceError: flatpickr is not defined` on the hotel-details page; the date-range picker never initialised. | `HotelDetails.vue` called the **global** `flatpickr(...)` but the package was never imported (and no CDN script exists). | [I ui.md](../I-payments-guest-webhook/test-results/ui.md), console | ✅ Fixed (M6) |
 
 ## Positives
 

@@ -15,6 +15,8 @@ import ReviewValidation from '@/components/review/ReviewValidation.vue'
 
 import errorHandler from '@/request/errorHandler'
 import { HoldService } from '@/services/hold.service'
+import flatpickr from 'flatpickr'
+import 'flatpickr/dist/flatpickr.min.css'
 
 export default {
   components: {
