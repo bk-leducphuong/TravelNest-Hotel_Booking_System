@@ -1,33 +1,29 @@
-const repository = require('../infrastructure/superadmin.repository');
-const cache = require('../infrastructure/cache');
+const repository = require('../infrastructure/platform-stats.repository');
 
 /**
  * Platform monitoring overview.
  *
- * Returns high-level KPI counts across every hotel, user and booking. The result
- * is cached briefly in Redis (the counts are expensive and a little staleness is
- * fine for monitoring). Eventually the aggregates should come from the analytics
- * service rather than the primary database — see SUPERADMIN_PLAN.md D4.
+ * Reads the precomputed KPI snapshot (see `platform-stats.repository`) rather
+ * than aggregating the primary data tables on the request path. `generatedAt`
+ * is when the snapshot was produced; `stale` is true when no snapshot exists
+ * yet (the scheduled refresh has not run).
  */
 
-const CACHE_KEY = 'superadmin:overview';
-const CACHE_TTL_SECONDS = 60;
+const EMPTY_OVERVIEW = {
+  hotels: { total: 0, byStatus: {} },
+  users: { total: 0, byStatus: {} },
+  bookings: { total: 0 },
+};
 
 async function getOverview() {
-  const cached = await cache.get(CACHE_KEY);
-  if (cached) {
-    return cached;
+  const snapshot = await repository.getOverviewSnapshot();
+
+  if (!snapshot) {
+    return { ...EMPTY_OVERVIEW, generatedAt: null, stale: true };
   }
 
-  const overview = await repository.getPlatformOverview();
-  const result = {
-    ...overview,
-    generatedAt: new Date().toISOString(),
-  };
-
-  await cache.set(CACHE_KEY, result, CACHE_TTL_SECONDS);
-
-  return result;
+  const { computedAt, ...data } = snapshot;
+  return { ...data, generatedAt: computedAt, stale: false };
 }
 
 module.exports = {

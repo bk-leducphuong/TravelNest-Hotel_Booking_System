@@ -14,43 +14,11 @@ const {
 /**
  * Superadmin repository - platform-wide (cross-tenant) reads.
  *
- * This is the only layer in the module that touches Sequelize models. List
- * endpoints avoid N+1 by batching the related lookups for a whole page of ids.
- * Heavier aggregates should move to the analytics service / ClickHouse as
- * traffic grows (see SUPERADMIN_PLAN.md §5.6).
+ * This is the only layer in the module that touches Sequelize models for the
+ * hotel/user/audit views. List endpoints avoid N+1 by batching the related
+ * lookups for a whole page of ids. Platform KPI aggregates live in
+ * `platform-stats.repository.js` (precomputed snapshot).
  */
-
-const HOTEL_STATUSES = ['active', 'inactive', 'pending', 'suspended'];
-const USER_STATUSES = ['active', 'inactive', 'banned'];
-
-async function countByStatus(Model, statuses, where = {}) {
-  const counts = {};
-
-  for (const status of statuses) {
-    counts[status] = await Model.count({ where: { ...where, status } });
-  }
-
-  return counts;
-}
-
-/**
- * Platform-wide KPI counts for the monitoring overview.
- */
-async function getPlatformOverview() {
-  const [hotelTotal, hotelByStatus, userTotal, userByStatus, bookingTotal] = await Promise.all([
-    Hotels.count(),
-    countByStatus(Hotels, HOTEL_STATUSES),
-    Users.count(),
-    countByStatus(Users, USER_STATUSES),
-    Bookings.count(),
-  ]);
-
-  return {
-    hotels: { total: hotelTotal, byStatus: hotelByStatus },
-    users: { total: userTotal, byStatus: userByStatus },
-    bookings: { total: bookingTotal },
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Hotels
@@ -279,8 +247,6 @@ async function getBookingCountForUser(userId) {
 }
 
 module.exports = {
-  getPlatformOverview,
-
   listHotels,
   findHotelById,
   findPrimaryOwnersByHotelIds,
@@ -294,7 +260,4 @@ module.exports = {
   findUserGlobalRoles,
   findUserHotelMemberships,
   getBookingCountForUser,
-
-  HOTEL_STATUSES,
-  USER_STATUSES,
 };

@@ -49,6 +49,7 @@
     "mongo:seed:hotel_views": "cross-env NODE_ENV=development node seeders/mongodb/hotel_view_events.seed.js --days=30 --avg-per-hotel=50 --batch=1000",
     "migrate": "cross-env NODE_ENV=development sequelize-cli db:migrate",
     "migrate:production": "sequelize-cli db:migrate",
+    "stats:recompute": "cross-env NODE_ENV=development node scripts/recompute-platform-stats.js",
     "migrate:undo": "cross-env NODE_ENV=development sequelize-cli db:migrate:undo --name",
     "migrate:undo:all": "cross-env NODE_ENV=development sequelize-cli db:migrate:undo:all",
     "migrate:status": "cross-env NODE_ENV=development sequelize-cli db:migrate:status",

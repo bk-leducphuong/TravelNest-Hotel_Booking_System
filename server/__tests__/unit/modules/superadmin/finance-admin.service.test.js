@@ -1,16 +1,15 @@
 jest.mock('@modules/superadmin/infrastructure/finance.repository', () => ({
-  getFinanceOverview: jest.fn(),
   listPayments: jest.fn(),
   listRefunds: jest.fn(),
   listPayouts: jest.fn(),
   listLedgerEntries: jest.fn(),
 }));
-jest.mock('@modules/superadmin/infrastructure/cache', () => ({
-  get: jest.fn(),
-  set: jest.fn(),
+jest.mock('@modules/superadmin/infrastructure/platform-stats.repository', () => ({
+  getFinanceOverviewSnapshot: jest.fn(),
 }));
 
 const repository = require('@modules/superadmin/infrastructure/finance.repository');
+const statsRepository = require('@modules/superadmin/infrastructure/platform-stats.repository');
 const finance = require('@modules/superadmin/application/finance-admin.service');
 
 function paymentRow() {
@@ -79,18 +78,32 @@ function ledgerRow() {
 
 describe('finance-admin.service', () => {
   describe('getFinanceOverview', () => {
-    it('passes through the aggregates and adds a timestamp', async () => {
-      repository.getFinanceOverview.mockResolvedValue({
+    it('returns the precomputed snapshot with its computed-at timestamp', async () => {
+      statsRepository.getFinanceOverviewSnapshot.mockResolvedValue({
         gross: [{ currency: 'USD', count: 3, amount: 360 }],
         refunds: [],
         payoutsPaid: [],
         payoutsPending: [],
+        computedAt: '2026-01-01T00:00:00.000Z',
       });
 
       const result = await finance.getFinanceOverview();
 
       expect(result.gross).toEqual([{ currency: 'USD', count: 3, amount: 360 }]);
-      expect(typeof result.generatedAt).toBe('string');
+      expect(result.generatedAt).toBe('2026-01-01T00:00:00.000Z');
+      expect(result.stale).toBe(false);
+      expect(result.computedAt).toBeUndefined();
+    });
+
+    it('flags a missing snapshot as stale', async () => {
+      statsRepository.getFinanceOverviewSnapshot.mockResolvedValue(null);
+
+      const result = await finance.getFinanceOverview();
+
+      expect(result.stale).toBe(true);
+      expect(result.generatedAt).toBeNull();
+      expect(result.gross).toEqual([]);
+      expect(result.payoutsPending).toEqual([]);
     });
   });
 

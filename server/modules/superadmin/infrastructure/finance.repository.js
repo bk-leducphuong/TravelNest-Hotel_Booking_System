@@ -2,7 +2,6 @@ const { Op } = require('sequelize');
 
 const db = require('@models/index.js');
 
-const { fn, col } = db.Sequelize;
 const {
   transactions: Transactions,
   refunds: Refunds,
@@ -11,11 +10,10 @@ const {
 } = db;
 
 /**
- * Superadmin finance repository - platform-wide, read-only.
+ * Superadmin finance repository - platform-wide, read-only lists.
  *
- * Aggregates are computed per currency (summing across currencies would be
- * meaningless). As with the rest of the console, these should eventually move to
- * the analytics service / ClickHouse (see SUPERADMIN_PLAN.md §5.6).
+ * The finance *overview* aggregates live in `platform-stats.repository.js`
+ * (precomputed snapshot); this repository only serves the paginated lists.
  */
 
 function buildDateRange(column, from, to) {
@@ -26,40 +24,6 @@ function buildDateRange(column, from, to) {
   if (from) range[Op.gte] = from;
   if (to) range[Op.lte] = to;
   return { [column]: range };
-}
-
-/**
- * Grouped count + sum of `amount` per currency.
- * @returns {Array<{ currency: string, count: number, amount: number }>}
- */
-async function sumByCurrency(Model, where = {}) {
-  const rows = await Model.findAll({
-    where,
-    attributes: [
-      'currency',
-      [fn('COUNT', col('id')), 'count'],
-      [fn('COALESCE', fn('SUM', col('amount')), 0), 'amount'],
-    ],
-    group: ['currency'],
-    raw: true,
-  });
-
-  return rows.map((row) => ({
-    currency: row.currency,
-    count: Number(row.count) || 0,
-    amount: Number(row.amount) || 0,
-  }));
-}
-
-async function getFinanceOverview() {
-  const [gross, refunds, payoutsPaid, payoutsPending] = await Promise.all([
-    sumByCurrency(Transactions, { transaction_type: 'payment', status: 'completed' }),
-    sumByCurrency(Refunds, { status: 'succeeded' }),
-    sumByCurrency(Payouts, { status: 'paid' }),
-    sumByCurrency(Payouts, { status: 'pending' }),
-  ]);
-
-  return { gross, refunds, payoutsPaid, payoutsPending };
 }
 
 async function listPayments({ status, currency, hotelId, from, to, limit, offset } = {}) {
@@ -157,7 +121,6 @@ async function listLedgerEntries({
 }
 
 module.exports = {
-  getFinanceOverview,
   listPayments,
   listRefunds,
   listPayouts,

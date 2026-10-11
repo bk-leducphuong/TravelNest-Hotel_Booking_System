@@ -343,8 +343,8 @@ module.exports = router;
 - [x] Read-only ledger view + service tests
 
 > **Progress:** Phase 2 implemented. Backend unit suite 380/380; superadmin-client
-> unit tests 14/14 and `nuxt build` green. The overview aggregates sum per currency
-> directly on MySQL — move to analytics (D4). Deeper reconciliation (matching ledger
+> unit tests 14/14 and `nuxt build` green. Overview aggregates now come from the
+> materialized snapshot (D4, done). Deeper reconciliation (matching ledger
 > postings to payments/refunds) is still future work.
 
 ### Phase 3 — Actions (separate plan)
@@ -416,7 +416,15 @@ Items intentionally left out of Phases 0–1, each with enough context to pick u
   a request without a `platform.*` permission gets 403.
 - **Accept:** runs in CI when Docker is available.
 
-### D4 — Move overview aggregates to the analytics service — 🟡 Redis cache added; analytics migration pending
+### D4 — Move overview aggregates to the analytics service — ✅ done (summary-table approach)
+
+> Implemented via **summary tables** rather than the analytics service (whose
+> data lives in Mongo and doesn't own hotels/users/finance). `platform_status_counts`
+> and `platform_finance_totals` hold a precomputed snapshot, refreshed by the
+> `platformStatsRefresh` BullMQ job (interval `PLATFORM_STATS_REFRESH_INTERVAL_MS`,
+> default 60s) or `npm run stats:recompute`. The overview read path now touches
+> only those two small tables — no request aggregates the primary data tables.
+> `generatedAt` reflects the snapshot time; `stale: true` when no snapshot exists.
 - **Context:** `GET /superadmin/overview` currently runs `COUNT(*)` queries directly against
   MySQL (`superadmin.repository.getPlatformOverview`).
 - **Do:** source platform KPIs (and later GMV/refund/payout) from the analytics service /

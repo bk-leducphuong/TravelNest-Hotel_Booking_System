@@ -1,5 +1,5 @@
 const repository = require('../infrastructure/finance.repository');
-const cache = require('../infrastructure/cache');
+const statsRepository = require('../infrastructure/platform-stats.repository');
 const { maskUser } = require('./pii');
 
 /**
@@ -110,21 +110,26 @@ function serializeLedgerEntry(row) {
   };
 }
 
-const FINANCE_OVERVIEW_CACHE_KEY = 'superadmin:finance:overview';
-const FINANCE_OVERVIEW_TTL_SECONDS = 60;
+const EMPTY_FINANCE_OVERVIEW = {
+  gross: [],
+  refunds: [],
+  payoutsPaid: [],
+  payoutsPending: [],
+};
 
+/**
+ * Read the precomputed finance totals snapshot. No aggregation happens on the
+ * request path (see `platform-stats.repository`).
+ */
 async function getFinanceOverview() {
-  const cached = await cache.get(FINANCE_OVERVIEW_CACHE_KEY);
-  if (cached) {
-    return cached;
+  const snapshot = await statsRepository.getFinanceOverviewSnapshot();
+
+  if (!snapshot) {
+    return { ...EMPTY_FINANCE_OVERVIEW, generatedAt: null, stale: true };
   }
 
-  const overview = await repository.getFinanceOverview();
-  const result = { ...overview, generatedAt: new Date().toISOString() };
-
-  await cache.set(FINANCE_OVERVIEW_CACHE_KEY, result, FINANCE_OVERVIEW_TTL_SECONDS);
-
-  return result;
+  const { computedAt, ...data } = snapshot;
+  return { ...data, generatedAt: computedAt, stale: false };
 }
 
 async function listPayments(filters = {}, options = {}) {
