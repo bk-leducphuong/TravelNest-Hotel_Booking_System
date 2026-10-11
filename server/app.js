@@ -78,10 +78,13 @@ const createApp = async () => {
   const allowedOrigins = [
     process.env.CLIENT_HOST,
     process.env.ADMIN_CLIENT_HOST,
+    process.env.SUPERADMIN_CLIENT_HOST,
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
+    'http://localhost:8100',
+    'http://127.0.0.1:8100',
     'http://localhost:3000',
   ]
     .map(normalizeOrigin)
