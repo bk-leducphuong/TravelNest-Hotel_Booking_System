@@ -76,9 +76,11 @@ async function authenticate(req, res, next) {
     return next();
   } catch (error) {
     logger.warn({ error: error }, 'Authentication failed');
+    const message = error.message || 'Unauthorized access. Please log in.';
     return res.status(error.statusCode || 401).json({
       success: false,
-      message: error.message || 'Unauthorized access. Please log in.',
+      message,
+      error: { code: error.code || 'AUTHENTICATION_FAILED', message },
     });
   }
 }
@@ -102,6 +104,19 @@ async function optionalAuthenticate(req, res, next) {
   }
 }
 
+/**
+ * Consistent authorization-failure response: `{ success:false, message,
+ * error:{ code, message } }` (the `error` object matches the validation/error
+ * envelope so clients can read a code either way).
+ */
+function deny(res, statusCode, code, message) {
+  return res.status(statusCode).json({
+    success: false,
+    message,
+    error: { code, message },
+  });
+}
+
 function resolveRequestedHotelId(req) {
   return (
     req.get?.('x-hotel-id') ||
@@ -118,10 +133,7 @@ function requirePermission(permissionName, options = {}) {
   return async (req, res, next) => {
     try {
       if (!req.user) {
-        return res.status(401).json({
-          success: false,
-          message: 'Authentication required.',
-        });
+        return deny(res, 401, 'AUTHENTICATION_REQUIRED', 'Authentication required.');
       }
 
       const permissionNames = Array.isArray(permissionName) ? permissionName : [permissionName];
@@ -144,10 +156,7 @@ function requirePermission(permissionName, options = {}) {
           return next();
         }
 
-        return res.status(403).json({
-          success: false,
-          message: 'Insufficient permissions.',
-        });
+        return deny(res, 403, 'INSUFFICIENT_PERMISSIONS', 'Insufficient permissions.');
       }
 
       const hotelId = resolveRequestedHotelId(req);
@@ -169,10 +178,12 @@ function requirePermission(permissionName, options = {}) {
       if (!hotelId) {
         // Authenticated but with no hotel access — an authorization failure,
         // not a malformed request.
-        return res.status(403).json({
-          success: false,
-          message: 'You do not have access to this operation without a hotel context.',
-        });
+        return deny(
+          res,
+          403,
+          'HOTEL_CONTEXT_REQUIRED',
+          'You do not have access to this operation without a hotel context.'
+        );
       }
 
       const hotelUser = (req.user.hotel_roles || []).find(
@@ -180,20 +191,19 @@ function requirePermission(permissionName, options = {}) {
       );
 
       if (!hotelUser) {
-        return res.status(403).json({
-          success: false,
-          message: 'You do not have access to this hotel.',
-        });
+        return deny(res, 403, 'HOTEL_ACCESS_DENIED', 'You do not have access to this hotel.');
       }
 
       const hotelRoleName = hotelUser.role?.name?.toLowerCase();
       const requiredRoleName = hotelRole?.toLowerCase();
 
       if (hotelRole && hotelRoleName !== requiredRoleName) {
-        return res.status(403).json({
-          success: false,
-          message: `This operation requires ${hotelRole} role at the hotel.`,
-        });
+        return deny(
+          res,
+          403,
+          'HOTEL_ROLE_REQUIRED',
+          `This operation requires ${hotelRole} role at the hotel.`
+        );
       }
 
       // Hotel-scoped authorization is governed by the hotel role only. The
@@ -209,10 +219,12 @@ function requirePermission(permissionName, options = {}) {
         permissionNames.some((permission) => hotelPermissions.has(permission));
 
       if (!hasHotelPermission) {
-        return res.status(403).json({
-          success: false,
-          message: 'Insufficient permissions for this operation.',
-        });
+        return deny(
+          res,
+          403,
+          'INSUFFICIENT_PERMISSIONS',
+          'Insufficient permissions for this operation.'
+        );
       }
 
       req.hotelContext = {
@@ -269,18 +281,17 @@ function requireEntityInHotel(resolveHotelId) {
 
       const hotelContextId = req.hotelContext?.hotelId || resolveRequestedHotelId(req);
       if (!hotelContextId) {
-        return res.status(403).json({
-          success: false,
-          message: 'You do not have access to this resource without a hotel context.',
-        });
+        return deny(
+          res,
+          403,
+          'HOTEL_CONTEXT_REQUIRED',
+          'You do not have access to this resource without a hotel context.'
+        );
       }
 
       const entityHotelId = await resolveHotelId(req);
       if (!entityHotelId || String(entityHotelId) !== String(hotelContextId)) {
-        return res.status(403).json({
-          success: false,
-          message: 'You do not have access to this resource.',
-        });
+        return deny(res, 403, 'RESOURCE_ACCESS_DENIED', 'You do not have access to this resource.');
       }
 
       return next();
@@ -305,10 +316,7 @@ function requirePlatformStaffOrHotels(req, res, next) {
 
   const hotelIds = (req.user?.hotel_roles || []).map((h) => h.hotel_id).filter(Boolean);
   if (hotelIds.length === 0) {
-    return res.status(403).json({
-      success: false,
-      message: 'You do not have access to any hotels.',
-    });
+    return deny(res, 403, 'NO_HOTEL_ACCESS', 'You do not have access to any hotels.');
   }
 
   req.hotelScopeIds = hotelIds;

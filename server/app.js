@@ -166,6 +166,28 @@ const createApp = async () => {
   // Health check routes (root-level)
   app.use('/health', healthRoutes);
 
+  // Normalise the success envelope for /api/v1: bodies that only carry `data`
+  // get an explicit `success: true` (additive — clients that read `data`
+  // continue to work). Errors already use `{ error: { code, message } }`.
+  app.use('/api/v1', (req, res, next) => {
+    const originalJson = res.json.bind(res);
+    res.json = (body) => {
+      if (
+        res.statusCode >= 200 &&
+        res.statusCode < 300 &&
+        body &&
+        typeof body === 'object' &&
+        !Array.isArray(body) &&
+        !('success' in body) &&
+        'data' in body
+      ) {
+        return originalJson({ success: true, ...body });
+      }
+      return originalJson(body);
+    };
+    next();
+  });
+
   // API v1 routes
   app.use('/api/v1', v1Routes);
 

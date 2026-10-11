@@ -144,6 +144,7 @@ describe('Auth Middleware', () => {
       expect(res.json).toHaveBeenCalledWith({
         success: false,
         message: 'Authentication required.',
+        error: { code: 'AUTHENTICATION_REQUIRED', message: 'Authentication required.' },
       });
       expect(next).not.toHaveBeenCalled();
     });
@@ -244,6 +245,7 @@ describe('Auth Middleware', () => {
       expect(res.json).toHaveBeenCalledWith({
         success: false,
         message: 'Authentication required.',
+        error: { code: 'AUTHENTICATION_REQUIRED', message: 'Authentication required.' },
       });
     });
 

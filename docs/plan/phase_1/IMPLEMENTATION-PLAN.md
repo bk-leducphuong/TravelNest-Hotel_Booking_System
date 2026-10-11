@@ -37,11 +37,10 @@ Turn the recorded findings into a prioritized, low-risk implementation program, 
 - **Clean malformed-JWT message** → **D-F1**.
 - **Owner-override documented** → **V-F2**.
 
-**Deferred from WP0 (still open):**
-- **Response-envelope unification** (**A-F1, C-F5, L-F2, M-F4, D-F6**) — deferred: it requires
-  coordinated client changes and is high-risk; track as its own work package.
-- **U-F2** (generate-eligible `500`) — needs a domain `ApiError` in the payout service; not covered
-  by the central mapping.
+**Deferred from WP0 (closed in M6):**
+- **Response-envelope unification** (**A-F1, C-F5, L-F2, M-F4, D-F6**) — **✅ M6** (additive;
+  `success:true` + `error:{code,message}`).
+- **U-F2** (generate-eligible `500`) — **✅ M6** (payout `ApiError` + skip non-ready owners).
 
 **Verification:** `334/334` unit tests, `82/83` e2e (the 1 failure is the Stripe-webhook test that
 needs the Stripe CLI), `arch:check` + lint clean; IDOR / 404 / validation / error-mapping fixes
@@ -120,10 +119,11 @@ H/J/M/E flows exercised in the browser.
 **Verification:** 318/318 unit, 82/83 e2e (Stripe-webhook only), arch + lint clean, client build
 passes; key fixes re-checked in the browser.
 
-**Still open (deferred):** response-envelope unification (A-F1/C-F5/L-F2/M-F4/D-F6), the Keycloak
-`parseCallbackUrl` console error (A-F9/D-F2/B-F6), `/hotels/batch` input validation (A-F3), the
-unknown-field message (E-F3), placeholder booking-detail links (H-F5), raw ISO in notification
-messages (K-F4), invalid-entity-type ordering (L-F3), `generate eligible` 500 (U-F2).
+**Deferred at M4 (all ✅ closed in M6):** response-envelope unification
+(A-F1/C-F5/L-F2/M-F4/D-F6), the Keycloak `parseCallbackUrl` console error (A-F9/D-F2/B-F6),
+`/hotels/batch` input validation (A-F3), the unknown-field message (E-F3), placeholder
+booking-detail links (H-F5), raw ISO in notification messages (K-F4), invalid-entity-type ordering
+(L-F3), `generate eligible` 500 (U-F2).
 
 ### M5 — Verify & closure — ✅ done (2026-10-11)
 
@@ -135,15 +135,51 @@ messages (K-F4), invalid-entity-type ordering (L-F3), `generate eligible` 500 (U
   filter already had coverage (`search/domain/filters.test.js`).
 - **Suites re-run:** `326/326` unit (61 suites), `82/83` e2e (only the Stripe-webhook test),
   `arch:check` + `schema:check` clean, client build passes.
-- **Feature I (Payments guest + Stripe webhook)** remains **⏸ Blocked** (Stripe CLI unavailable);
-  the guest e2e payment/webhook test is the single failing e2e.
+- **Feature I (Payments guest + Stripe webhook)** — see **M6** below (unblocked after this pass).
+
+### M6 — Deferred items + feature I closure — ✅ done (2026-10-11)
+
+**Closed (previously deferred):**
+- **Response-envelope unification (A-F1/C-F5/L-F2/M-F4/D-F6)** — done **additively** (no client
+  changes): a scoped `/api/v1` middleware injects `success:true` into bodies that only carried
+  `data`; auth/permission failures now also carry `error:{code,message}` alongside `message`.
+- **Keycloak `parseCallbackUrl` console error (A-F9/D-F2/B-F6)** — root cause: keycloak-js's
+  silent-check listener parses **every same-origin message** as a URL, so non-string payloads
+  (devtools/extensions) throw. A capture-phase guard drops same-origin non-string messages while the
+  silent check runs → **0 errors** per load.
+- **`/hotels/batch` input validation (A-F3)** — Joi schema (`ids`: UUID array, max 50); non-array →
+  400, empty/missing → 200 `[]`.
+- **Unknown-field message (E-F3)** — `object.min` now lists the supported fields instead of a
+  generic "at least one field" message.
+- **Placeholder booking-detail links (H-F5)** — dead `href="#"` action links removed; "Book another
+  room" now routes home.
+- **Raw ISO in notification messages (K-F4)** — the Go notification consumer formats RFC3339
+  timestamps (`2 Jan 2006 15:04 MST`) instead of embedding raw ISO. _(Container rebuild required to
+  take effect.)_
+- **Invalid-entity-type ordering (L-F3)** — `entityType`/`entityId` are validated **before** the
+  image authz middleware → 400 (not a misleading 403).
+- **`generate eligible` 500 (U-F2)** — payout service now throws `ApiError` (400/409) instead of
+  plain `Error`; batch generation **skips** owners without a payout-ready account rather than
+  failing the whole run.
+
+**Feature I (Payments guest + Stripe webhook) — unblocked.** The Stripe CLI became available
+(`stripe listen`), so the webhook round-trip was exercised. **2 S2 endpoint bugs found & fixed:**
+- **I-F1** — `GET /payments/bookings/:id` 500 (filtered a non-existent `transactions.booking_code`);
+  now filters by `booking_id`.
+- **I-F2** — `GET /payments/transactions/:id` 403 (UUID mangled by `parseInt` → MySQL numeric
+  coercion matched another buyer's row); now passes the UUID through.
+- Regression e2e `G7` added. See
+  [`I-payments-guest-webhook/`](./I-payments-guest-webhook/).
+
+**Verification:** `326/326` unit (61 suites), **`84/84` e2e**, `arch:check` + `schema:check` clean,
+client lint + build pass.
 
 ## Outcome
 
-All of **M1–M5** are implemented. The index shows **F, G, J, N, P, Q, S, T = ✅ Ready**; the
-remaining features are 🟡 Partial, carrying only **deferred/non-blocking** items (response-envelope
-unification, the Keycloak `parseCallbackUrl` console error, and a handful of S3/S4 polish items
-listed above).
+All of **M1–M6** are implemented. The index shows **F, G, J, N, P, Q, S, T = ✅ Ready**; the
+remaining features are 🟡 Partial, carrying only **non-blocking** items — feature I's in-browser
+payment-element check (I-UI-01) and a handful of S3/S4 polish items. The previously deferred
+response-envelope unification, Keycloak console error, and the S3/S4 polish set are now closed.
 
 ---
 

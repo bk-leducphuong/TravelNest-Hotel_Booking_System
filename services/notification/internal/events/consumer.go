@@ -286,7 +286,7 @@ func (c *Consumer) handleBookingExpired(ctx context.Context, data []byte) error 
 		"booking",
 		"high",
 		"Booking Expired - "+event.BookingCode,
-		"Your booking "+event.BookingCode+" expired because payment was not completed before "+event.PaymentDueAt+". No charge was made.",
+		"Your booking "+event.BookingCode+" expired because payment was not completed before "+formatHumanTime(event.PaymentDueAt)+". No charge was made.",
 		map[string]any{
 			"eventId":      event.EventID,
 			"bookingId":    event.BookingID,
@@ -301,6 +301,21 @@ func (c *Consumer) handleBookingExpired(ctx context.Context, data []byte) error 
 		stringRef("View Booking"),
 	)
 	return c.insertIfMissing(ctx, event.EventID, notification)
+}
+
+// formatHumanTime renders an RFC3339 timestamp as a readable UTC date/time,
+// falling back to the raw value when it can't be parsed.
+func formatHumanTime(value string) string {
+	if value == "" {
+		return value
+	}
+
+	parsed, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		return value
+	}
+
+	return parsed.UTC().Format("2 Jan 2006 15:04 MST")
 }
 
 func (c *Consumer) handleEmailRequested(_ context.Context, data []byte) error {

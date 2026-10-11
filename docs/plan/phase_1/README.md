@@ -16,7 +16,7 @@
 | [F](./F-favorites-saved-hotels/) | Favorites / Saved Hotels | 2 | ✅ Ready | | | | |
 | [G](./G-holds/) | Holds | 1 | ✅ Ready | | | | |
 | [H](./H-bookings-guest/) | Bookings (Guest) | 1 | 🟡 Partial | | | 1 | 0 |
-| [I](./I-payments-guest-webhook/) | Payments (Guest) & Stripe Webhook | 1 | ⏸ Blocked | | | | |
+| [I](./I-payments-guest-webhook/) | Payments (Guest) & Stripe Webhook | 1 | 🟡 Partial | | 2 | | |
 | [J](./J-reviews-guest/) | Reviews (Guest) | 2 | ✅ Ready | | | | |
 | [K](./K-notifications-realtime/) | Notifications & Realtime | 2 | 🟡 Partial | | | | 1 |
 | [L](./L-media-images/) | Media / Images | 4 | 🟡 Partial | | | | 2 |
@@ -43,8 +43,11 @@
   client browser (as guest, then as owner). **Q, R, S, T** were reviewed **API-only** — the admin
   UI pages were **not** exercised; each of those folders' `improvements.md` has a
   **"⚠️ Test-coverage gap (admin UI not exercised)"** section with the pages to re-run.
-- **I (Payments guest + Stripe webhook)** is **⏸ Blocked** — Stripe CLI unavailable (see
-  `I-payments-guest-webhook/BLOCKED.md`).
+- **I (Payments guest + Stripe webhook)** is **🟡 Partial — unblocked** (Stripe CLI available on
+  2026-10-11). The webhook round-trip was exercised; **2 S2 endpoint bugs found & fixed** (I-F1
+  lookup-by-booking 500, I-F2 lookup-by-transaction 403). Only the in-browser payment element
+  (I-UI-01) remains unexercised — see
+  [`I-payments-guest-webhook/README.md`](./I-payments-guest-webhook/README.md#-test-coverage-gap-i-ui-01).
 - **Systemic security pattern** (cross-hotel IDOR on entity-scoped admin routes): **✅ FIXED in
   M1** — the shared `requireEntityInHotel` guard now closes **R-F1, S-F1, T-F1, U-F1, V-F1**.
   See [`IMPLEMENTATION-PLAN.md`](./IMPLEMENTATION-PLAN.md#progress).
@@ -52,7 +55,9 @@
   cancellation, review submission and partner onboarding now use the `services/*` layer
   (`/api/v1`).
 - **Systemic contract issues**: broken `any.custom` validation message (B/C/E/G) — **✅ FIXED in
-  M1**; inconsistent response envelopes (A/C/D/L/M) — **deferred** (needs client changes).
+  M1**; inconsistent response envelopes (A/C/D/L/M) — **✅ unified additively in M6** (`success:true`
+  injected for `/api/v1` bodies that only carried `data`; auth failures now also carry
+  `error:{code,message}`) — no client changes required.
 - **M1 also fixed**: JSON 404 for bad params (A-F2/C-F4), malformed-JWT message (D-F1),
   timezone/Sequelize 500→400 (Q-F1), non-image upload 500→400 (L-F1), guest admin-catalog access
   (O-F1).

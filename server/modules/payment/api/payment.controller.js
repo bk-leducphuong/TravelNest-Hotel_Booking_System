@@ -82,10 +82,7 @@ const getPaymentByTransactionId = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { transactionId } = req.params;
 
-  const payment = await paymentUseCases.getPaymentByTransactionId(
-    parseInt(transactionId, 10),
-    userId
-  );
+  const payment = await paymentUseCases.getPaymentByTransactionId(transactionId, userId);
 
   res.status(200).json({
     data: payment,
