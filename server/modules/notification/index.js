@@ -4,7 +4,6 @@ const { markAllNotificationsAsRead } = require('./application/markAllNotificatio
 const { getUnreadCount } = require('./application/getUnreadCount');
 const { getStatistics } = require('./application/getStatistics');
 const { sendPayoutNotification } = require('./application/sendPayoutNotification');
-const notificationTest = require('./application/notification-test.service');
 const notificationRoutes = require('./api/notification.routes');
 
 /**
@@ -23,7 +22,4 @@ module.exports = {
   getUnreadCount,
   getStatistics,
   sendPayoutNotification,
-
-  // Internal superadmin notification/email test tool.
-  notificationTest,
 };

@@ -48,13 +48,6 @@ func emptyToNil(value string) *string {
 	return &value
 }
 
-func firstNonEmpty(value, fallback string) string {
-	if value != "" {
-		return value
-	}
-	return fallback
-}
-
 func itoa(value int) string {
 	return strconv.Itoa(value)
 }

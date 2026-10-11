@@ -36,13 +36,6 @@ const options = {
           bearerFormat: 'JWT',
           description: 'Deprecated name retained for existing docs; use a Keycloak access token.',
         },
-        internalSuperadminToken: {
-          type: 'apiKey',
-          in: 'header',
-          name: 'x-internal-superadmin-token',
-          description:
-            'Internal superadmin token. Alternatively, use an admin bearer token issued by Keycloak.',
-        },
       },
       schemas: {
         Error: {
@@ -99,11 +92,6 @@ const options = {
       { name: 'Admin', description: 'Admin / back-office (BFF) operations' },
       { name: 'Webhooks', description: 'Third-party webhook receivers' },
       { name: 'Health', description: 'Liveness and readiness probes' },
-      {
-        name: 'Internal Superadmin',
-        description:
-          'Internal operational endpoints for database, Elasticsearch, and MongoDB setup and seeding',
-      },
     ],
   },
   apis: [

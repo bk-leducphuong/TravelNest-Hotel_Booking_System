@@ -76,8 +76,6 @@ func (m *Mailer) Send(req EmailRequest) error {
 		return m.sendBookingConfirmation(req)
 	case "payment_failure":
 		return m.sendPaymentFailure(req)
-	case "test_broadcast":
-		return m.sendTestBroadcast(req)
 	default:
 		return fmt.Errorf("unsupported email request type: %s", req.Type)
 	}
@@ -123,25 +121,6 @@ func (m *Mailer) sendPaymentFailure(req EmailRequest) error {
 	}
 
 	html, err := renderTemplate(paymentFailureTemplate, data)
-	if err != nil {
-		return err
-	}
-	return m.sendHTML(req.Email, subject, html)
-}
-
-func (m *Mailer) sendTestBroadcast(req EmailRequest) error {
-	data := map[string]any{
-		"recipientName": stringValue(req.Variables["recipientName"], "Traveler"),
-		"message":       stringValue(req.Variables["message"], ""),
-		"year":          time.Now().Year(),
-	}
-
-	subject := req.Subject
-	if subject == "" {
-		subject = "TravelNest Notification Test"
-	}
-
-	html, err := renderTemplate(testBroadcastTemplate, data)
 	if err != nil {
 		return err
 	}
@@ -373,31 +352,6 @@ const paymentFailureTemplate = `<!doctype html>
         <p><a href="{{.retryUrl}}" style="display: inline-block; padding: 12px 30px; background-color: #003580; color: white; text-decoration: none; border-radius: 4px;">Try Again</a></p>
         <p>Best regards,<br />The TravelNest Team</p>
         <p style="font-size: 12px; color: #666;">© {{.year}} TravelNest. All rights reserved.</p>
-      </div>
-    </div>
-  </body>
-</html>`
-
-const testBroadcastTemplate = `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TravelNest Notification Test</title>
-  </head>
-  <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-      <div style="background-color: #0f5d5e; padding: 20px; text-align: center; color: white; font-size: 24px; font-weight: bold;">TravelNest</div>
-      <div style="padding: 40px 30px;">
-        <h1>Notification Workflow Test</h1>
-        <p>Hello {{.recipientName}},</p>
-        <p>This is an internal test email sent through the TravelNest notification service.</p>
-        <div style="background-color: #f2f7f7; border-left: 4px solid #0f5d5e; padding: 16px; margin: 20px 0;">
-          {{.message}}
-        </div>
-        <p>If you received this message unexpectedly, no action is required.</p>
-        <p>Best regards,<br />The TravelNest Team</p>
-        <p style="font-size: 12px; color: #666;">© {{.year}} TravelNest. Internal testing email.</p>
       </div>
     </div>
   </body>

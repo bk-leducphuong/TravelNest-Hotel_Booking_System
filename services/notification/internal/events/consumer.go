@@ -49,7 +49,6 @@ func (c *Consumer) Start(ctx context.Context) error {
 		{PayoutFailedSubject, "notification-payout-failed", c.handlePayoutFailed},
 		{BookingExpiredSubject, "notification-booking-expired", c.handleBookingExpired},
 		{EmailRequestedSubject, "notification-email-requested", c.handleEmailRequested},
-		{TestInAppSubject, "notification-test-inapp-requested", c.handleTestInAppRequested},
 	}
 
 	for _, cfg := range configs {
@@ -326,77 +325,6 @@ func (c *Consumer) handleEmailRequested(_ context.Context, data []byte) error {
 	})
 }
 
-func (c *Consumer) handleTestInAppRequested(ctx context.Context, data []byte) error {
-	event, err := DecodeTestInAppRequested(data)
-	if err != nil {
-		c.logger.Error("failed to decode test in-app event", "payload", truncatePayload(data), "error", err)
-		return err
-	}
-	c.logger.Info(
-		"decoded test in-app event",
-		"eventId", event.EventID,
-		"receiverCount", len(event.ReceiverIDs),
-		"title", event.Title,
-		"category", firstNonEmpty(event.Category, "system"),
-		"priority", normalizeNotificationPriority(event.Priority),
-		"triggeredByAdminId", event.TriggeredByAdminID,
-	)
-
-	for idx, receiverID := range event.ReceiverIDs {
-		if receiverID == "" {
-			c.logger.Warn("skipping empty receiver in test in-app event", "eventId", event.EventID, "receiverIndex", idx)
-			continue
-		}
-
-		metadata := cloneMetadata(event.Metadata)
-		metadata["eventId"] = event.EventID
-		if event.TriggeredByAdminID != "" {
-			metadata["triggeredByAdminId"] = event.TriggeredByAdminID
-		}
-		metadata["isTest"] = true
-
-		notification := buildNotification(
-			receiverID,
-			emptyToNil(event.SenderID),
-			"system_alert",
-			firstNonEmpty(event.Category, "system"),
-			normalizeNotificationPriority(event.Priority),
-			event.Title,
-			event.Message,
-			metadata,
-			nil,
-			nil,
-			emptyToNil(event.ActionURL),
-			emptyToNil(event.ActionLabel),
-		)
-		c.logger.Debug(
-			"creating test notification for receiver",
-			"eventId", event.EventID,
-			"receiverId", receiverID,
-			"notificationType", notification.NotificationType,
-			"title", notification.Title,
-		)
-		if err := c.insertIfMissing(ctx, event.EventID, notification); err != nil {
-			c.logger.Error(
-				"failed to persist test notification",
-				"eventId", event.EventID,
-				"receiverId", receiverID,
-				"notificationType", notification.NotificationType,
-				"error", err,
-			)
-			return err
-		}
-		c.logger.Info(
-			"test notification handled for receiver",
-			"eventId", event.EventID,
-			"receiverId", receiverID,
-			"notificationType", notification.NotificationType,
-		)
-	}
-
-	return nil
-}
-
 func (c *Consumer) insertIfMissing(ctx context.Context, eventID string, notification model.NotificationCreate) error {
 	exists, err := c.repo.EventNotificationExists(ctx, eventID, notification.ReceiverID, notification.NotificationType)
 	if err != nil {
@@ -464,18 +392,6 @@ func shouldDeadLetter(msg *nats.Msg) bool {
 	return err == nil && meta.NumDelivered >= 5
 }
 
-func cloneMetadata(value map[string]any) map[string]any {
-	if len(value) == 0 {
-		return map[string]any{}
-	}
-
-	cloned := make(map[string]any, len(value))
-	for key, item := range value {
-		cloned[key] = item
-	}
-	return cloned
-}
-
 func messageLogFields(msg *nats.Msg) []any {
 	meta, err := msg.Metadata()
 	if err != nil {
@@ -512,19 +428,6 @@ func stringValue(value any) string {
 			return fmt.Sprintf("%v", typed)
 		}
 		return string(encoded)
-	}
-}
-
-func normalizeNotificationPriority(value string) string {
-	switch value {
-	case "low", "normal", "high", "urgent":
-		return value
-	case "medium":
-		return "normal"
-	case "":
-		return "normal"
-	default:
-		return "normal"
 	}
 }
 
