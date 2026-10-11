@@ -33,5 +33,10 @@ cross-buyer read — hence S2.
 ## Verdict
 
 **🟡 Partial.** The payment-intent lifecycle, webhook security/idempotency and scoping are sound.
-Two S2 endpoint bugs (I-F1, I-F2) were found and fixed in this pass. The only residual gap is
-UI coverage (I-UI-01 — the Stripe payment element was not driven in-browser).
+Two S2 endpoint bugs (I-F1, I-F2) were found and fixed, and the guest **payment element** was driven
+end-to-end in a browser (I-UI-01 ✅ — see [`test-results/ui.md`](./test-results/ui.md)): card entry →
+Pay → `/book/complete`, booking `confirmed`, payment `succeeded`.
+
+The UI run also surfaced two bugs elsewhere, now fixed: **K-F5** (the M4 JWKS change made `verifyJwt`
+async, breaking every authenticated WebSocket namespace) and **C-F9** (`flatpickr` used without an
+import, so the hotel-details date picker never initialised).

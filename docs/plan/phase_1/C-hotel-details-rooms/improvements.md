@@ -11,7 +11,8 @@
 | C-F5 | Response envelope inconsistency | S3 | Shared response helper (shared fix with A-F1) | M | | Open |
 | C-F6 | Free-cancellation flag not derived from policy | S3 | Set `has_free_cancellation` from the hotel's cancellation policy; keep search + details consistent | S | | Open |
 | C-F7 | Empty-src images; tab title | S4 | Provide assets/placeholders; set document title | S | | Open |
-| C-F8 | Client sends `maxPrice=500` → 400 | S3 | Fix B-F2 (schema) so the default filter is valid; also stop sending an unused default | S | | Open |
+| C-F8 | Client sends `maxPrice=500` → 400 | S3 | Fix B-F2 (schema) so the default filter is valid; also stop sending an unused default | S | | ✅ Done (M2) |
+| C-F9 | `flatpickr is not defined` — date picker never initialises | S3 | `import flatpickr from 'flatpickr'` (+ its CSS) in `HotelDetails.vue` | XS | | ✅ Done (M6) |
 
 ## Notes
 

@@ -6,7 +6,7 @@
 |---|---------|----------|--------------|--------|-------|--------|
 | I-F1 | `GET /payments/bookings/:id` 500 (filters `transactions.booking_code`) | S2 | Query `transactions` by `booking_id` directly; drop the `booking_code` join | S | — | ✅ Done |
 | I-F2 | `GET /payments/transactions/:id` 403 (UUID through `parseInt`) | S2 | Pass the UUID string through unchanged | S | — | ✅ Done |
-| I-UI-01 | Payment element not exercised in-browser | Coverage | Drive card entry → confirm → success page with a browser + `stripe listen` | M | — | ⬜ Open |
+| I-UI-01 | Payment element not exercised in-browser | Coverage | Drive card entry → confirm → success page with a browser + `stripe listen` | M | — | ✅ Done |
 
 ## Changes applied
 

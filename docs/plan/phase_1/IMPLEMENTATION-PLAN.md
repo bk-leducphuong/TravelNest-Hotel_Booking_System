@@ -171,15 +171,30 @@ booking-detail links (H-F5), raw ISO in notification messages (K-F4), invalid-en
 - Regression e2e `G7` added. See
   [`I-payments-guest-webhook/`](./I-payments-guest-webhook/).
 
-**Verification:** `326/326` unit (61 suites), **`84/84` e2e**, `arch:check` + `schema:check` clean,
-client lint + build pass.
+**I-UI-01 verified (browser).** The guest **payment element** was driven end-to-end with Playwright:
+card entry → **Pay** → `/book/complete` ("Your booking is confirmed!"); server-side the booking is
+`confirmed` and a `succeeded` payment is recorded (`pi_…` / `ch_…`). Evidence:
+[`I-payments-guest-webhook/test-results/ui.md`](./I-payments-guest-webhook/test-results/ui.md).
+
+**Regressions found during the UI run and fixed:**
+- **K-F5 (S2)** — the M4 JWKS change made `verifyJwt` **async**, but `platform/realtime/auth.js`
+  called it **without `await`** → every authenticated socket namespace rejected connections
+  (*"Bearer token is missing the subject claim"*), killing realtime notifications and hold-expiry
+  events. Fixed with `await` + a regression test (`unit/platform/realtime.auth.test.js`).
+- **C-F9 (S3)** — `HotelDetails.vue` used the global `flatpickr(...)` without importing the package,
+  so the date-range picker never initialised (`ReferenceError: flatpickr is not defined`). Fixed by
+  importing `flatpickr` (+ its CSS).
+
+**Verification:** `329/329` unit (62 suites), **`84/84` e2e**, `arch:check` + `schema:check` clean,
+client lint + build pass; socket reconnect confirmed live (`[userSocket] connected`).
 
 ## Outcome
 
 All of **M1–M6** are implemented. The index shows **F, G, J, N, P, Q, S, T = ✅ Ready**; the
-remaining features are 🟡 Partial, carrying only **non-blocking** items — feature I's in-browser
-payment-element check (I-UI-01) and a handful of S3/S4 polish items. The previously deferred
-response-envelope unification, Keycloak console error, and the S3/S4 polish set are now closed.
+remaining features are 🟡 Partial, carrying only **non-blocking** S3/S4 polish items. The previously
+deferred response-envelope unification, Keycloak console error and the S3/S4 polish set are closed,
+feature **I** is fully verified including its in-browser payment element (I-UI-01), and the two
+regressions surfaced during that run (**K-F5**, **C-F9**) are fixed.
 
 ---
 

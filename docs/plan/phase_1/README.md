@@ -43,11 +43,14 @@
   client browser (as guest, then as owner). **Q, R, S, T** were reviewed **API-only** — the admin
   UI pages were **not** exercised; each of those folders' `improvements.md` has a
   **"⚠️ Test-coverage gap (admin UI not exercised)"** section with the pages to re-run.
-- **I (Payments guest + Stripe webhook)** is **🟡 Partial — unblocked** (Stripe CLI available on
-  2026-10-11). The webhook round-trip was exercised; **2 S2 endpoint bugs found & fixed** (I-F1
-  lookup-by-booking 500, I-F2 lookup-by-transaction 403). Only the in-browser payment element
-  (I-UI-01) remains unexercised — see
-  [`I-payments-guest-webhook/README.md`](./I-payments-guest-webhook/README.md#-test-coverage-gap-i-ui-01).
+- **I (Payments guest + Stripe webhook)** is **🟡 Partial — unblocked & fully verified** (Stripe CLI
+  available on 2026-10-11). The webhook round-trip was exercised; **2 S2 endpoint bugs found & fixed**
+  (I-F1 lookup-by-booking 500, I-F2 lookup-by-transaction 403), and the **in-browser payment element
+  (I-UI-01) was driven end-to-end** (card → Pay → `/book/complete`; booking `confirmed`, payment
+  `succeeded`). See [`I-payments-guest-webhook/`](./I-payments-guest-webhook/).
+- **M4 regression (K-F5) fixed**: the JWKS change made `verifyJwt` async, breaking every
+  authenticated WebSocket namespace until the socket middleware was given its missing `await`.
+  Surfaced during the feature-I UI run.
 - **Systemic security pattern** (cross-hotel IDOR on entity-scoped admin routes): **✅ FIXED in
   M1** — the shared `requireEntityInHotel` guard now closes **R-F1, S-F1, T-F1, U-F1, V-F1**.
   See [`IMPLEMENTATION-PLAN.md`](./IMPLEMENTATION-PLAN.md#progress).

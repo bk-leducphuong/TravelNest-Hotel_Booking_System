@@ -34,19 +34,19 @@ _(Rubric: see [plan §3](../TEST-REVIEW-PLAN.md#3-review-rubric--the-axes-applie
 | I-API-06 | webhook invalid/missing signature | Security | rejected (fail-closed) | 400 `Invalid signature` (both cases) | ✅ | [api.md](./test-results/api.md) |
 | I-API-07 | webhook replay (same event id) | Data | idempotent, no double-confirm | `isDuplicate(event.id)` → 200 `{duplicate:true}`; `webhook_event_log` dedupe | ✅ | code + [api.md](./test-results/api.md) |
 | I-API-08 | refund path → `charge.refunded` | API | refund recorded | `handleRefundSucceeded` (feature [T](../T-admin-payments-refunds/)); guest cancellation refund covered in [H](../H-bookings-guest/) | ✅ | code + T/H |
-| I-UI-01 | Stripe payment element + success page | UI/UX | confirms booking | ⚠️ not exercised in-browser (see gap) | ⬜ | — |
+| I-UI-01 | Stripe payment element + success page | UI/UX | confirms booking | card entry → **Pay** → `/book/complete` "Your booking is confirmed!"; booking `confirmed`, payment `succeeded` | ✅ | [ui.md](./test-results/ui.md) |
 
 ## Verdict
 
 - **Status:** 🟡 Partial
 - **Open findings:** S1 _0_ · S2 _2_ · S3 _0_ · S4 _0_ — **both S2 fixed in this pass**
 
-## ⚠️ Test-coverage gap (I-UI-01)
+## ✅ I-UI-01 verified (2026-10-11)
 
-The guest **payment element** (`StripePayment` / checkout) was not driven end-to-end in a real
-browser. The webhook round-trip is proven by e2e `G2` (real `stripe listen`), and the payment
-intent/reads by the API matrix, but the UI step (enter card → confirm → success page) should be
-re-run with a browser to close I-UI-01.
+The guest **payment element** was driven end-to-end in a real browser (Playwright): card entry →
+**Pay** → `/book/complete` ("Your booking is confirmed!"), with the webhook round-trip flipping the
+booking to `confirmed` and recording a `succeeded` payment. Full evidence:
+[`test-results/ui.md`](./test-results/ui.md).
 
 ## Files
 
