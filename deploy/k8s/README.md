@@ -17,12 +17,13 @@ Phase 1 deploys these workloads into a single-node `k3s` cluster:
 - `mysql`
 - `redis`
 - `minio`
+- `mongodb`
 - `nats`
+- `keycloak`
 
-These stay external and are configured through Kubernetes secrets:
+Only Elasticsearch stays external and is configured through Kubernetes secrets:
 
-- managed MongoDB
-- managed Elasticsearch
+- managed Elasticsearch (Elastic Cloud)
 
 ## Layout
 
@@ -35,7 +36,7 @@ deploy/k8s/
     local/                 Local root kustomization + ApplicationSet
   apps/                    Application workloads (base + local/prod overlays)
   infra/                   In-cluster stateful services (base + local/prod overlays)
-  local/                   Dev-only MongoDB/Elasticsearch + manual maintenance jobs
+  local/                   Dev-only Elasticsearch + manual maintenance jobs
 ```
 
 Each cluster bootstraps one **environment root** (`environments/<env>`), which
@@ -172,10 +173,10 @@ rolls out. It reuses the `api-config` ConfigMap and `api-secret` Secret.
 ## Local environment (k3d)
 
 `deploy/k8s/local/` is a self-contained environment overlay for a local k3d
-cluster. It deploys the same workloads as prod plus two dev-only data stores
-that stand in for the managed MongoDB/Elasticsearch:
+cluster. It deploys the same workloads as prod plus a dev-only data store that
+stands in for the managed Elasticsearch:
 
-- `local/mongodb/` — single-node MongoDB (`mongodb:27017`).
+- `infra/mongodb/` — single-node MongoDB (`mongodb:27017`), shared with prod.
 - `local/elasticsearch/` — single-node Elasticsearch 8.11, security disabled
   (`http://elasticsearch:9200`).
 
