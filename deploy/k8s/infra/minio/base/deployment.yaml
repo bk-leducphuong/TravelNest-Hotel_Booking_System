@@ -12,16 +12,28 @@ spec:
       labels:
         app.kubernetes.io/name: minio
     spec:
+      # Bitnami MinIO runs as UID 1001 (GID 0); fsGroup makes the PVC writable.
+      securityContext:
+        runAsUser: 1001
+        runAsGroup: 0
+        fsGroup: 1001
       containers:
         - name: minio
-          # MinIO is no longer published on Docker Hub; it lives on quay.io.
-          image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+          # Upstream minio/minio images are no longer anonymously pullable:
+          # the Docker Hub repo was removed and quay.io now requires auth.
+          # Bitnami's legacy MinIO image ships the same MinIO server binary and
+          # is configured purely via MINIO_* env vars, so it is a drop-in.
+          image: docker.io/bitnamilegacy/minio:latest
           imagePullPolicy: IfNotPresent
-          args:
-            - server
-            - /data
-            - --console-address
-            - :9001
+          # NOTE: the Bitnami entrypoint builds `minio server <MINIO_DATA_DIR>`
+          # itself and appends any args, so no `args:` are set here.
+          env:
+            - name: MINIO_DATA_DIR
+              value: /data
+            # Auto-create the bucket the media service expects (matches the
+            # MINIO_BUCKET value in the sealed minio/app secrets).
+            - name: MINIO_DEFAULT_BUCKETS
+              value: uploads
           envFrom:
             - secretRef:
                 name: minio-secret
