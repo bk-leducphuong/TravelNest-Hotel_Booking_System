@@ -1,0 +1,70 @@
+# Grafana Cloud monitoring via the k8s-monitoring Helm chart.
+#
+# A single Argo CD Application with two sources:
+#   1. deploy/k8s/monitoring/secrets  (kustomize + KSOPS) -> Namespace + the
+#      `grafana-cloud-remote-config` Secret holding the Grafana Cloud token.
+#   2. the grafana/k8s-monitoring Helm chart, pointed at that Secret.
+#
+# Deployed under the `default` AppProject (not `travelnest`) because the chart
+# creates cluster-scoped RBAC (ClusterRole/ClusterRoleBinding), DaemonSets and a
+# new namespace, which the tight `travelnest` AppProject deliberately disallows.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: monitoring
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  sources:
+    # Source 1: the sealed Secret (decrypted by KSOPS at render time).
+    - repoURL: https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System.git
+      targetRevision: master
+      path: deploy/k8s/monitoring/secrets
+    # Source 2: the chart. No secrets live here — the token is read from the
+    # Secret created by source 1 via secretKeyRef.
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: k8s-monitoring
+      targetRevision: 4.5.3
+      helm:
+        releaseName: grafana-cloud
+        valuesObject:
+          cluster:
+            name: travelnest-test
+          collectorCommon:
+            alloy:
+              remoteConfig:
+                enabled: true
+                url: https://fleet-management-prod-013.grafana.net
+                auth:
+                  # Fleet Management auth: username = Grafana Cloud stack id,
+                  # password read from the Secret created by source 1.
+                  username: "1867167"
+                  passwordKey: "password"
+                secret:
+                  create: false
+                  name: grafana-cloud-remote-config
+          collectors:
+            alloy-daemon:
+              # "large" is required because the Fleet pipeline runs Beyla
+              # (Application Observability), which OOMs at the "medium" 1Gi limit.
+              presets: [large, root, host-storage, host-network, host-cgroup, clustered, service-discovery, filesystem-log-reader, daemonset]
+          telemetryServices:
+            node-exporter:
+              deploy: true
+            kube-state-metrics:
+              deploy: true
+            beyla:
+              deploy: true
+              k8sCache:
+                replicas: 1
