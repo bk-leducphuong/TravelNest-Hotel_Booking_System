@@ -1,0 +1,30 @@
+# Argo CD dashboard Ingress (Traefik).
+#
+# Exposes argocd-server inside the cluster so the Cloudflare Tunnel can reach it
+# via k3s Traefik (cloudflared -> http://localhost:80, routed by Host header).
+#
+# Prerequisites applied to the Argo CD install (not part of this file):
+#   - argocd-server runs in insecure mode so Traefik can talk plain HTTP to it:
+#       kubectl -n argocd patch cm argocd-cmd-params-cm \
+#         --type merge -p '{"data":{"server.insecure":"true"}}'
+#       kubectl -n argocd rollout restart deploy/argocd-server
+#   - Cloudflare Access (Zero Trust) protects argocd.deployserver.work before it
+#     reaches the tunnel. See deploy/hetzner/cloudflared/README.md.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-server
+  namespace: argocd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: argocd.deployserver.work
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: argocd-server
+                port:
+                  number: 80

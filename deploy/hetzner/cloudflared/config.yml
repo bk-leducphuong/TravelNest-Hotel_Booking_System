@@ -25,5 +25,7 @@ ingress:
     service: http://localhost:80
   - hostname: keycloak.deployserver.work
     service: http://localhost:80
+  - hostname: argocd.deployserver.work
+    service: http://localhost:80
   # Catch-all: anything not matched above returns 404.
   - service: http_status:404

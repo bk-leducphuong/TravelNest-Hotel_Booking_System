@@ -17,7 +17,10 @@ spec:
           image: travelnest-admin:latest
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 80
+            # The admin image is the Nuxt node server (NITRO_PORT=3000), unlike
+            # the nginx-served frontend. Keep this aligned with the image so
+            # probes and traffic actually reach the process.
+            - containerPort: 3000
               name: http
           livenessProbe:
             httpGet:

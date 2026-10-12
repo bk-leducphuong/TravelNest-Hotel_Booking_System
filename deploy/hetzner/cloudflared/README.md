@@ -30,6 +30,7 @@ header, which `cloudflared` preserves.
 | `superadmin.deployserver.work` | `superadmin-client:80` |
 | `storage.deployserver.work` | `minio:9000` |
 | `keycloak.deployserver.work` | `keycloak:8080` |
+| `argocd.deployserver.work` | `argocd-server:80` (Argo CD dashboard; gated by Cloudflare Access) |
 
 All six DNS records are **proxied** `CNAME`s pointing at
 `f3cf83fa-a17c-4e1e-ae43-8c2774b0def8.cfargotunnel.com`.
@@ -94,6 +95,41 @@ working. Check and resume it:
 cf zones get  -z deployserver.work                       # look at "paused"
 cf zones edit -z deployserver.work --paused=false        # resume
 ```
+
+## Argo CD dashboard + Cloudflare Access
+
+`argocd.deployserver.work` serves the Argo CD UI. Two pieces:
+
+1. **Insecure mode** — Argo CD serves plain HTTP (Cloudflare terminates TLS):
+   ```bash
+   kubectl -n argocd patch cm argocd-cmd-params-cm \
+     --type merge -p '{"data":{"server.insecure":"true"}}'
+   kubectl -n argocd rollout restart deploy/argocd-server
+   ```
+   Then expose it with an Ingress (`deploy/k8s/bootstrap/argocd/argocd-server-ingress.yaml`).
+
+2. **Cloudflare Access (Zero Trust)** — an Access application on
+   `argocd.deployserver.work` forces login (email One-Time PIN or the Google
+   IdP) before traffic reaches the tunnel. Only the listed emails are allowed.
+
+   ```bash
+   cf zero-trust access applications list
+   cf zero-trust access applications create --body '{
+     "name": "Argo CD",
+     "domain": "argocd.deployserver.work",
+     "type": "self_hosted",
+     "session_duration": "24h",
+     "allowed_idps": ["<google-idp-id>", "<onetimepin-idp-id>"],
+     "policies": [{
+       "name": "Allow listed emails",
+       "decision": "allow",
+       "include": [{"email": {"email": "you@example.com"}}]
+     }]
+   }'
+   ```
+
+> Access is the only thing protecting the dashboard — without it the Argo CD UI
+> and API would be public. Keep the policy list tight.
 
 ## Verify
 
