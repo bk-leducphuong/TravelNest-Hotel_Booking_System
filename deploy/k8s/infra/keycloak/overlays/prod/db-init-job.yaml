@@ -3,8 +3,9 @@ kind: Job
 metadata:
   name: keycloak-db-init
   annotations:
-    # Create the keycloak database/user before Keycloak starts. RDS cannot run
-    # the in-cluster MySQL init ConfigMap, so this replaces it.
+    # Create the keycloak database/user before Keycloak starts. Uses MySQL root
+    # credentials (works for both in-cluster MySQL and a managed master user),
+    # because the application user cannot CREATE DATABASE.
     argocd.argoproj.io/hook: PreSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
@@ -27,7 +28,7 @@ spec:
               set -eu
               echo "Waiting for MySQL at ${DB_HOST}:${DB_PORT}..."
               for i in $(seq 1 30); do
-                if mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASSWORD}" -e 'SELECT 1' >/dev/null 2>&1; then
+                if mysql -h "${DB_HOST}" -P "${DB_PORT}" -u root -p"${MYSQL_ROOT_PASSWORD}" -e 'SELECT 1' >/dev/null 2>&1; then
                   echo "MySQL is reachable."
                   break
                 fi
@@ -36,7 +37,7 @@ spec:
               done
 
               echo "Ensuring keycloak database and user exist..."
-              mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASSWORD}" <<SQL
+              mysql -h "${DB_HOST}" -P "${DB_PORT}" -u root -p"${MYSQL_ROOT_PASSWORD}" <<SQL
               CREATE DATABASE IF NOT EXISTS keycloak CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
               CREATE USER IF NOT EXISTS '${KEYCLOAK_DB_USER}'@'%' IDENTIFIED BY '${KEYCLOAK_DB_PASSWORD}';
               GRANT ALL PRIVILEGES ON keycloak.* TO '${KEYCLOAK_DB_USER}'@'%';
@@ -50,10 +51,14 @@ spec:
                 name: keycloak-secret
             - configMapRef:
                 name: api-config
-            # api-secret supplies DB_HOST / DB_PORT / DB_PASSWORD (the RDS master
-            # user), which are only used to run the CREATE/GRANT statements.
+            # api-config/api-secret supply DB_HOST/DB_PORT; mysql-secret
+            # supplies MYSQL_ROOT_PASSWORD, used for the CREATE/GRANT
+            # statements (the in-cluster MySQL root user). On managed RDS the
+            # equivalent privilege comes from the master user.
             - secretRef:
                 name: api-secret
+            - secretRef:
+                name: mysql-secret
           resources:
             requests:
               cpu: 50m
