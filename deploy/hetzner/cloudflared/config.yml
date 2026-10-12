@@ -1,0 +1,29 @@
+# Cloudflare Tunnel — locally-managed config (TravelNest VPS)
+#
+# This file is installed on the VPS host at /etc/cloudflared/config.yml and run
+# by the cloudflared systemd service. It maps each public hostname to the k3s
+# Traefik edge, which is published on the host by k3s ServiceLB on port 80.
+# Traefik routes by the Host header, which cloudflared preserves.
+#
+# The tunnel is reused (not recreated) and is locally-managed
+# (config_src: local). Credentials live OUTSIDE git at
+# /etc/cloudflared/<tunnel-id>.json — see README.md.
+
+tunnel: f3cf83fa-a17c-4e1e-ae43-8c2774b0def8
+credentials-file: /etc/cloudflared/f3cf83fa-a17c-4e1e-ae43-8c2774b0def8.json
+
+ingress:
+  - hostname: deployserver.work
+    service: http://localhost:80
+  - hostname: api.deployserver.work
+    service: http://localhost:80
+  - hostname: admin.deployserver.work
+    service: http://localhost:80
+  - hostname: superadmin.deployserver.work
+    service: http://localhost:80
+  - hostname: storage.deployserver.work
+    service: http://localhost:80
+  - hostname: keycloak.deployserver.work
+    service: http://localhost:80
+  # Catch-all: anything not matched above returns 404.
+  - service: http_status:404
