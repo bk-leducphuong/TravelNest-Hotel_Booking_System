@@ -32,6 +32,8 @@ spec:
                 - db.adminCommand('ping').ok
             initialDelaySeconds: 20
             periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
           readinessProbe:
             exec:
               command:
@@ -41,6 +43,8 @@ spec:
                 - db.adminCommand('ping').ok
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
           resources:
             requests:
               cpu: 100m
