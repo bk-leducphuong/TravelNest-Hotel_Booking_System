@@ -14,6 +14,35 @@ const db = require('../../models');
 const sequelize = require('../../config/database.config');
 const { notifications, hotels, users, bookings } = db;
 
+/**
+ * Insert rows in bounded chunks so a single INSERT statement never exceeds
+ * MySQL's `max_allowed_packet` or the server's memory budget.
+ *
+ * Seeding ~250k notifications as one bulkCreate produced a ~75 MB statement and
+ * OOMKilled MySQL (exit 137). Chunking keeps each INSERT small and bounded.
+ */
+const BULK_INSERT_CHUNK_SIZE = Number(process.env.SEED_BULK_CHUNK_SIZE || 5000);
+
+async function bulkCreateInChunks(model, rows, options = {}, { chunkSize = BULK_INSERT_CHUNK_SIZE, log = console.log } = {}) {
+  if (!rows || rows.length === 0) {
+    return [];
+  }
+
+  const created = [];
+  for (let offset = 0; offset < rows.length; offset += chunkSize) {
+    const chunk = rows.slice(offset, offset + chunkSize);
+    const result = await model.bulkCreate(chunk, options);
+    if (Array.isArray(result)) {
+      created.push(...result);
+    }
+    log(
+      `   💾 Inserted ${Math.min(offset + chunkSize, rows.length)}/${rows.length} notification(s)`
+    );
+  }
+
+  return created;
+}
+
 // Legacy notification type aliases (used for seeding convenience)
 // These are mapped to the new ENUM-based notification_type/category/priority below.
 const NOTIFICATION_TYPES = [
@@ -377,10 +406,11 @@ async function seedNotifications(options = {}) {
       console.log(`   🔔 Generated ${numNotifications} notification(s) for hotel ID ${hotelId}`);
     }
 
-    // Bulk create all notifications
+    // Bulk create all notifications in bounded chunks (see bulkCreateInChunks):
+    // a single ~250k-row INSERT exceeds max_allowed_packet and has OOMKilled MySQL.
     if (notificationsToCreate.length > 0) {
       console.log(`\n💾 Creating ${notificationsToCreate.length} notification(s) in database...`);
-      await notifications.bulkCreate(notificationsToCreate, {
+      await bulkCreateInChunks(notifications, notificationsToCreate, {
         validate: true,
         ignoreDuplicates: true,
       });
@@ -540,9 +570,12 @@ async function seedNotificationsForHotel(hotelId, count = 20, useBookings = fals
       notificationsToCreate.push(notification);
     }
 
-    const createdNotifications = await notifications.bulkCreate(notificationsToCreate, {
-      validate: true,
-    });
+    const createdNotifications = await bulkCreateInChunks(
+      notifications,
+      notificationsToCreate,
+      { validate: true },
+      { log: () => {} }
+    );
 
     console.log(`✅ Created ${createdNotifications.length} notification(s) for hotel ${hotelId}`);
     return createdNotifications;
