@@ -33,13 +33,31 @@ cluster-scoped RBAC + a new namespace.
 
 ## Credentials
 
-The Grafana Cloud token is stored **sealed** in `secrets/secret.enc.yaml`,
-decrypted at sync time by KSOPS, and read by Alloy via `secretKeyRef`. To rotate:
+The Grafana Cloud credentials are stored **sealed** in `secrets/secret.enc.yaml`,
+decrypted at sync time by KSOPS. The Secret must contain **both** keys the chart
+reads:
+
+- `username` — the Grafana Cloud **stack id** (e.g. `1867167`)
+- `password` — the Cloud **token**
+
+> Gotchas (learned the hard way):
+> - The chart's remote-config secret mode reads `username`, `password` **and**
+>   `tls.ca/cert/key` from the Secret when it is external (`secret.create=false`).
+>   `application.yaml` therefore sets `remoteConfig.tls: null` to suppress the
+>   mTLS block, and `remoteConfig.name` so `basic_auth` references the intended
+>   Secret. `tls: null` requires a raw `helm.values` string — a `valuesObject`
+>   loses the null (the API drops it).
+> - Quote every value in `secret.template.yaml`. An unquoted numeric `username`
+>   renders as a YAML int, which the Secret `stringData` (and Argo's patch)
+>   rejects with `cannot convert int64 to string`.
+
+To rotate:
 
 ```bash
 RECIP=$(age-keygen -y deploy/k8s/.age/keys.txt)
+export GRAFANA_CLOUD_USERNAME='1867167'
 export GRAFANA_CLOUD_TOKEN='<new glc_ token>'
-envsubst '${GRAFANA_CLOUD_TOKEN}' < secrets/secret.template.yaml > /tmp/plain.yaml
+envsubst '${GRAFANA_CLOUD_USERNAME} ${GRAFANA_CLOUD_TOKEN}' < secrets/secret.template.yaml > /tmp/plain.yaml
 CFG=$(mktemp)
 printf "creation_rules:\n  - path_regex: '.'\n    encrypted_regex: '^(data|stringData)$'\n    age: %s\n" "$RECIP" > "$CFG"
 SOPS_AGE_KEY_FILE=deploy/k8s/.age/keys.txt sops -e --config "$CFG" \
