@@ -104,6 +104,10 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+          # Pushes the promoted tag back to master. Falls back to the default
+          # token; set a PROMOTION_TOKEN repo secret (PAT with contents: write)
+          # if master's protection blocks the actions token.
+          token: ${{ secrets.PROMOTION_TOKEN || github.token }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
