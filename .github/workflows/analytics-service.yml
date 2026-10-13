@@ -2,7 +2,9 @@ name: Analytics Service Image CI
 
 on:
   push:
-    branches: [master, develop, staging]
+    # Only master publishes images: this repo has a single (production)
+    # environment, so develop builds must not produce publishable sha-* tags.
+    branches: [master]
     paths:
       - "services/analytics/**"
       - ".github/workflows/analytics-service.yml"
