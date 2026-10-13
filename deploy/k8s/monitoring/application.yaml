@@ -34,8 +34,7 @@ spec:
   sources:
     # Source 1: the sealed Secret (decrypted by KSOPS at render time).
     - repoURL: https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System.git
-      # TODO: switch to `master` once the monitoring manifests are merged there.
-      targetRevision: develop
+      targetRevision: master
       path: deploy/k8s/monitoring/secrets
     # Source 2: the chart. No secrets live here — the token is read from the
     # Secret created by source 1.
