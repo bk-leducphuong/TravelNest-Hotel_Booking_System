@@ -24,6 +24,15 @@ spec:
           ports:
             - containerPort: 3000
               name: http
+          # Give the app time to bring up (it now retries MySQL with backoff
+          # instead of exiting) before liveness/readiness start failing it.
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 30
           livenessProbe:
             httpGet:
               path: /health/live

@@ -32,11 +32,36 @@ function isProduction() {
 }
 
 /**
- * Bearer-token verification needs the realm signing key. Accept either the
- * configurable PEM or the legacy variable name.
+ * A static key only counts as configured when it is a real key. Short
+ * placeholders such as `unused` must be rejected: the API would otherwise boot
+ * "successfully" but fail signature verification on every request with the
+ * opaque `error:1E08010C:DECODER routines::unsupported`.
+ */
+function isUsablePublicKey(value) {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = String(value).trim().replace(/\\n/g, '\n');
+
+  if (normalized.startsWith('-----BEGIN PUBLIC KEY-----')) {
+    return true;
+  }
+
+  // Bare base64 key body (as shipped in development).
+  return normalized.length > 100 && /^[A-Za-z0-9+/=\s]+$/.test(normalized);
+}
+
+/**
+ * Bearer-token verification needs the realm signing key — either a JWKS
+ * endpoint or a static PEM (configurable name or the legacy variable).
  */
 function publicKeyConfigured() {
-  return Boolean(process.env.KEYCLOAK_PUBLIC_KEY_PEM || process.env.KEYCLOAK_PUBLIC_KEY);
+  if (process.env.KEYCLOAK_JWKS_URI) {
+    return true;
+  }
+
+  return isUsablePublicKey(process.env.KEYCLOAK_PUBLIC_KEY_PEM || process.env.KEYCLOAK_PUBLIC_KEY);
 }
 
 /** @returns {string[]} names of required variables that are missing/empty. */

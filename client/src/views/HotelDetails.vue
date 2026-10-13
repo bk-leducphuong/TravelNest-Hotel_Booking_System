@@ -9,6 +9,7 @@ import SkeletonGrid from '@/components/common/SkeletonGrid.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { HotelService } from '@/services/hotel.service'
 import { getImagePath, getImageUrl } from '@/utils/images'
+import defaultAvatarImg from '@/assets/avatar/default_avatar.png'
 
 // import ReviewForm from '@/components/review/ReviewForm.vue'
 import ReviewValidation from '@/components/review/ReviewValidation.vue'
@@ -88,6 +89,22 @@ export default {
     },
     remainingImages() {
       return this.hotelImages.length - (3 + this.initialThumbnailCount)
+    },
+    // Fallback avatar for reviewers without a profile picture (an empty `src`
+    // resolves to the page URL and renders a broken image).
+    defaultAvatar() {
+      return defaultAvatarImg
+    },
+    // Map the 0-10 overall rating to the same labels used by the search
+    // filters, instead of always showing "Tuyệt hảo" regardless of the score.
+    overallRatingLabel() {
+      const rating = Number(this.hotel.overall_rating) || 0
+      if (rating >= 9) return 'Xuất sắc'
+      if (rating >= 8) return 'Rất tốt'
+      if (rating >= 7) return 'Tốt'
+      if (rating >= 6) return 'Dễ chịu'
+      if (rating > 0) return 'Chấp nhận được'
+      return 'Chưa có đánh giá'
     },
     // calculate total number and total price of selected rooms
     totalSelectedRooms() {
@@ -628,7 +645,7 @@ export default {
               </li>
               <li>
                 <i class="fa-solid fa-bell-concierge"></i>
-                <p>tân 24 giờ</p>
+                <p>Lễ tân 24 giờ</p>
               </li>
               <li>
                 <i class="fa-solid fa-elevator"></i>
@@ -817,7 +834,7 @@ export default {
         <div class="review__open--point">
           <span class="point">{{ this.hotel.overall_rating }}</span>
           <div>
-            <span style="font-weight: 500">Tuyệt hảo</span>
+            <span style="font-weight: 500">{{ overallRatingLabel }}</span>
             <br />
             <span>{{ this.reviews.length }} đánh giá</span>
           </div>
@@ -916,7 +933,7 @@ export default {
           <div class="review__open--infor">
             <div class="name">
               <img
-                :src="review.profile_picture_url"
+                :src="review.profile_picture_url || defaultAvatar"
                 alt="avatar"
                 style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover"
               />
@@ -976,7 +993,7 @@ export default {
               <h3>Đánh giá của khách</h3>
               <span class="point">{{ this.hotel.overall_rating }}</span>
               <span style="font-weight: 500; margin-left: 5px"
-                >Tuyệt hảo - {{ this.reviews.length }} đánh giá
+                >{{ overallRatingLabel }} - {{ this.reviews.length }} đánh giá
               </span>
             </div>
             <div class="review__point--right">
@@ -1007,7 +1024,7 @@ export default {
               <div class="col-xl-4 col-md-6 col-12" v-for="(review, index) in reviews" :key="index">
                 <div class="reviewer" v-if="index <= 2">
                   <div class="name">
-                    <img :src="review.profile_picture_url" alt="" />
+                    <img :src="review.profile_picture_url || defaultAvatar" alt="avatar" />
                     <div class="infor">
                       <span style="font-weight: 600">{{ review.username }}</span>
                       <br />

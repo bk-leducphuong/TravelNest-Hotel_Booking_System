@@ -12,3 +12,7 @@ data:
   KC_HTTP_ENABLED: "true"
   KC_PROXY_HEADERS: xforwarded
   KC_HOSTNAME_STRICT: "false"
+  # Build backchannel URLs (token, jwks, userinfo, introspection) from the
+  # pinned https hostname rather than the in-cluster http request, so the OIDC
+  # discovery document does not advertise http:// endpoints.
+  KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "false"
