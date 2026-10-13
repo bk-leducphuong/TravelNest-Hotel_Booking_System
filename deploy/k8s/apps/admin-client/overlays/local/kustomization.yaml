@@ -8,7 +8,7 @@ images:
   - name: travelnest-admin
     newName: docker.io/leducphuong/travelnest-admin
     # Local dev tracks the CI-built 'develop' tag ('latest' is master-only).
-    newTag: develop
+    newTag: latest
 patches:
   - target:
       kind: Deployment

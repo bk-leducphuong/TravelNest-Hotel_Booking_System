@@ -37,7 +37,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: es-bootstrap
-          image: travelnest-api:develop
+          image: travelnest-api:latest
           imagePullPolicy: Always
           command:
             - sh

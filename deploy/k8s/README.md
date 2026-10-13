@@ -29,7 +29,7 @@ Only Elasticsearch stays external and is configured through Kubernetes secrets:
 
 ```text
 deploy/k8s/
-  bootstrap/argocd/        Argo CD bootstrap (root applications + KSOPS/Image Updater)
+  bootstrap/argocd/        Argo CD bootstrap (root applications + KSOPS)
   environments/
     base/                  Shared namespace + AppProject (env-agnostic)
     prod/                  Prod root kustomization + ApplicationSet
@@ -133,20 +133,24 @@ cp deploy/k8s/.env.local.example deploy/k8s/.env.local && $EDITOR deploy/k8s/.en
 ## Image promotion (GitOps)
 
 CI publishes an immutable `sha-<short-commit>` tag for every image (plus a
-mutable `latest` on the default branch). Images are promoted to prod by
-**Argo CD Image Updater**, which commits the new `sha-*` tag into the matching
-`apps/*/overlays/prod/kustomization.yaml`. Argo CD's automated sync then rolls
-the workload out — no manual tag edits.
+mutable `latest` on the default branch). After a successful **master** build,
+the workflow promotes the tag by committing it straight into the matching
+`apps/*/overlays/prod/kustomization.yaml` via `deploy/scripts/ci/update-image-tag.sh`
+(using the workflow's `GITHUB_TOKEN`). Argo CD's automated sync then rolls the
+workload out — no manual tag edits and no registry polling.
 
 ```
-CI ──▶ docker.io/leducphuong/<image>:sha-abc1234
-          │
-   Argo CD Image Updater ──(git commit)──▶ deploy/k8s/.../prod/kustomization.yaml
-          │
-     Argo CD auto-sync ──▶ rollout
+CI (master push) ──▶ docker.io/leducphuong/<image>:sha-abc1234
+                        │  same job commits the tag into the overlay
+                        ▼
+        deploy/k8s/apps/<app>/overlays/prod/kustomization.yaml
+                        │
+             Argo CD auto-sync ──▶ rollout
 ```
 
-Set-up and caveats: **[bootstrap/argocd/image-updater/README.md](bootstrap/argocd/image-updater/README.md)**.
+Only **master** publishes images, so unreleased `develop` builds can never reach
+prod. Argo CD Image Updater was retired in favour of this CI-side write-back (it
+couldn't tell `develop` from `master` tags and hit Docker Hub rate limits).
 
 ## Manifest validation
 
@@ -258,9 +262,9 @@ new cluster:
 - **TLS / edge** — the Ingresses carry no TLS config; prod assumes **Cloudflare
   Tunnel** terminates TLS in front of the cluster. A cloud cluster must supply
   its own edge (cert-manager or a cloud load balancer).
-- **Image promotion** — prod expects **Argo CD Image Updater** (see
-  `bootstrap/argocd/image-updater/`) to commit `sha-*` tags. A prod cluster
-  without it will stay on the tag currently in the overlay.
+- **Image promotion** — image CI (master builds) commits the `sha-*` tag into
+  the prod overlay; the cluster only needs Argo CD's automated sync. No
+  in-cluster Image Updater is required.
 
 ## AWS environment (managed data)
 
@@ -280,6 +284,7 @@ because RDS cannot run the old in-cluster MySQL init ConfigMap.
 
 - Point `MONGODB_URI` and Elasticsearch credentials at your cloud-managed services
   via `deploy/k8s/.env.prod`, then seal them (see above).
-- Install Argo CD Image Updater (see above) so image pushes actually deploy.
+- Image pushes deploy automatically: the image CI (on master) commits the new
+  tag into the prod overlay and Argo CD rolls it out.
 - If you do not want public MinIO object delivery at `storage.deployserver.work`,
   change `PUBLIC_OBJECT_BASE_URL` and remove or replace the MinIO ingress.

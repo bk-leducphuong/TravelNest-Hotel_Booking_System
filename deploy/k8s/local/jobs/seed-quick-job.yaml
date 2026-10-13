@@ -19,7 +19,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: seed
-          image: travelnest-api:develop
+          image: travelnest-api:latest
           imagePullPolicy: Always
           command:
             - node

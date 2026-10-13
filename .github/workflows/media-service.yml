@@ -57,10 +57,12 @@ jobs:
     needs: [test]
     if: github.event_name != 'pull_request'
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
@@ -97,3 +99,31 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
           platforms: linux/amd64,linux/arm64
+
+      - name: Promote image to prod overlay
+        if: github.ref == 'refs/heads/master'
+        run: |
+          set -euo pipefail
+          TAG="sha-${GITHUB_SHA::7}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          deploy/scripts/ci/update-image-tag.sh deploy/k8s/apps/media/overlays/prod/kustomization.yaml travelnest-media "$TAG"
+          if git diff --quiet -- deploy/k8s; then
+            echo "prod overlay already at $TAG"
+            exit 0
+          fi
+          git add deploy/k8s
+          git commit -m "chore(deploy): promote travelnest-media to $TAG"
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:master; then
+              echo "promoted $TAG"
+              exit 0
+            fi
+            echo "push rejected (attempt $attempt); rebasing on origin/master"
+            git fetch origin master
+            git rebase origin/master
+            sleep 5
+          done
+          echo "error: could not push $TAG after retries" >&2
+          exit 1
+
