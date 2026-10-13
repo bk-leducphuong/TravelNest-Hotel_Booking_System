@@ -2,12 +2,17 @@
 #
 # A single Argo CD Application with two sources:
 #   1. deploy/k8s/monitoring/secrets  (kustomize + KSOPS) -> Namespace + the
-#      `grafana-cloud-remote-config` Secret holding the Grafana Cloud token.
+#      `grafana-cloud-remote-config` Secret holding the Grafana Cloud username
+#      and token.
 #   2. the grafana/k8s-monitoring Helm chart, pointed at that Secret.
 #
 # Deployed under the `default` AppProject (not `travelnest`) because the chart
 # creates cluster-scoped RBAC (ClusterRole/ClusterRoleBinding), DaemonSets and a
 # new namespace, which the tight `travelnest` AppProject deliberately disallows.
+#
+# NOTE: values are given as a raw `helm.values` string (not `valuesObject`)
+# because the Kubernetes API drops a `null` map value, which is required here to
+# suppress the chart's default mTLS (`tls: null`).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -29,26 +34,35 @@ spec:
   sources:
     # Source 1: the sealed Secret (decrypted by KSOPS at render time).
     - repoURL: https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System.git
-      targetRevision: master
+      # TODO: switch to `master` once the monitoring manifests are merged there.
+      targetRevision: develop
       path: deploy/k8s/monitoring/secrets
     # Source 2: the chart. No secrets live here — the token is read from the
-    # Secret created by source 1 via secretKeyRef.
+    # Secret created by source 1.
     - repoURL: https://grafana.github.io/helm-charts
       chart: k8s-monitoring
       targetRevision: 4.5.3
       helm:
         releaseName: grafana-cloud
-        valuesObject:
+        values: |
           cluster:
             name: travelnest-test
           collectorCommon:
             alloy:
               remoteConfig:
                 enabled: true
+                # Suppress the chart's default mTLS block, which otherwise
+                # references ca/cert/key keys in the Secret (null is intentional;
+                # a `valuesObject` cannot express this).
+                tls: null
+                # Name of the remote-config Secret; the chart reads username and
+                # password from it. Must match the Secret created by source 1.
+                name: grafana-cloud-remote-config
                 url: https://fleet-management-prod-013.grafana.net
                 auth:
-                  # Fleet Management auth: username = Grafana Cloud stack id,
-                  # password read from the Secret created by source 1.
+                  # Basic auth is required; without an explicit type the chart
+                  # emits the broken mTLS block instead.
+                  type: basic
                   username: "1867167"
                   passwordKey: "password"
                 secret:
