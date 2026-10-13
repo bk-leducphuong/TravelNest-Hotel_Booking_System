@@ -12,12 +12,12 @@ prebuilt Kubernetes Monitoring dashboards live. Deployed via Argo CD as the
   lives in Grafana Cloud, not here.
 - **node-exporter** and **kube-state-metrics** expose host and Kubernetes-object
   metrics.
-- **Beyla** (`beyla-k8s-cache` + the in-Alloy eBPF subprocess) provides
-  Application Observability, driven by the Fleet pipeline. Because Beyla runs,
-  the collector preset must be `large` (2 GiB limit) — `medium` OOMs.
+- Beyla (Application Observability) was **pruned** from the Fleet pipeline, so
+  Alloy runs metrics only. The collector preset is `small` and the whole stack
+  uses ~200 MiB.
 - Nothing is exposed publicly: Alloy only makes **outbound** connections.
 
-Local footprint ≈ **900 MiB – 1 GiB**.
+Local footprint ≈ **200 MiB**.
 
 ## Files
 
@@ -68,8 +68,11 @@ rm -f "$CFG" /tmp/plain.yaml
 ## Remote pipeline (Fleet Management)
 
 The scrape pipeline + destinations are managed in Grafana Cloud (Fleet
-Management). To change what is collected (e.g. drop Beyla to shrink Alloy), edit
-the pipeline there, then lower the `presets` to `medium`/`small` here.
+Management), not here. The onboarding survey's **Beyla** pipelines
+(`ihub_kubernetes_survey*`) were deleted to drop Application Observability;
+only the `k8s_monitoring_*` metrics pipelines remain. To change what is
+collected, edit the pipelines in Fleet Management (or via `gcx fleet`), then
+adjust the `presets` here.
 
 ## Access
 

@@ -70,15 +70,14 @@ spec:
                   name: grafana-cloud-remote-config
           collectors:
             alloy-daemon:
-              # "large" is required because the Fleet pipeline runs Beyla
-              # (Application Observability), which OOMs at the "medium" 1Gi limit.
-              presets: [large, root, host-storage, host-network, host-cgroup, clustered, service-discovery, filesystem-log-reader, daemonset]
+              # Beyla was removed from the Fleet pipeline, so a small preset is
+              # enough (~360MiB steady state).
+              presets: [small, root, host-storage, host-network, host-cgroup, clustered, service-discovery, filesystem-log-reader, daemonset]
           telemetryServices:
             node-exporter:
               deploy: true
             kube-state-metrics:
               deploy: true
             beyla:
-              deploy: true
-              k8sCache:
-                replicas: 1
+              # No longer needed: the Beyla pipeline was pruned from Fleet.
+              deploy: false
