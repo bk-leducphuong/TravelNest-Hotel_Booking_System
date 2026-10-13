@@ -4,6 +4,8 @@
 #   migrate    -> apply migrations (the baseline migration creates the full schema)
 #   seed-quick -> load the quick MySQL fixture data
 #   seed-images -> upload sample images (needs api + MinIO up)
+#   es-bootstrap -> create + populate the Elasticsearch indices (needs an api
+#                   image that ships server/infra/elasticsearch/**)
 #
 # These are intentionally NOT referenced by the local ApplicationSet
 # (deploy/k8s/environments/local) so Argo CD does not create/re-run them on
@@ -21,6 +23,7 @@ resources:
   - migrate-job.yaml
   - seed-quick-job.yaml
   - seed-images-job.yaml
+  - es-bootstrap-job.yaml
 images:
   - name: travelnest-api
     newName: docker.io/leducphuong/travelnest-api

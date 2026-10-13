@@ -8,6 +8,7 @@ on:
       - "package.json"
       - "yarn.lock"
       - ".yarnrc.yml"
+      - ".dockerignore"
       - ".github/workflows/frontend.yml"
   pull_request:
     branches: [master, develop, staging]
@@ -16,6 +17,7 @@ on:
       - "package.json"
       - "yarn.lock"
       - ".yarnrc.yml"
+      - ".dockerignore"
       - ".github/workflows/frontend.yml"
   release:
     types: [published]
