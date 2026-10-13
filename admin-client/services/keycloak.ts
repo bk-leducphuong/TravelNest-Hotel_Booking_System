@@ -97,6 +97,13 @@ export async function initializeKeycloak(): Promise<boolean> {
         checkLoginIframe: false,
         silentCheckSsoRedirectUri: silentCheckSsoRedirectUri(),
       })
+      // A silent-SSO / SSO-check failure (e.g. the hidden iframe timing out
+      // behind third-party-cookie or edge restrictions) must not take the whole
+      // console down with a 500. Degrade to an unauthenticated session instead.
+      .catch((error) => {
+        console.warn("[keycloak] init failed; continuing unauthenticated", error);
+        return false;
+      })
       .finally(releaseMessageGuard);
   }
   return initPromise;

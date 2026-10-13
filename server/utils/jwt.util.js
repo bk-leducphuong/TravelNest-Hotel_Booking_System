@@ -56,19 +56,30 @@ function normalizePublicKey(publicKey) {
 const JWKS_TTL_MS = 10 * 60 * 1000;
 let jwksCache = { fetchedAt: 0, keys: [] };
 
+/**
+ * Resolve the JWKS endpoint. Prefers an explicit URI, then an in-cluster base
+ * URL (`KEYCLOAK_INTERNAL_URL`), and only then the public issuer URL.
+ *
+ * The public issuer goes through Cloudflare, which challenges non-browser
+ * requests (the API pod gets HTTP 403 on the certs endpoint), so production
+ * must use an internal URL that bypasses the edge.
+ */
 function getJwksUri() {
   if (process.env.KEYCLOAK_JWKS_URI) {
     return process.env.KEYCLOAK_JWKS_URI;
   }
-  if (process.env.KEYCLOAK_ISSUER) {
-    return `${process.env.KEYCLOAK_ISSUER.replace(/\/$/, '')}/protocol/openid-connect/certs`;
+
+  const base = process.env.KEYCLOAK_INTERNAL_URL || process.env.KEYCLOAK_ISSUER;
+  if (base) {
+    return `${base.replace(/\/$/, '')}/protocol/openid-connect/certs`;
   }
+
   return null;
 }
 
-async function fetchJwks(uri) {
+async function fetchJwks(uri, { forceRefresh = false } = {}) {
   const now = Date.now();
-  if (jwksCache.keys.length > 0 && now - jwksCache.fetchedAt < JWKS_TTL_MS) {
+  if (!forceRefresh && jwksCache.keys.length > 0 && now - jwksCache.fetchedAt < JWKS_TTL_MS) {
     return jwksCache.keys;
   }
 
@@ -82,27 +93,61 @@ async function fetchJwks(uri) {
   return jwksCache.keys;
 }
 
+/** A static key must look like a real key, never a short placeholder. */
+function isUsableStaticPublicKey(value) {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = String(value).trim().replace(/\\n/g, '\n');
+
+  if (normalized.startsWith('-----BEGIN PUBLIC KEY-----')) {
+    return true;
+  }
+
+  return normalized.length > 100 && /^[A-Za-z0-9+/=\s]+$/.test(normalized);
+}
+
 /**
  * Resolve the RSA public key for a token: the JWKS key matching the token's
- * `kid` when available, otherwise the configured static PEM.
+ * `kid` when available, otherwise a valid configured static PEM.
  */
 async function resolvePublicKey(header) {
   const jwksUri = getJwksUri();
 
   if (jwksUri) {
-    try {
-      const keys = await fetchJwks(jwksUri);
-      const jwk =
-        keys.find((key) => key.kid === header.kid) || (keys.length === 1 ? keys[0] : null);
-      if (jwk) {
-        return nodeCrypto.createPublicKey({ key: jwk, format: 'jwk' });
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        // A miss on the first (cached) lookup can mean Keycloak rotated keys,
+        // so retry once against a freshly fetched JWKS before giving up.
+        const keys = await fetchJwks(jwksUri, { forceRefresh: attempt > 0 });
+        const jwk =
+          keys.find((key) => key.kid === header.kid) || (keys.length === 1 ? keys[0] : null);
+
+        if (jwk) {
+          return nodeCrypto.createPublicKey({ key: jwk, format: 'jwk' });
+        }
+
+        logger.warn({ kid: header.kid }, 'JWKS did not include the token key; refreshing');
+      } catch (error) {
+        logger.error({ error: error.message, jwksUri }, 'JWKS fetch failed');
+        break;
       }
-    } catch (error) {
-      logger.warn({ error: error.message }, 'JWKS fetch failed; falling back to static PEM');
     }
   }
 
-  return normalizePublicKey(process.env.KEYCLOAK_PUBLIC_KEY_PEM || process.env.KEYCLOAK_PUBLIC_KEY);
+  const staticKey = process.env.KEYCLOAK_PUBLIC_KEY_PEM || process.env.KEYCLOAK_PUBLIC_KEY;
+  if (isUsableStaticPublicKey(staticKey)) {
+    return normalizePublicKey(staticKey);
+  }
+
+  // Fail with an actionable configuration error instead of the confusing
+  // OpenSSL `error:1E08010C:DECODER routines::unsupported` from verify().
+  throwJwtError(
+    'Unable to resolve a Keycloak signing key: JWKS is unreachable and no valid KEYCLOAK_PUBLIC_KEY_PEM is configured',
+    { jwksUri: jwksUri || null },
+    { statusCode: 500, code: 'JWT_CONFIG_ERROR', level: 'error' }
+  );
 }
 
 function getRequiredAudience() {

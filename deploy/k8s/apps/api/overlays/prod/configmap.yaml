@@ -26,6 +26,12 @@ data:
   KEYCLOAK_CLIENT_ID: travelnest-web
   KEYCLOAK_AUDIENCE: travelnest-web
   KEYCLOAK_CLOCK_SKEW_SECONDS: "60"
+  # Server-to-Keycloak calls (JWKS, userinfo) must reach Keycloak directly
+  # in-cluster. The public issuer is fronted by Cloudflare, which challenges
+  # non-browser requests from the VPS egress with HTTP 403 — that broke JWT
+  # verification (the API fell back to an invalid static key and rejected every
+  # bearer token). KEYCLOAK_ISSUER stays the public URL for `iss` validation.
+  KEYCLOAK_INTERNAL_URL: http://keycloak:8080/realms/travelnest
   WORKER_HEALTH_PORT: "4001"
   REDIS_USERNAME: ""
   ELASTICSEARCH_USERNAME: ""

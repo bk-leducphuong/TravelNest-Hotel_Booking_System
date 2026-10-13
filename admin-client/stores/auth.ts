@@ -39,9 +39,17 @@ export const useAuthStore = defineStore("auth", {
       if (this.initialized) {
         return;
       }
-      await keycloak.initializeKeycloak();
-      this.initialized = true;
-      this.authenticated = keycloak.isAuthenticated();
+      try {
+        await keycloak.initializeKeycloak();
+        this.authenticated = keycloak.isAuthenticated();
+      } catch {
+        // Never let a Keycloak bootstrap failure crash app initialisation
+        // (Nuxt would render a 500 error page). Fall back to anonymous so the
+        // login flow can still start.
+        this.authenticated = false;
+      } finally {
+        this.initialized = true;
+      }
     },
 
     async loadSession() {

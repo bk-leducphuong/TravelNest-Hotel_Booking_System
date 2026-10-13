@@ -31,10 +31,36 @@ const bullBoardAuth = require('@middlewares/bull-board-auth.middleware');
 const v1Routes = require('@routes/v1/index.js');
 const { healthRoutes } = require('@platform/health');
 
+/**
+ * Connect to MySQL with retries.
+ *
+ * A transiently unavailable database (e.g. `mysql-0` restarting) used to abort
+ * startup, so the pod entered a crash loop. Retry with backoff instead and only
+ * give up after the attempts are exhausted.
+ */
+const connectDatabase = async ({ attempts = 10, delayMs = 3000 } = {}) => {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await db.sequelize.authenticate();
+      return;
+    } catch (error) {
+      if (attempt === attempts) {
+        throw error;
+      }
+
+      logger.warn(
+        { attempt, attempts, error: error.message },
+        'Database not ready; retrying connection'
+      );
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+};
+
 /*********************** Init Server ************************/
 const createApp = async () => {
   // Connect and sync database
-  await db.sequelize.authenticate();
+  await connectDatabase();
   // await db.sequelize.sync({ alter: false, force: false });
 
   require('@models/index.js');

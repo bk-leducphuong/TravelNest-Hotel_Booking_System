@@ -21,7 +21,7 @@ TravelNest is a full-stack hotel booking platform inspired by [booking.com](http
 
 - **User Client** → [deployserver.work](https://deployserver.work)
 - **Admin Client** → [admin.deployserver.work](https://admin.deployserver.work)
-- **Backend API** → [api.deployserver.work/api-docs](https://api.deployserver.work/api-docs) (Swagger)
+- **Backend API** → [api.deployserver.work](https://api.deployserver.work) (Swagger docs at `/api-docs` are enabled in non-production, and in production only when `ENABLE_API_DOCS=true`)
 - **Kibana Dashboard** → [kibana.deployserver.work](https://kibana.deployserver.work)
 
 ---

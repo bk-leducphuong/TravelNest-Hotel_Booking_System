@@ -194,6 +194,22 @@
           ? true
           : false;
       },
+      // Deep-linked searches may carry a slug (e.g. "ha-noi"); show a readable
+      // name ("Ha Noi") rather than the raw slug.
+      locationLabel() {
+        const raw = this.$route.query.location;
+        if (!raw) {
+          return '';
+        }
+        const value = String(Array.isArray(raw) ? raw[0] : raw);
+        if (/^[a-z0-9]+(?:[-_][a-z0-9]+)+$/.test(value)) {
+          return value
+            .split(/[-_]/)
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' ');
+        }
+        return value;
+      },
       updateSearchDataInStore() {
         this.updateLocation(this.$route.query.location);
         this.updateCheckInDate(this.$route.query.checkInDate);
@@ -471,7 +487,7 @@
           <div class="col-9">
             <div class="inner-content">
               <strong
-                >{{ this.$route.query.location }}: {{ $t('searchResults.foundTitle_1') }}
+                >{{ locationLabel }}: {{ $t('searchResults.foundTitle_1') }}
                 {{ totalResults }} {{ $t('searchResults.foundTitle_2') }}</strong
               >
               <div class="arrange">

@@ -34,6 +34,8 @@ data:
   KEYCLOAK_CLIENT_ID: travelnest-web
   KEYCLOAK_AUDIENCE: travelnest-web
   KEYCLOAK_CLOCK_SKEW_SECONDS: "60"
+  # Reach Keycloak in-cluster for JWKS/userinfo rather than via the ingress.
+  KEYCLOAK_INTERNAL_URL: http://keycloak:8080/realms/travelnest
   WORKER_HEALTH_PORT: "4001"
   REDIS_USERNAME: ""
   ELASTICSEARCH_USERNAME: ""

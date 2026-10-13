@@ -1,5 +1,6 @@
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const logger = require('./logger.config');
 
 const options = {
   definition: {
@@ -105,10 +106,24 @@ const options = {
 const swaggerSpec = swaggerJsdoc(options);
 
 /**
+ * API docs are public by default in non-production only. In production they are
+ * disabled unless ENABLE_API_DOCS=true, so the full API surface is not exposed
+ * to anonymous callers.
+ */
+function apiDocsEnabled() {
+  return process.env.ENABLE_API_DOCS === 'true' || process.env.NODE_ENV !== 'production';
+}
+
+/**
  * Setup Swagger UI
  * @param {Express} app - Express application
  */
 function setupSwagger(app) {
+  if (!apiDocsEnabled()) {
+    logger.info('API docs disabled (set ENABLE_API_DOCS=true to enable in production)');
+    return;
+  }
+
   // Serve swagger spec as JSON
   app.get('/api-docs.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
