@@ -9,7 +9,7 @@ generators:
   - secret-generator.yaml
 
 # Import the TravelNest realm on startup so the SPA can authenticate locally.
-# Kept in the local overlay: the prod realm is managed outside this repo.
+# (The prod overlay imports its own prod-hostname realm — see ./overlays/prod.)
 configMapGenerator:
   - name: keycloak-realm
     files:
