@@ -22,6 +22,10 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - --default-authentication-plugin=mysql_native_password
+            # Allow large bulk INSERTs during seeding. Default is 64M; the
+            # notification seeder alone produced a ~75M statement. (The seeder
+            # now chunks inserts too, but this gives headroom for the others.)
+            - --max-allowed-packet=256M
           envFrom:
             - configMapRef:
                 name: mysql-config

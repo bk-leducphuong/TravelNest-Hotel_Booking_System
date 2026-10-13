@@ -34,17 +34,42 @@ Three ways — use whichever fits:
 3. **Provisioning API** (`POST /api/v1/provisioning/alert-rules` on your
    Grafana stack URL with a token that has `alerting:write`).
 
-## Note on `gcx`
+## Status
 
-As of setup, `gcx` points at the **Fleet Management** hostname
-(`fleet-management-prod-013.grafana.net`) which does not serve the Grafana
-alerting/datasource API (returns 404), and its Fleet token returned 401. To use
-`gcx` for alerts, re-authenticate it against the actual **Grafana stack**:
+**Applied** in Grafana Cloud (folder `GrafanaCloud`), as two rule groups:
+
+- `travelnest-node` — Node memory high, Node disk high, Node not ready
+- `travelnest-workloads` — Pod CrashLooping, Pod restarting, Container OOMKilled, Deployment replicas unavailable
+
+Data source: `grafanacloud-prom` (the stack's Prometheus).
+
+## gcx setup (for future changes)
+
+`gcx` is authenticated against the **Grafana stack** (not the Fleet Management
+hostname):
 
 ```bash
-gcx login --server https://<your-stack>.grafana.net --token <stack-service-account-token>
-gcx config set stacks.<name>.grafana.stack-id <stack-id>
+gcx login --server https://<stack>.grafana.net --token <service-account glsa_ token>
+gcx config use-context <stack-slug>
 ```
 
-(Get the stack URL + a service-account token with `alerting:write` from
-Grafana Cloud → *Administration → Users and access → Service accounts*.)
+The service account needs at least `Editor` (or a custom role with
+`datasources:reader` + `alerting:writer`). Note: the SA must have edit rights on
+the target **folder**; the `GrafanaCloud` folder works, a freshly-created folder
+may not (403 `alerting.unauthorized`).
+
+Create/update rules via the provisioning API:
+
+```bash
+gcx api /api/v1/provisioning/alert-rules -d @rule.json          # create
+gcx api /api/v1/provisioning/alert-rules/<uid> -X DELETE        # delete
+```
+
+### Fleet Management
+
+Managing the remote-config **pipeline** (e.g. to drop Beyla) additionally needs a
+**Cloud Access Policy token** (`glc_`) with `fleet-management:write`:
+
+```bash
+gcx login --context <ctx> --cloud-token <glc_ token>
+```
