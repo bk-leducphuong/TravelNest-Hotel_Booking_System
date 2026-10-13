@@ -1,0 +1,72 @@
+# Elasticsearch index bootstrap for the TravelNest search path.
+#
+# Creates the `hotels` and `destinations` indices (mapping/settings) and then
+# populates them from the MySQL search snapshots. Order matters: setup (create)
+# must precede seed (populate). The setup scripts are idempotent — they exit 0
+# if the index already exists (pass --force to recreate).
+#
+# PREREQUISITE: the api image must include `server/infra/elasticsearch/**`
+# (setup-*-index.js + mapping/). The root .dockerignore excludes only the local
+# `server/infra/elasticsearch/data` dir, so a freshly built image has them.
+# `imagePullPolicy: Always` ensures this Job pulls that new image.
+#
+# Run:
+#   kubectl -n travelnest delete job es-bootstrap 2>/dev/null
+#   kubectl apply -k deploy/k8s/local/jobs
+#   kubectl -n travelnest logs -f job/es-bootstrap
+#
+# Why this matters: the search pipeline queries Elasticsearch first and only
+# falls back to MySQL on an ES *error*. A missing index errors (→ fallback,
+# works but noisy), but an EMPTY index returns 0 hits with no error (→ empty
+# results). So create AND populate, or neither.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: es-bootstrap
+  labels:
+    app.kubernetes.io/name: es-bootstrap
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 3600
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: es-bootstrap
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: es-bootstrap
+          image: travelnest-api:develop
+          imagePullPolicy: Always
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              echo "=== setup hotels index ==="
+              node infra/elasticsearch/setup-hotels-index.js
+              echo "=== seed hotels index ==="
+              node seeders/elasticsearch/hotels_index.seed.js
+              echo "=== setup destinations index ==="
+              node infra/elasticsearch/setup-destinations-index.js
+              echo "=== seed destinations index ==="
+              node seeders/elasticsearch/destinations_index.seed.js
+              echo "=== ES bootstrap complete ==="
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=2048"
+          envFrom:
+            - configMapRef:
+                name: api-config
+            - secretRef:
+                name: api-secret
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi
