@@ -32,7 +32,7 @@ env:
   # nuxt.config.ts reads NUXT_PUBLIC_* at build time; the platform console is a
   # static SPA so this public config is baked into the bundle.
   NUXT_PUBLIC_API_BASE: ${{ vars.NUXT_PUBLIC_API_BASE || 'https://api.deployserver.work/api/v1' }}
-  NUXT_PUBLIC_KEYCLOAK_URL: ${{ vars.NUXT_PUBLIC_KEYCLOAK_URL || 'https://auth.deployserver.work' }}
+  NUXT_PUBLIC_KEYCLOAK_URL: ${{ vars.NUXT_PUBLIC_KEYCLOAK_URL || 'https://keycloak.deployserver.work' }}
   NUXT_PUBLIC_KEYCLOAK_REALM: ${{ vars.NUXT_PUBLIC_KEYCLOAK_REALM || 'travelnest' }}
   NUXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${{ vars.NUXT_PUBLIC_KEYCLOAK_CLIENT_ID || 'travelnest-superadmin' }}
   NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI: ${{ vars.NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI || 'https://superadmin.deployserver.work/silent-check-sso.html' }}
