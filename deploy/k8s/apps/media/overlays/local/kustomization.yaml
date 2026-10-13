@@ -8,7 +8,7 @@ images:
   - name: travelnest-media
     newName: docker.io/leducphuong/travelnest-media
     # Local dev tracks the CI-built 'develop' tag ('latest' is master-only).
-    newTag: develop
+    newTag: latest
 
 generators:
   - secret-generator.yaml

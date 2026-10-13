@@ -16,7 +16,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: migrate
-          image: travelnest-api:develop
+          image: travelnest-api:latest
           imagePullPolicy: Always
           command: ["npm", "run", "migrate:production"]
           env:

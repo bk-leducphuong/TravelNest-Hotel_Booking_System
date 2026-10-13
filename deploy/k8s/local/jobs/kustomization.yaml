@@ -27,4 +27,4 @@ resources:
 images:
   - name: travelnest-api
     newName: docker.io/leducphuong/travelnest-api
-    newTag: develop
+    newTag: latest
