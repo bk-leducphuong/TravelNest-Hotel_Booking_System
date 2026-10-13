@@ -23,7 +23,12 @@ const { notifications, hotels, users, bookings } = db;
  */
 const BULK_INSERT_CHUNK_SIZE = Number(process.env.SEED_BULK_CHUNK_SIZE || 5000);
 
-async function bulkCreateInChunks(model, rows, options = {}, { chunkSize = BULK_INSERT_CHUNK_SIZE, log = console.log } = {}) {
+async function bulkCreateInChunks(
+  model,
+  rows,
+  options = {},
+  { chunkSize = BULK_INSERT_CHUNK_SIZE, log = console.log } = {}
+) {
   if (!rows || rows.length === 0) {
     return [];
   }
