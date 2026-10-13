@@ -23,6 +23,13 @@ spec:
     - group: ""
       kind: Namespace
   # Explicit allow-list of the resource kinds the overlays render (previously '*').
+  #
+  # NOTE: in Argo CD the project whitelist ALSO filters the UI resource tree —
+  # any child whose GroupKind isn't listed is hidden, even if it exists. So
+  # apps/ReplicaSet and Pod are included (even though the overlays never declare
+  # them) so a Deployment's ReplicaSet/Pod children render in the tree and the
+  # per-resource "Logs" tab is available. This affects observability only, not
+  # what Argo is allowed to deploy. See argoproj/argo-cd#28564.
   namespaceResourceWhitelist:
     - group: ""
       kind: ConfigMap
@@ -34,6 +41,10 @@ spec:
       kind: Deployment
     - group: apps
       kind: StatefulSet
+    - group: apps
+      kind: ReplicaSet
+    - group: ""
+      kind: Pod
     - group: batch
       kind: Job
     - group: batch
