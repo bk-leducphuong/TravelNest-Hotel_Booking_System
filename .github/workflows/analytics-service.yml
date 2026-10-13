@@ -77,7 +77,7 @@ jobs:
           # Pull public base images via Google's Docker Hub mirror so we stay
           # under Docker Hub's authenticated pull-rate limit (200/6h). Mirrors
           # only affect pulls; pushes and cache still go to docker.io.
-          config-inline: |
+          buildkitd-config-inline: |
             [registry."docker.io"]
               mirrors = ["mirror.gcr.io"]
 
