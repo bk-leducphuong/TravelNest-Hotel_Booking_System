@@ -15,10 +15,18 @@ export const BookingService = {
 
   getBookings(includeCancelled = false, options = {}) {
     const params = { includeCancelled }
-    // Optional server-side review filter: true = reviewed only,
-    // false = unreviewed only.
+    // Optional server-side filters/pagination.
     if (typeof options.reviewed === 'boolean') {
       params.reviewed = options.reviewed
+    }
+    if (options.bookedAfter) {
+      params.bookedAfter = options.bookedAfter
+    }
+    if (options.page) {
+      params.page = options.page
+    }
+    if (options.limit) {
+      params.limit = options.limit
     }
     return http.get('/bookings', {
       params

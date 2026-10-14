@@ -16,8 +16,12 @@ const {
  * Booking read queries.
  */
 
-async function findByBuyerId(buyerId, options = {}) {
-  const { excludeCancelled = true, reviewed } = options;
+/**
+ * Build the shared WHERE/include for a buyer's bookings, applying the optional
+ * cancelled, review-state and booked-after filters.
+ */
+function buildBuyerQuery(buyerId, options = {}) {
+  const { excludeCancelled = true, reviewed, bookedAfter } = options;
 
   const where = {
     buyer_id: buyerId,
@@ -29,16 +33,18 @@ async function findByBuyerId(buyerId, options = {}) {
     };
   }
 
-  const query = {
-    where,
-    order: [['created_at', 'DESC']],
-  };
+  // Rolling-window trip filter (e.g. bookings made in the last week/month/year).
+  if (bookedAfter) {
+    where.created_at = { [Op.gte]: bookedAfter };
+  }
+
+  let include;
 
   // Optional filter by review state, using the `Booking.hasMany(reviews)`
   // association. `reviewed: false` keeps bookings whose review row is absent
   // (LEFT JOIN + IS NULL); `reviewed: true` keeps only reviewed bookings.
   if (typeof reviewed === 'boolean') {
-    query.include = [
+    include = [
       {
         model: Reviews,
         as: 'reviews',
@@ -52,7 +58,44 @@ async function findByBuyerId(buyerId, options = {}) {
     }
   }
 
+  return { where, include };
+}
+
+async function findByBuyerId(buyerId, options = {}) {
+  const { limit, offset = 0 } = options;
+  const { where, include } = buildBuyerQuery(buyerId, options);
+
+  const query = {
+    where,
+    order: [['created_at', 'DESC']],
+  };
+
+  if (include) {
+    query.include = include;
+  }
+
+  if (typeof limit === 'number') {
+    query.limit = limit;
+    query.offset = offset;
+  }
+
   return await Bookings.findAll(query);
+}
+
+async function countByBuyerId(buyerId, options = {}) {
+  const { where, include } = buildBuyerQuery(buyerId, options);
+
+  const query = {
+    where,
+    distinct: true,
+    col: 'id',
+  };
+
+  if (include) {
+    query.include = include;
+  }
+
+  return await Bookings.count(query);
 }
 
 async function findById(bookingId) {
@@ -295,6 +338,7 @@ async function findDetailedByBookingCodeAndBuyerId(bookingCode, buyerId, options
 
 module.exports = {
   findByBuyerId,
+  countByBuyerId,
   findById,
   findByBookingCode,
   findAllByBookingCode,

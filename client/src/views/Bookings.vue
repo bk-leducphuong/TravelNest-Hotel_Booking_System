@@ -3,37 +3,107 @@ import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
 import SkeletonGrid from '@/components/common/SkeletonGrid.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import PaginationControls from '@/components/common/PaginationControls.vue'
 import { mapActions } from 'vuex'
 import router from '@/router/index.js'
 import { getFirstImageUrl } from '@/utils/images'
 import { BookingService } from '@/services/booking.service'
+import { totalPagesFrom } from '@/utils/pagination'
 
 export default {
   components: {
     Header,
     Footer,
     SkeletonGrid,
-    EmptyState
+    EmptyState,
+    PaginationControls
   },
   data() {
     return {
-      arrangedBookings: [],
       bookings: [],
-      isLoading: false
+      isLoading: false,
+      filter: 'all',
+      pagination: { page: 1, limit: 10, total: 0, totalPages: 0 }
+    }
+  },
+  computed: {
+    showPagination() {
+      return this.pagination.totalPages > 1
+    },
+    paginationSummary() {
+      if (this.pagination.total === 0) return ''
+      const { page, limit, total } = this.pagination
+      const start = (page - 1) * limit + 1
+      const end = Math.min(page * limit, total)
+      return `Showing ${start}-${end} of ${total} bookings`
+    }
+  },
+  watch: {
+    // Keep the page in the URL (?page=N) so refresh/back/shared links work.
+    async '$route.query.page'(value) {
+      const page = this.parsePage(value)
+      if (page === this.pagination.page) return
+      this.pagination.page = page
+      await this.getAllBookings(page)
     }
   },
   methods: {
     ...mapActions('booking', ['setBookingInformation']),
-    async getAllBookings() {
+    parsePage(value) {
+      const raw = Array.isArray(value) ? value[0] : value
+      const page = parseInt(raw, 10)
+      return Number.isInteger(page) && page > 0 ? page : 1
+    },
+    // Rolling-window filter matching the trip dropdown. Returns an ISO
+    // timestamp (or null for "all") applied server-side on the booking's
+    // `created_at`.
+    bookedAfterForFilter(filter) {
+      const now = new Date()
+      switch (filter) {
+        case 'today': {
+          return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+        }
+        case 'last-week': {
+          const start = new Date(now)
+          start.setDate(start.getDate() - 7)
+          return start.toISOString()
+        }
+        case 'last-month': {
+          const start = new Date(now)
+          start.setMonth(start.getMonth() - 1)
+          return start.toISOString()
+        }
+        case 'last-year': {
+          const start = new Date(now)
+          start.setFullYear(start.getFullYear() - 1)
+          return start.toISOString()
+        }
+        default:
+          return null
+      }
+    },
+    async getAllBookings(page = this.pagination.page) {
+      this.isLoading = true
       try {
-        this.isLoading = true
-        const response = await BookingService.getBookings()
-        const bookings = response.data || []
-        // group bookings which have the same booking code
-        this.bookings = this.groupBookings(bookings)
-        this.arrangedBookings = this.bookings
+        const options = { page, limit: this.pagination.limit }
+        const bookedAfter = this.bookedAfterForFilter(this.filter)
+        if (bookedAfter) options.bookedAfter = bookedAfter
+
+        const response = await BookingService.getBookings(false, options)
+        this.bookings = this.groupBookings(response?.data || [])
+
+        const meta = response?.meta || {}
+        const limit = meta.limit ?? this.pagination.limit
+        const total = meta.total ?? this.bookings.length
+        this.pagination = {
+          page: meta.page ?? page,
+          limit,
+          total,
+          totalPages: totalPagesFrom(total, limit)
+        }
       } catch (error) {
         console.error(error)
+        this.bookings = []
       } finally {
         this.isLoading = false
       }
@@ -93,66 +163,31 @@ export default {
       if (!y || !m || !d) return s
       return `${d}/${m}/${y}`
     },
-    arrangeBookings(criteria) {
-      switch (criteria) {
-        case 'all': {
-          this.arrangedBookings = this.bookings
-          // Ngày hiện tại
-          const today = new Date()
+    // The trip dropdown now filters server-side (rolling window on bookedOn),
+    // so paging and the total stay consistent across pages.
+    async arrangeBookings(criteria) {
+      this.filter = criteria
+      this.pagination.page = 1
+      this.$router.push({ query: { ...this.$route.query, page: 1 } })
+      await this.getAllBookings(1)
+    },
+    changePage(page) {
+      if (this.isLoading) return
+      if (page === this.pagination.page || page < 1) return
+      if (this.pagination.totalPages && page > this.pagination.totalPages) return
 
-          // Hàm sắp xếp theo ngày gần nhất so với ngày hiện tại
-          this.arrangedBookings.sort((a, b) => {
-            const dateA = new Date(a.bookedOn)
-            const dateB = new Date(b.bookedOn)
-
-            // Tính khoảng cách ngày so với ngày hiện tại
-            const diffA = Math.abs(dateA - today)
-            const diffB = Math.abs(dateB - today)
-
-            return diffA - diffB // Sắp xếp theo khoảng cách gần nhất
-          })
-
-          break
-        }
-        case 'today':
-          this.arrangedBookings = this.bookings
-          this.arrangedBookings = this.arrangedBookings.filter(
-            (booking) => new Date(booking.bookedOn).toDateString() === new Date().toDateString()
-          )
-          break
-        case 'last-week':
-          this.arrangedBookings = this.bookings
-          this.arrangedBookings = this.arrangedBookings.filter(
-            (booking) =>
-              new Date(booking.bookedOn).toDateString().substring(0, 10) ===
-              new Date().toDateString().substring(0, 10)
-          )
-          break
-        case 'last-month':
-          this.arrangedBookings = this.bookings
-          this.arrangedBookings = this.arrangedBookings.filter(
-            (booking) =>
-              new Date(booking.bookedOn).toDateString().substring(0, 7) ===
-              new Date().toDateString().substring(0, 7)
-          )
-          break
-        case 'last-year':
-          this.arrangedBookings = this.bookings
-          this.arrangedBookings = this.arrangedBookings.filter(
-            (booking) =>
-              new Date(booking.bookedOn).toDateString().substring(0, 4) ===
-              new Date().toDateString().substring(0, 4)
-          )
-          break
-        default:
-          this.arrangedBookings = this.bookings
-      }
+      this.pagination.page = page
+      this.$router.push({ query: { ...this.$route.query, page } })
+      this.getAllBookings(page)
+      this.$nextTick(() => {
+        this.$refs.listTop?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+      })
     },
     getFirstImageUrl
   },
   async mounted() {
-    await this.getAllBookings()
-    this.arrangeBookings('all')
+    this.pagination.page = this.parsePage(this.$route.query.page)
+    await this.getAllBookings(this.pagination.page)
   }
 }
 </script>
@@ -172,7 +207,7 @@ export default {
       </div>
     </div>
   </div>
-  <div class="account-settings">
+  <div class="account-settings" ref="listTop">
     <SkeletonGrid v-if="isLoading" :count="3" image-height="110px" />
     <EmptyState
       v-else-if="bookings.length === 0"
@@ -181,7 +216,7 @@ export default {
       icon="fa-solid fa-suitcase-rolling"
     />
     <template v-else>
-      <div class="booking-container" v-for="booking in arrangedBookings" :key="booking.booking_id">
+      <div class="booking-container" v-for="booking in bookings" :key="booking.booking_code">
       <h3 style="margin-bottom: 5px; font-weight: 700">{{ booking.hotel.name }}</h3>
       <p>
         Booked on {{ formatDate(booking.bookedOn) }}
@@ -220,6 +255,17 @@ export default {
         </div>
       </div>
     </div>
+
+    <PaginationControls
+      v-if="showPagination"
+      :page="pagination.page"
+      :total-pages="pagination.totalPages"
+      :total="pagination.total"
+      :limit="pagination.limit"
+      :is-loading="isLoading"
+      :summary="paginationSummary"
+      @change="changePage"
+    />
     </template>
   </div>
   <Footer />
