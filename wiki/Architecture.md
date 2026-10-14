@@ -8,7 +8,9 @@
 
 ## System Overview
 
-TravelNest follows a **monorepo architecture** with a Node.js/Express backend, two Vue 3 frontends, and evolving Go microservices. The system is migrating from a monolith to a microservices architecture using NATS JetStream as the event bus.
+TravelNest follows a **monorepo architecture** with a Node.js/Express backend, a Vue 3 guest app, two Nuxt 4 consoles (admin + superadmin), and evolving Go microservices. The system is migrating from a monolith to a microservices architecture using NATS JetStream as the event bus.
+
+The whole stack runs on a single-node **k3s** cluster on a Hetzner VPS (ARM64), exposed through a **Cloudflare Tunnel** and reconciled by **Argo CD**. Elasticsearch is the only external managed dependency (**Elastic Cloud**); everything else runs in-cluster.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -55,6 +57,7 @@ TravelNest follows a **monorepo architecture** with a Node.js/Express backend, t
 ### Frontend Layer
 - **User Client** (`client/`): Vue 3 SPA for guests — browse hotels, search, book, review
 - **Admin Client** (`admin-client/`): Nuxt 4 app for property owners/admins — manage listings, bookings, analytics
+- **Superadmin Client** (`superadmin-client/`): Nuxt 4 console for platform-level administration
 
 ### Backend Layer
 - **API Server** (`server/`): Express.js REST API, Socket.IO realtime, BullMQ background workers
@@ -64,7 +67,7 @@ TravelNest follows a **monorepo architecture** with a Node.js/Express backend, t
 ### Data Layer
 - **MySQL 8.0**: Primary relational database (Sequelize ORM, 47+ models)
 - **Redis 7**: Caching, session storage, BullMQ queue backend
-- **Elasticsearch 8.11**: Hotel search (edge ngram, geo, completion suggest) + log aggregation
+- **Elasticsearch 8.11**: Hotel search (edge ngram, geo, completion suggest) + log aggregation — **external** (Elastic Cloud)
 - **MongoDB**: Analytics events (search logs, hotel view events)
 - **MinIO**: S3-compatible object storage for images and media
 - **ClickHouse**: Analytics data warehouse (search logs)
@@ -81,8 +84,8 @@ The project is actively migrating from a Node.js monolith toward Go microservice
 
 1. ✅ **Phase 1**: Extract analytics, media, and notification into Go services
 2. 🔄 **Phase 2**: Adopt NATS JetStream for event-driven communication
-3. 🔄 **Phase 3**: Migrate from Docker Compose to Kubernetes + Argo CD
-4. ⏳ **Phase 4**: Keycloak integration for unified auth
+3. ✅ **Phase 3**: Migrate from Docker Compose to Kubernetes + Argo CD
+4. ✅ **Phase 4**: Keycloak integration for unified auth
 5. ⏳ **Phase 5**: Full microservice decomposition
 
 ## Request Flow

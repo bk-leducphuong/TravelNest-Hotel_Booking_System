@@ -15,12 +15,18 @@ TravelNest is a full-stack hotel booking platform inspired by [booking.com](http
 
 ## Live URLs
 
+A single **production** environment runs on a Hetzner VPS (**k3s** + Argo CD),
+exposed through a **Cloudflare Tunnel**.
+
 | Service | URL |
 |---|---|
-| User Client | [deployserver.work](https://deployserver.work) |
-| Admin Client | [admin.deployserver.work](https://admin.deployserver.work) |
+| Guest app | [deployserver.work](https://deployserver.work) |
+| Admin console | [admin.deployserver.work](https://admin.deployserver.work) |
+| Superadmin console | [superadmin.deployserver.work](https://superadmin.deployserver.work) |
 | Backend API (Swagger) | [api.deployserver.work/api-docs](https://api.deployserver.work/api-docs) |
-| Kibana Dashboard | [kibana.deployserver.work](https://kibana.deployserver.work) |
+| Keycloak | [keycloak.deployserver.work](https://keycloak.deployserver.work) |
+| Media storage (MinIO) | [storage.deployserver.work](https://storage.deployserver.work) |
+| Argo CD | [argocd.deployserver.work](https://argocd.deployserver.work) (behind Cloudflare Access) |
 
 ## Quick Links
 
@@ -46,7 +52,7 @@ TravelNest is a full-stack hotel booking platform inspired by [booking.com](http
 | Payments | Stripe |
 | Notifications | Nodemailer, Infobip (SMS), Socket.IO |
 | Auth | Session-based, Passport (Google, Twitter), Keycloak |
-| Deployment | Kubernetes + Argo CD GitOps, Docker Compose (legacy), GitHub Actions |
+| Deployment | k3s + Argo CD GitOps (Hetzner VPS), Cloudflare Tunnel, GitHub Actions |
 
 ## Repository Structure
 
@@ -54,9 +60,10 @@ TravelNest is a full-stack hotel booking platform inspired by [booking.com](http
 travelnest-monorepo/
 ├── client/           Vue 3 user-facing web app
 ├── admin-client/     Nuxt 4 admin dashboard
+├── superadmin-client/ Nuxt 4 superadmin console
 ├── server/           Express API, workers, data access, integrations
 ├── services/         Go microservices (analytics, media, notification)
-├── deploy/           Kubernetes manifests, Docker Compose, scripts, docs
+├── deploy/           Kubernetes manifests, Terraform, scripts, docs
 ├── scrape_data/      Data scraping utilities
 ├── docs/             Documentation and images
 ├── wiki/             GitHub Wiki pages (version-controlled)
