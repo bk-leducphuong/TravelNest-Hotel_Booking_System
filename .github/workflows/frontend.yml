@@ -40,6 +40,10 @@ env:
   VITE_KEYCLOAK_URL: ${{ vars.VITE_KEYCLOAK_URL || 'https://keycloak.deployserver.work' }}
   VITE_KEYCLOAK_REALM: ${{ vars.VITE_KEYCLOAK_REALM || 'travelnest' }}
   VITE_KEYCLOAK_CLIENT_ID: ${{ vars.VITE_KEYCLOAK_CLIENT_ID || 'travelnest-web' }}
+  # Stripe publishable key — baked into the bundle at build time (it is public by
+  # design). Set the `VITE_STRIPE_PUBLIC_KEY` repository variable to switch
+  # between the test key (default) and a live key.
+  VITE_STRIPE_PUBLIC_KEY: ${{ vars.VITE_STRIPE_PUBLIC_KEY || 'pk_test_51T4DQCC8yETwFKHFA9dsnMKy9rJmWzBLTvvDViuizhwPUrGCgbn5GvuqzSAJjqBl3pWarb8XF4rDFhrdeteJ31PP00EfeNIVyd' }}
 
 jobs:
   lint-and-build:
@@ -196,6 +200,7 @@ jobs:
             VITE_KEYCLOAK_URL=${{ env.VITE_KEYCLOAK_URL }}
             VITE_KEYCLOAK_REALM=${{ env.VITE_KEYCLOAK_REALM }}
             VITE_KEYCLOAK_CLIENT_ID=${{ env.VITE_KEYCLOAK_CLIENT_ID }}
+            VITE_STRIPE_PUBLIC_KEY=${{ env.VITE_STRIPE_PUBLIC_KEY }}
           cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
           platforms: linux/amd64,linux/arm64

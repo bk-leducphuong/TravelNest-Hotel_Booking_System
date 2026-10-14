@@ -185,6 +185,10 @@ class StripePaymentAdapter {
         id: event.id,
         type: event.type,
         data: event.data.object,
+        // For Connect events this is the connected account id (`acct_…`); it is
+        // null for platform-account events. Handlers use it to tell the two
+        // apart and to attribute connected-account events.
+        account: event.account || null,
         created: event.created,
         provider: 'stripe',
         raw: event,
