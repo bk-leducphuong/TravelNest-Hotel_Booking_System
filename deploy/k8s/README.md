@@ -103,8 +103,11 @@ Applications (the controller triggers syncs itself, step by step).
 - Public hosts:
   - `deployserver.work`
   - `admin.deployserver.work`
+  - `superadmin.deployserver.work`
   - `api.deployserver.work`
+  - `keycloak.deployserver.work`
   - `storage.deployserver.work`
+  - `argocd.deployserver.work` (Argo CD, behind Cloudflare Access)
 - Cloudflare Tunnel stays outside the cluster in phase 1.
 
 ## Secrets (SOPS + age)
@@ -266,15 +269,19 @@ new cluster:
   the prod overlay; the cluster only needs Argo CD's automated sync. No
   in-cluster Image Updater is required.
 
-## AWS environment (managed data)
+## Alternate target: AWS (managed data)
 
-`environments/prod` targets a managed AWS data tier: **RDS MySQL**,
-**ElastiCache Redis**, and **S3** replace the in-cluster `mysql`, `redis`, and
-`minio` workloads, which are intentionally absent from the prod
-`ApplicationSet`. Connection settings travel in the SOPS-sealed prod secrets
-(see `.env.prod.example`), so the committed manifests stay environment-agnostic.
-Terraform provisions the data tier, cluster, and platform add-ons — see
-[`../terraform/README.md`](../terraform/README.md).
+The Terraform tree (`deploy/terraform/`) can stand up an **`aws-prod`** variant
+that targets a managed AWS data tier: **RDS MySQL**, **ElastiCache Redis**, and
+**S3** replace the in-cluster `mysql`, `redis`, and `minio` workloads, which are
+intentionally absent from that variant's `ApplicationSet`. Connection settings
+travel in the SOPS-sealed prod secrets (see `.env.prod.example`), so the committed
+manifests stay environment-agnostic. Terraform provisions the data tier, cluster,
+and platform add-ons — see [`../terraform/README.md`](../terraform/README.md).
+
+> This is an **alternate** target, not the live environment. The production
+> cluster is the single-node Hetzner k3s cluster, where MySQL/Redis/MinIO/MongoDB/
+> NATS/Keycloak all run in-cluster and only Elasticsearch is external.
 
 The `keycloak` database is created by
 `infra/keycloak/overlays/prod/db-init-job.yaml` (an Argo CD PreSync hook),
@@ -282,8 +289,9 @@ because RDS cannot run the old in-cluster MySQL init ConfigMap.
 
 ## Before First Deploy
 
-- Point `MONGODB_URI` and Elasticsearch credentials at your cloud-managed services
-  via `deploy/k8s/.env.prod`, then seal them (see above).
+- Point the Elasticsearch credentials at your Elastic Cloud deployment via
+  `deploy/k8s/.env.prod`, then seal them (see above). MySQL, Redis, MinIO and
+  MongoDB are provisioned in-cluster.
 - Image pushes deploy automatically: the image CI (on master) commits the new
   tag into the prod overlay and Argo CD rolls it out.
 - If you do not want public MinIO object delivery at `storage.deployserver.work`,

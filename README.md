@@ -3,6 +3,7 @@
 [![Backend CI](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/backend.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/backend.yml)
 [![Frontend CI](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/frontend.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/frontend.yml)
 [![Admin Client CI](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/admin-client.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/admin-client.yml)
+[![Superadmin Client CI](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/superadmin-client.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/superadmin-client.yml)
 [![Analytics Service CI](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/analytics-service.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/analytics-service.yml)
 [![Media Service CI](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/media-service.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/media-service.yml)
 [![Notification Service CI](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/notification-service.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/notification-service.yml)
@@ -19,10 +20,21 @@ TravelNest is a full-stack hotel booking platform inspired by [booking.com](http
 
 ### Live URLs
 
-- **User Client** → [deployserver.work](https://deployserver.work)
-- **Admin Client** → [admin.deployserver.work](https://admin.deployserver.work)
-- **Backend API** → [api.deployserver.work](https://api.deployserver.work) (Swagger docs at `/api-docs` are enabled in non-production, and in production only when `ENABLE_API_DOCS=true`)
-- **Kibana Dashboard** → [kibana.deployserver.work](https://kibana.deployserver.work)
+A single **production** environment runs on a Hetzner VPS (**k3s** + Argo CD),
+exposed through a **Cloudflare Tunnel**.
+
+| Service | URL |
+|---|---|
+| **Guest app** | [deployserver.work](https://deployserver.work) |
+| **Admin console** | [admin.deployserver.work](https://admin.deployserver.work) |
+| **Superadmin console** | [superadmin.deployserver.work](https://superadmin.deployserver.work) |
+| **Backend API** | [api.deployserver.work](https://api.deployserver.work) — Swagger at `/api-docs` (enabled in non-production, and in production only when `ENABLE_API_DOCS=true`) |
+| **Keycloak** | [keycloak.deployserver.work](https://keycloak.deployserver.work) |
+| **Media storage (MinIO)** | [storage.deployserver.work](https://storage.deployserver.work) |
+| **Argo CD** | [argocd.deployserver.work](https://argocd.deployserver.work) (behind Cloudflare Access) |
+
+Elasticsearch (search/logs) is external — hosted on **Elastic Cloud** — while
+MySQL, Redis, MinIO, MongoDB, NATS and Keycloak all run in-cluster.
 
 ---
 
@@ -78,7 +90,7 @@ TravelNest is a full-stack hotel booking platform inspired by [booking.com](http
 | **Payments** | Stripe |
 | **Notifications** | Nodemailer, Infobip (SMS), Socket.IO |
 | **Auth** | Session-based, Passport (Google, Twitter), Keycloak |
-| **Deployment** | Kubernetes + Argo CD GitOps, Docker Compose (legacy), GitHub Actions |
+| **Deployment** | k3s + Argo CD GitOps (Hetzner VPS), Cloudflare Tunnel, GitHub Actions |
 
 ---
 
@@ -88,9 +100,10 @@ TravelNest is a full-stack hotel booking platform inspired by [booking.com](http
 travelnest-monorepo/
 ├── client/           Vue 3 user-facing web app
 ├── admin-client/     Nuxt 4 admin dashboard
+├── superadmin-client/ Nuxt 4 superadmin console
 ├── server/           Express API, workers, data access, integrations
 ├── services/         Go microservices (analytics, media, notification)
-├── deploy/           Kubernetes manifests, Docker Compose, scripts, docs
+├── deploy/           Kubernetes manifests, Terraform, scripts, docs
 ├── scrape_data/      Data scraping utilities
 ├── docs/             Documentation and images
 ├── wiki/             GitHub Wiki pages (version-controlled)
@@ -132,18 +145,24 @@ yarn dev:admin
 
 ## CI/CD & Deployment
 
-GitHub Actions build and push Docker images for all packages, tagged with an
-immutable `sha-<short-commit>` (plus `latest` on the default branch). Dependency
-installs run through Yarn Berry from the committed root `yarn.lock`, and the
-container builds use the same lockfile.
+GitHub Actions build, test, and push Docker images for all packages, tagged with
+an immutable `sha-<short-commit>` (plus `latest` on the default branch). Builds
+are multi-arch (`linux/amd64`, `linux/arm64`) and pull their public base images
+through Google's Docker Hub mirror (`mirror.gcr.io`) to stay under Docker Hub's
+pull-rate limit. Dependency installs run through Yarn Berry from the committed
+root `yarn.lock`, and the container builds use the same lockfile. **Only `master`
+publishes images** — `develop` builds are build-only, so unreleased code can
+never reach production.
 
-The active deployment uses **Kubernetes + Argo CD GitOps** — manifests live in
-`deploy/k8s/` and Argo CD auto-syncs changes. **[Argo CD Image
-Updater](deploy/k8s/bootstrap/argocd/image-updater/README.md)** promotes new
-`sha-*` tags by committing them back to the prod overlays, so every deploy is a
-revertible Git commit. Changes under `deploy/**` are rendered and schema-checked
-by the `Validate Deploy Manifests` workflow before they can reach the cluster.
-Database migrations run as an Argo CD PreSync hook.
+The active deployment is **Kubernetes + Argo CD GitOps** — manifests live in
+`deploy/k8s/` and Argo CD auto-syncs changes. After a successful **master**
+build, the workflow promotes the image by committing the immutable `sha-*` tag
+straight into the matching `deploy/k8s/apps/*/overlays/prod/kustomization.yaml`
+(via `deploy/scripts/ci/update-image-tag.sh`); Argo CD's automated sync then
+rolls the workload out. Every deploy is therefore a revertible Git commit — no
+manual tag edits and no in-cluster tag poller. Changes under `deploy/**` are
+rendered and schema-checked by the `Validate Deploy Manifests` workflow before
+they can reach the cluster. Database migrations run as an Argo CD PreSync hook.
 
 > **Quality gates are currently advisory.** The lint, formatting and unit-test
 > steps run but do not block builds (`continue-on-error`) because the repository
