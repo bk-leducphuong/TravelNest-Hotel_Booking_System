@@ -27,5 +27,17 @@ ingress:
     service: http://localhost:80
   - hostname: argocd.deployserver.work
     service: http://localhost:80
+  # --- Database access (raw TCP, gated by Cloudflare Access) ---
+  # These are NOT HTTP. Clients reach them with
+  #   cloudflared access tcp --hostname <host> --url 127.0.0.1:<port>
+  # and must pass Cloudflare Access first (email OTP). No DB port is opened on
+  # the host; cloudflared forwards to the loopback ports published by the
+  # travelnest-portforward@ systemd units (see deploy/hetzner/db-access).
+  - hostname: mysql.deployserver.work
+    service: tcp://localhost:13306
+  - hostname: redis.deployserver.work
+    service: tcp://localhost:16379
+  - hostname: mongodb.deployserver.work
+    service: tcp://localhost:27017
   # Catch-all: anything not matched above returns 404.
   - service: http_status:404

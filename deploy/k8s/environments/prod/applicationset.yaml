@@ -28,13 +28,13 @@ spec:
             path: deploy/k8s/infra/mysql/overlays/prod
             wave: "10"
           - name: travelnest-redis
-            path: deploy/k8s/infra/redis
+            path: deploy/k8s/infra/redis/overlays/prod
             wave: "10"
           - name: travelnest-minio
             path: deploy/k8s/infra/minio/overlays/prod
             wave: "10"
           - name: travelnest-mongodb
-            path: deploy/k8s/infra/mongodb
+            path: deploy/k8s/infra/mongodb/overlays/prod
             wave: "10"
           - name: travelnest-nats
             path: deploy/k8s/infra/nats
