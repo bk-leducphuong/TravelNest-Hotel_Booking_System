@@ -38,6 +38,9 @@ spec:
           - name: travelnest-elasticsearch
             path: deploy/k8s/local/elasticsearch
             wave: "10"
+          - name: travelnest-reloader
+            path: deploy/k8s/infra/reloader
+            wave: "10"
           - name: travelnest-analytics
             path: deploy/k8s/apps/analytics/overlays/local
             wave: "20"

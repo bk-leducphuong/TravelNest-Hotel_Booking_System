@@ -42,6 +42,12 @@ spec:
           - name: travelnest-keycloak
             path: deploy/k8s/infra/keycloak/overlays/prod
             wave: "10"
+          # Rolls workloads when a referenced Secret/ConfigMap changes; see
+          # deploy/k8s/infra/reloader. Installed before the apps so the
+          # annotation is honoured on the first secret rotation after sync.
+          - name: travelnest-reloader
+            path: deploy/k8s/infra/reloader
+            wave: "10"
           - name: travelnest-analytics
             path: deploy/k8s/apps/analytics/overlays/prod
             wave: "20"

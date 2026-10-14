@@ -133,6 +133,17 @@ cp deploy/k8s/.env.local.example deploy/k8s/.env.local && $EDITOR deploy/k8s/.en
 ./deploy/scripts/secrets/seal-local-secrets.sh    # render + encrypt (local)
 ```
 
+### Rolling workloads on a secret change
+
+Kubernetes does not restart pods when a `Secret`/`ConfigMap` used as environment
+values changes, so a re-sealed secret alone leaves the running pod on the old
+credentials. (This is how the analytics service ended up querying an
+authenticated MongoDB/Redis with no password, silently returning empty trending
+results.) [`infra/reloader`](infra/reloader) runs
+[stakater/reloader](https://github.com/stakater/Reloader); the workloads opt in
+with the `reloader.stakater.com/auto: "true"` annotation, so a sealed-secret
+change plus the Argo sync rolls them automatically.
+
 ## Image promotion (GitOps)
 
 CI publishes an immutable `sha-<short-commit>` tag for every image (plus a
