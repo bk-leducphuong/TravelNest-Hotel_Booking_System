@@ -26,10 +26,11 @@ function getSessionUserId(req) {
  */
 const getUserBookings = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
-  const { includeCancelled } = req.query;
+  const { includeCancelled, reviewed } = req.query;
 
   const bookings = await bookingUseCases.getUserBookings(userId, {
     includeCancelled: includeCancelled === 'true',
+    reviewed,
   });
 
   res.status(200).json({

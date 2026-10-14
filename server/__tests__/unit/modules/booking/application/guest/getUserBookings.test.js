@@ -28,7 +28,10 @@ describe('booking/application/guest/getUserBookings', () => {
     const result = await getUserBookings(42);
 
     expect(bookingRepository.updateStatusByDates).toHaveBeenCalledWith(42);
-    expect(bookingRepository.findByBuyerId).toHaveBeenCalledWith(42, { excludeCancelled: true });
+    expect(bookingRepository.findByBuyerId).toHaveBeenCalledWith(42, {
+      excludeCancelled: true,
+      reviewed: undefined,
+    });
     expect(result).toEqual([
       {
         id: 'b1',
@@ -51,7 +54,21 @@ describe('booking/application/guest/getUserBookings', () => {
 
     await getUserBookings(7, { includeCancelled: true });
 
-    expect(bookingRepository.findByBuyerId).toHaveBeenCalledWith(7, { excludeCancelled: false });
+    expect(bookingRepository.findByBuyerId).toHaveBeenCalledWith(7, {
+      excludeCancelled: false,
+      reviewed: undefined,
+    });
+  });
+
+  it('forwards the reviewed filter to the repository', async () => {
+    bookingRepository.findByBuyerId.mockResolvedValue([]);
+
+    await getUserBookings(7, { reviewed: false });
+
+    expect(bookingRepository.findByBuyerId).toHaveBeenCalledWith(7, {
+      excludeCancelled: true,
+      reviewed: false,
+    });
   });
 
   it('returns null hotel and room when they are missing', async () => {

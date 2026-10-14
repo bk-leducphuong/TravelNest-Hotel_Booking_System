@@ -7,11 +7,13 @@ const { formatHotelForLegacyClients, formatRoom } = require('./formatters');
  * and enriching each row with its hotel and room.
  *
  * @param {number} userId
- * @param {{ includeCancelled?: boolean }} options
+ * @param {{ includeCancelled?: boolean, reviewed?: boolean }} options
+ *   `reviewed` optionally filters by review state: true = only bookings with a
+ *   review, false = only bookings without one.
  * @returns {Promise<Array<object>>}
  */
 async function getUserBookings(userId, options = {}) {
-  const { includeCancelled = false } = options;
+  const { includeCancelled = false, reviewed } = options;
 
   // Update booking statuses based on current date
   await bookingRepository.updateStatusByDates(userId);
@@ -19,6 +21,7 @@ async function getUserBookings(userId, options = {}) {
   // Get bookings
   const bookings = await bookingRepository.findByBuyerId(userId, {
     excludeCancelled: !includeCancelled,
+    reviewed,
   });
 
   // Enrich with hotel and room information

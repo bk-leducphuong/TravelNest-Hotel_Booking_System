@@ -56,6 +56,11 @@ exports.getUserBookings = {
     includeCancelled: Joi.boolean().default(false).messages({
       'boolean.base': 'includeCancelled must be a boolean',
     }),
+    // Optional filter by review state: true = only reviewed bookings,
+    // false = only bookings without a review.
+    reviewed: Joi.boolean().optional().messages({
+      'boolean.base': 'reviewed must be a boolean',
+    }),
   }),
 };
 

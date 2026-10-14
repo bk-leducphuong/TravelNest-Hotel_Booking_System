@@ -9,6 +9,7 @@ const {
   Rooms,
   Transactions,
   HotelCancellationRules,
+  reviews: Reviews,
 } = require('@platform/database');
 
 /**
@@ -16,7 +17,7 @@ const {
  */
 
 async function findByBuyerId(buyerId, options = {}) {
-  const { excludeCancelled = true } = options;
+  const { excludeCancelled = true, reviewed } = options;
 
   const where = {
     buyer_id: buyerId,
@@ -28,10 +29,30 @@ async function findByBuyerId(buyerId, options = {}) {
     };
   }
 
-  return await Bookings.findAll({
+  const query = {
     where,
     order: [['created_at', 'DESC']],
-  });
+  };
+
+  // Optional filter by review state, using the `Booking.hasMany(reviews)`
+  // association. `reviewed: false` keeps bookings whose review row is absent
+  // (LEFT JOIN + IS NULL); `reviewed: true` keeps only reviewed bookings.
+  if (typeof reviewed === 'boolean') {
+    query.include = [
+      {
+        model: Reviews,
+        as: 'reviews',
+        attributes: [],
+        required: reviewed === true,
+      },
+    ];
+
+    if (reviewed === false) {
+      where['$reviews.id$'] = null;
+    }
+  }
+
+  return await Bookings.findAll(query);
 }
 
 async function findById(bookingId) {

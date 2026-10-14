@@ -9,8 +9,10 @@
   import { SearchService } from '@/services/search.service';
   import SkeletonGrid from '@/components/common/SkeletonGrid.vue';
   import EmptyState from '@/components/common/EmptyState.vue';
+  import PaginationControls from '@/components/common/PaginationControls.vue';
   import errorHandler from '@/request/errorHandler';
   import { getImageUrl } from '@/utils/images';
+  import { resultRange } from '@/utils/pagination';
 
   export default {
     components: {
@@ -21,6 +23,7 @@
       SavedHotelIcon,
       SkeletonGrid,
       EmptyState,
+      PaginationControls,
     },
     setup() {
       // Get toast interface
@@ -63,36 +66,14 @@
       showPagination() {
         return !this.searchQuery && this.pagination.totalPages > 1;
       },
-      pageNumbers() {
-        const totalPages = this.pagination.totalPages;
-        const currentPage = this.pagination.page;
-        const delta = 2;
-        const pages = [];
-        const start = Math.max(1, currentPage - delta);
-        const end = Math.min(totalPages, currentPage + delta);
-
-        if (start > 1) {
-          pages.push(1);
-          if (start > 2) pages.push('start-ellipsis');
-        }
-
-        for (let page = start; page <= end; page += 1) {
-          pages.push(page);
-        }
-
-        if (end < totalPages) {
-          if (end < totalPages - 1) pages.push('end-ellipsis');
-          pages.push(totalPages);
-        }
-
-        return pages;
-      },
-      currentResultStart() {
-        if (this.totalResults === 0) return 0;
-        return (this.pagination.page - 1) * this.pagination.limit + 1;
-      },
-      currentResultEnd() {
-        return Math.min(this.pagination.page * this.pagination.limit, this.totalResults);
+      paginationSummary() {
+        if (this.totalResults === 0) return '';
+        const { start, end } = resultRange(
+          this.pagination.page,
+          this.pagination.limit,
+          this.totalResults
+        );
+        return `Hiển thị ${start}-${end} trong ${this.totalResults} chỗ nghỉ`;
       },
       sortByParam() {
         const map = {
@@ -646,46 +627,18 @@
                 icon="fa-solid fa-magnifying-glass"
               />
 
-              <div v-if="showPagination" class="pagination-wrapper">
-                <p class="pagination-summary">
-                  Hiển thị {{ currentResultStart }}-{{ currentResultEnd }} trong
-                  {{ totalResults }} chỗ nghỉ
-                </p>
-                <nav class="pagination" aria-label="Search results pagination">
-                  <button
-                    type="button"
-                    class="pagination-button"
-                    :disabled="pagination.page <= 1 || isLoading"
-                    @click="changePage(pagination.page - 1)"
-                  >
-                    {{ $t('searchResults.prev') }}
-                  </button>
-
-                  <template v-for="page in pageNumbers" :key="page">
-                    <span v-if="typeof page === 'string'" class="pagination-ellipsis">...</span>
-                    <button
-                      v-else
-                      type="button"
-                      class="pagination-button page-number"
-                      :class="{ active: page === pagination.page }"
-                      :aria-current="page === pagination.page ? 'page' : null"
-                      :disabled="isLoading"
-                      @click="changePage(page)"
-                    >
-                      {{ page }}
-                    </button>
-                  </template>
-
-                  <button
-                    type="button"
-                    class="pagination-button"
-                    :disabled="pagination.page >= pagination.totalPages || isLoading"
-                    @click="changePage(pagination.page + 1)"
-                  >
-                    {{ $t('searchResults.next') }}
-                  </button>
-                </nav>
-              </div>
+              <PaginationControls
+                v-if="showPagination"
+                :page="pagination.page"
+                :total-pages="pagination.totalPages"
+                :total="totalResults"
+                :limit="pagination.limit"
+                :is-loading="isLoading"
+                :prev-label="$t('searchResults.prev')"
+                :next-label="$t('searchResults.next')"
+                :summary="paginationSummary"
+                @change="changePage"
+              />
             </div>
           </div>
         </div>
@@ -1190,60 +1143,6 @@
     display: flex;
   }
 
-  .pagination-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    margin: 24px 0 8px;
-    padding: 16px 0;
-    border-top: 1px solid #e6e6e6;
-  }
-
-  .pagination-summary {
-    margin: 0;
-    color: #595959;
-    font-size: 14px;
-  }
-
-  .pagination {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-
-  .pagination-button {
-    min-width: 38px;
-    height: 38px;
-    margin: 0;
-    border: 1px solid #006ce4;
-    border-radius: 4px;
-    background-color: #fff;
-    color: #006ce4;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .pagination-button:hover:not(:disabled),
-  .pagination-button.active {
-    background-color: #003b95;
-    border-color: #003b95;
-    color: #fff;
-  }
-
-  .pagination-button:disabled {
-    border-color: #d9d9d9;
-    color: #999;
-    cursor: not-allowed;
-  }
-
-  .pagination-ellipsis {
-    min-width: 24px;
-    text-align: center;
-    color: #595959;
-  }
   /* end room  */
 
   /* loading */

@@ -13,9 +13,15 @@ export const BookingService = {
     return http.post(`/bookings/${bookingId}/payment-intent`, paymentData)
   },
 
-  getBookings(includeCancelled = false) {
+  getBookings(includeCancelled = false, options = {}) {
+    const params = { includeCancelled }
+    // Optional server-side review filter: true = reviewed only,
+    // false = unreviewed only.
+    if (typeof options.reviewed === 'boolean') {
+      params.reviewed = options.reviewed
+    }
     return http.get('/bookings', {
-      params: { includeCancelled }
+      params
     })
   },
 
