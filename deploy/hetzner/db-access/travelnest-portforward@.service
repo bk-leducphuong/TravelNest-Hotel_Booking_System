@@ -1,0 +1,21 @@
+[Unit]
+Description=TravelNest port-forward for %i (kubectl)
+Documentation=https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/blob/master/deploy/hetzner/db-access/README.md
+After=k3s.service network-online.target
+Wants=network-online.target
+PartOf=k3s.service
+
+[Service]
+# Instance env file, e.g. /etc/travelnest/portforwards/mysql.env, sets
+# NAMESPACE / SERVICE / LOCAL_PORT / REMOTE_PORT.
+EnvironmentFile=/etc/travelnest/portforwards/%i.env
+Type=simple
+# Bind to loopback only: cloudflared (on the same host) is the only client.
+ExecStart=/usr/local/bin/kubectl -n ${NAMESPACE} port-forward --address 127.0.0.1 svc/${SERVICE} ${LOCAL_PORT}:${REMOTE_PORT}
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

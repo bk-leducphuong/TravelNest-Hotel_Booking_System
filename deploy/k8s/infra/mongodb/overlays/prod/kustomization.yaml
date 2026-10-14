@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: travelnest
+resources:
+  - ../../base
+  - bootstrap-job.yaml
+generators:
+  - secret-generator.yaml
+# Enable authentication. The app user is provisioned by the bootstrap Job in an
+# earlier sync wave, so the database is never left with auth on and no users.
+patches:
+  - target:
+      kind: StatefulSet
+      name: mongodb
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args
+        value:
+          - --auth

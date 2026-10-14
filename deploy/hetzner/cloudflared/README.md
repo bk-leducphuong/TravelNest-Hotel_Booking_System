@@ -31,8 +31,15 @@ header, which `cloudflared` preserves.
 | `storage.deployserver.work` | `minio:9000` |
 | `keycloak.deployserver.work` | `keycloak:8080` |
 | `argocd.deployserver.work` | `argocd-server:80` (Argo CD dashboard; gated by Cloudflare Access) |
+| `mysql.deployserver.work` | `tcp://localhost:13306` (raw TCP; Cloudflare Access + `cloudflared access tcp`) |
+| `redis.deployserver.work` | `tcp://localhost:16379` (raw TCP; Cloudflare Access + `cloudflared access tcp`) |
+| `mongodb.deployserver.work` | `tcp://localhost:27017` (raw TCP; Cloudflare Access + `cloudflared access tcp`) |
 
-All six DNS records are **proxied** `CNAME`s pointing at
+The `mysql`/`redis`/`mongodb` hostnames are **not** HTTP and do not go through
+Traefik — they are raw TCP served by `cloudflared access tcp`, with the loopback
+ports published by `deploy/hetzner/db-access`. See that directory's README.
+
+All DNS records are **proxied** `CNAME`s pointing at
 `f3cf83fa-a17c-4e1e-ae43-8c2774b0def8.cfargotunnel.com`.
 
 ## Install (on the VPS host)

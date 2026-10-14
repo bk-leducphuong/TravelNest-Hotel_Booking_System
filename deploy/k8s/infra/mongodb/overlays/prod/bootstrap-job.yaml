@@ -1,0 +1,59 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongodb-bootstrap
+  namespace: travelnest
+  annotations:
+    # Runs in the sync wave right before the StatefulSet flips to `--auth`
+    # (mongodb-secret is wave -2, this Job -1, the StatefulSet default 0), so
+    # the app user always exists before authentication turns on. Idempotent, so
+    # a re-run on a later sync is harmless.
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mongodb-bootstrap
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: bootstrap
+          image: mongo:7
+          envFrom:
+            - secretRef:
+                name: mongodb-secret
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              DB="${MONGODB_DATABASE}"
+              USER="${MONGODB_USER}"
+              PASS="${MONGODB_PASSWORD}"
+
+              # 1) Already migrated: credentials work (auth is on, user exists).
+              if mongosh "mongodb://${USER}:${PASS}@mongodb:27017/${DB}?authSource=${DB}" \
+                   --quiet --eval 'db.runCommand({ping:1}).ok' >/dev/null 2>&1; then
+                echo "mongodb: authentication already enabled for ${USER}"
+                exit 0
+              fi
+
+              # 2) First run (auth still disabled): create the app user.
+              if mongosh "mongodb://mongodb:27017/admin" --quiet --eval "
+                    const db_ = db.getSiblingDB('${DB}');
+                    if (!db_.getUser('${USER}')) {
+                      db_.createUser({
+                        user: '${USER}',
+                        pwd: '${PASS}',
+                        roles: [{ role: 'readWrite', db: '${DB}' }]
+                      });
+                      print('mongodb: created user ${USER}');
+                    } else {
+                      print('mongodb: user ${USER} already exists');
+                    }"; then
+                exit 0
+              fi
+
+              echo "mongodb bootstrap: could not authenticate or provision ${USER}" >&2
+              exit 1
