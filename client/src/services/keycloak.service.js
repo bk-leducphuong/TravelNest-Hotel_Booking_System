@@ -53,7 +53,9 @@ function silentRedirectUri() {
 }
 
 function logoutRedirectUri() {
-  return import.meta.env.VITE_KEYCLOAK_POST_LOGOUT_REDIRECT_URI || `${window.location.origin}/`
+  // Relative overrides (e.g. "/signed-out") must be resolved against the current
+  // origin before being handed to Keycloak; the default lands on the login page.
+  return absoluteRedirectUri(import.meta.env.VITE_KEYCLOAK_POST_LOGOUT_REDIRECT_URI || '/login')
 }
 
 function normalizedRoles(parsedToken) {
