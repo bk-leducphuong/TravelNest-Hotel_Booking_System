@@ -22,18 +22,23 @@ function getSessionUserId(req) {
 
 /**
  * GET /api/bookings
- * Get all bookings for authenticated user
+ * Get a page of bookings for the authenticated user.
  */
 const getUserBookings = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
-  const { includeCancelled } = req.query;
+  const { includeCancelled, reviewed, bookedAfter, page, limit } = req.query;
 
-  const bookings = await bookingUseCases.getUserBookings(userId, {
-    includeCancelled: includeCancelled === 'true',
+  const result = await bookingUseCases.getUserBookings(userId, {
+    includeCancelled: includeCancelled === true,
+    reviewed,
+    bookedAfter,
+    page,
+    limit,
   });
 
   res.status(200).json({
-    data: bookings,
+    data: result.bookings,
+    meta: { page: result.page, limit: result.limit, total: result.total },
   });
 });
 

@@ -56,6 +56,19 @@ exports.getUserBookings = {
     includeCancelled: Joi.boolean().default(false).messages({
       'boolean.base': 'includeCancelled must be a boolean',
     }),
+    // Optional filter by review state: true = only reviewed bookings,
+    // false = only bookings without a review.
+    reviewed: Joi.boolean().optional().messages({
+      'boolean.base': 'reviewed must be a boolean',
+    }),
+    // Rolling-window trip filter: only bookings created on/after this instant.
+    bookedAfter: Joi.date().iso().optional().messages({
+      'date.format': 'bookedAfter must be an ISO 8601 date',
+    }),
+    // Pagination. `limit` is optional: when omitted the endpoint returns every
+    // matching booking (kept for existing callers that need the full list).
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).optional(),
   }),
 };
 

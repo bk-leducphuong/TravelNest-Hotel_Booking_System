@@ -2,18 +2,21 @@
 import TheHeader from '../components/Header.vue'
 import SkeletonGrid from '@/components/common/SkeletonGrid.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import PaginationControls from '@/components/common/PaginationControls.vue'
 import { mapGetters, mapActions } from 'vuex'
 import { useToast } from 'vue-toastification'
 import errorHandler from '@/request/errorHandler'
 import { ReviewService } from '@/services/review.service'
 import { BookingService } from '@/services/booking.service'
 import { getFirstImageUrl, getImageUrl } from '@/utils/images'
+import { totalPagesFrom } from '@/utils/pagination'
 
 export default {
   components: {
     TheHeader,
     SkeletonGrid,
-    EmptyState
+    EmptyState,
+    PaginationControls
   },
   setup() {
     const toast = useToast()
@@ -24,29 +27,21 @@ export default {
       reviews: [],
       bookings: [],
       isLoading: false,
-      viewMode: 'all'
+      isPageLoading: false,
+      viewMode: 'all',
+      pagination: { page: 1, limit: 20, total: 0, totalPages: 0 }
     }
   },
   computed: {
     ...mapGetters('user', ['getUserInformation']),
-    // Written reviews keyed by booking id.
-    reviewsByBookingId() {
-      const map = {}
-      this.reviews.forEach((review) => {
-        if (review.booking_id) {
-          map[review.booking_id] = review
-        }
-      })
-      return map
-    },
-    // Completed bookings the user hasn't reviewed yet.
+    // Completed bookings the user hasn't reviewed yet. The server already
+    // excludes reviewed bookings (`reviewed: false`), so no client-side diffing
+    // against a partial reviews page is needed.
     notReviewedBookings() {
-      return this.bookings.filter(
-        (booking) => booking.status === 'completed' && !this.reviewsByBookingId[booking.id]
-      )
+      return this.bookings.filter((booking) => booking.status === 'completed')
     },
     reviewed() {
-      return this.reviews.length
+      return this.pagination.total
     },
     notReviewed() {
       return this.notReviewedBookings.length
@@ -56,24 +51,83 @@ export default {
     },
     displayedBookings() {
       return this.viewMode === 'reviewed' ? [] : this.notReviewedBookings
+    },
+    showPagination() {
+      return this.viewMode !== 'notReviewed' && this.pagination.totalPages > 1
+    },
+    paginationSummary() {
+      if (this.pagination.total === 0) return ''
+      const { page, limit, total } = this.pagination
+      const start = (page - 1) * limit + 1
+      const end = Math.min(page * limit, total)
+      return `Showing ${start}-${end} of ${total} reviews`
+    }
+  },
+  watch: {
+    // Keep the page in the URL (?page=N) so refresh/back/shared links work.
+    async '$route.query.page'(value) {
+      const page = this.parsePage(value)
+      if (page === this.pagination.page) return
+      this.pagination.page = page
+      this.isPageLoading = true
+      try {
+        await this.loadReviews(page)
+      } finally {
+        this.isPageLoading = false
+      }
     }
   },
   methods: {
     ...mapActions('user', ['retrieveUserInformation']),
+    parsePage(value) {
+      const raw = Array.isArray(value) ? value[0] : value
+      const page = parseInt(raw, 10)
+      return Number.isInteger(page) && page > 0 ? page : 1
+    },
+    async loadReviews(page = this.pagination.page) {
+      try {
+        const response = await ReviewService.getReviews({ page, limit: this.pagination.limit })
+        this.reviews = response?.data ?? []
+        const meta = response?.meta ?? {}
+        const limit = meta.limit ?? this.pagination.limit
+        const total = meta.total ?? this.reviews.length
+        this.pagination = {
+          page: meta.page ?? page,
+          limit,
+          total,
+          totalPages: totalPagesFrom(total, limit)
+        }
+      } catch (error) {
+        errorHandler(error)
+        this.reviews = []
+      }
+    },
+    async loadBookings() {
+      try {
+        const response = await BookingService.getBookings(true, { reviewed: false })
+        this.bookings = response?.data ?? []
+      } catch (error) {
+        errorHandler(error)
+        this.bookings = []
+      }
+    },
     async load() {
       this.isLoading = true
       try {
-        const [reviewsResponse, bookingsResponse] = await Promise.all([
-          ReviewService.getReviews().catch(() => ({ data: [] })),
-          BookingService.getBookings(true).catch(() => ({ data: [] }))
-        ])
-        this.reviews = reviewsResponse?.data ?? []
-        this.bookings = bookingsResponse?.data ?? []
-      } catch (error) {
-        errorHandler(error)
+        await Promise.all([this.loadReviews(this.pagination.page), this.loadBookings()])
       } finally {
         this.isLoading = false
       }
+    },
+    changePage(page) {
+      if (this.isLoading || this.isPageLoading) return
+      if (page === this.pagination.page || page < 1) return
+      if (this.pagination.totalPages && page > this.pagination.totalPages) return
+
+      this.$router.push({ query: { ...this.$route.query, page } })
+      this.$nextTick(() => {
+        this.$refs.rightContainer?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+      })
     },
     makeReview(bookingCode, hotelId, hotelName) {
       this.$router.push({
@@ -85,6 +139,7 @@ export default {
     getImageUrl
   },
   async mounted() {
+    this.pagination.page = this.parsePage(this.$route.query.page)
     await Promise.all([
       this.load(),
       this.retrieveUserInformation().catch(() => {})
@@ -107,7 +162,7 @@ export default {
       <div class="nav-links">
         <a class="nav-link" :class="{ selected: viewMode === 'all' }" @click="viewMode = 'all'">
           All reviews
-          <span class="review-count">{{ reviews.length }}</span>
+          <span class="review-count">{{ pagination.total }}</span>
         </a>
         <a
           class="nav-link"
@@ -127,7 +182,7 @@ export default {
         </a>
       </div>
     </div>
-    <div class="right-container">
+    <div class="right-container" ref="rightContainer">
       <SkeletonGrid v-if="isLoading" :count="2" image-height="125px" />
       <EmptyState
         v-else-if="displayedReviews.length === 0 && displayedBookings.length === 0"
@@ -177,6 +232,17 @@ export default {
             </div>
           </div>
         </div>
+
+        <PaginationControls
+          v-if="showPagination"
+          :page="pagination.page"
+          :total-pages="pagination.totalPages"
+          :total="pagination.total"
+          :limit="pagination.limit"
+          :is-loading="isLoading || isPageLoading"
+          :summary="paginationSummary"
+          @change="changePage"
+        />
       </template>
     </div>
   </div>
