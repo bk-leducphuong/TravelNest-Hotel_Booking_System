@@ -33,7 +33,8 @@
     "clean": "yarn workspaces foreach -A exec rm -rf node_modules && rm -rf node_modules",
     "clean:build": "rm -rf client/dist server/dist admin-client/.output superadmin-client/.output",
     "db:migrate": "yarn workspace @travelnest/server migrate",
-    "demo:seed": "yarn workspace @travelnest/server demo:reset"
+    "demo:seed": "yarn workspace @travelnest/server demo:reset",
+    "prepare": "husky"
   },
   "engines": {
     "node": ">=20.0.0",
@@ -41,6 +42,11 @@
   },
   "packageManager": "yarn@4.13.0",
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
     "prettier": "^3.5.3"
+  },
+  "lint-staged": {
+    "*.{js,mjs,cjs,ts,vue,json,css,scss,md,yml,yaml}": "prettier --write --ignore-unknown"
   }
 }
