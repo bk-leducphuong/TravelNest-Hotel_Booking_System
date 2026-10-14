@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -11,6 +12,23 @@ import (
 	analyticsCache "github.com/travelnest/services/analytics/internal/cache"
 	"github.com/travelnest/services/analytics/internal/mongo"
 )
+
+// readContextTimeout bounds a detached read query: long enough for a cold
+// aggregation to finish, short enough that a runaway query cannot hold a
+// connection open forever.
+const readContextTimeout = 15 * time.Second
+
+// readContext detaches a read query from the caller's request context.
+//
+// The API reaches this service through a proxy with a short timeout
+// (ANALYTICS_SERVICE_TIMEOUT_MS). When that proxy gives up it cancels the
+// request, which would otherwise cancel the Mongo aggregation mid-flight —
+// producing an error *and* leaving the Redis cache cold, so every subsequent
+// call repeats the slow scan. Detaching lets the query finish and populate the
+// cache even when the original caller has already gone away.
+func readContext(r *http.Request) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.WithoutCancel(r.Context()), readContextTimeout)
+}
 
 type Server struct {
 	repo                         *mongo.Repository
@@ -55,8 +73,11 @@ func (s *Server) trendingHotels(w http.ResponseWriter, r *http.Request) {
 	days := queryInt(r, "days", 2, 1, 365)
 	s.logger.Debug("fetching trending hotels", "limit", limit, "days", days)
 
+	ctx, cancel := readContext(r)
+	defer cancel()
+
 	if s.cache != nil && s.trendingHotelsCacheTTL > 0 {
-		rows, found, err := s.cache.GetTrendingHotels(r.Context(), limit, days)
+		rows, found, err := s.cache.GetTrendingHotels(ctx, limit, days)
 		if err != nil {
 			s.logger.Warn("failed to read trending hotels cache", "limit", limit, "days", days, "error", err)
 		}
@@ -68,14 +89,14 @@ func (s *Server) trendingHotels(w http.ResponseWriter, r *http.Request) {
 		s.logger.Debug("trending hotels cache miss", "limit", limit, "days", days)
 	}
 
-	rows, err := s.repo.TrendingHotels(r.Context(), limit, days)
+	rows, err := s.repo.TrendingHotels(ctx, limit, days)
 	if err != nil {
 		s.logger.Error("failed to fetch trending hotels", "limit", limit, "days", days, "error", err)
 		respond(w, rows, err)
 		return
 	}
 	if s.cache != nil && s.trendingHotelsCacheTTL > 0 {
-		if err := s.cache.SetTrendingHotels(r.Context(), limit, days, rows, s.trendingHotelsCacheTTL); err != nil {
+		if err := s.cache.SetTrendingHotels(ctx, limit, days, rows, s.trendingHotelsCacheTTL); err != nil {
 			s.logger.Warn("failed to write trending hotels cache", "limit", limit, "days", days, "error", err)
 		}
 	}
@@ -87,8 +108,11 @@ func (s *Server) trendingDestinations(w http.ResponseWriter, r *http.Request) {
 	days := queryInt(r, "days", 30, 1, 365)
 	s.logger.Debug("fetching trending destinations", "limit", limit, "days", days)
 
+	ctx, cancel := readContext(r)
+	defer cancel()
+
 	if s.cache != nil && s.trendingDestinationsCacheTTL > 0 {
-		rows, found, err := s.cache.GetTrendingDestinations(r.Context(), limit, days)
+		rows, found, err := s.cache.GetTrendingDestinations(ctx, limit, days)
 		if err != nil {
 			s.logger.Warn("failed to read trending destinations cache", "limit", limit, "days", days, "error", err)
 		}
@@ -100,14 +124,14 @@ func (s *Server) trendingDestinations(w http.ResponseWriter, r *http.Request) {
 		s.logger.Debug("trending destinations cache miss", "limit", limit, "days", days)
 	}
 
-	rows, err := s.repo.TrendingDestinations(r.Context(), limit, days)
+	rows, err := s.repo.TrendingDestinations(ctx, limit, days)
 	if err != nil {
 		s.logger.Error("failed to fetch trending destinations", "limit", limit, "days", days, "error", err)
 		respond(w, rows, err)
 		return
 	}
 	if s.cache != nil && s.trendingDestinationsCacheTTL > 0 {
-		if err := s.cache.SetTrendingDestinations(r.Context(), limit, days, rows, s.trendingDestinationsCacheTTL); err != nil {
+		if err := s.cache.SetTrendingDestinations(ctx, limit, days, rows, s.trendingDestinationsCacheTTL); err != nil {
 			s.logger.Warn("failed to write trending destinations cache", "limit", limit, "days", days, "error", err)
 		}
 	}
@@ -119,7 +143,10 @@ func (s *Server) searchDemand(w http.ResponseWriter, r *http.Request) {
 	limit := queryInt(r, "limit", 50, 1, 500)
 	s.logger.Debug("fetching search demand", "nextDays", nextDays, "limit", limit)
 
-	rows, err := s.repo.SearchDemand(r.Context(), nextDays, limit)
+	ctx, cancel := readContext(r)
+	defer cancel()
+
+	rows, err := s.repo.SearchDemand(ctx, nextDays, limit)
 	if err != nil {
 		s.logger.Error("failed to fetch search demand", "nextDays", nextDays, "limit", limit, "error", err)
 	}
@@ -136,10 +163,14 @@ func (s *Server) userAnalytics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := parts[0]
+
+	ctx, cancel := readContext(r)
+	defer cancel()
+
 	switch parts[1] {
 	case "search-summary":
 		s.logger.Debug("fetching user search summary", "userId", userID)
-		row, err := s.repo.UserSearchSummary(r.Context(), userID)
+		row, err := s.repo.UserSearchSummary(ctx, userID)
 		if err != nil {
 			s.logger.Error("failed to fetch user search summary", "userId", userID, "error", err)
 			respond(w, nil, err)
@@ -155,7 +186,7 @@ func (s *Server) userAnalytics(w http.ResponseWriter, r *http.Request) {
 	case "searches":
 		limit := queryInt(r, "limit", 10, 1, 100)
 		s.logger.Debug("fetching user searches", "userId", userID, "limit", limit)
-		rows, err := s.repo.UserSearches(r.Context(), userID, limit)
+		rows, err := s.repo.UserSearches(ctx, userID, limit)
 		if err != nil {
 			s.logger.Error("failed to fetch user searches", "userId", userID, "limit", limit, "error", err)
 		}
