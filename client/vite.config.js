@@ -43,6 +43,15 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     include: ['tests/unit/**/*.spec.js', 'tests/components/**/*.spec.js'],
+    // Element Plus ships untranspiled CSS imports. Without inlining it, Vitest
+    // externalizes it to Node, which then throws
+    // `Unknown file extension ".css"` when the auto-import resolver pulls in a
+    // component style. Inlining lets Vite's pipeline process the CSS.
+    server: {
+      deps: {
+        inline: ['element-plus', /element-plus/],
+      },
+    },
     coverage: {
       reporter: ['text', 'html'],
     },

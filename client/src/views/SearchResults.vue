@@ -125,6 +125,7 @@
             this.isLoading = true;
             this.syncPaginationFromRoute();
             this.syncFiltersFromRoute();
+            this.syncSortFromRoute();
             this.updateSearchDataInStore();
             await this.saveSearchInformationOnce();
             await this.searchHotels();
@@ -134,19 +135,6 @@
           }
         },
         immediate: true,
-      },
-      sortCriteria: {
-        async handler() {
-          if (this.isSearchUrlValid() && this.hotels.length > 0) {
-            if (this.pagination.page !== 1 || this.$route.query.page) {
-              this.updateRoutePage(1);
-              return;
-            }
-            this.isLoading = true;
-            await this.searchHotels();
-            this.isLoading = false;
-          }
-        },
       },
       hotels(newValue) {
         this.displayHotels = newValue;
@@ -388,8 +376,29 @@
         localStorage.setItem('viewedHotels', JSON.stringify(viewedHotels));
         this.$router.push({ name: 'HotelDetails', params: { hotel_id: hotelId } });
       },
-      handleSort() {
-        // Kept for the template change event; the watcher handles server-side sorting.
+      // Sort lives in the URL query (e.g. `?sort=priceLowToHigh`) so refresh,
+      // back/forward and shared links keep the selected order. Changing it
+      // resets to page 1 and lets the `$route.query` watcher run the search.
+      getValidSortCriteria(value) {
+        const allowed = ['priceLowToHigh', 'priceHighToLow', 'ratingHighToLow'];
+        const raw = Array.isArray(value) ? value[0] : value;
+        return allowed.includes(raw) ? raw : '';
+      },
+      syncSortFromRoute() {
+        this.sortCriteria = this.getValidSortCriteria(this.$route.query.sort);
+      },
+      handleSort(event) {
+        const sort = this.getValidSortCriteria(event?.target?.value);
+        this.sortCriteria = sort;
+
+        const nextQuery = { ...this.$route.query, page: 1 };
+        if (sort) {
+          nextQuery.sort = sort;
+        } else {
+          delete nextQuery.sort;
+        }
+
+        this.$router.push({ query: nextQuery });
       },
       updateRoutePage(page) {
         const nextPage = Math.min(Math.max(page, 1), this.pagination.totalPages || page);
@@ -487,7 +496,7 @@
           <div class="col-9">
             <div class="inner-content">
               <strong
-                >{{ locationLabel }}: {{ $t('searchResults.foundTitle_1') }}
+                >{{ locationLabel() }}: {{ $t('searchResults.foundTitle_1') }}
                 {{ totalResults }} {{ $t('searchResults.foundTitle_2') }}</strong
               >
               <div class="arrange">
@@ -496,7 +505,7 @@
                   <span>{{ $t('searchResults.sortBy') }}</span>
                   <!-- Sorting Controls -->
                   <select
-                    v-model="sortCriteria"
+                    :value="sortCriteria"
                     :aria-label="$t('searchResults.sortBy')"
                     @change="handleSort"
                   >

@@ -39,6 +39,11 @@ func (r *Repository) EnsureIndexes(ctx context.Context) error {
 	_, err := r.hotelViewEvents.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{Keys: bson.D{{Key: "eventId", Value: 1}}, Options: options.Index().SetUnique(true)},
 		{Keys: bson.D{{Key: "hotelId", Value: 1}, {Key: "viewedAt", Value: -1}}},
+		// TrendingHotels matches on viewedAt and groups by hotelId. Without this
+		// compound index the planner uses the single-field TTL index and FETCHes
+		// every event in the window (hundreds of thousands of docs) before
+		// grouping, which is slow enough to trip the API's analytics timeout.
+		{Keys: bson.D{{Key: "viewedAt", Value: 1}, {Key: "hotelId", Value: 1}}},
 		{Keys: bson.D{{Key: "viewedAt", Value: 1}}, Options: options.Index().SetExpireAfterSeconds(90 * 24 * 60 * 60)},
 	})
 	return err

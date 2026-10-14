@@ -2,6 +2,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: keycloak
+  annotations:
+    # Roll pods when a referenced ConfigMap/Secret changes — env-var secrets do
+    # not hot-reload. See deploy/k8s/infra/reloader.
+    reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   selector:
