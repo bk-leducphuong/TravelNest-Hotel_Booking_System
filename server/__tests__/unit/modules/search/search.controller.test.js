@@ -83,7 +83,15 @@ describe('search.controller.searchHotels', () => {
       searchResults: { data: { pagination: { total: 0 }, search_metadata: {} } },
     });
 
-    const req = { query: { country: 'Vietnam', checkIn: baseQuery.checkIn, checkOut: baseQuery.checkOut, adults: '2' }, user: { id: 'user-2' } };
+    const req = {
+      query: {
+        country: 'Vietnam',
+        checkIn: baseQuery.checkIn,
+        checkOut: baseQuery.checkOut,
+        adults: '2',
+      },
+      user: { id: 'user-2' },
+    };
     await searchHotels(req, mockRes(), jest.fn());
 
     expect(recordRecentSearch).toHaveBeenCalledWith(
