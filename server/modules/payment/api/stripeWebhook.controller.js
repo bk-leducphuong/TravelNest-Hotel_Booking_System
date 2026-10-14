@@ -8,6 +8,7 @@ const paymentModule = {
 };
 const emailPublisher = require('@platform/events/producers/email');
 const notificationPublisher = require('@platform/events/producers/notification');
+const { publish, DOMAIN_EVENTS } = require('@platform/events');
 const logger = require('@config/logger.config');
 const StripeWebhookAdapter = require('../infrastructure/adapters/stripe-webhook.adapter');
 const StripePaymentAdapter = require('../infrastructure/adapters/stripe-payment.adapter');
@@ -84,6 +85,18 @@ async function routeWebhookEvent(event) {
 
     case 'payout.failed':
       await handlePayoutFailed(event);
+      break;
+
+    // Stripe Connect: connected-account status changes (onboarding, requirements).
+    case 'account.updated':
+      await handleAccountUpdated(event);
+      break;
+
+    // Stripe Connect: transfers to a connected account.
+    case 'transfer.created':
+    case 'transfer.updated':
+    case 'transfer.reversed':
+      await handleTransferUpdated(event);
       break;
 
     default:
@@ -215,6 +228,36 @@ async function handlePayoutFailed(event) {
     logger.error('Error handling payout failed:', error);
     throw error;
   }
+}
+
+/**
+ * Handle account.updated (Stripe Connect).
+ *
+ * `event.data` is the Stripe Account object and `event.account` its id. We
+ * publish a domain event rather than writing here, so the payment module never
+ * reaches into the payout module's tables — the payout module owns the subscriber.
+ */
+async function handleAccountUpdated(event) {
+  logger.info('Handling account.updated', { eventId: event.id, account: event.account });
+
+  await publish(DOMAIN_EVENTS.CONNECT_ACCOUNT_UPDATED, {
+    providerAccountId: event.account || null,
+    stripeAccount: event.data,
+  });
+}
+
+/**
+ * Handle Connect transfer events (created / updated / reversed) so the payout
+ * row is reconciled even if the original `transfers.create` response was lost.
+ */
+async function handleTransferUpdated(event) {
+  logger.info('Handling Connect transfer event', { eventId: event.id, eventType: event.type });
+
+  await publish(DOMAIN_EVENTS.CONNECT_TRANSFER_UPDATED, {
+    providerAccountId: event.account || null,
+    eventType: event.type,
+    transfer: event.data,
+  });
 }
 
 module.exports = {

@@ -1,5 +1,9 @@
 const adminRoutes = require('./api/admin.routes');
 const payoutService = require('./application/payout.service');
+const { registerPayoutSubscribers } = require('./events/subscribers');
+
+// Register domain-event subscribers once, at module load (see events/subscribers).
+registerPayoutSubscribers();
 
 /**
  * Payout module - public interface.

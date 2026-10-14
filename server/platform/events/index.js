@@ -29,6 +29,10 @@ const DOMAIN_EVENTS = {
   PAYOUT_BATCH_GENERATED: 'payout.batch_generated',
   PAYOUT_PAID: 'payout.paid',
   PAYOUT_FAILED: 'payout.failed',
+  // Stripe Connect: a connected account changed (e.g. onboarding completed).
+  CONNECT_ACCOUNT_UPDATED: 'payout.connect_account_updated',
+  // Stripe Connect: a transfer to a connected account changed state.
+  CONNECT_TRANSFER_UPDATED: 'payout.connect_transfer_updated',
 };
 
 module.exports = {
