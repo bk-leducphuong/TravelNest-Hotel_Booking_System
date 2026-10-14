@@ -18,10 +18,16 @@ spec:
     - namespace: argocd
       server: https://kubernetes.default.svc
   # Child Applications only create namespaced workloads. Namespace is allowed
-  # so the CreateNamespace sync option keeps working.
+  # so the CreateNamespace sync option keeps working. The two rbac kinds are for
+  # stakater/reloader, which needs cluster-scoped RBAC to watch Secrets/ConfigMaps
+  # and patch the workloads that reference them (see infra/reloader).
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
   # Explicit allow-list of the resource kinds the overlays render (previously '*').
   #
   # NOTE: in Argo CD the project whitelist ALSO filters the UI resource tree —
@@ -37,6 +43,12 @@ spec:
       kind: Secret
     - group: ""
       kind: Service
+    - group: ""
+      kind: ServiceAccount
+    - group: rbac.authorization.k8s.io
+      kind: Role
+    - group: rbac.authorization.k8s.io
+      kind: RoleBinding
     - group: apps
       kind: Deployment
     - group: apps
