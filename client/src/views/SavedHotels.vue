@@ -18,23 +18,26 @@ export default {
     return {
       hotels: [],
       isLoading: false,
-      sliderPosition: 0
+      sliderPosition: 0,
+      // Tracked in reactive state (not read from $refs during render) so the
+      // nav buttons reflect the real scroll position after the DOM updates.
+      sliderScrollWidth: 0,
+      sliderClientWidth: 0
     }
   },
   computed: {
     ...mapGetters('user', ['getUserInformation']),
+    // Furthest position the slider can be scrolled to.
+    maxScroll() {
+      return Math.max(this.sliderScrollWidth - this.sliderClientWidth, 0)
+    },
     // Check if left scroll should be disabled
     disableScrollLeft() {
-      return () => this.sliderPosition === 0
+      return this.sliderPosition <= 0
     },
     // Check if right scroll should be disabled
     disableScrollRight() {
-      return () => {
-        const slider = this.$refs.slider
-        if (!slider) return true // Ensure the ref exists
-        // Check if the slider is scrolled all the way to the right
-        return this.sliderPosition >= slider.scrollWidth - slider.clientWidth
-      }
+      return this.sliderPosition >= this.maxScroll
     }
   },
   methods: {
@@ -53,6 +56,7 @@ export default {
     // Scroll functionality for sliders
     scrollLeft() {
       const slider = this.$refs.slider
+      if (!slider) return
       // Ensure the scroll position doesn't go below 0
       this.sliderPosition = Math.max(this.sliderPosition - 300, 0)
 
@@ -61,11 +65,9 @@ export default {
 
     scrollRight() {
       const slider = this.$refs.slider
+      if (!slider) return
       // Ensure the scroll position doesn't exceed the rightmost position
-      this.sliderPosition = Math.min(
-        this.sliderPosition + 300,
-        slider.scrollWidth - slider.clientWidth
-      )
+      this.sliderPosition = Math.min(this.sliderPosition + 300, this.maxScroll)
 
       slider.scrollTo({ left: this.sliderPosition, behavior: 'smooth' })
     },
@@ -77,9 +79,20 @@ export default {
         errorHandler(error)
       }
     },
-     handleScroll(event) {
+    handleScroll(event) {
       const slider = event.target
       this.sliderPosition = slider.scrollLeft
+      // Keep metrics fresh in case the slider is resized (e.g. viewport change).
+      this.sliderScrollWidth = slider.scrollWidth
+      this.sliderClientWidth = slider.clientWidth
+    },
+    // Measure the slider once it is in the DOM so the nav buttons reflect the
+    // actual overflow (cards keep a fixed width and overflow the row).
+    updateSliderMetrics() {
+      const slider = this.$refs.slider
+      if (!slider) return
+      this.sliderScrollWidth = slider.scrollWidth
+      this.sliderClientWidth = slider.clientWidth
     },
     // Render `hotel_class` (1-5) as filled stars.
     starString(hotelClass) {
@@ -90,6 +103,13 @@ export default {
   },
   async mounted() {
     await this.getSavedHotels()
+    // Wait for the cards to render, then measure the slider for nav buttons.
+    await this.$nextTick()
+    this.updateSliderMetrics()
+    window.addEventListener('resize', this.updateSliderMetrics)
+  },
+  beforeUnmount() {
+    window.removeEventListener('resize', this.updateSliderMetrics)
   }
 }
 </script>
@@ -149,10 +169,10 @@ export default {
       </div>
     </div>
     <div class="nav-button-container">
-      <button class="nav-button prev" :disabled="disableScrollLeft()" @click="scrollLeft()">
+      <button class="nav-button prev" :disabled="disableScrollLeft" @click="scrollLeft()">
         ‹
       </button>
-      <button class="nav-button next" :disabled="disableScrollRight()" @click="scrollRight()">
+      <button class="nav-button next" :disabled="disableScrollRight" @click="scrollRight()">
         ›
       </button>
     </div>
@@ -265,8 +285,12 @@ export default {
 }
 
 .hotel-card {
-  max-width: 230px;
-  /* flex: 0 0 200px; */
+  /* Keep a fixed card width so the row overflows and stays scrollable.
+     Without this (and with the default flex-shrink: 1) all cards squeeze
+     into a single row, which leaves nothing to scroll and disables the
+     prev/next buttons. */
+  flex: 0 0 230px;
+  width: 230px;
   background: white;
   border-radius: 12px;
   overflow: hidden;
