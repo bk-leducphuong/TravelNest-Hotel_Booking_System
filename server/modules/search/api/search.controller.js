@@ -90,6 +90,20 @@ const searchHotels = asyncHandler(async (req, res) => {
   const userId = getAuthenticatedUserId(req);
   const { destination, searchResults } = await searchUseCases.searchHotels(searchParams, userId);
 
+  // Enrich the stored recent search with the resolved destination so the client
+  // can render a city image — the raw query params only carry the free-text
+  // city/country and would leave `cityId` null.
+  const recentSearchParams = {
+    ...searchParams,
+    cityId: destination?.city_id ?? null,
+    countryId: destination?.country_id ?? null,
+    city: destination?.type === 'city' ? destination.display_name : searchParams.city,
+    country:
+      destination?.type === 'country'
+        ? destination.display_name
+        : destination?.country_name || searchParams.country,
+  };
+
   // Publish search analytics asynchronously (don't wait)
   const analyticsData = {
     ...searchParams,
@@ -100,7 +114,7 @@ const searchHotels = asyncHandler(async (req, res) => {
   if (userId) {
     // 1) Store recent search in Redis
     searchUseCases
-      .recordRecentSearch(userId, searchParams)
+      .recordRecentSearch(userId, recentSearchParams)
       .catch((err) => logger.error({ err: err.message }, 'Failed to store recent search in Redis'));
 
     // 2) Publish analytics log
