@@ -8,6 +8,8 @@ import i18n from './config/i18n';
 import Toast from 'vue-toastification';
 // Import the CSS or use your own!
 import 'vue-toastification/dist/index.css';
+// Project-branded overrides (must come after the stock stylesheet).
+import './assets/styles/toast-overrides.css';
 import 'leaflet';
 import './assets/styles/index.scss';
 
@@ -28,7 +30,19 @@ const bootstrap = async () => {
 
   // toast notification
   const options = {
-    //...
+    position: 'top-right',
+    timeout: 4000,
+    closeOnClick: true,
+    pauseOnHover: true,
+    pauseOnFocusLoss: true,
+    draggable: true,
+    draggablePercent: 0.6,
+    showCloseButtonOnHover: false,
+    hideProgressBar: true,
+    closeButton: 'button',
+    icon: true,
+    maxToasts: 4,
+    newestOnTop: true,
   };
 
   app.use(Toast, options);

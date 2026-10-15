@@ -69,5 +69,13 @@
   "join.continueRegistration": "Tiếp tục các bước đăng ký",
   "joinHeader.partnerQuestion": "Đã là đối tác ?",
   "joinHeader.login": "Đăng nhập",
-  "joinHeader.help": "Trợ giúp"
+  "joinHeader.help": "Trợ giúp",
+
+  "map.title": "Khách sạn",
+  "map.close": "Đóng bản đồ",
+  "map.empty": "Không có chỗ nghỉ để hiển thị.",
+  "map.noLocation": "Không có chỗ nghỉ có vị trí để hiển thị trên bản đồ.",
+  "map.reviewCount": "{count} đánh giá",
+  "map.stars": "Chỗ nghỉ {count} sao",
+  "map.priceIncludes": "Đã bao gồm thuế và phí"
 }
