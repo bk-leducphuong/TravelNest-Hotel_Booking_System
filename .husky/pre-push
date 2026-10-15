@@ -1,0 +1,6 @@
+# Run the CI-blocking gate locally before pushing so the PR doesn't fail CI.
+# Only the server lint/format checks are blocking in .github/workflows/backend.yml;
+# the client/admin/superadmin checks are advisory (continue-on-error) in CI.
+echo "Running blocking CI checks: server ESLint + Prettier..."
+yarn workspace @travelnest/server run lint || exit 1
+yarn workspace @travelnest/server exec prettier --check . || exit 1

@@ -1,0 +1,2 @@
+# Format/fix only the files being committed (fast).
+yarn lint-staged
