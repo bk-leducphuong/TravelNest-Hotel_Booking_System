@@ -9,4 +9,4 @@ images:
     newName: docker.io/leducphuong/travelnest-superadmin
     # Managed by Argo CD Image Updater: rewritten to an immutable
     # sha-<commit> tag. Do not hand-edit unless Image Updater is disabled.
-    newTag: sha-7f432c8
+    newTag: sha-72103c6
