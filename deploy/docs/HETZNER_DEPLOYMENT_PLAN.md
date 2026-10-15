@@ -64,10 +64,17 @@ Affected workflows:
 .github/workflows/notification-service.yml
 ```
 
-Changes per workflow:
-1. Add `docker/setup-qemu-action` **before** `docker/setup-buildx-action`.
-2. Change `platforms: linux/amd64` → `platforms: linux/amd64,linux/arm64`.
-3. (Optional) per-arch cache refs — QEMU builds are ~2–4× slower for the Node/Go layers.
+Each image workflow requests both `linux/amd64` and `linux/arm64`.
+
+> Superseded: the original plan added `docker/setup-qemu-action` and built both
+> architectures in one job. That runs the `arm64` leg under QEMU emulation on an
+> x86 runner, where emulated Node/native builds abort with
+> `qemu: uncaught target signal 4 (Illegal instruction)` — and BuildKit does not
+> surface it, so the build step hung until the job timeout and promotion never
+> ran. All image workflows now build one native leg per architecture
+> (`ubuntu-latest` + `ubuntu-24.04-arm`, free for public repositories) and stitch
+> the two by-digest images into a manifest list in
+> `.github/workflows/_publish-image.yml`.
 
 All Dockerfiles use multi-arch bases (`node:22-alpine`, `golang:1.22-alpine`, `alpine:3.20`, `nginx:alpine`), so no Dockerfile changes are needed.
 
