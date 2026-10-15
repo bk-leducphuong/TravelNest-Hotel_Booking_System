@@ -4,6 +4,7 @@ import TheFooter from '@/components/Footer.vue'
 import SkeletonGrid from '@/components/common/SkeletonGrid.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { mapGetters } from 'vuex'
+import { useToast } from 'vue-toastification'
 import errorHandler from '@/request/errorHandler';
 import { UserService } from '@/services/user.service'
 import { getFirstImageUrl } from '@/utils/images'
@@ -13,6 +14,10 @@ export default {
     TheFooter,
     SkeletonGrid,
     EmptyState
+  },
+  setup() {
+    const toast = useToast()
+    return { toast }
   },
   data() {
     return {
@@ -71,10 +76,18 @@ export default {
 
       slider.scrollTo({ left: this.sliderPosition, behavior: 'smooth' })
     },
-    async deleteSavedHotel(hotelId) {
+    // Open the hotel's detail page for a saved card.
+    openHotel(hotelId) {
+      this.$router.push({ name: 'HotelDetails', params: { hotel_id: hotelId } })
+    },
+    async deleteSavedHotel(hotel) {
       try {
-        await UserService.removeFavoriteHotel(hotelId)
-        this.hotels = this.hotels.filter((hotel) => hotel.hotel_id !== hotelId)
+        await UserService.removeFavoriteHotel(hotel.hotel_id)
+        this.hotels = this.hotels.filter((saved) => saved.hotel_id !== hotel.hotel_id)
+        const name = hotel.hotelInformation?.name
+        this.toast.success(
+          name ? `${name} removed from saved hotels` : 'Removed from saved hotels'
+        )
       } catch (error) {
         errorHandler(error)
       }
@@ -130,7 +143,12 @@ export default {
     />
     <template v-else>
       <div class="slider-wrapper" ref="slider" @scroll="handleScroll">
-      <div class="hotel-card" v-for="hotel in hotels" :key="hotel.hotel_id">
+      <div
+        class="hotel-card"
+        v-for="hotel in hotels"
+        :key="hotel.hotel_id"
+        @click="openHotel(hotel.hotel_id)"
+      >
         <div>
           <img
             :src="getFirstImageUrl(hotel.hotelInformation.image_urls)"
@@ -141,7 +159,7 @@ export default {
             class="close-button"
             type="button"
             :aria-label="`Remove ${hotel.hotelInformation.name} from saved hotels`"
-            @click="deleteSavedHotel(hotel.hotel_id)"
+            @click.stop="deleteSavedHotel(hotel)"
           >
             <i class="fa fa-times" aria-hidden="true"></i>
           </button>
@@ -291,6 +309,7 @@ export default {
      prev/next buttons. */
   flex: 0 0 230px;
   width: 230px;
+  cursor: pointer;
   background: white;
   border-radius: 12px;
   overflow: hidden;
