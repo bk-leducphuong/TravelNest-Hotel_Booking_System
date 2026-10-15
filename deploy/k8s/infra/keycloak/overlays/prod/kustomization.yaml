@@ -5,6 +5,7 @@ resources:
   - ../../base
   - ingress.yaml
   - db-init-job.yaml
+  - realm-reconcile-job.yaml
 
 generators:
   - secret-generator.yaml

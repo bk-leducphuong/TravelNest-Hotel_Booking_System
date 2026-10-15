@@ -87,7 +87,7 @@
       "protocol": "openid-connect",
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "https://deployserver.work/* http://localhost:5173/*"
+        "post.logout.redirect.uris": "https://deployserver.work/*##http://localhost:5173/*"
       },
       "fullScopeAllowed": true,
       "defaultClientScopes": [
@@ -149,7 +149,7 @@
       "protocol": "openid-connect",
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "https://admin.deployserver.work/* http://localhost:8000/*"
+        "post.logout.redirect.uris": "https://admin.deployserver.work/*##http://localhost:8000/*"
       },
       "fullScopeAllowed": true,
       "defaultClientScopes": [
