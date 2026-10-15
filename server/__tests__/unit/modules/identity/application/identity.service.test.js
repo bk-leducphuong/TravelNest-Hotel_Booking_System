@@ -164,12 +164,15 @@ describe('IdentityService', () => {
       const result = await identityService.assignHotelOwner('user-1', 'hotel-1');
 
       expect(authRepository.findRoleByName).toHaveBeenCalledWith('owner');
-      expect(hotelMembershipRepository.upsertHotelRole).toHaveBeenCalledWith({
-        userId: 'user-1',
-        hotelId: 'hotel-1',
-        roleId: 'role-owner',
-        isPrimaryOwner: true,
-      });
+      expect(hotelMembershipRepository.upsertHotelRole).toHaveBeenCalledWith(
+        {
+          userId: 'user-1',
+          hotelId: 'hotel-1',
+          roleId: 'role-owner',
+          isPrimaryOwner: true,
+        },
+        { transaction: undefined }
+      );
       expect(result).toEqual({ id: 'membership-1' });
     });
 

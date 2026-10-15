@@ -33,6 +33,16 @@ async function assignHotelOwner(userId, hotelId, options = {}) {
   return await identityService.assignHotelOwner(userId, hotelId, options);
 }
 
+/** The hotel a user primarily owns, or null (used by partner onboarding). */
+async function getPrimaryHotelIdForUser(userId) {
+  return await identityService.getPrimaryHotelIdForUser(userId);
+}
+
+/** Whether a user has any membership on a hotel (used to gate join photo uploads). */
+async function userHasHotelAccess(userId, hotelId) {
+  return await identityService.userHasHotelAccess(userId, hotelId);
+}
+
 module.exports = {
   // HTTP edge (mounted by routes/v1/index.js).
   authRoutes,
@@ -57,4 +67,6 @@ module.exports = {
 
   // Hotel ownership (used by partner onboarding).
   assignHotelOwner,
+  getPrimaryHotelIdForUser,
+  userHasHotelAccess,
 };

@@ -140,6 +140,31 @@ async function findAmenitiesByHotelId(hotelId) {
   return hotel ? hotel.amenities : [];
 }
 
+/**
+ * Resolve a city name to its id (case-insensitive via the column collation).
+ * Returns null when there is no match so onboarding can leave `city_id` unset.
+ */
+async function findCityIdByName(name, options = {}) {
+  if (!name) {
+    return null;
+  }
+
+  const city = await Cities.findOne({
+    where: { name },
+    attributes: ['id'],
+    ...options,
+  });
+
+  return city ? city.id : null;
+}
+
+async function findRoomByHotelAndName(hotelId, roomName, options = {}) {
+  return await Rooms.findOne({
+    where: { hotel_id: hotelId, room_name: roomName },
+    ...options,
+  });
+}
+
 async function findRoomById(roomId) {
   return await Rooms.findOne({
     where: { id: roomId },
@@ -300,7 +325,9 @@ module.exports = {
   findByIdForAdmin,
   findImagesByHotelId,
   findAmenitiesByHotelId,
+  findCityIdByName,
   findRoomById,
+  findRoomByHotelAndName,
   findRoomsByHotelId,
   findPoliciesByHotelId,
   findNearbyPlaceById,

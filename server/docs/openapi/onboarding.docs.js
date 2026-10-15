@@ -75,8 +75,10 @@
  *           $ref: '#/components/schemas/JoinCoordinates'
  *         rating:
  *           type: number
- *           minimum: 0
+ *           minimum: 1
  *           maximum: 5
+ *           nullable: true
+ *           description: Optional star rating; stored as the hotel's hotel_class.
  *         checkInFrom:
  *           type: string
  *           pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
@@ -93,10 +95,6 @@
  *           type: string
  *           pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
  *           description: Check-out window end in 24-hour HH:MM format; must be after checkOutFrom
- *         services:
- *           type: array
- *           items:
- *             type: string
  *         roomDetails:
  *           $ref: '#/components/schemas/JoinRoomDetails'
  */

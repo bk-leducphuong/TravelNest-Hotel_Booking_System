@@ -101,7 +101,7 @@ export default {
     // upload image
     async uploadImage(hotel_id, room_id) {
       if (this.getUploadImage.imageFiles.length < 5) {
-        this.toast.error('Bạn chưa chọn đủ số lượng ảnh!')
+        throw new Error('Bạn chưa chọn đủ số lượng ảnh!')
       }
 
       const formData = new FormData()
@@ -112,22 +112,14 @@ export default {
       formData.append('hotel_id', hotel_id)
       formData.append('room_id', room_id)
 
-      try {
-        await JoinService.uploadPhotos(formData)
-      } catch (error) {
-        console.error('Error uploading image:', error)
-      }
+      await JoinService.uploadPhotos(formData)
     },
     isFormComplete() {
-      // Check if roomDetails are filled
-      const isRoomDetailsComplete = Object.values(this.getJoinFormData.roomDetails).every(
-        (value) => {
-          if (typeof value === 'number') {
-            return value > 0 // Check for positive numbers
-          }
-          return value !== null // Check for non-null values
-        }
-      )
+      const room = this.getJoinFormData.roomDetails
+
+      // Room type plus positive room/guest counts are the fields the API keeps.
+      const isRoomDetailsComplete =
+        Boolean(room.roomType) && room.numberOfRooms > 0 && room.numberOfGuests > 0
 
       // Check if all bed options have quantity greater than 0
       const areBedOptionsComplete = this.getJoinFormData.bedOptions.some((bed) => bed.quantity > 0)
@@ -139,25 +131,60 @@ export default {
       return isRoomDetailsComplete && areBedOptionsComplete && areImagesPresent
     },
 
+    // Only send the fields the backend accepts; other UI-only state (bed
+    // counters, image files) must not leak into the request body.
+    buildPayload() {
+      const form = this.getJoinFormData
+      return {
+        hotelName: form.hotelName,
+        streetName: form.streetName,
+        city: form.city,
+        coordinates: {
+          latitude: form.coordinates.latitude,
+          longitude: form.coordinates.longitude
+        },
+        rating: form.rating,
+        checkInFrom: form.checkInFrom,
+        checkInTo: form.checkInTo,
+        checkOutFrom: form.checkOutFrom,
+        checkOutTo: form.checkOutTo,
+        roomDetails: {
+          roomType: form.roomDetails.roomType,
+          numberOfGuests: form.roomDetails.numberOfGuests,
+          numberOfRooms: form.roomDetails.numberOfRooms
+        }
+      }
+    },
+
     async finishJoinForm() {
       if (!this.isFormComplete()) {
         this.toast.error('Pls fill all the fields')
-      } else {
-        try {
-          const response = await JoinService.submitJoinForm(this.getJoinFormData)
-          const data = response?.data
+        return
+      }
 
-          if (data?.hotel_id) {
-            this.toast.success('Join form submitted successfully')
-            await this.uploadImage(data.hotel_id, data.room_id)
-            goToAdminApp('/')
-          } else {
-            this.toast.error('Error submitting join form')
-          }
-        } catch (error) {
+      try {
+        const response = await JoinService.submitJoinForm(this.buildPayload())
+        const data = response?.data
+
+        if (!data?.hotel_id) {
           this.toast.error('Error submitting join form')
-          console.log(error)
+          return
         }
+
+        // Photos are uploaded after the hotel/room exist. If this fails the
+        // property is still created, so surface the error instead of silently
+        // navigating away.
+        await this.uploadImage(data.hotel_id, data.room_id)
+
+        this.toast.success('Join form submitted successfully')
+        goToAdminApp('/')
+      } catch (error) {
+        const message =
+          error?.response?.data?.error?.message ||
+          error?.message ||
+          'Error submitting join form'
+        this.toast.error(message)
+        console.log(error)
       }
     }
   }
@@ -268,7 +295,7 @@ export default {
               multiple
               @change="handleFiles"
             />
-            <p>jpg/jpeg hoặc png, tối đa 47MB mỗi file</p>
+            <p>jpg/jpeg hoặc png, tối đa 10MB mỗi file</p>
           </div>
         </form>
         <button class="back1" @click="closeAddImagePopup">
@@ -366,37 +393,6 @@ export default {
             <div class="number-guest">
               <input type="number" min="1" v-model="getJoinFormData.roomDetails.numberOfGuests" />
             </div>
-            <label>Phòng này rộng bao nhiêu</label>
-            <div class="area-room">
-              <input type="number" min="1" v-model="getJoinFormData.roomDetails.roomArea" />
-              <select>
-                <option value="">mét vuông</option>
-                <option value="">feet vuông</option>
-              </select>
-            </div>
-
-            <label for="">Có được hút thuốc trong phòng này không?</label>
-            <span style="margin-right: 10px"
-              ><input
-                type="radio"
-                name="smoking"
-                value="yes"
-                style="margin-right: 3px"
-                v-model="getJoinFormData.roomDetails.allowSmoke"
-              />
-              Có</span
-            >
-            <span
-              ><input
-                type="radio"
-                name="smoking"
-                value="no"
-                style="margin-right: 3px"
-                v-model="getJoinFormData.roomDetails.allowSmoke"
-              />
-              Không</span
-            >
-            <br />
             <button
               id="save"
               style="margin-top: 10px; padding: 10px 20px"

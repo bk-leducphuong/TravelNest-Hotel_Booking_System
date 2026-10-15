@@ -12,9 +12,7 @@ export default {
       return this.getJoinFormData.checkInFrom &&
         this.getJoinFormData.checkInTo &&
         this.getJoinFormData.checkOutFrom &&
-        this.getJoinFormData.checkOutTo &&
-        this.getJoinFormData.haveChildren &&
-        this.getJoinFormData.havePet
+        this.getJoinFormData.checkOutTo
         ? true
         : false
     }
@@ -66,40 +64,6 @@ export default {
         </div>
       </div>
 
-      <!-- <hr style="border: 1px solid #ddd; margin: 20px 0;"> -->
-      <hr style="border-top: 1px solid #e7e7e7; margin: 16px 0" />
-
-      <div class="form-section">
-        <h3 class="sub-title">Quý vị có tiếp đón trẻ em không?</h3>
-        <div class="radio-group">
-          <label class="radio-option">
-            <input type="radio" name="children" value="true" v-model="getJoinFormData.haveChildren" />
-            <span class="radio-custom"></span>
-            <span>Có</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="children" value="false" v-model="getJoinFormData.haveChildren" />
-            <span class="radio-custom"></span>
-            <span>Không</span>
-          </label>
-        </div>
-      </div>
-
-      <div class="form-section">
-        <h3 class="sub-title">Quý vị có cho phép vật nuôi không?</h3>
-        <div class="radio-group">
-          <label class="radio-option">
-            <input type="radio" name="pets" value="true" v-model="getJoinFormData.havePet" />
-            <span class="radio-custom"></span>
-            <span>Có</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="pets" value="false" v-model="getJoinFormData.havePet" />
-            <span class="radio-custom"></span>
-            <span>Không</span>
-          </label>
-        </div>
-      </div>
       <div class="form-button-container">
         <button type="button" class="previous" @click="$emit('previous')">Quay lại</button>
         <button type="button" class="next" @click="goNext" :disabled="!checkForNext">

@@ -55,7 +55,7 @@ const uploadPhotos = asyncHandler(async (req, res) => {
     });
   }
 
-  const imageUrls = await joinService.uploadPhotos(hotel_id, room_id, req.files);
+  const imageUrls = await joinService.uploadPhotos(req.user.id, hotel_id, room_id, req.files);
 
   res.status(201).json({
     data: {

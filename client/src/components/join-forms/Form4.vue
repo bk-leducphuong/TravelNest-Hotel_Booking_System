@@ -7,7 +7,7 @@ export default {
   computed: {
     ...mapGetters('join', ['getJoinFormData']),
     checkForNext() {
-      return this.getJoinFormData.hotelName && this.getJoinFormData.rating ? true : false
+      return this.getJoinFormData.hotelName ? true : false
     }
   },
   methods: {
@@ -32,7 +32,7 @@ export default {
         <h3>Khách sạn của Quý vị được xếp hạng mấy sao?</h3>
         <div class="rating-options">
           <label class="rating-option">
-            <input type="radio" name="rating" value="none" checked />
+            <input type="radio" name="rating" v-model="getJoinFormData.rating" :value="null" />
             <span class="radio-custom"></span>
             <span class="label-text">Không áp dụng</span>
           </label>

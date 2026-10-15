@@ -2,17 +2,13 @@ export default {
   joinFormData: {
     // form 1
     streetName: null,
-    zipCode: null,
     city: null,
 
     // form 2
     coordinates: {
-      latitude: 23.12312, // test values
-      longitude: 123.12312
+      latitude: null,
+      longitude: null
     },
-
-    // form 3
-    services: [],
 
     // form 4
     hotelName: null,
@@ -23,16 +19,12 @@ export default {
     checkInTo: null,
     checkOutFrom: null,
     checkOutTo: null,
-    haveChildren: null,
-    havePet: null,
 
     // form 6
     roomDetails: {
       roomType: null,
       numberOfRooms: 0,
-      numberOfGuests: 0,
-      roomArea: 0,
-      allowSmoke: null
+      numberOfGuests: 0
     },
     bedOptions: [
       {
