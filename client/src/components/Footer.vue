@@ -85,6 +85,9 @@
   background-color: #e3e3e3;
   padding: 20px;
   font-size: 14px;
+  /* Push the footer to the bottom of the page when content is short
+     (the app root is a full-height flex column). */
+  margin-top: auto;
 }
 
 .footer-content {

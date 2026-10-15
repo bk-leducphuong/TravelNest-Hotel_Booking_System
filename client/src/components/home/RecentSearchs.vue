@@ -17,13 +17,17 @@
               :key="searchKey(search, groupIndex * itemsPerSlide + index)"
               @click="redirectToSearchResults(search)"
             >
-              <div class="search-image">
+              <div
+                class="search-image"
+                :class="{ 'search-image-fallback': !searchImageSrc(search) }"
+              >
                 <img
                   v-if="searchImageSrc(search)"
                   :src="searchImageSrc(search)"
                   :alt="displayLocation(search)"
                   @error="onImageError"
                 />
+                <i v-else class="fa-solid fa-city" aria-hidden="true"></i>
               </div>
               <div class="search-content">
                 <h2 class="search-title">{{ displayLocation(search) }}</h2>
@@ -265,6 +269,15 @@
       object-fit: cover;
       border-radius: 8px;
     }
+  }
+
+  .search-image-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: $background-light;
+    color: $primary-color;
+    font-size: 24px;
   }
 
   .search-content {
