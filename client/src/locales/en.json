@@ -54,5 +54,20 @@
   "hotel": "Hotel",
   "room": "Room",
   "bookNow": "Book Now",
-  "loginHeader": "Login or create account"
+  "loginHeader": "Login or create account",
+
+  "join.titleLine1": "List",
+  "join.titleHighlight": "any kind of property",
+  "join.titleLine2": "on TravelNest",
+  "join.subtitle": "Whether hosting is a side hustle or a full-time job, list your place today and start earning extra income.",
+  "join.registerTitle": "Sign up for free",
+  "join.benefit1": "45% of hosts get their first booking within a week",
+  "join.benefit2": "Choose how you take bookings: instant confirmation or review first",
+  "join.benefit3": "We handle payments for you",
+  "join.getStarted": "Get started",
+  "join.alreadyStarted": "Already started your registration?",
+  "join.continueRegistration": "Continue your registration",
+  "joinHeader.partnerQuestion": "Already a partner?",
+  "joinHeader.login": "Log in",
+  "joinHeader.help": "Help"
 }

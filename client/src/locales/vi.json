@@ -54,5 +54,20 @@
   "hotel": "Khách sạn",
   "room": "Phòng",
   "bookNow": "Đặt ngay",
-  "loginHeader": "Đăng nhập hoặc tạo tài khoản"
+  "loginHeader": "Đăng nhập hoặc tạo tài khoản",
+
+  "join.titleLine1": "Đăng",
+  "join.titleHighlight": "bất cứ chỗ nghỉ nào",
+  "join.titleLine2": "trên TravelNest",
+  "join.subtitle": "Dù host là nghề tay trái hay công việc toàn thời gian, hãy đăng nhà của bạn ngay hôm nay và nhanh chóng có thêm nguồn thu nhập.",
+  "join.registerTitle": "Đăng ký miễn phí",
+  "join.benefit1": "45% host nhận được đơn đặt đầu tiên trong vòng 1 tuần",
+  "join.benefit2": "Chọn một trong hai cách nhận đơn đặt: xác nhận tức thì và xem trước để duyệt",
+  "join.benefit3": "Chúng tôi xử lý thanh toán thay bạn",
+  "join.getStarted": "Bắt đầu ngay",
+  "join.alreadyStarted": "Bạn đã bắt đầu quá trình đăng ký?",
+  "join.continueRegistration": "Tiếp tục các bước đăng ký",
+  "joinHeader.partnerQuestion": "Đã là đối tác ?",
+  "joinHeader.login": "Đăng nhập",
+  "joinHeader.help": "Trợ giúp"
 }

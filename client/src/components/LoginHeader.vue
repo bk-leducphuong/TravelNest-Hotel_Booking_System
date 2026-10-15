@@ -19,11 +19,11 @@
 <template>
   <BaseHeader :use-container="false" header-class="header-container">
     <template #nav-items>
-      <li v-if="isAdminLogin"><span>Đã là đối tác ?</span></li>
+      <li v-if="isAdminLogin"><span>{{ $t('joinHeader.partnerQuestion') }}</span></li>
       <li v-if="isAdminLogin" class="login" v-on:click="goToAdminApp('/login')">
-        Đăng nhập
+        {{ $t('joinHeader.login') }}
       </li>
-      <li class="guides">Trợ giúp</li>
+      <li class="guides">{{ $t('joinHeader.help') }}</li>
     </template>
   </BaseHeader>
 </template>

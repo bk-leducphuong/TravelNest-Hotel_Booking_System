@@ -35,6 +35,9 @@ env:
   # (Settings > Variables) without touching this file.
   VITE_SERVER_HOST: ${{ vars.VITE_SERVER_HOST || 'https://api.deployserver.work' }}
   VITE_MINIO_URL: ${{ vars.VITE_MINIO_URL || 'https://storage.deployserver.work/uploads/' }}
+  # Host/partner app the guest app links out to (e.g. "Bắt đầu ngay" on /join,
+  # the Keycloak-hosted login). Must never fall back to localhost in prod.
+  VITE_ADMIN_HOST: ${{ vars.VITE_ADMIN_HOST || 'https://admin.deployserver.work' }}
   # Required by client/src/services/keycloak.service.js. Without these the SPA
   # throws on login; local builds override them with the local hostnames.
   VITE_KEYCLOAK_URL: ${{ vars.VITE_KEYCLOAK_URL || 'https://keycloak.deployserver.work' }}
@@ -197,6 +200,7 @@ jobs:
           build-args: |
             VITE_SERVER_HOST=${{ env.VITE_SERVER_HOST }}
             VITE_MINIO_URL=${{ env.VITE_MINIO_URL }}
+            VITE_ADMIN_HOST=${{ env.VITE_ADMIN_HOST }}
             VITE_KEYCLOAK_URL=${{ env.VITE_KEYCLOAK_URL }}
             VITE_KEYCLOAK_REALM=${{ env.VITE_KEYCLOAK_REALM }}
             VITE_KEYCLOAK_CLIENT_ID=${{ env.VITE_KEYCLOAK_CLIENT_ID }}
