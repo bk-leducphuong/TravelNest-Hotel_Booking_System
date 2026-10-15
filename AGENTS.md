@@ -56,6 +56,44 @@ Use the format/example files as references. Do not commit real secrets.
 
 The server loads `.env.${NODE_ENV}` in `server/server.js`; development usually means `server/.env.development`.
 
+## Environment & Access Map
+
+Pick the tool that matches the environment you mean. The full procedures live in
+the project skills — load them on demand instead of guessing.
+
+| Environment                                                      | How to reach it                                                         | Details                        |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------ |
+| Local dev services (MySQL, Redis, MongoDB, MinIO, Elasticsearch) | `make infra-*` (loads `server/.env.development`)                        | skill `travelnest-local-infra` |
+| Local Kubernetes (k3d)                                           | `KUBECONFIG=~/.kube/travelnest-local.yaml kubectl ...`                  | skill `travelnest-local-infra` |
+| Prod VPS (Hetzner CAX21)                                         | `ssh hetzner` (deploy user) / `ssh hetzner-root`                        | skill `travelnest-prod-ops`    |
+| Prod k3s cluster                                                 | `kubectl` / `argocd` **over ssh** (no prod kubeconfig locally)          | skill `travelnest-prod-ops`    |
+| Prod MySQL / Redis / MongoDB                                     | `cloudflared access tcp` + creds from gitignored `deploy/k8s/.env.prod` | skill `travelnest-prod-ops`    |
+| Prod deploys                                                     | Argo CD GitOps only — never `kubectl apply` by hand                     | `deploy/docs/CICD.md`          |
+| Grafana Cloud                                                    | `gcx` CLI; token sealed in `deploy/k8s/monitoring/secrets/`             | skill `travelnest-prod-ops`    |
+| Hetzner / Cloudflare                                             | `hcloud`, `cf`, `cloudflared`                                           | skill `travelnest-prod-ops`    |
+
+Installed on this machine: `mysql`, `mongosh`, `redis-cli`, `stripe`,
+`cloudflared`, `hcloud`, `cf`, `kubectl`, `argocd`, `k3d`, `kustomize`,
+`kubeconform`, `ksops`, `sops`, `age`, `gcx`, `docker`, `aws`, `jq`.
+
+Not installed (use the fallbacks in the skills): `mc` (MinIO client), `k3s`,
+`helm`, `grafana-cli`, `yq`.
+
+## Agent Guardrails
+
+- **Never commit secrets.** The Playwright MCP token lives in the gitignored
+  `.opencode/secrets/playwright-token.txt`; prod/local values live in the
+  gitignored `deploy/k8s/.env.prod` and `.env.local`. Do not print or paste the
+  contents of these files into responses, commits, or logs.
+- **Read-only first.** Prefer read-only queries and `get`/`describe`/`list`
+  commands. Never run a mutation against prod without explicit user approval and
+  a stated description of the impact.
+- **Deploys go through Argo CD.** Commit manifests; let Argo CD sync. Do not
+  `kubectl apply` prod workloads by hand.
+- The AWS CLI on this machine points at the **SessionUp** account, not
+  TravelNest. Do not use it for TravelNest infra; the CloudWatch MCP is disabled
+  for this project (see `opencode.jsonc`).
+
 ## Backend Architecture
 
 The backend is CommonJS (`type: commonjs`) and starts from `server/server.js`, which loads env vars, creates the Express app from `server/app.js`, starts HTTP/Socket.IO, and handles graceful shutdown.
@@ -98,17 +136,14 @@ Primary storage is MySQL via Sequelize. Redis is used for sessions, cache/rate l
 
 ### Real Infra Access For Debugging
 
-Use the root `Makefile` helpers when you need to inspect real local development data. They load `server/.env.development` by default and call the native CLIs, so verify the command before running writes or deletes.
+Use the root `Makefile` helpers when you need to inspect real local development
+data. They load `server/.env.development` by default and call the native CLIs, so
+verify the command before running writes or deletes.
 
-Prerequisite CLIs:
-
-```bash
-mysql
-redis-cli
-mc
-curl
-mongosh
-```
+`mysql`, `mongosh`, `redis-cli`, and `curl` are installed, so the `mysql`,
+`redis`, `elasticsearch`, and `mongodb` Makefile targets work directly. `mc`
+(MinIO client) is **not** installed here — see the `travelnest-local-infra` skill
+for the `aws s3 --endpoint-url` / MinIO-console fallback.
 
 Quick checks:
 
@@ -232,7 +267,7 @@ If a test cannot run because local services or Docker are unavailable, report th
 
 ## Known Project Notes
 
-- `deploy/` is referenced in the root README, but it may not exist in every checkout. Do not assume deployment docs are present.
+- `deploy/` is present and authoritative here: Kubernetes manifests + Argo CD GitOps in `deploy/k8s/`, VPS tooling in `deploy/hetzner/`, docs in `deploy/docs/`. See the `travelnest-prod-ops` skill before touching prod.
 - `client/README.md` appears stale about tests; rely on `client/package.json` for current scripts.
 - `server/.env.format` contains a typo in `NODE_ENV=delelopment`; use `development` when running the server.
 - Admin env naming may be inconsistent between `.env.example` and `nuxt.config.ts`; verify before making runtime config changes.
