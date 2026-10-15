@@ -21,7 +21,11 @@ const getHotelReviews = {
 };
 
 const getUserReviews = {
-  query: Joi.object({ ...paginationQuery }).unknown(false),
+  query: Joi.object({
+    ...paginationQuery,
+    // Narrow the user's own reviews to a single moderation state.
+    status: Joi.string().valid('published', 'hidden').optional(),
+  }).unknown(false),
 };
 
 const eligibilityQuery = {

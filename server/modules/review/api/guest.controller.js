@@ -20,13 +20,19 @@ const getHotelReviews = asyncHandler(async (req, res) => {
 
 const getUserReviews = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { page, limit } = req.query;
+  const { page, limit, status } = req.query;
 
-  const result = await listUserReviews(userId, { page, limit });
+  const result = await listUserReviews(userId, { page, limit, status });
 
   res.status(200).json({
     data: result.reviews,
-    meta: { page: result.page, limit: result.limit, total: result.total },
+    meta: {
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      published: result.published,
+      hidden: result.hidden,
+    },
   });
 });
 
