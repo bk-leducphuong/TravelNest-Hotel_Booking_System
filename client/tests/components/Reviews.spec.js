@@ -25,13 +25,14 @@ vi.mock('@/components/common/EmptyState.vue', () => ({
   default: { name: 'EmptyState', render: () => null },
 }))
 
-const emptyReviews = { data: [], meta: { page: 1, limit: 20, total: 0 } }
+const emptyReviews = { data: [], meta: { page: 1, limit: 20, total: 0, published: 0, hidden: 0 } }
 
 const mountView = ({ routeQuery = {}, reviews = emptyReviews, bookings = [] } = {}) => {
   ReviewService.getReviews.mockResolvedValue(reviews)
   BookingService.getBookings.mockResolvedValue({ data: bookings })
 
   const push = vi.fn()
+  const replace = vi.fn(() => Promise.resolve())
   const store = createStore({
     modules: {
       user: {
@@ -48,12 +49,12 @@ const mountView = ({ routeQuery = {}, reviews = emptyReviews, bookings = [] } = 
       plugins: [store],
       mocks: {
         $route: { query: routeQuery },
-        $router: { push },
+        $router: { push, replace },
       },
     },
   })
 
-  return { wrapper, push }
+  return { wrapper, push, replace }
 }
 
 describe('Reviews', () => {
@@ -65,7 +66,7 @@ describe('Reviews', () => {
     const { wrapper } = mountView({
       reviews: {
         data: [{ id: 'r1', hotel: { name: 'Hotel A' } }],
-        meta: { page: 1, limit: 20, total: 45 },
+        meta: { page: 1, limit: 20, total: 45, published: 40, hidden: 5 },
       },
       bookings: [{ id: 'b1', status: 'completed', hotel: { name: 'Hotel B' } }],
     })
@@ -73,17 +74,47 @@ describe('Reviews', () => {
 
     expect(ReviewService.getReviews).toHaveBeenCalledWith({ page: 1, limit: 20 })
     expect(BookingService.getBookings).toHaveBeenCalledWith(true, { reviewed: false })
-    expect(wrapper.vm.pagination).toMatchObject({ page: 1, limit: 20, total: 45, totalPages: 3 })
-
-    // Total comes from the server meta, not the loaded page length.
-    expect(wrapper.text()).toContain('45')
+    expect(wrapper.vm.pagination).toMatchObject({
+      page: 1,
+      limit: 20,
+      total: 45,
+      totalPages: 3,
+      published: 40,
+      hidden: 5,
+    })
     expect(wrapper.text()).toContain('Showing 1-20 of 45 reviews')
+  })
+
+  it('splits the counters: All = published + hidden, Reviewed = published (#110)', async () => {
+    const { wrapper } = mountView({
+      reviews: {
+        data: [],
+        meta: { page: 1, limit: 20, total: 45, published: 40, hidden: 5 },
+      },
+    })
+    await flushPromises()
+
+    expect(wrapper.vm.allReviewsCount).toBe(45)
+    expect(wrapper.vm.reviewed).toBe(40)
+  })
+
+  it('loads published reviews only on the Reviewed tab (#110)', async () => {
+    const { wrapper } = mountView({
+      reviews: { data: [], meta: { page: 1, limit: 20, total: 40, published: 40, hidden: 5 } },
+    })
+    await flushPromises()
+    ReviewService.getReviews.mockClear()
+
+    wrapper.vm.viewMode = 'reviewed'
+    await flushPromises()
+
+    expect(ReviewService.getReviews).toHaveBeenCalledWith({ page: 1, limit: 20, status: 'published' })
   })
 
   it('honours the ?page= query on mount', async () => {
     const { wrapper } = mountView({
       routeQuery: { page: '2' },
-      reviews: { data: [], meta: { page: 2, limit: 20, total: 45 } },
+      reviews: { data: [], meta: { page: 2, limit: 20, total: 45, published: 40, hidden: 5 } },
     })
     await flushPromises()
 
@@ -93,7 +124,7 @@ describe('Reviews', () => {
 
   it('pushes the next page into the URL when the page changes', async () => {
     const { wrapper, push } = mountView({
-      reviews: { data: [], meta: { page: 1, limit: 20, total: 45 } },
+      reviews: { data: [], meta: { page: 1, limit: 20, total: 45, published: 40, hidden: 5 } },
     })
     await flushPromises()
 
@@ -104,7 +135,7 @@ describe('Reviews', () => {
 
   it('hides pagination when there is only one page', async () => {
     const { wrapper } = mountView({
-      reviews: { data: [{ id: 'r1' }], meta: { page: 1, limit: 20, total: 5 } },
+      reviews: { data: [{ id: 'r1' }], meta: { page: 1, limit: 20, total: 5, published: 5, hidden: 0 } },
     })
     await flushPromises()
 
@@ -122,5 +153,51 @@ describe('Reviews', () => {
     await flushPromises()
 
     expect(wrapper.vm.notReviewedBookings.map((b) => b.id)).toEqual(['b1'])
+  })
+
+  it('expands a written review to reveal its rating and media (#111)', async () => {
+    const { wrapper } = mountView({
+      reviews: {
+        data: [
+          {
+            id: 'r1',
+            rating_overall: 8.5,
+            title: 'Great',
+            comment: 'Lovely stay',
+            hotel: { name: 'Hotel A', image_urls: ['hotels/a.jpg'] },
+            media: [{ id: 'm1', url: 'reviews/1.jpg', display_order: 0 }],
+          },
+        ],
+        meta: { page: 1, limit: 20, total: 1, published: 1, hidden: 0 },
+      },
+    })
+    await flushPromises()
+
+    const card = wrapper.find('.review-card.clickable')
+    expect(card.exists()).toBe(true)
+    expect(wrapper.find('.review-details').exists()).toBe(false)
+
+    await card.trigger('click')
+
+    expect(wrapper.find('.review-details').exists()).toBe(true)
+    expect(wrapper.findAll('.review-media-item')).toHaveLength(1)
+    expect(card.attributes('aria-expanded')).toBe('true')
+
+    await card.trigger('click')
+    expect(wrapper.find('.review-details').exists()).toBe(false)
+  })
+
+  it('renders the hotel image for a written review when provided (#111)', async () => {
+    const { wrapper } = mountView({
+      reviews: {
+        data: [{ id: 'r1', hotel: { name: 'Hotel A', image_urls: ['hotels/a.jpg'] } }],
+        meta: { page: 1, limit: 20, total: 1, published: 1, hidden: 0 },
+      },
+    })
+    await flushPromises()
+
+    const img = wrapper.find('.review-card.clickable img.property-image')
+    expect(img.exists()).toBe(true)
+    expect(img.attributes('src')).toContain('hotels/a.jpg')
   })
 })

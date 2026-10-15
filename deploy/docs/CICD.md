@@ -31,6 +31,17 @@ which renders every Kustomize target under `deploy/**` and schema-checks it with
 3. It builds a multi-arch (`linux/amd64`, `linux/arm64`) image and pushes it to
    Docker Hub, tagged `sha-<short-commit>` and `latest`. Public base-image pulls
    go through `mirror.gcr.io` to stay under Docker Hub's pull-rate limit.
+
+   Each architecture is built on a _native_ runner — `ubuntu-latest` for amd64,
+   `ubuntu-24.04-arm` for arm64, both free for public repositories — and the two
+   by-digest images are combined into one manifest list. The shared
+   `.github/workflows/_publish-image.yml` does all of this; each component
+   workflow only declares its image, build context, build args, and overlay.
+   Never go back to a single job with `platforms: linux/amd64,linux/arm64`: that
+   emulates arm64 under QEMU, where Node/native builds die with
+   `qemu: uncaught target signal 4 (Illegal instruction)` and the build wedges
+   until the job timeout instead of failing.
+
 4. On `master`, the workflow runs `deploy/scripts/ci/update-image-tag.sh` to write
    the `sha-*` tag into `deploy/k8s/apps/<app>/overlays/prod/kustomization.yaml`,
    then commits it (`chore(deploy): promote <app> to sha-<commit>`).

@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, fn, col } = require('sequelize');
 
 const {
   reviews: Reviews,
@@ -6,6 +6,7 @@ const {
   review_media: ReviewMedia,
   users: Users,
   hotels: Hotels,
+  images: Images,
 } = require('@platform/database');
 const sequelize = require('@config/database.config');
 
@@ -121,10 +122,13 @@ class ReviewRepository {
     });
   }
 
-  async findByUser(userId, { page = 1, limit = 20 } = {}) {
+  async findByUser(userId, { page = 1, limit = 20, status } = {}) {
     const safeLimit = toLimit(limit);
+    // Default: everything the user authored except soft-deleted rows. `status`
+    // narrows to a single moderation state (e.g. 'published' for the Reviewed tab).
+    const statusFilter = status || { [Op.in]: ['published', 'hidden'] };
     return await Reviews.findAndCountAll({
-      where: { user_id: userId },
+      where: { user_id: userId, status: statusFilter },
       attributes: [
         'id',
         'hotel_id',
@@ -139,7 +143,21 @@ class ReviewRepository {
         'updated_at',
       ],
       include: [
-        { model: Hotels, as: 'hotel', attributes: ['id', 'name'], required: false },
+        {
+          model: Hotels,
+          as: 'hotel',
+          attributes: ['id', 'name', 'city_id'],
+          required: false,
+          include: [
+            {
+              model: Images,
+              as: 'images',
+              where: { status: 'active' },
+              attributes: ['id', 'object_key', 'is_primary', 'display_order'],
+              required: false,
+            },
+          ],
+        },
         ...PUBLIC_INCLUDE,
       ],
       order: [['created_at', 'DESC']],
@@ -147,6 +165,31 @@ class ReviewRepository {
       offset: toOffset(page, safeLimit),
       distinct: true,
     });
+  }
+
+  /**
+   * Per-status counts for a user's own reviews (excludes soft-deleted rows), so
+   * the dashboard can show "All reviews" (published + hidden) vs "Reviewed"
+   * (published) without loading every row.
+   */
+  async countByStatusForUser(userId) {
+    const rows = await Reviews.findAll({
+      where: {
+        user_id: userId,
+        status: { [Op.in]: ['published', 'hidden'] },
+      },
+      attributes: ['status', [fn('COUNT', col('id')), 'count']],
+      group: ['status'],
+      raw: true,
+    });
+
+    const counts = { published: 0, hidden: 0 };
+    rows.forEach((row) => {
+      if (Object.prototype.hasOwnProperty.call(counts, row.status)) {
+        counts[row.status] = parseInt(row.count, 10) || 0;
+      }
+    });
+    return counts;
   }
 
   async findByBookingIds(bookingIds = [], options = {}) {
