@@ -143,6 +143,7 @@ jobs:
       build_args: |
         VITE_SERVER_HOST=${{ vars.VITE_SERVER_HOST || 'https://api.deployserver.work' }}
         VITE_MINIO_URL=${{ vars.VITE_MINIO_URL || 'https://storage.deployserver.work/uploads/' }}
+        VITE_ADMIN_HOST=${{ vars.VITE_ADMIN_HOST || 'https://admin.deployserver.work' }}
         VITE_KEYCLOAK_URL=${{ vars.VITE_KEYCLOAK_URL || 'https://keycloak.deployserver.work' }}
         VITE_KEYCLOAK_REALM=${{ vars.VITE_KEYCLOAK_REALM || 'travelnest' }}
         VITE_KEYCLOAK_CLIENT_ID=${{ vars.VITE_KEYCLOAK_CLIENT_ID || 'travelnest-web' }}

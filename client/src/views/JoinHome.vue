@@ -1,11 +1,12 @@
 <script>
 import LoginHeader from '@/components/LoginHeader.vue'
-import { goToAdminApp } from '@/utils/adminApp'
+import { adminAppUrl, goToAdminApp } from '@/utils/adminApp'
 export default {
   components: {
     LoginHeader
   },
   methods: {
+    adminAppUrl,
     goToAdminApp
   }
 }
@@ -17,29 +18,30 @@ export default {
     <div class="main-container">
       <div class="left-main-container">
         <h1 class="main-title">
-          Đăng<br />
-          <span class="highlight">bất cứ chỗ nghỉ nào</span><br />
-          trên TravelNest
+          {{ $t('join.titleLine1') }}<br />
+          <span class="highlight">{{ $t('join.titleHighlight') }}</span><br />
+          {{ $t('join.titleLine2') }}
         </h1>
         <h1 class="subtitle">
-          Dù host là nghề tay trái hay công việc toàn thời gian, hãy đăng nhà của bạn ngay hôm nay
-          và nhanh chóng có thêm nguồn thu nhập.
+          {{ $t('join.subtitle') }}
         </h1>
       </div>
       <div class="register-card">
-        <h2 class="register-title">Đăng ký miễn phí</h2>
+        <h2 class="register-title">{{ $t('join.registerTitle') }}</h2>
         <ul class="list">
-          <li>45% host nhận được đơn đặt đầu tiên trong vòng 1 tuần</li>
-          <li>Chọn một trong hai cách nhận đơn đặt: xác nhận tức thì và xem trước để duyệt</li>
-          <li>Chúng tôi xử lý thanh toán thay bạn</li>
+          <li>{{ $t('join.benefit1') }}</li>
+          <li>{{ $t('join.benefit2') }}</li>
+          <li>{{ $t('join.benefit3') }}</li>
         </ul>
         <button class="get-started-button" @click="goToAdminApp('/login')">
-          Bắt đầu ngay
+          {{ $t('join.getStarted') }}
         </button>
         <div class="login-text">
-          Bạn đã bắt đầu quá trình đăng ký?
+          {{ $t('join.alreadyStarted') }}
           <div>
-            <a class="login-link">Tiếp tục các bước đăng ký</a>
+            <a class="login-link" :href="adminAppUrl('/login')">
+              {{ $t('join.continueRegistration') }}
+            </a>
           </div>
         </div>
       </div>
