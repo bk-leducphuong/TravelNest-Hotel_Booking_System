@@ -193,7 +193,10 @@
       list-style-type: none;
       margin-bottom: 0;
 
-      li {
+      // The nav items come from each header's `#nav-items` slot, so they belong
+      // to the caller's scope and a plain scoped selector would not reach them.
+      // `:deep()` anchors the styles on this (BaseHeader-owned) `ul` instead.
+      :deep(li) {
         padding: $spacing-sm;
         margin-left: $spacing-md;
         border-radius: $border-radius-md;
@@ -218,8 +221,8 @@
         }
       }
 
-      .login,
-      .guides {
+      :deep(.login),
+      :deep(.guides) {
         padding: $spacing-xs $spacing-sm;
         color: $secondary-color;
         font-weight: 500;
