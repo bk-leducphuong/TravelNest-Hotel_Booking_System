@@ -94,6 +94,7 @@ describe('booking/application/guest/createPaymentIntentForBooking', () => {
       clientSecret: 'cs_existing',
       paymentIntentId: 'pi_existing',
       status: 'pending',
+      requiresAction: false,
       bookingId: 5,
       bookingCode: 'ABC123',
     });
@@ -129,6 +130,7 @@ describe('booking/application/guest/createPaymentIntentForBooking', () => {
       clientSecret: 'cs_new',
       paymentIntentId: 'pi_new',
       status: 'pending',
+      requiresAction: false,
       bookingId: 5,
       bookingCode: 'ABC123',
     });

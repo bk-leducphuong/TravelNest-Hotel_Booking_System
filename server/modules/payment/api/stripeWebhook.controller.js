@@ -4,6 +4,14 @@ const paymentModule = {
   handlePaymentFailed: require('../application/webhooks/handlePaymentFailed').handlePaymentFailed,
   handleRefundSucceeded: require('../application/webhooks/handleRefundSucceeded')
     .handleRefundSucceeded,
+  handlePaymentMethodAttached: require('../application/webhooks/handlePaymentMethodAttached')
+    .handlePaymentMethodAttached,
+  handlePaymentMethodUpdated: require('../application/webhooks/handlePaymentMethodUpdated')
+    .handlePaymentMethodUpdated,
+  handlePaymentMethodDetached: require('../application/webhooks/handlePaymentMethodDetached')
+    .handlePaymentMethodDetached,
+  handleCustomerUpdated: require('../application/webhooks/handleCustomerUpdated')
+    .handleCustomerUpdated,
   webhookEventLog: require('../infrastructure/webhook-event-log'),
 };
 const emailPublisher = require('@platform/events/producers/email');
@@ -97,6 +105,23 @@ async function routeWebhookEvent(event) {
     case 'transfer.updated':
     case 'transfer.reversed':
       await handleTransferUpdated(event);
+      break;
+
+    // Saved payment methods (account settings) — keep the local mirror honest.
+    case 'payment_method.attached':
+      await paymentModule.handlePaymentMethodAttached(event);
+      break;
+
+    case 'payment_method.updated':
+      await paymentModule.handlePaymentMethodUpdated(event);
+      break;
+
+    case 'payment_method.detached':
+      await paymentModule.handlePaymentMethodDetached(event);
+      break;
+
+    case 'customer.updated':
+      await paymentModule.handleCustomerUpdated(event);
       break;
 
     default:

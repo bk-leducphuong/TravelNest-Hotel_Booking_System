@@ -42,11 +42,11 @@ export const accountSettingsSections = [
   {
     slug: 'payment-settings',
     title: 'Payment methods',
-    summary: 'View the payment-method area while card-management support is still being integrated.',
-    cta: 'Review payment methods',
+    summary: 'Save cards, set a default and remove the payment methods attached to your account.',
+    cta: 'Manage payment methods',
     component: 'PaymentSettings',
-    available: false,
+    available: true,
   },
-]
+];
 
-export const defaultAccountSettingsSection = accountSettingsSections[0]
+export const defaultAccountSettingsSection = accountSettingsSections[0];

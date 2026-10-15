@@ -133,3 +133,56 @@ exports.getPaymentByTransactionId = {
   }).required(),
   query: Joi.object({}).unknown(false), // No query params expected
 };
+
+// --- Saved payment methods (account settings) ---
+
+const savedPaymentMethodIdSchema = Joi.string()
+  .pattern(/^pm_[A-Za-z0-9]+$/)
+  .required()
+  .messages({
+    'string.base': 'paymentMethodId must be a string',
+    'string.pattern.base': 'paymentMethodId must be a valid Stripe payment method id',
+    'any.required': 'paymentMethodId is required',
+  });
+
+const setupIntentIdSchema = Joi.string()
+  .pattern(/^seti_[A-Za-z0-9]+$/)
+  .required()
+  .messages({
+    'string.base': 'setupIntentId must be a string',
+    'string.pattern.base': 'setupIntentId must be a valid Stripe setup intent id',
+    'any.required': 'setupIntentId is required',
+  });
+
+/**
+ * POST /api/payments/methods/setup-intent
+ * No request body.
+ */
+exports.createSetupIntent = {};
+
+/**
+ * GET /api/payments/methods
+ * No query params.
+ */
+exports.listPaymentMethods = {};
+
+/**
+ * POST /api/payments/methods
+ * Persist a card attached via a confirmed SetupIntent.
+ */
+exports.savePaymentMethod = {
+  body: Joi.object({
+    setupIntentId: setupIntentIdSchema,
+  }).required(),
+};
+
+/**
+ * POST /api/payments/methods/:paymentMethodId/default
+ * DELETE /api/payments/methods/:paymentMethodId
+ */
+exports.paymentMethodIdParam = {
+  params: Joi.object({
+    paymentMethodId: savedPaymentMethodIdSchema,
+  }).required(),
+  query: Joi.object({}).unknown(false),
+};

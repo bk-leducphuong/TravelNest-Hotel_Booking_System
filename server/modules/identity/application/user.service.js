@@ -181,6 +181,43 @@ class UserService {
   }
 
   /**
+   * Read the Stripe customer id mapped to the user (null when unset).
+   * @param {number|string} userId
+   * @returns {Promise<string|null>}
+   */
+  async getStripeCustomerId(userId) {
+    return await userRepository.findStripeCustomerIdById(userId);
+  }
+
+  /**
+   * Persist the Stripe customer id for the user.
+   * @param {number|string} userId
+   * @param {string} customerId
+   * @returns {Promise<void>}
+   */
+  async setStripeCustomerId(userId, customerId) {
+    await userRepository.setStripeCustomerId(userId, customerId);
+  }
+
+  /**
+   * Resolve the local user that owns a Stripe customer (used by webhooks).
+   * @param {string} customerId
+   * @returns {Promise<number|string|null>}
+   */
+  async findUserIdByStripeCustomerId(customerId) {
+    return await userRepository.findUserIdByStripeCustomerId(customerId);
+  }
+
+  /**
+   * Minimal contact details used to provision a Stripe customer.
+   * @param {number|string} userId
+   * @returns {Promise<{id: string, email: string, name?: string}|null>}
+   */
+  async getPaymentCustomerContact(userId) {
+    return await userRepository.findContactById(userId);
+  }
+
+  /**
    * Reset user password
    * @param {number} userId - User ID
    * @param {string} oldPassword - Current password
