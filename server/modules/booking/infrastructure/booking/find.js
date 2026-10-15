@@ -326,6 +326,15 @@ async function findDetailedByBookingCodeAndBuyerId(bookingCode, buyerId, options
         model: Hotels,
         as: 'hotel',
         attributes: ['id', 'name', 'city_id', 'address'],
+        include: [
+          {
+            model: Images,
+            as: 'images',
+            where: { status: 'active' },
+            attributes: ['id', 'object_key', 'is_primary', 'display_order'],
+            required: false,
+          },
+        ],
       },
       {
         model: Transactions,

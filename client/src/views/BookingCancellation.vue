@@ -8,6 +8,11 @@ import { getFirstImageUrl } from '@/utils/images'
 // Statuses the API allows cancelling.
 const CANCELLABLE_STATUSES = ['pending_payment', 'confirmed', 'payment_failed', 'checked_in']
 
+// Neutral inline placeholder for a missing/broken hotel image.
+const PLACEHOLDER_IMAGE = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" role="img" aria-label="No image"><rect width="100%" height="100%" fill="#f2f2f2"/><text x="50%" y="50%" font-family="Arial, sans-serif" font-size="11" fill="#9aa0a6" text-anchor="middle" dominant-baseline="middle">No image</text></svg>'
+)}`
+
 export default {
   components: {
     Header,
@@ -24,7 +29,8 @@ export default {
       endTitle: 'Booking cancelled successfully!',
       redirectUrl: '/bookings',
       fail: false,
-      disableCancelBtn: false
+      disableCancelBtn: false,
+      showPolicy: false
     }
   },
   computed: {
@@ -49,6 +55,18 @@ export default {
     },
     canCancel() {
       return CANCELLABLE_STATUSES.includes(this.getBookingInformation.status)
+    },
+    // Hotel image from the booking payload (server exposes `image_urls`;
+    // accept `images` too for older payloads).
+    hotelImageSrc() {
+      const hotel = this.getBookingInformation.hotel
+      if (!hotel) return ''
+      return getFirstImageUrl(hotel.image_urls || hotel.images)
+    },
+    // Structured cancellation policy captured on the booking, if any.
+    policyRooms() {
+      const snapshot = this.getBookingInformation.cancellation_policy_snapshot
+      return Array.isArray(snapshot?.rooms) ? snapshot.rooms : []
     }
   },
   methods: {
@@ -59,6 +77,16 @@ export default {
     },
     backStep() {
       this.step--
+    },
+    togglePolicy() {
+      this.showPolicy = !this.showPolicy
+    },
+    // Never render a broken image icon.
+    onImageError(event) {
+      const el = event?.target
+      if (!el || el.dataset.fallbackApplied) return
+      el.dataset.fallbackApplied = 'true'
+      el.src = PLACEHOLDER_IMAGE
     },
     async loadBooking() {
       try {
@@ -142,12 +170,17 @@ export default {
     <div class="cancel-right">
       <div class="booking-summary">
         <img
-          :src="getFirstImageUrl(getBookingInformation.hotel.image_urls)"
+          v-if="hotelImageSrc"
+          :src="hotelImageSrc"
           alt="Room image"
           class="room-image"
+          @error="onImageError"
         />
+        <div v-else class="room-image room-image-placeholder" aria-hidden="true">
+          <i class="fa-regular fa-image"></i>
+        </div>
         <div>
-          <h3 class="property-name">{{ getBookingInformation.hotel.name }}</h3>
+          <h3 class="property-name">{{ getBookingInformation.hotel?.name }}</h3>
           <div>
             {{
               new Date(getBookingInformation.checkInDate)
@@ -187,7 +220,34 @@ export default {
           arrival, the cancellation fee will be the cost of the first night. If you don't show up,
           the no-show fee will be the same as the cancellation fee.
         </p>
-        <a href="#" class="policy-link">View cancellation policy</a>
+        <button
+          type="button"
+          class="policy-link"
+          :aria-expanded="showPolicy ? 'true' : 'false'"
+          @click="togglePolicy"
+        >
+          {{ showPolicy ? 'Hide cancellation policy' : 'View cancellation policy' }}
+        </button>
+        <div v-if="showPolicy" class="policy-details">
+          <p v-if="policyRooms.length === 0" class="policy-empty">
+            The full cancellation policy is shown on your booking confirmation.
+          </p>
+          <ul v-else>
+            <li v-for="rule in policyRooms" :key="rule.roomId">
+              <strong>{{ rule.isRefundable ? 'Refundable' : 'Non-refundable' }}</strong>
+              <span v-if="rule.freeCancellationUntilHoursBeforeCheckin">
+                — free cancellation until
+                {{ rule.freeCancellationUntilHoursBeforeCheckin }}h before check-in
+              </span>
+              <span v-if="rule.refundPercentBeforeDeadline">
+                ({{ rule.refundPercentBeforeDeadline }}% refund before the deadline<span
+                  v-if="rule.refundPercentAfterDeadline"
+                  >, {{ rule.refundPercentAfterDeadline }}% after</span
+                >)
+              </span>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
@@ -318,6 +378,15 @@ export default {
   margin-bottom: 10px;
 }
 
+.room-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f2f2f2;
+  color: #9aa0a6;
+  font-size: 24px;
+}
+
 .property-name {
   font-size: 1.2rem;
   font-weight: bold;
@@ -350,11 +419,36 @@ export default {
 }
 
 .policy-link {
+  background: none;
+  border: none;
+  padding: 0;
   color: #007bff;
-  text-decoration: none;
+  font-size: inherit;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .policy-link:hover {
   text-decoration: underline;
+}
+
+.policy-details {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.policy-details ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.policy-details li {
+  margin-bottom: 6px;
+}
+
+.policy-empty {
+  margin: 0;
+  color: #666;
 }
 </style>
