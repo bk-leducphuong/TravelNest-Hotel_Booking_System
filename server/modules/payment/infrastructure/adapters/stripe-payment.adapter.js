@@ -1,16 +1,22 @@
 const stripeConfig = require('@config/stripe.config');
 const logger = require('@config/logger.config');
 
+const StripeCustomerAdapter = require('./stripe-customer.adapter');
+const { normalizeStripeError } = require('./stripe-error');
+
 /**
  * Stripe payment adapter.
  *
  * Stripe is the only payment provider; this simply wraps the Stripe SDK so the
  * SDK specifics (amount units, status strings, error shapes) don't leak into
  * business code.
+ *
+ * Extends {@link StripeCustomerAdapter} so intents, refunds and the saved
+ * customer/payment-method surface share one instance.
  */
-class StripePaymentAdapter {
+class StripePaymentAdapter extends StripeCustomerAdapter {
   constructor() {
-    this.stripe = stripeConfig.client;
+    super();
     this.webhookSecret = stripeConfig.webhookSecret;
   }
 
@@ -18,7 +24,8 @@ class StripePaymentAdapter {
    * Create a Stripe payment intent
    */
   async createPayment(params) {
-    const { amount, currency, paymentMethodId, metadata, returnUrl } = params;
+    const { amount, currency, paymentMethodId, customerId, metadata, returnUrl, offSession } =
+      params;
 
     try {
       const intentParams = {
@@ -31,10 +38,20 @@ class StripePaymentAdapter {
         },
       };
 
+      if (customerId) {
+        intentParams.customer = customerId;
+      }
+
       if (paymentMethodId) {
         intentParams.payment_method = paymentMethodId;
         intentParams.confirm = true;
         intentParams.return_url = returnUrl;
+
+        // Off-session reuse (merchant-initiated later payments) must opt in
+        // explicitly; on-session checkout keeps 3DS available.
+        if (offSession) {
+          intentParams.off_session = true;
+        }
       }
 
       const paymentIntent = await this.stripe.paymentIntents.create(intentParams);
@@ -50,7 +67,7 @@ class StripePaymentAdapter {
       };
     } catch (error) {
       logger.error('Stripe payment creation failed:', error);
-      throw this.normalizeError(error);
+      throw normalizeStripeError(error);
     }
   }
 
@@ -72,7 +89,7 @@ class StripePaymentAdapter {
       };
     } catch (error) {
       logger.error('Stripe payment retrieval failed:', error);
-      throw this.normalizeError(error);
+      throw normalizeStripeError(error);
     }
   }
 
@@ -90,7 +107,7 @@ class StripePaymentAdapter {
       };
     } catch (error) {
       logger.error('Stripe payment cancellation failed:', error);
-      throw this.normalizeError(error);
+      throw normalizeStripeError(error);
     }
   }
 
@@ -129,7 +146,7 @@ class StripePaymentAdapter {
       };
     } catch (error) {
       logger.error('Stripe refund creation failed:', error);
-      throw this.normalizeError(error);
+      throw normalizeStripeError(error);
     }
   }
 
@@ -159,7 +176,7 @@ class StripePaymentAdapter {
       };
     } catch (error) {
       logger.error('Stripe charge refund failed:', error);
-      throw this.normalizeError(error);
+      throw normalizeStripeError(error);
     }
   }
 
@@ -228,47 +245,6 @@ class StripePaymentAdapter {
     };
 
     return statusMap[stripeStatus] || stripeStatus;
-  }
-
-  /**
-   * Normalize Stripe errors to common error format
-   */
-  normalizeError(error) {
-    const normalizedError = new Error(error.message);
-    normalizedError.code = error.code || 'UNKNOWN_ERROR';
-    normalizedError.type = error.type || 'api_error';
-    normalizedError.statusCode = error.statusCode || 500;
-    normalizedError.provider = 'stripe';
-    normalizedError.raw = error;
-
-    return normalizedError;
-  }
-
-  /**
-   * Get payment method details
-   */
-  async getPaymentMethod(paymentMethodId) {
-    try {
-      const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
-
-      return {
-        id: paymentMethod.id,
-        type: paymentMethod.type,
-        card: paymentMethod.card
-          ? {
-              brand: paymentMethod.card.brand,
-              last4: paymentMethod.card.last4,
-              expMonth: paymentMethod.card.exp_month,
-              expYear: paymentMethod.card.exp_year,
-            }
-          : null,
-        billingDetails: paymentMethod.billing_details,
-        provider: 'stripe',
-      };
-    } catch (error) {
-      logger.error('Stripe payment method retrieval failed:', error);
-      throw this.normalizeError(error);
-    }
   }
 }
 

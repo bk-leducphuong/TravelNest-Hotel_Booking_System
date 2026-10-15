@@ -5,6 +5,12 @@ const paymentUseCases = {
   getPaymentByTransactionId: require('../application/guest/getPaymentByTransactionId')
     .getPaymentByTransactionId,
   getUserPayments: require('../application/guest/getUserPayments').getUserPayments,
+  createSetupIntent: require('../application/guest/createSetupIntent').createSetupIntent,
+  savePaymentMethod: require('../application/guest/savePaymentMethod').savePaymentMethod,
+  listPaymentMethods: require('../application/guest/listPaymentMethods').listPaymentMethods,
+  setDefaultPaymentMethod: require('../application/guest/setDefaultPaymentMethod')
+    .setDefaultPaymentMethod,
+  removePaymentMethod: require('../application/guest/removePaymentMethod').removePaymentMethod,
 };
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
@@ -89,9 +95,77 @@ const getPaymentByTransactionId = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * POST /api/payments/methods/setup-intent
+ * Create a Stripe SetupIntent so the client can attach a card.
+ */
+const createSetupIntent = asyncHandler(async (req, res) => {
+  const userId = getSessionUserId(req);
+
+  const result = await paymentUseCases.createSetupIntent(userId);
+
+  res.status(201).json({ data: result });
+});
+
+/**
+ * POST /api/payments/methods
+ * Persist a card the client just attached via a confirmed SetupIntent.
+ */
+const savePaymentMethod = asyncHandler(async (req, res) => {
+  const userId = getSessionUserId(req);
+  const { setupIntentId } = req.body;
+
+  const result = await paymentUseCases.savePaymentMethod(userId, { setupIntentId });
+
+  res.status(201).json({ data: result });
+});
+
+/**
+ * GET /api/payments/methods
+ * List the authenticated user's saved cards.
+ */
+const listPaymentMethods = asyncHandler(async (req, res) => {
+  const userId = getSessionUserId(req);
+
+  const result = await paymentUseCases.listPaymentMethods(userId);
+
+  res.status(200).json({ data: result });
+});
+
+/**
+ * POST /api/payments/methods/:paymentMethodId/default
+ * Set a saved card as the default.
+ */
+const setDefaultPaymentMethod = asyncHandler(async (req, res) => {
+  const userId = getSessionUserId(req);
+  const { paymentMethodId } = req.params;
+
+  const result = await paymentUseCases.setDefaultPaymentMethod(userId, paymentMethodId);
+
+  res.status(200).json({ data: result });
+});
+
+/**
+ * DELETE /api/payments/methods/:paymentMethodId
+ * Remove a saved card.
+ */
+const removePaymentMethod = asyncHandler(async (req, res) => {
+  const userId = getSessionUserId(req);
+  const { paymentMethodId } = req.params;
+
+  const result = await paymentUseCases.removePaymentMethod(userId, paymentMethodId);
+
+  res.status(200).json({ data: result });
+});
+
 module.exports = {
   createPaymentIntent,
   getUserPayments,
   getPaymentByBookingId,
   getPaymentByTransactionId,
+  createSetupIntent,
+  savePaymentMethod,
+  listPaymentMethods,
+  setDefaultPaymentMethod,
+  removePaymentMethod,
 };

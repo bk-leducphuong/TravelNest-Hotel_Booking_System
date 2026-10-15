@@ -45,6 +45,7 @@ async function createPaymentIntentForBooking(bookingId, userId, data = {}) {
       clientSecret: payment.raw?.client_secret,
       paymentIntentId: payment.id,
       status: payment.status,
+      requiresAction: payment.raw?.status === 'requires_action',
       bookingId: bookingData.id,
       bookingCode: bookingData.booking_code,
     };
@@ -54,6 +55,7 @@ async function createPaymentIntentForBooking(bookingId, userId, data = {}) {
     amount: toMinorUnits(bookingData.total_price, 'USD'),
     currency: 'USD',
     paymentMethodId: data.paymentMethodId,
+    buyerId: userId,
     returnUrl: process.env.CLIENT_HOST
       ? `${process.env.CLIENT_HOST}/book/complete`
       : 'http://localhost:5173/book/complete',
@@ -80,6 +82,7 @@ async function createPaymentIntentForBooking(bookingId, userId, data = {}) {
     clientSecret: payment.clientSecret,
     paymentIntentId: payment.id,
     status: payment.status,
+    requiresAction: payment.raw?.status === 'requires_action',
     bookingId: bookingData.id,
     bookingCode: bookingData.booking_code,
   };
