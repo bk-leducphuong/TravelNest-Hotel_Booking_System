@@ -11,6 +11,11 @@ import { BookingService } from '@/services/booking.service'
 import { getFirstImageUrl, getImageUrl } from '@/utils/images'
 import { totalPagesFrom } from '@/utils/pagination'
 
+// Neutral inline placeholder used when a property/review image fails to load.
+const PLACEHOLDER_IMAGE = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="125" height="125" role="img" aria-label="No image"><rect width="100%" height="100%" fill="#f2f2f2"/><text x="50%" y="50%" font-family="Arial, sans-serif" font-size="12" fill="#9aa0a6" text-anchor="middle" dominant-baseline="middle">No image</text></svg>'
+)}`
+
 export default {
   components: {
     TheHeader,
@@ -29,7 +34,8 @@ export default {
       isLoading: false,
       isPageLoading: false,
       viewMode: 'all',
-      pagination: { page: 1, limit: 20, total: 0, totalPages: 0 }
+      expandedReviewId: null,
+      pagination: { page: 1, limit: 20, total: 0, totalPages: 0, published: 0, hidden: 0 }
     }
   },
   computed: {
@@ -40,11 +46,20 @@ export default {
     notReviewedBookings() {
       return this.bookings.filter((booking) => booking.status === 'completed')
     },
+    // "All reviews" = everything the user wrote (published + hidden by moderation).
+    allReviewsCount() {
+      return this.pagination.published + this.pagination.hidden
+    },
+    // "Reviewed" = the visible (published) reviews.
     reviewed() {
-      return this.pagination.total
+      return this.pagination.published
     },
     notReviewed() {
       return this.notReviewedBookings.length
+    },
+    // The "Reviewed" tab lists published reviews only; "All reviews" lists all.
+    reviewStatusFilter() {
+      return this.viewMode === 'reviewed' ? 'published' : undefined
     },
     displayedReviews() {
       return this.viewMode === 'notReviewed' ? [] : this.reviews
@@ -64,6 +79,16 @@ export default {
     }
   },
   watch: {
+    // Switching to/from the "Reviewed" tab changes which reviews are listed
+    // (published only vs all), so refetch from page 1 with the right filter.
+    async viewMode(newVal, oldVal) {
+      if (newVal !== 'reviewed' && oldVal !== 'reviewed') return
+      this.pagination.page = 1
+      await this.loadReviews(1)
+      if (this.parsePage(this.$route.query.page) !== 1) {
+        this.$router.replace({ query: { ...this.$route.query, page: 1 } }).catch(() => {})
+      }
+    },
     // Keep the page in the URL (?page=N) so refresh/back/shared links work.
     async '$route.query.page'(value) {
       const page = this.parsePage(value)
@@ -86,7 +111,10 @@ export default {
     },
     async loadReviews(page = this.pagination.page) {
       try {
-        const response = await ReviewService.getReviews({ page, limit: this.pagination.limit })
+        const params = { page, limit: this.pagination.limit }
+        if (this.reviewStatusFilter) params.status = this.reviewStatusFilter
+
+        const response = await ReviewService.getReviews(params)
         this.reviews = response?.data ?? []
         const meta = response?.meta ?? {}
         const limit = meta.limit ?? this.pagination.limit
@@ -95,7 +123,9 @@ export default {
           page: meta.page ?? page,
           limit,
           total,
-          totalPages: totalPagesFrom(total, limit)
+          totalPages: totalPagesFrom(total, limit),
+          published: meta.published ?? this.pagination.published,
+          hidden: meta.hidden ?? this.pagination.hidden
         }
       } catch (error) {
         errorHandler(error)
@@ -135,6 +165,25 @@ export default {
         query: { bc: bookingCode, hid: hotelId, hn: hotelName }
       })
     },
+    // Expand/collapse a written review to show its rating, media and any
+    // moderation note inline.
+    toggleReview(reviewId) {
+      this.expandedReviewId = this.expandedReviewId === reviewId ? null : reviewId
+    },
+    isReviewExpanded(reviewId) {
+      return this.expandedReviewId === reviewId
+    },
+    sortedMedia(media) {
+      if (!Array.isArray(media)) return []
+      return [...media].sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
+    },
+    // Swap a broken/empty image for a neutral placeholder instead of a broken icon.
+    onImageError(event) {
+      const el = event?.target
+      if (!el || el.dataset.fallbackApplied) return
+      el.dataset.fallbackApplied = 'true'
+      el.src = PLACEHOLDER_IMAGE
+    },
     getFirstImageUrl,
     getImageUrl
   },
@@ -162,7 +211,7 @@ export default {
       <div class="nav-links">
         <a class="nav-link" :class="{ selected: viewMode === 'all' }" @click="viewMode = 'all'">
           All reviews
-          <span class="review-count">{{ pagination.total }}</span>
+          <span class="review-count">{{ allReviewsCount }}</span>
         </a>
         <a
           class="nav-link"
@@ -191,14 +240,20 @@ export default {
         icon="fa-regular fa-star"
       />
       <template v-else>
+        <div class="review-list">
         <!-- Stays awaiting a review -->
         <div class="review-card" v-for="booking in displayedBookings" :key="booking.id">
           <div style="display: flex; gap: 16px; align-items: start">
             <img
+              v-if="getFirstImageUrl(booking.hotel?.image_urls)"
               :src="getFirstImageUrl(booking.hotel?.image_urls)"
               alt="Property"
               class="property-image"
+              @error="onImageError"
             />
+            <div v-else class="property-image property-image-placeholder" aria-hidden="true">
+              <i class="fa-regular fa-image"></i>
+            </div>
             <div class="review-content">
               <h4>You haven't reviewed your stay at {{ booking.hotel?.name }}</h4>
               <div>
@@ -215,20 +270,62 @@ export default {
         </div>
 
         <!-- Written reviews -->
-        <div class="review-card" v-for="review in displayedReviews" :key="review.id">
+        <div
+          class="review-card clickable"
+          v-for="review in displayedReviews"
+          :key="review.id"
+          role="button"
+          tabindex="0"
+          :aria-expanded="isReviewExpanded(review.id) ? 'true' : 'false'"
+          @click="toggleReview(review.id)"
+          @keydown.enter.prevent="toggleReview(review.id)"
+          @keydown.space.prevent="toggleReview(review.id)"
+        >
           <div style="display: flex; gap: 16px; align-items: start">
             <img
+              v-if="getFirstImageUrl(review.hotel?.image_urls)"
               :src="getFirstImageUrl(review.hotel?.image_urls)"
               alt="Property"
               class="property-image"
+              @error="onImageError"
             />
+            <div v-else class="property-image property-image-placeholder" aria-hidden="true">
+              <i class="fa-regular fa-image"></i>
+            </div>
             <div class="review-content">
               <h4>You reviewed your stay at {{ review.hotel?.name }}</h4>
-              <div>
+              <div class="review-meta">
                 <span class="review-status">Reviewed</span>
+                <span v-if="review.status === 'hidden'" class="review-hidden-badge">Hidden</span>
+                <i
+                  class="fa-solid review-toggle-icon"
+                  :class="isReviewExpanded(review.id) ? 'fa-chevron-up' : 'fa-chevron-down'"
+                  aria-hidden="true"
+                ></i>
               </div>
               <p v-if="review.title"><strong>{{ review.title }}</strong></p>
               <p v-if="review.comment">{{ review.comment }}</p>
+
+              <div v-if="isReviewExpanded(review.id)" class="review-details">
+                <div v-if="review.rating_overall" class="review-rating">
+                  <span class="score-badge">{{ review.rating_overall }}</span>
+                  <span class="review-rating-label">out of 10</span>
+                </div>
+                <p v-if="review.status === 'hidden'" class="review-hidden-note">
+                  This review is hidden by moderation and only visible to you.
+                </p>
+                <div v-if="sortedMedia(review.media).length" class="review-media">
+                  <img
+                    v-for="(media, index) in sortedMedia(review.media)"
+                    :key="media.id || index"
+                    :src="getImageUrl(media.thumbnail_url || media.url)"
+                    alt="Review photo"
+                    class="review-media-item"
+                    @error="onImageError"
+                  />
+                </div>
+                <p v-else class="review-media-empty">No photos attached to this review.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -243,6 +340,7 @@ export default {
           :summary="paginationSummary"
           @change="changePage"
         />
+        </div>
       </template>
     </div>
   </div>
@@ -322,12 +420,99 @@ export default {
   font-weight: 500;
 }
 
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .review-card {
   background: white;
   padding: 16px;
-  /* margin: 16px 0; */
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.review-card.clickable {
+  cursor: pointer;
+}
+
+.review-card.clickable:hover,
+.review-card.clickable:focus-visible {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.16);
+}
+
+.review-card.clickable:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: 2px;
+}
+
+.review-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-toggle-icon {
+  margin-left: auto;
+  color: #1a73e8;
+}
+
+.review-details {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.review-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-rating-label {
+  color: #666;
+  font-size: 13px;
+}
+
+.review-hidden-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  background: #fdecea;
+  color: #b3261e;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.review-hidden-note {
+  margin: 0;
+  color: #b26a00;
+  background: #fff4e5;
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.review-media {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.review-media-item {
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.review-media-empty {
+  margin: 0;
+  color: #666;
+  font-size: 13px;
 }
 
 .property-image {
@@ -336,6 +521,15 @@ export default {
   border-radius: 4px;
   object-fit: cover;
   align-self: center;
+}
+
+.property-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f2f2f2;
+  color: #9aa0a6;
+  font-size: 24px;
 }
 
 .review-button {
