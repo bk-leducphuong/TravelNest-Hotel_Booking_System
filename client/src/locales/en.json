@@ -69,5 +69,13 @@
   "join.continueRegistration": "Continue your registration",
   "joinHeader.partnerQuestion": "Already a partner?",
   "joinHeader.login": "Log in",
-  "joinHeader.help": "Help"
+  "joinHeader.help": "Help",
+
+  "map.title": "Hotels",
+  "map.close": "Close map",
+  "map.empty": "No properties to show.",
+  "map.noLocation": "No properties with a location to show on the map.",
+  "map.reviewCount": "{count} reviews",
+  "map.stars": "{count}-star property",
+  "map.priceIncludes": "Includes taxes and fees"
 }

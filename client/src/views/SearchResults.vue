@@ -448,12 +448,6 @@
         <div class="row">
           <div class="col-3">
             <div class="map">
-              <iframe
-                src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d59582.31596536299!2d105.834667!3d21.036897!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135aba15ec15d17%3A0x620e85c2cfe14d4c!2zTMSDbmcgQ2jhu6cgdOG7i2NoIEjhu5MgQ2jDrSBNaW5o!5e0!3m2!1svi!2sus!4v1729735752435!5m2!1svi!2sus"
-                allowfullscreen=""
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade"
-              ></iframe>
               <button class="map-button" @click="openMapPopup = !openMapPopup">
                 <svg class="map-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path
@@ -768,10 +762,7 @@
   /* map */
   .map {
     margin: 10px 0;
-    /* width: 300px; */
-    height: 150px;
     border-radius: 5px;
-    overflow: hidden;
   }
 
   iframe {
@@ -794,9 +785,8 @@
     font-size: 14px;
     cursor: pointer;
     transition: background-color 0.2s;
-    top: -60px;
-    margin: auto;
-    position: relative;
+    width: 100%;
+    justify-content: center;
   }
 
   .map-button:hover {

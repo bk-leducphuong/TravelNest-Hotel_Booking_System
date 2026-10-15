@@ -1,22 +1,30 @@
 <template>
-  <div class="popup-overlay">
-    <button class="close-button" @click="closeMapPopup">✕</button>
+  <div class="popup-overlay" @click.self="closeMapPopup">
     <div class="popup-container">
-      <div class="hotel-list">
+      <button class="close-button" type="button" :aria-label="$t('map.close')" @click="closeMapPopup">
+        ✕
+      </button>
+
+      <aside class="hotel-list">
         <div class="hotel-list-header">
-          <h2>Hotels</h2>
+          <h2>{{ $t('map.title') }}</h2>
         </div>
 
-        <!-- Hotel cards -->
-        <div class="hotel-card" v-for="hotel in hotels" :key="hotel.hotel_id"   @mouseover="hoveredHotelId = hotel.hotel_id"
-          @mouseleave="hoveredHotelId = null">
+        <p v-if="hotels.length === 0" class="hotel-list-empty">{{ $t('map.empty') }}</p>
+
+        <div
+          class="hotel-card"
+          v-for="hotel in hotels"
+          :key="hotel.hotel_id"
+          @mouseover="hoveredHotelId = hotel.hotel_id"
+          @mouseleave="hoveredHotelId = null"
+          @click="openHotel(hotel)"
+        >
           <div class="hotel-image">
-            <img
-              v-if="getHotelImage(hotel)"
-              :src="getHotelImage(hotel)"
-              alt="hotel-image"
-            />
-            <!-- Fallback: background-image on .hotel-image handles empty -->
+            <img v-if="getHotelImage(hotel)" :src="getHotelImage(hotel)" :alt="hotelName(hotel)" />
+            <div v-else class="hotel-image-fallback" aria-hidden="true">
+              <i class="fa-regular fa-image"></i>
+            </div>
             <SavedHotelIcon
               :hotel-id="hotel.hotel_id"
               :initial-is-favorite="hotel.is_favorite ?? hotel.isFavorite ?? false"
@@ -24,52 +32,60 @@
             />
           </div>
           <div class="hotel-content">
-            <div class="rating-row">
-              <div class="rating-stars">
-                <span class="star">★</span>
-                <span class="star">★</span>
-                <span class="star">★</span>
-                <span class="star">★</span>
+            <div class="rating-row" v-if="starCount(hotel) > 0">
+              <div class="rating-stars" :aria-label="$t('map.stars', { count: starCount(hotel) })">
+                <span
+                  v-for="n in 5"
+                  :key="n"
+                  class="star"
+                  :class="{ 'star--off': n > starCount(hotel) }"
+                  >★</span
+                >
               </div>
-              <span class="genius-badge">Genius</span>
             </div>
 
-            <h2 class="hotel-name">{{ hotel.hotel_name || hotel.name }}</h2>
+            <h3 class="hotel-name">{{ hotelName(hotel) }}</h3>
 
-            <div class="rating-score">
-              <span class="score">{{ hotel.avg_rating ?? hotel.overall_rating ?? '—' }}</span>
-              <span class="rating-text">Rất tốt</span>
-              <span class="review-count">• {{ hotel.review_count ?? 0 }} đánh giá</span>
+            <div class="rating-score" v-if="hotel.avg_rating != null || hotel.review_count">
+              <span class="score" v-if="hotel.avg_rating != null">{{ hotel.avg_rating }}</span>
+              <span class="review-count" v-if="hotel.review_count">{{
+                $t('map.reviewCount', { count: hotel.review_count })
+              }}</span>
             </div>
 
-            <div class="room-details">
-              1 studio nguyên căn: 1 giường • 1 phòng tắm • 20m²<br>
-              8 đêm, 2 người lớn
-            </div>
-
-            <div class="price-section" v-if="hotel.min_price_for_dates ?? hotel.lowestPrice">
-              <span class="current-price"
-                >USD
-                {{ (hotel.min_price_for_dates ?? hotel.lowestPrice ?? 0).toLocaleString('en-US') }}</span
-              >
-              <span class="price-info">Đã bao gồm thuế và phí</span>
+            <div class="price-section" v-if="priceOf(hotel) != null">
+              <span class="current-price">USD {{ priceOf(hotel).toLocaleString('en-US') }}</span>
+              <span class="price-info">{{ $t('map.priceIncludes') }}</span>
             </div>
           </div>
         </div>
-      </div>
+      </aside>
 
       <div class="map-container">
-        <div class="map-placeholder">
-          <div style="height: 480px; width: 800px">
-            <LMap ref="map" v-model:zoom="zoom" :center="center" :use-global-leaflet="false">
-              <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base"
-                name="OpenStreetMap"></LTileLayer>
-              <LMarker v-for="hotel in hotels" :key="hotel.hotel_id" :lat-lng="[hotel.latitude, hotel.longitude]" :icon="hotel.hotel_id === hoveredHotelId ? redIcon : blueIcon">
-                <LPopup>{{ hotel.hotel_name || hotel.name }}</LPopup>
-              </LMarker>
-            </LMap>
-          </div>
-        </div>
+        <p v-if="mappableHotels.length === 0" class="map-empty">{{ $t('map.noLocation') }}</p>
+        <LMap
+          v-else
+          ref="map"
+          :zoom="zoom"
+          :center="center"
+          :use-global-leaflet="false"
+          class="leaflet-map"
+        >
+          <LTileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            layer-type="base"
+            name="OpenStreetMap"
+          ></LTileLayer>
+          <LMarker
+            v-for="hotel in mappableHotels"
+            :key="hotel.hotel_id"
+            :lat-lng="latLng(hotel)"
+            :icon="hotel.hotel_id === hoveredHotelId ? redIcon : blueIcon"
+            @click="openHotel(hotel)"
+          >
+            <LPopup>{{ hotelName(hotel) }}</LPopup>
+          </LMarker>
+        </LMap>
       </div>
     </div>
   </div>
@@ -80,9 +96,9 @@ import SavedHotelIcon from '@/components/SavedHotelIcon.vue'
 import { getFirstImageUrl, getImageUrl } from '@/utils/images'
 import 'leaflet/dist/leaflet.css'
 // load marker icons
-import blueMarkerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadowIcon from "leaflet/dist/images/marker-shadow.png";
-import redMarkerIcon from "@/assets/marker/red-marker-icon.png";
+import blueMarkerIcon from 'leaflet/dist/images/marker-icon.png'
+import markerShadowIcon from 'leaflet/dist/images/marker-shadow.png'
+import redMarkerIcon from '@/assets/marker/red-marker-icon.png'
 
 import { LMap, LTileLayer, LMarker, LPopup } from '@vue-leaflet/vue-leaflet'
 
@@ -95,7 +111,7 @@ const blueIcon = L.icon({
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   shadowUrl: markerShadowIcon,
-});
+})
 
 const redIcon = L.icon({
   iconUrl: redMarkerIcon,
@@ -103,8 +119,7 @@ const redIcon = L.icon({
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   shadowUrl: markerShadowIcon,
-});
-
+})
 
 export default {
   components: {
@@ -112,36 +127,81 @@ export default {
     LTileLayer,
     LMarker,
     LPopup,
-    SavedHotelIcon
+    SavedHotelIcon,
   },
   data() {
     return {
-      openMapPopup: true,
       center: [15.9030623, 105.8066925],
       zoom: 4,
-      hoveredHotelId: null, // Track which hotel is hovered
+      hoveredHotelId: null,
       blueIcon,
-      redIcon
+      redIcon,
     }
   },
   props: {
     hotels: {
       type: Array,
-      required: true
-    }
+      required: true,
+    },
+  },
+  computed: {
+    // Only hotels with real coordinates can be placed on the map.
+    mappableHotels() {
+      return (this.hotels || []).filter((hotel) => this.hasCoords(hotel))
+    },
+  },
+  watch: {
+    mappableHotels() {
+      this.$nextTick(() => this.fitMapToHotels())
+    },
   },
   methods: {
+    hotelName(hotel) {
+      return hotel.hotel_name || hotel.name || ''
+    },
+    hasCoords(hotel) {
+      const lat = Number(hotel.latitude)
+      const lng = Number(hotel.longitude)
+      return Number.isFinite(lat) && Number.isFinite(lng)
+    },
+    latLng(hotel) {
+      return [Number(hotel.latitude), Number(hotel.longitude)]
+    },
+    starCount(hotel) {
+      return Math.max(0, Math.min(5, parseInt(hotel.hotel_class, 10) || 0))
+    },
+    priceOf(hotel) {
+      const price = hotel.min_price_for_dates ?? hotel.lowestPrice
+      return price == null ? null : price
+    },
     getHotelImage(hotel) {
       if (hotel.primary_image_url) return getImageUrl(hotel.primary_image_url)
       return getFirstImageUrl(hotel.image_urls)
     },
+    openHotel(hotel) {
+      if (!hotel?.hotel_id) return
+      this.$router.push({ name: 'HotelDetails', params: { hotel_id: hotel.hotel_id } })
+    },
     closeMapPopup() {
       this.$emit('close-map-popup')
-    }
+    },
+    // Fit the viewport to the result markers instead of a hardcoded centre.
+    fitMapToHotels() {
+      const map = this.$refs.map?.leafletObject
+      const points = this.mappableHotels.map((hotel) => this.latLng(hotel))
+      if (!map || points.length === 0) return
+
+      if (points.length === 1) {
+        map.setView(points[0], 13)
+        return
+      }
+
+      map.fitBounds(L.latLngBounds(points), { padding: [30, 30] })
+    },
   },
   mounted() {
-    console.log(this.hotels)
-  }
+    this.$nextTick(() => this.fitMapToHotels())
+  },
 }
 </script>
 
@@ -161,11 +221,11 @@ export default {
 }
 
 .popup-container {
+  position: relative;
   background: white;
   border-radius: 8px;
-  width: 90%;
-  height: 80vh;
-  max-width: 1200px;
+  width: min(1200px, 94vw);
+  height: min(80vh, 720px);
   display: flex;
   overflow: hidden;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
@@ -173,6 +233,7 @@ export default {
 
 .hotel-list {
   width: 40%;
+  max-width: 420px;
   padding: 20px;
   overflow-y: auto;
   border-right: 1px solid #eee;
@@ -184,23 +245,30 @@ export default {
   margin-bottom: 16px;
 }
 
+.hotel-list-empty,
+.map-empty {
+  color: #666;
+}
+
 .map-container {
+  flex: 1;
   background: #f5f5f5;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 0;
 }
 
-.map-placeholder {
-  color: #666;
-  text-align: center;
+.leaflet-map {
+  height: 100%;
+  width: 100%;
 }
 
 .close-button {
-  z-index: 999;
   position: absolute;
-  top: 50px;
-  right: 50px;
+  z-index: 999;
+  top: 12px;
+  right: 12px;
   background: white;
   border: none;
   border-radius: 50%;
@@ -225,22 +293,17 @@ export default {
   border: 1px solid #eee;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  max-width: 600px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: inherit;
 }
 
 .hotel-card:hover {
   border-color: #0066cc;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .hotel-image {
   position: relative;
   width: 100%;
   height: 200px;
-  background-image: url('https://cf.bstatic.com/xdata/images/hotel/square600/584426827.webp?k=bb9814a06488db8b686ac44963015b0f0a861f5536304a689fc2d00ed60a1679&o=');
-  background-size: cover;
-  background-position: center;
 }
 
 .hotel-image img {
@@ -249,19 +312,15 @@ export default {
   object-fit: cover;
 }
 
-.favorite-button {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: white;
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
+.hotel-image-fallback {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  background: #f2f2f2;
+  color: #9aa0a6;
+  font-size: 28px;
 }
 
 .hotel-content {
@@ -283,16 +342,11 @@ export default {
 
 .star {
   color: #febb02;
-  font-size: 20px;
+  font-size: 18px;
 }
 
-.genius-badge {
-  background: #003580;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: bold;
+.star--off {
+  color: #d9d9d9;
 }
 
 .hotel-name {
@@ -316,18 +370,8 @@ export default {
   font-weight: bold;
 }
 
-.rating-text {
-  color: #333;
-}
-
 .review-count {
   color: #666;
-}
-
-
-.room-details {
-  margin-bottom: 12px;
-  color: #333;
 }
 
 .price-section {
@@ -335,7 +379,6 @@ export default {
   flex-direction: column;
   align-items: flex-end;
 }
-
 
 .current-price {
   font-size: 20px;
@@ -346,5 +389,25 @@ export default {
 .price-info {
   color: #666;
   font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .popup-container {
+    flex-direction: column;
+    width: 96vw;
+    height: 92vh;
+  }
+
+  .hotel-list {
+    width: 100%;
+    max-width: none;
+    height: 45%;
+    border-right: none;
+    border-bottom: 1px solid #eee;
+  }
+
+  .map-container {
+    height: 55%;
+  }
 }
 </style>

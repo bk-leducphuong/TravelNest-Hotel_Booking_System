@@ -1,0 +1,64 @@
+/*
+ * Branded overrides for vue-toastification (imported after its stock CSS in
+ * main.js so these win). Keeps toasts consistent with the TravelNest palette:
+ * primary #003b95, success #137333, error #b3261e, warning #b26a00.
+ */
+.Vue-Toastification__container {
+  padding: 12px;
+}
+
+.Vue-Toastification__toast {
+  font-family: inherit;
+  min-height: auto;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.18);
+}
+
+.Vue-Toastification__toast-body {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.Vue-Toastification__toast--default {
+  background-color: #334155;
+}
+
+.Vue-Toastification__toast--info {
+  background-color: #003b95;
+}
+
+.Vue-Toastification__toast--success {
+  background-color: #137333;
+}
+
+.Vue-Toastification__toast--warning {
+  background-color: #b26a00;
+}
+
+.Vue-Toastification__toast--error {
+  background-color: #b3261e;
+}
+
+.Vue-Toastification__close-button {
+  opacity: 0.85;
+}
+
+.Vue-Toastification__close-button:hover {
+  opacity: 1;
+}
+
+@media (max-width: 600px) {
+  .Vue-Toastification__container.top-right,
+  .Vue-Toastification__container.top-left,
+  .Vue-Toastification__container.bottom-right,
+  .Vue-Toastification__container.bottom-left {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .Vue-Toastification__toast {
+    width: 100%;
+    margin: 4px 0;
+  }
+}
