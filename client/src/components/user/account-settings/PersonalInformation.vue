@@ -3,6 +3,7 @@ import { mapActions } from 'vuex'
 import { useToast } from 'vue-toastification'
 import { UserService } from '@/services/user.service'
 import { getImageUrl } from '@/utils/images'
+import { COUNTRIES, DEFAULT_DIAL_CODE, splitPhoneNumber } from '@/constants/countries'
 
 const emptyProfile = () => ({
   name: '',
@@ -10,6 +11,8 @@ const emptyProfile = () => ({
   lastName: '',
   email: '',
   phoneNumber: '',
+  phoneDial: DEFAULT_DIAL_CODE,
+  phoneNational: '',
   dateOfBirth: '',
   address: '',
   country: '',
@@ -30,6 +33,7 @@ export default {
       savingSection: '',
       profile: emptyProfile(),
       draft: emptyProfile(),
+      countries: COUNTRIES,
       genderOptions: [
         { value: 'male', label: 'Male' },
         { value: 'female', label: 'Female' },
@@ -45,6 +49,13 @@ export default {
   computed: {
     avatarUrl() {
       return getImageUrl(this.avatarPreview || this.profile.avatar)
+    },
+    // E.164-ish; matches the server's phoneNumber schema.
+    isPhoneValid() {
+      const national = (this.draft.phoneNational || '').replace(/\D/g, '')
+      if (!national) return false
+      const composed = `${this.draft.phoneDial || DEFAULT_DIAL_CODE}${national}`
+      return /^\+?[1-9]\d{1,14}$/.test(composed)
     },
     formattedDateOfBirth() {
       if (!this.profile.dateOfBirth) {
@@ -96,6 +107,11 @@ export default {
     },
     openEditor(section) {
       this.resetDraft()
+      if (section === 'phoneNumber') {
+        const { dial, national } = splitPhoneNumber(this.draft.phoneNumber)
+        this.draft.phoneDial = dial
+        this.draft.phoneNational = national
+      }
       this.activeEditor = section
     },
     cancelEditor() {
@@ -141,11 +157,9 @@ export default {
       return this.saveProfile({ email: this.draft.email }, 'email', 'Email updated')
     },
     savePhoneNumber() {
-      return this.saveProfile(
-        { phoneNumber: this.draft.phoneNumber },
-        'phoneNumber',
-        'Phone number updated'
-      )
+      const national = (this.draft.phoneNational || '').replace(/\D/g, '')
+      const phoneNumber = national ? `${this.draft.phoneDial}${national}` : ''
+      return this.saveProfile({ phoneNumber }, 'phoneNumber', 'Phone number updated')
     },
     saveDateOfBirth() {
       return this.saveProfile(
@@ -374,7 +388,7 @@ export default {
         <div class="detail-header">
           <div>
             <h2>Phone number</h2>
-            <p>Use international format, for example <code>+12025550123</code>.</p>
+            <p>Choose your country code and enter your local number.</p>
           </div>
           <button
             v-if="activeEditor !== 'phoneNumber'"
@@ -387,15 +401,31 @@ export default {
         </div>
         <div v-if="activeEditor === 'phoneNumber'" class="editor-grid">
           <label class="field">
-            <span>Phone number</span>
-            <input v-model.trim="draft.phoneNumber" type="text" />
+            <span>Country code</span>
+            <select v-model="draft.phoneDial" class="country-select">
+              <option v-for="country in countries" :key="country.iso2" :value="country.dial">
+                {{ country.name }} ({{ country.dial }})
+              </option>
+            </select>
           </label>
+          <label class="field">
+            <span>Phone number</span>
+            <input
+              v-model.trim="draft.phoneNational"
+              type="tel"
+              inputmode="numeric"
+              placeholder="912345678"
+            />
+          </label>
+          <p v-if="draft.phoneNational && !isPhoneValid" class="field-error">
+            Enter a valid phone number (digits only, 6–15 digits including the country code).
+          </p>
           <div class="editor-actions">
             <button type="button" class="secondary-button" @click="cancelEditor">Cancel</button>
             <button
               type="button"
               class="primary-button"
-              :disabled="savingSection === 'phoneNumber' || !draft.phoneNumber"
+              :disabled="savingSection === 'phoneNumber' || !isPhoneValid"
               @click="savePhoneNumber"
             >
               {{ savingSection === 'phoneNumber' ? 'Saving...' : 'Save' }}
@@ -466,7 +496,12 @@ export default {
           </label>
           <label class="field">
             <span>Country</span>
-            <input v-model.trim="draft.country" type="text" />
+            <select v-model="draft.country" class="country-select">
+              <option value="">Select a country</option>
+              <option v-for="country in countries" :key="country.iso2" :value="country.name">
+                {{ country.name }}
+              </option>
+            </select>
           </label>
           <div class="editor-actions">
             <button type="button" class="secondary-button" @click="cancelEditor">Cancel</button>
@@ -504,7 +539,12 @@ export default {
         <div v-if="activeEditor === 'nationality'" class="editor-grid">
           <label class="field">
             <span>Nationality</span>
-            <input v-model.trim="draft.nationality" type="text" />
+            <select v-model="draft.nationality" class="country-select">
+              <option value="">Select a country</option>
+              <option v-for="country in countries" :key="country.iso2" :value="country.name">
+                {{ country.name }}
+              </option>
+            </select>
           </label>
           <div class="editor-actions">
             <button type="button" class="secondary-button" @click="cancelEditor">Cancel</button>
@@ -711,6 +751,12 @@ export default {
 
 .field textarea {
   resize: vertical;
+}
+
+.field-error {
+  margin: 0;
+  color: #b3261e;
+  font-size: 13px;
 }
 
 .editor-actions {
