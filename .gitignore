@@ -78,3 +78,6 @@ deploy/k8s/.env.local
 
 # Playwright MCP session artifacts
 .playwright-mcp/
+
+# Local OpenCode secrets (e.g. Playwright MCP extension token)
+.opencode/secrets/
