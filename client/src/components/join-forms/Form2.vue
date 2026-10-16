@@ -22,13 +22,17 @@ export default {
   computed: {
     ...mapGetters('join', ['getJoinFormData']),
     checkForNext() {
-      return this.getJoinFormData.coordinates.latitude && this.getJoinFormData.coordinates.longitude
-        ? true
-        : false
+      return (
+        this.getJoinFormData.coordinates.latitude !== null &&
+        this.getJoinFormData.coordinates.longitude !== null
+      )
     }
   },
   watch: {
     markerPosition(newValue) {
+      if (!newValue) {
+        return
+      }
       this.getJoinFormData.coordinates.latitude = newValue.lat
       this.getJoinFormData.coordinates.longitude = newValue.lng
     }

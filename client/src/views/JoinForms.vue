@@ -9,7 +9,7 @@
         <div
           v-for="(step, index) in steps"
           :key="step"
-          :class="['step', { active: step <= currentStep }]"
+          :class="['step', { active: index <= currentStep }]"
         >
           <div class="step-circle">{{ index + 1 }}</div>
         </div>
@@ -25,16 +25,18 @@
 import LoginHeader from '@/components/LoginHeader.vue'
 import Form1 from '@/components/join-forms/Form1.vue'
 import Form2 from '@/components/join-forms/Form2.vue'
-import Form3 from '@/components/join-forms/Form3.vue'
 import Form4 from '@/components/join-forms/Form4.vue'
 import Form5 from '@/components/join-forms/Form5.vue'
 import Form6 from '@/components/join-forms/Form6.vue'
+
+// Registration wizard steps, in order. The amenities step was removed because
+// the backend has no column/junction write for it.
+const STEP_COMPONENTS = ['Form1', 'Form2', 'Form4', 'Form5', 'Form6']
 
 export default {
   components: {
     Form1,
     Form2,
-    Form3,
     Form4,
     Form5,
     Form6,
@@ -42,31 +44,31 @@ export default {
   },
   data() {
     return {
-      currentStep: 1,
-      steps: [1, 2, 3, 4, 5, 6]
+      currentStep: 0,
+      steps: STEP_COMPONENTS
     }
   },
   computed: {
     currentComponent() {
-      return `Form${this.currentStep}`
+      return this.steps[this.currentStep]
     },
     progress() {
-      return ((this.currentStep - 1) / (this.steps.length - 1)) * 100
+      return (this.currentStep / (this.steps.length - 1)) * 100
     }
   },
   methods: {
     nextStep() {
-      if (this.currentStep < this.steps.length) {
+      if (this.currentStep < this.steps.length - 1) {
         this.currentStep++
       }
     },
     previousStep() {
-      if (this.currentStep > 1) {
+      if (this.currentStep > 0) {
         this.currentStep--
       }
     }
   },
-  
+
 }
 </script>
 

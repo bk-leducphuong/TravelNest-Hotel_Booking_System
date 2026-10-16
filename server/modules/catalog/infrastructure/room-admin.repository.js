@@ -5,22 +5,35 @@ const { rooms: Rooms } = require('@platform/database');
  * Inventory needs room_id/quantity/hotel context to manage availability.
  */
 class RoomRepository {
-  async create(data) {
-    return await Rooms.create({
-      room_name: data.roomName,
-      max_guests: data.maxGuests,
-      hotel_id: data.hotelId,
-      ...(data.roomType !== undefined ? { room_type: data.roomType } : {}),
-      ...(data.quantity !== undefined ? { quantity: data.quantity } : {}),
-      ...(data.roomSize !== undefined ? { room_size: data.roomSize } : {}),
-      ...(data.status !== undefined ? { status: data.status } : {}),
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
+  async create(data, options = {}) {
+    return await Rooms.create(
+      {
+        room_name: data.roomName,
+        max_guests: data.maxGuests,
+        hotel_id: data.hotelId,
+        ...(data.roomType !== undefined ? { room_type: data.roomType } : {}),
+        ...(data.quantity !== undefined ? { quantity: data.quantity } : {}),
+        ...(data.roomSize !== undefined ? { room_size: data.roomSize } : {}),
+        ...(data.status !== undefined ? { status: data.status } : {}),
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+      options
+    );
   }
 
-  async update(roomId, values) {
-    return await Rooms.update({ ...values, updated_at: new Date() }, { where: { id: roomId } });
+  async update(roomId, values, options = {}) {
+    return await Rooms.update(
+      { ...values, updated_at: new Date() },
+      { where: { id: roomId }, ...options }
+    );
+  }
+
+  async findByHotelAndName(hotelId, roomName, options = {}) {
+    return await Rooms.findOne({
+      where: { hotel_id: hotelId, room_name: roomName },
+      ...options,
+    });
   }
 
   /** Soft delete: rooms are referenced by inventory/bookings, so never hard-delete. */

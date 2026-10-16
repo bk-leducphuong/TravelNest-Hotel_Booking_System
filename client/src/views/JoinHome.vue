@@ -1,13 +1,15 @@
 <script>
 import LoginHeader from '@/components/LoginHeader.vue'
-import { adminAppUrl, goToAdminApp } from '@/utils/adminApp'
+import { adminAppUrl } from '@/utils/adminApp'
 export default {
   components: {
     LoginHeader
   },
   methods: {
     adminAppUrl,
-    goToAdminApp
+    goToWizard() {
+      this.$router.push('/join/become-a-host')
+    }
   }
 }
 </script>
@@ -33,7 +35,7 @@ export default {
           <li>{{ $t('join.benefit2') }}</li>
           <li>{{ $t('join.benefit3') }}</li>
         </ul>
-        <button class="get-started-button" @click="goToAdminApp('/login')">
+        <button class="get-started-button" @click="goToWizard">
           {{ $t('join.getStarted') }}
         </button>
         <div class="login-text">

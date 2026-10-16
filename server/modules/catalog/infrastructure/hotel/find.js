@@ -140,6 +140,81 @@ async function findAmenitiesByHotelId(hotelId) {
   return hotel ? hotel.amenities : [];
 }
 
+/** Diacritic-insensitive, alphanumeric-only form (e.g. "Hà Nội" -> "hanoi"). */
+function compactCityKey(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
+}
+
+/** URL slug form (e.g. "Hà Nội" -> "ha-noi"). */
+function slugifyCityName(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Resolve a free-text city name to its id. Tries an exact (collation
+ * case-insensitive) name match, then a slug match, then a diacritic-insensitive
+ * compact match ("Hanoi" == "Hà Nội"). Returns null when there is no match so
+ * onboarding can leave `city_id` unset.
+ */
+async function findCityIdByName(name, options = {}) {
+  const requested = typeof name === 'string' ? name.trim() : '';
+  if (!requested) {
+    return null;
+  }
+
+  const byName = await Cities.findOne({
+    where: { name: requested },
+    attributes: ['id'],
+    ...options,
+  });
+  if (byName) {
+    return byName.id;
+  }
+
+  const slug = slugifyCityName(requested);
+  if (slug) {
+    const bySlug = await Cities.findOne({
+      where: { slug },
+      attributes: ['id'],
+      ...options,
+    });
+    if (bySlug) {
+      return bySlug.id;
+    }
+  }
+
+  const target = compactCityKey(requested);
+  if (!target) {
+    return null;
+  }
+
+  const cities = await Cities.findAll({
+    attributes: ['id', 'name', 'slug'],
+    ...options,
+  });
+  const match = cities.find(
+    (city) => compactCityKey(city.name) === target || compactCityKey(city.slug) === target
+  );
+  return match ? match.id : null;
+}
+
+async function findRoomByHotelAndName(hotelId, roomName, options = {}) {
+  return await Rooms.findOne({
+    where: { hotel_id: hotelId, room_name: roomName },
+    ...options,
+  });
+}
+
 async function findRoomById(roomId) {
   return await Rooms.findOne({
     where: { id: roomId },
@@ -300,7 +375,9 @@ module.exports = {
   findByIdForAdmin,
   findImagesByHotelId,
   findAmenitiesByHotelId,
+  findCityIdByName,
   findRoomById,
+  findRoomByHotelAndName,
   findRoomsByHotelId,
   findPoliciesByHotelId,
   findNearbyPlaceById,

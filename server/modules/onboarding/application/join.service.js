@@ -1,3 +1,4 @@
+const { sequelize } = require('@platform/database');
 const { mediaProxy: mediaProxyService } = require('@modules/media');
 const catalogModule = require('@modules/catalog');
 const inventoryModule = require('@modules/inventory');
@@ -9,11 +10,24 @@ const ApiError = require('@utils/ApiError');
  * Follows RESTful API standards
  */
 
+/**
+ * Inventory columns refreshed when onboarding is re-submitted for a room.
+ * Deliberately excludes `booked_rooms`, `price_per_night` and `status` so a
+ * re-submit cannot wipe existing bookings, owner pricing or closed dates.
+ */
+const INVENTORY_UPDATE_ON_DUPLICATE = ['total_rooms', 'updated_at'];
+
 class JoinService {
   /**
    * Submit join form (become a partner)
-   * Creates or updates hotel, creates room, and initializes room inventory
-   * @param {number} ownerId - User ID (owner)
+   * Creates or updates the owner's hotel, room and room inventory.
+   *
+   * Idempotent per owner: re-submitting updates the hotel the user primarily
+   * owns (and its room of the same name) instead of creating duplicates. All
+   * writes run in a single transaction so a failure cannot leave a hotel
+   * without its room/inventory or ownership row.
+   *
+   * @param {string} ownerId - User ID (owner)
    * @param {Object} joinFormData - Join form data
    * @returns {Promise<Object>} Created hotel and room information
    */
@@ -25,10 +39,7 @@ class JoinService {
       coordinates,
       rating,
       checkInFrom,
-      checkInTo,
       checkOutFrom,
-      checkOutTo,
-      services,
       roomDetails,
     } = joinFormData;
 
@@ -38,8 +49,10 @@ class JoinService {
       !streetName ||
       !city ||
       !coordinates ||
-      !coordinates.latitude ||
-      !coordinates.longitude ||
+      coordinates.latitude === undefined ||
+      coordinates.latitude === null ||
+      coordinates.longitude === undefined ||
+      coordinates.longitude === null ||
       !roomDetails ||
       !roomDetails.roomType ||
       !roomDetails.numberOfGuests ||
@@ -82,73 +95,135 @@ class JoinService {
       );
     }
 
-    // Create or update hotel
-    const [hotel, created] = await catalogModule.upsertHotel({
-      ownerId,
+    // Star rating is optional; map to the `hotels.hotel_class` column (1-5).
+    let hotelClass = null;
+    if (rating !== undefined && rating !== null && rating !== '') {
+      hotelClass = parseInt(rating, 10);
+      if (isNaN(hotelClass) || hotelClass < 1 || hotelClass > 5) {
+        throw new ApiError(400, 'INVALID_RATING', 'Rating must be between 1 and 5');
+      }
+    }
+
+    const roomName = roomDetails.roomType.trim();
+
+    // Resolve the free-text city to an existing cities row (best effort); the
+    // hotels table stores city_id, not a city name.
+    const cityId = await catalogModule.findCityIdByName(city.trim());
+
+    const hotelPayload = {
       name: hotelName.trim(),
       address: streetName.trim(),
-      city: city.trim(),
+      cityId,
       latitude: lat.toString(),
       longitude: lng.toString(),
-      rating: rating ? parseFloat(rating) : null,
+      hotelClass,
       // `check_in_time`/`check_out_time` are TIME columns (a single time, not a
       // range). Store the start of each window; the window bounds
       // (checkInTo/checkOutTo) are validated but not persisted here.
       checkInTime: checkInFrom,
       checkOutTime: checkOutFrom,
-      amenities: services ? JSON.stringify(services) : null,
-    });
+    };
 
-    // Extract hotel ID from Sequelize instance
-    const hotelId = hotel.id || hotel.get?.('id') || hotel.dataValues?.id || hotel.hotel_id;
+    return await sequelize.transaction(async (transaction) => {
+      const existingHotelId = await identityModule.getPrimaryHotelIdForUser(ownerId);
 
-    // Link the owner so the property is manageable in the admin client.
-    await identityModule.assignHotelOwner(ownerId, hotelId);
+      // Create or update the owner's hotel instead of inserting a new row each
+      // submit (the previous `upsert` always inserted because it conflicted on
+      // the auto-generated primary key).
+      const hotel = existingHotelId
+        ? await catalogModule.updateHotel(existingHotelId, hotelPayload, { transaction })
+        : await catalogModule.createHotel(hotelPayload, { transaction });
 
-    // Create room
-    const room = await catalogModule.createRoom({
-      roomName: roomDetails.roomType.trim(),
-      maxGuests: numberOfGuests,
-      hotelId,
-    });
+      if (!hotel) {
+        throw new ApiError(500, 'HOTEL_WRITE_FAILED', 'Could not persist the hotel');
+      }
 
-    // Extract room ID from Sequelize instance
-    const roomId = room.id || room.get?.('id') || room.dataValues?.id || room.room_id;
+      const hotelId = hotel.id || hotel.get?.('id') || hotel.dataValues?.id;
 
-    // Create room inventory entries for next 60 days
-    const inventoryEntries = Array.from({ length: 60 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() + i);
+      // Link the owner so the property is manageable in the admin client.
+      await identityModule.assignHotelOwner(ownerId, hotelId, { transaction });
+
+      // Create the room, or update the existing room of the same name so
+      // re-submitting does not stack duplicate rooms.
+      const existingRoom = existingHotelId
+        ? await catalogModule.findRoomByHotelAndName(hotelId, roomName, { transaction })
+        : null;
+
+      let room;
+      if (existingRoom) {
+        await catalogModule.updateRoom(
+          existingRoom.id,
+          { max_guests: numberOfGuests, quantity: numberOfRooms },
+          { transaction }
+        );
+        room = existingRoom;
+      } else {
+        room = await catalogModule.createRoom(
+          {
+            roomName,
+            maxGuests: numberOfGuests,
+            quantity: numberOfRooms,
+            hotelId,
+          },
+          { transaction }
+        );
+      }
+
+      const roomId = room.id || room.get?.('id') || room.dataValues?.id || room.room_id;
+
+      // Create/refresh room inventory entries for the next 60 days. Upsert so a
+      // re-submit updates the rows it already created (composite PK room+date).
+      const inventoryEntries = Array.from({ length: 60 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+        return {
+          room_id: roomId,
+          date: date.toISOString().split('T')[0], // YYYY-MM-DD format
+          total_rooms: numberOfRooms,
+          booked_rooms: 0,
+          price_per_night: 0,
+          status: 'open',
+        };
+      });
+
+      await inventoryModule.createRoomInventories(inventoryEntries, {
+        transaction,
+        updateOnDuplicate: INVENTORY_UPDATE_ON_DUPLICATE,
+      });
+
       return {
+        hotel_id: hotelId,
         room_id: roomId,
-        date: date.toISOString().split('T')[0], // YYYY-MM-DD format
-        total_rooms: numberOfRooms,
-        booked_rooms: 0,
-        price_per_night: 0,
-        status: 'open',
+        created: !existingHotelId,
       };
     });
-
-    await inventoryModule.createRoomInventories(inventoryEntries);
-
-    return {
-      hotel_id: hotelId,
-      room_id: roomId,
-      created: created || false,
-    };
   }
 
   /**
    * Upload and process hotel/room photos
-   * @param {number} hotelId - Hotel ID
-   * @param {number} roomId - Room ID
+   * @param {string} userId - Authenticated user id (must have access to the hotel)
+   * @param {string} hotelId - Hotel ID
+   * @param {string} roomId - Room ID
    * @param {Array<object>} files - Array of multer files
-   * @returns {Promise<Array>} Array of uploaded image URLs
+   * @returns {Promise<Array<string>>} Array of uploaded image URLs
    */
-  async uploadPhotos(hotelId, roomId, files) {
+  async uploadPhotos(userId, hotelId, roomId, files) {
     if (!files || files.length === 0) {
       throw new ApiError(400, 'NO_FILES_UPLOADED', 'No files uploaded');
     }
+
+    // Only the hotel's own team may attach photos to it, and the room must
+    // belong to that hotel.
+    const hasAccess = await identityModule.userHasHotelAccess(userId, hotelId);
+    if (!hasAccess) {
+      throw new ApiError(403, 'HOTEL_ACCESS_DENIED', 'You do not have access to this hotel');
+    }
+
+    const room = await catalogModule.getRoomForHotel(roomId, hotelId);
+    if (!room) {
+      throw new ApiError(400, 'ROOM_NOT_IN_HOTEL', 'Room does not belong to the hotel');
+    }
+
     const result = await mediaProxyService.uploadJoinPhotos(hotelId, roomId, files);
     return result.imageUrls;
   }

@@ -36,12 +36,28 @@ async function getRoomForHotel(roomId, hotelId) {
 }
 
 // Write API for partner onboarding (catalog owns hotels + rooms).
-async function upsertHotel(hotelData) {
-  return await hotelRepository.upsertHotel(hotelData);
+async function createHotel(hotelData, options = {}) {
+  return await hotelRepository.createHotel(hotelData, options);
 }
 
-async function createRoom(roomData) {
-  return await roomRepository.create(roomData);
+async function updateHotel(hotelId, hotelData, options = {}) {
+  return await hotelRepository.updateHotelFromPayload(hotelId, hotelData, options);
+}
+
+async function findCityIdByName(name, options = {}) {
+  return await hotelRepository.findCityIdByName(name, options);
+}
+
+async function createRoom(roomData, options = {}) {
+  return await roomRepository.create(roomData, options);
+}
+
+async function updateRoom(roomId, values, options = {}) {
+  return await roomRepository.update(roomId, values, options);
+}
+
+async function findRoomByHotelAndName(hotelId, roomName, options = {}) {
+  return await roomRepository.findByHotelAndName(hotelId, roomName, options);
 }
 
 // Destination resolution (used by search before falling back to ES).
@@ -68,8 +84,12 @@ module.exports = {
   getRoomForHotel,
 
   // onboarding writes
-  upsertHotel,
+  createHotel,
+  updateHotel,
+  findCityIdByName,
   createRoom,
+  updateRoom,
+  findRoomByHotelAndName,
 
   // destinations
   getActiveDestinationById,

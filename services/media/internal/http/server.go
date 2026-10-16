@@ -325,6 +325,7 @@ func (s *Server) joinPhotos(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	imageURLs := make([]string, 0, len(files))
+	imageIDs := make([]string, 0, len(files))
 	for index, header := range files {
 		file, err := header.Open()
 		if err != nil {
@@ -337,25 +338,49 @@ func (s *Server) joinPhotos(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "INVALID_FILE", "Failed to read uploaded file")
 			return
 		}
-		objectKey := fmt.Sprintf("hotels/%s/rooms/%s/%d_%d.avif", hotelID, roomID, time.Now().UnixMilli(), index)
-		if _, err := s.storage.Upload(r.Context(), objectKey, imageproc.AVIFPlaceholder(body), "image/avif"); err != nil {
+		imageID, err := uuid.NewV7()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "UUID_FAILED", "Failed to generate image id")
+			return
+		}
+		objectKey := fmt.Sprintf("hotels/%s/rooms/%s/%s.avif", hotelID, roomID, imageID.String())
+		size, err := s.storage.Upload(r.Context(), objectKey, imageproc.AVIFPlaceholder(body), "image/avif")
+		if err != nil {
 			writeError(w, http.StatusInternalServerError, "IMAGE_PROCESSING_FAILED", "Failed to process image")
 			return
 		}
+		// Persist room photos in the canonical `images` table (entity_type
+		// "room"). The previous code wrote a denormalized `rooms.image_urls`
+		// column that the schema does not have, so every upload 500'd.
+		isPrimary := index == 0
+		image := model.Image{
+			ID:               imageID.String(),
+			EntityType:       "room",
+			EntityID:         roomID,
+			BucketName:       s.storage.Bucket(),
+			ObjectKey:        objectKey,
+			OriginalFilename: header.Filename,
+			FileSize:         size,
+			MimeType:         "image/avif",
+			IsPrimary:        isPrimary,
+			Status:           "active",
+		}
+		if err := s.repo.CreateImage(r.Context(), image); err != nil {
+			writeError(w, http.StatusInternalServerError, "METADATA_CREATE_FAILED", "Failed to save image metadata")
+			return
+		}
+		if isPrimary {
+			if err := s.repo.SetPrimaryImage(r.Context(), "room", roomID, imageID.String()); err != nil {
+				s.logger.Warn("failed to set join photo as primary", "roomId", roomID, "imageId", imageID.String(), "error", err)
+			}
+		}
+		imageIDs = append(imageIDs, imageID.String())
 		imageURLs = append(imageURLs, s.storage.PublicURL(objectKey))
-	}
-	body, err := json.Marshal(imageURLs)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "IMAGE_URLS_FAILED", "Failed to encode image URLs")
-		return
-	}
-	if err := s.repo.UpdateRoomImages(r.Context(), roomID, string(body)); err != nil {
-		writeError(w, http.StatusInternalServerError, "IMAGE_URLS_FAILED", "Failed to update room images")
-		return
 	}
 	writeJSON(w, http.StatusCreated, map[string]any{
 		"message":   "Photos uploaded and processed successfully",
 		"imageUrls": imageURLs,
+		"imageIds":  imageIDs,
 		"count":     len(imageURLs),
 	})
 }

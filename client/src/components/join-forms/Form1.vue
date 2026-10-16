@@ -10,7 +10,7 @@ export default {
   computed: {
     ...mapGetters('join', ['getJoinFormData']),
     checkForNext() {
-      return this.getJoinFormData.streetName && this.getJoinFormData.zipCode && this.getJoinFormData.city ? true : false
+      return this.getJoinFormData.streetName && this.getJoinFormData.city ? true : false
     }
   },
   methods: {
@@ -30,10 +30,6 @@ export default {
       <div class="form-group">
         <label for="Street_name">Tên đường và số nhà</label>
         <input type="text" name="Street_name" v-model="getJoinFormData.streetName" id="Street_name" />
-      </div>
-      <div class="form-group">
-        <label for="zip_code">Mã bưu chính</label>
-        <input type="text" name="zip_code" v-model="getJoinFormData.zipCode" id="zip_code" />
       </div>
       <div class="form-group">
         <label for="city">Thành phố</label>

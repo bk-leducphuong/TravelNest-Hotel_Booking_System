@@ -127,7 +127,7 @@ class IdentityService {
    * Link a user to a hotel as its (primary) owner. Used when a partner submits
    * the join onboarding form, so the new property is manageable afterwards.
    */
-  async assignHotelOwner(userId, hotelId, { isPrimaryOwner = true } = {}) {
+  async assignHotelOwner(userId, hotelId, { isPrimaryOwner = true, transaction } = {}) {
     if (!userId || !hotelId) {
       throw new ApiError(400, 'MISSING_HOTEL_OWNER', 'userId and hotelId are required');
     }
@@ -137,12 +137,39 @@ class IdentityService {
       throw new ApiError(500, 'OWNER_ROLE_MISSING', 'Owner role is not provisioned');
     }
 
-    return await hotelMembershipRepository.upsertHotelRole({
-      userId,
-      hotelId,
-      roleId: role.id,
-      isPrimaryOwner,
-    });
+    return await hotelMembershipRepository.upsertHotelRole(
+      {
+        userId,
+        hotelId,
+        roleId: role.id,
+        isPrimaryOwner,
+      },
+      { transaction }
+    );
+  }
+
+  /**
+   * The hotel a user primarily owns (onboarding makes the submitter the primary
+   * owner), or null when they have not onboarded yet. Used to make the join form
+   * idempotent instead of creating a duplicate property on every submit.
+   */
+  async getPrimaryHotelIdForUser(userId) {
+    if (!userId) {
+      return null;
+    }
+
+    const membership = await hotelMembershipRepository.findPrimaryByUser(userId);
+    return membership ? membership.hotel_id : null;
+  }
+
+  /** Whether the user has any membership (owner/manager/staff) on the hotel. */
+  async userHasHotelAccess(userId, hotelId) {
+    if (!userId || !hotelId) {
+      return false;
+    }
+
+    const membership = await hotelMembershipRepository.findByHotelAndUser(userId, hotelId);
+    return Boolean(membership);
   }
 }
 
