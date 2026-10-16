@@ -1,5 +1,7 @@
 const { Op } = require('sequelize');
 
+const { compactKey: compactCityKey, slugify: slugifyCityName } = require('@utils/placeName');
+
 const {
   Hotels,
   Rooms,
@@ -138,26 +140,6 @@ async function findAmenitiesByHotelId(hotelId) {
   });
 
   return hotel ? hotel.amenities : [];
-}
-
-/** Diacritic-insensitive, alphanumeric-only form (e.g. "Hà Nội" -> "hanoi"). */
-function compactCityKey(value) {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '');
-}
-
-/** URL slug form (e.g. "Hà Nội" -> "ha-noi"). */
-function slugifyCityName(value) {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
 }
 
 /**

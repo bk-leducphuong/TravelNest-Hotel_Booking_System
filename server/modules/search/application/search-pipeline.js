@@ -11,7 +11,7 @@ const { normalizeList } = require('../domain/filters');
 
 /**
  * Find candidate hotels in Elasticsearch, falling back to the database when ES
- * is unavailable or errors.
+ * is unavailable, errors, or returns no hits for a text location.
  */
 async function findCandidates(params) {
   try {
@@ -23,7 +23,20 @@ async function findCandidates(params) {
     }
 
     const esQuery = elasticsearchHelper.buildSearchQuery(params);
-    return await elasticsearchHelper.search(esQuery);
+    const results = await elasticsearchHelper.search(esQuery);
+
+    if (results.length === 0) {
+      const textLocation = params.city || params.country || params.location;
+      if (textLocation) {
+        logger.warn(
+          { textLocation },
+          'Elasticsearch returned no candidates, falling back to database'
+        );
+        return await searchRepository.searchHotelsFromDatabase(params);
+      }
+    }
+
+    return results;
   } catch (error) {
     logger.error(error, 'Phase 1 error, falling back to database');
     return await searchRepository.searchHotelsFromDatabase(params);

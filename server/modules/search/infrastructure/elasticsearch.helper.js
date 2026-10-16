@@ -1,5 +1,6 @@
 const elasticsearchClient = require('@config/elasticsearch.config');
 const logger = require('@config/logger.config');
+const { normalizeText, compactKey } = require('@utils/placeName');
 
 class ElasticsearchHelper {
   constructor() {
@@ -56,13 +57,31 @@ class ElasticsearchHelper {
         term: { city_id: cityId },
       });
     } else if (city) {
+      // Free-text location. Match the normalized city name, the diacritic/space
+      // insensitive compact field ("Hanoi" == "Ha Noi"), or a hotel name, so an
+      // unresolved city or a typed hotel name still returns results.
+      const normalizedCity = normalizeText(city);
+      const compactCity = compactKey(city);
+
+      const cityShould = [];
+      if (normalizedCity) {
+        cityShould.push({
+          match: { city: { query: normalizedCity, operator: 'and' } },
+        });
+      }
+      if (compactCity) {
+        cityShould.push({
+          match: { city_compact: { query: compactCity, fuzziness: 'AUTO' } },
+        });
+      }
+      cityShould.push({
+        match: { hotel_name: { query: city, fuzziness: 'AUTO', operator: 'and' } },
+      });
+
       query.bool.must.push({
-        match: {
-          city: {
-            query: city,
-            fuzziness: 'AUTO',
-            operator: 'and',
-          },
+        bool: {
+          should: cityShould,
+          minimum_should_match: 1,
         },
       });
     }

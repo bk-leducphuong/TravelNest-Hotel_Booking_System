@@ -32,7 +32,14 @@ async function searchHotels(params, userId = null) {
       destinationType: destination?.type || null,
       cityId: destination?.city_id || params.cityId || null,
       countryId: destination?.country_id || params.countryId || null,
-      city: destination?.type === 'city' ? destination.display_name : params.city || null,
+      // When a country resolved, do not also constrain on a city — the free
+      // text ("Vietnam") is the country name, not a city. Only fall back to
+      // the raw text when nothing resolved (hotel-name / compact matching).
+      city: destination
+        ? destination.type === 'city'
+          ? destination.display_name
+          : null
+        : params.city || null,
       country: destination?.country_name || params.country || null,
     };
 

@@ -1,10 +1,15 @@
 const logger = require('@config/logger.config');
 const catalog = require('@modules/catalog');
+const { applyAlias } = require('@utils/placeName');
 const destinationElasticsearchHelper = require('../infrastructure/destination-elasticsearch.helper');
 
 /**
  * Resolve a unified destination (city or country) from raw search parameters.
  * Explicit id wins, then Elasticsearch text search, then a DB best-match.
+ *
+ * Known aliases are rewritten first ("Saigon" -> "Ho Chi Minh City") and both
+ * the ES and DB paths are diacritic/space insensitive, so "Hanoi", "Hà Nội" and
+ * "Ha Noi" all resolve to the same destination.
  */
 async function resolveDestination(params) {
   const explicitDestinationId = params.destinationId;
@@ -13,8 +18,10 @@ async function resolveDestination(params) {
     if (existing) return existing;
   }
 
-  const text = (params.city || params.country || params.location || '').trim();
-  if (!text) return null;
+  const rawText = (params.city || params.country || params.location || '').trim();
+  if (!rawText) return null;
+
+  const text = applyAlias(rawText);
 
   try {
     const esResults = await destinationElasticsearchHelper.searchByText(text, 10);

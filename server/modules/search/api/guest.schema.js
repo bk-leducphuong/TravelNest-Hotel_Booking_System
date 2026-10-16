@@ -16,6 +16,7 @@ exports.searchHotels = {
     // Location (at least one required)
     city: Joi.string().trim().min(2).max(100),
     country: Joi.string().trim().min(2).max(100),
+    destinationId: Joi.string().uuid(),
     latitude: Joi.number().min(-90).max(90),
     longitude: Joi.number().min(-180).max(180),
     radius: Joi.number().min(1).max(100).default(10), // km
@@ -104,7 +105,7 @@ exports.searchHotels = {
     location: Joi.string().trim().min(2).max(100),
     numberOfDays: Joi.number().integer().positive(),
   })
-    .or('city', 'country', 'latitude', 'location') // At least one location param
+    .or('city', 'country', 'destinationId', 'latitude', 'location') // At least one location param
     .and('latitude', 'longitude') // If latitude, longitude is also required
     .custom((value, helpers) => {
       // Support legacy checkInDate/checkOutDate

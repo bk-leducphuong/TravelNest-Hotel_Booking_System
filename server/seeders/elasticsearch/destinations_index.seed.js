@@ -18,6 +18,7 @@ require('dotenv').config({
 
 require('../../register-aliases');
 
+const { compactKey } = require('@utils/placeName');
 const elasticsearchClient = require('../../config/elasticsearch.config');
 const db = require('../../models');
 
@@ -34,6 +35,7 @@ function transformDestinationToDocument(destination) {
     country_id: destination.country_id,
     display_name: destination.display_name,
     normalized_name: destination.normalized_name,
+    display_name_compact: compactKey(destination.display_name),
     slug: destination.slug,
     country_name: destination.country_name,
     is_active: Boolean(destination.is_active),

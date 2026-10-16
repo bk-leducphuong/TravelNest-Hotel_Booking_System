@@ -29,6 +29,7 @@ require('../../register-aliases');
 
 const { Op } = require('sequelize');
 
+const { compactKey } = require('@utils/placeName');
 const elasticsearchClient = require('../../config/elasticsearch.config');
 const db = require('../../models');
 
@@ -62,6 +63,7 @@ function transformSnapshotToDocument(snapshot) {
     hotel_name: snapshot.hotel_name,
     city_id: snapshot.city_id || null,
     city: snapshot.city,
+    city_compact: compactKey(snapshot.city),
     country_id: snapshot.country_id || null,
     country: snapshot.country,
     min_price: snapshot.min_price ? parseFloat(snapshot.min_price) : null,

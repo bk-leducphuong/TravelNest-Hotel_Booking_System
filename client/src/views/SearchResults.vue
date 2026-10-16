@@ -317,6 +317,10 @@
             params.longitude = this.$route.query.longitude;
           }
 
+          if (this.$route.query.destinationId) {
+            params.destinationId = this.$route.query.destinationId;
+          }
+
           const response = await SearchService.searchHotels(params);
           const result = response?.data ?? response;
           const list = result?.hotels ?? [];

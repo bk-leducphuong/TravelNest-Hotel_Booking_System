@@ -140,6 +140,8 @@
       return {
         showGuestSelector: false,
         selectedLocation: null,
+        selectedDestinationId: null,
+        selectedDestinationName: null,
         dateRange: null,
         adults: 2,
         children: 0,
@@ -175,6 +177,8 @@
           );
           const suggestions = response?.data?.suggestions ?? response?.suggestions ?? [];
           const results = suggestions.map((s) => ({
+            id: s.payload?.id ?? null,
+            type: s.payload?.type ?? null,
             name: s.text ?? s.payload?.display_name ?? '',
             country: s.payload?.country_name ?? '',
             value: s.text ?? s.payload?.display_name ?? '',
@@ -187,6 +191,8 @@
       },
       handleSelect(item) {
         this.selectedLocation = item.name || item.value;
+        this.selectedDestinationId = item.id || null;
+        this.selectedDestinationName = item.name || item.value || null;
       },
       disabledDate(time) {
         // Disable dates before today
@@ -222,17 +228,25 @@
         }
 
         // Redirect user to search results page with query params
+        const query = {
+          location: this.selectedLocation,
+          checkInDate: this.checkInDate,
+          checkOutDate: this.checkOutDate,
+          numberOfDays: this.numberOfDays,
+          adults: this.adults,
+          children: this.children,
+          rooms: this.rooms,
+        };
+
+        // Only pin the destination when the value still matches the picked
+        // suggestion; free-typed text falls back to server-side resolution.
+        if (this.selectedDestinationId && this.selectedLocation === this.selectedDestinationName) {
+          query.destinationId = this.selectedDestinationId;
+        }
+
         this.$router.push({
           name: 'SearchResults',
-          query: {
-            location: this.selectedLocation,
-            checkInDate: this.checkInDate,
-            checkOutDate: this.checkOutDate,
-            numberOfDays: this.numberOfDays,
-            adults: this.adults,
-            children: this.children,
-            rooms: this.rooms,
-          },
+          query,
         });
       },
     },
