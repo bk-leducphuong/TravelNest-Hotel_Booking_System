@@ -17,5 +17,6 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { labelKey: "nav.payments", to: "/payments", permission: "payment.read" },
   { labelKey: "nav.payouts", to: "/payouts", permission: "payment.read" },
   { labelKey: "nav.reviews", to: "/reviews", permission: "review.read" },
+  { labelKey: "nav.team", to: "/settings/team", permission: "hotel.manage_staff" },
   { labelKey: "nav.settings", to: "/settings" },
 ];

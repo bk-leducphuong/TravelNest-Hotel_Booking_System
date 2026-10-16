@@ -10,6 +10,7 @@ const userRepository = require('./infrastructure/user.repository');
 const keycloakUserInfoService = require('./infrastructure/keycloak-userinfo.client');
 const authRoutes = require('./api/auth.routes');
 const userRoutes = require('./api/user.routes');
+const hotelStaffAdminRoutes = require('./api/hotel-staff.routes');
 
 /**
  * Identity module - public interface.
@@ -47,6 +48,8 @@ module.exports = {
   // HTTP edge (mounted by routes/v1/index.js).
   authRoutes,
   userRoutes,
+  // Admin BFF edge (mounted by bff/admin/index.js).
+  hotelStaffAdminRoutes,
 
   getFavoriteHotelIds,
 

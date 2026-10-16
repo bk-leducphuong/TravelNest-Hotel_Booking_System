@@ -6,6 +6,7 @@ describe("admin navigation", () => {
     const paths = ADMIN_NAV.map((item) => item.to);
     expect(paths).toContain("/rooms");
     expect(paths).toContain("/settings");
+    expect(paths).toContain("/settings/team");
   });
 
   it("uses an i18n label key for every item", () => {
