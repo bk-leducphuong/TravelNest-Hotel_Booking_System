@@ -5,5 +5,7 @@
     "services -> @models": 0,
     "services -> @config/database.config": 0
   },
-  "godFiles": {}
+  "godFiles": {
+    "modules/identity/infrastructure/auth.repository.js": 404
+  }
 }
