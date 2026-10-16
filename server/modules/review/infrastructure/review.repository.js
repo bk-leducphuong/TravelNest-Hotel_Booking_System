@@ -3,63 +3,20 @@ const { Op, fn, col } = require('sequelize');
 const {
   reviews: Reviews,
   review_replies: ReviewReplies,
-  review_media: ReviewMedia,
-  users: Users,
   hotels: Hotels,
   images: Images,
 } = require('@platform/database');
 const sequelize = require('@config/database.config');
 
+const { MODERATION_INCLUDE, PUBLIC_INCLUDE, toLimit, toOffset } = require('./review.query');
+
 /**
- * Review repository - the only place that touches review tables.
+ * Review repository - the write/moderation side of the review tables: creating
+ * reviews, the user and moderation queries, and admin replies.
+ *
+ * Public guest reads live in `review-read.repository`; helpful votes live in
+ * `review-vote.repository`.
  */
-
-const PUBLIC_INCLUDE = [
-  {
-    model: Users,
-    as: 'user',
-    attributes: ['id', 'first_name', 'last_name', 'profile_picture_url', 'country'],
-    required: false,
-  },
-  {
-    model: ReviewReplies,
-    as: 'reply',
-    attributes: ['id', 'reply_text', 'created_at', 'updated_at'],
-    required: false,
-    include: [{ model: Users, as: 'user', attributes: ['id', 'first_name', 'last_name'] }],
-  },
-  {
-    model: ReviewMedia,
-    as: 'media',
-    attributes: ['id', 'media_type', 'url', 'thumbnail_url', 'display_order'],
-    required: false,
-  },
-];
-
-const MODERATION_INCLUDE = [
-  ...PUBLIC_INCLUDE,
-  {
-    model: Hotels,
-    as: 'hotel',
-    attributes: ['id', 'name', 'city_id'],
-    required: false,
-  },
-];
-
-function toLimit(limit, fallback = 20, max = 100) {
-  const parsed = parseInt(limit, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return fallback;
-  }
-  return Math.min(parsed, max);
-}
-
-function toOffset(page, limit) {
-  const parsed = parseInt(page, 10);
-  const safePage = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
-  return (safePage - 1) * limit;
-}
-
 class ReviewRepository {
   async create(data, options = {}) {
     return await Reviews.create(
@@ -93,32 +50,6 @@ class ReviewRepository {
     return await Reviews.findOne({
       where: { booking_id: bookingId },
       ...options,
-    });
-  }
-
-  async findPublishedByHotel(hotelId, { page = 1, limit = 20 } = {}) {
-    const safeLimit = toLimit(limit);
-    return await Reviews.findAndCountAll({
-      where: { hotel_id: hotelId, status: 'published' },
-      attributes: [
-        'id',
-        'rating_overall',
-        'rating_cleanliness',
-        'rating_location',
-        'rating_service',
-        'rating_value',
-        'title',
-        'comment',
-        'is_verified',
-        'helpful_count',
-        'status',
-        'created_at',
-      ],
-      include: PUBLIC_INCLUDE,
-      order: [['created_at', 'DESC']],
-      limit: safeLimit,
-      offset: toOffset(page, safeLimit),
-      distinct: true,
     });
   }
 

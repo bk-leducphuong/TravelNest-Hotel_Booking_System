@@ -8,6 +8,7 @@ import { useToast } from 'vue-toastification'
 import SkeletonGrid from '@/components/common/SkeletonGrid.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { HotelService } from '@/services/hotel.service'
+import { ReviewService } from '@/services/review.service'
 import { getImagePath, getImageUrl } from '@/utils/images'
 import defaultAvatarImg from '@/assets/avatar/default_avatar.png'
 
@@ -16,8 +17,6 @@ import ReviewValidation from '@/components/review/ReviewValidation.vue'
 
 import errorHandler from '@/request/errorHandler'
 import { HoldService } from '@/services/hold.service'
-import flatpickr from 'flatpickr'
-import 'flatpickr/dist/flatpickr.min.css'
 
 export default {
   components: {
@@ -48,8 +47,22 @@ export default {
       hotel: {},
       room_list: [],
       reviews: [],
+      reviewsTotal: 0,
       nearbyPlaces: [],
       reviewCriterias: [],
+
+      // guest review panel (fetched separately so it can be filtered/paginated)
+      popupReviews: [],
+      reviewsLoading: false,
+      reviewFilters: {
+        score: '',
+        season: '',
+        country: '',
+        hasMedia: false,
+        q: ''
+      },
+      reviewCountries: [],
+      reviewPagination: { page: 1, limit: 5, total: 0, totalPages: 0 },
 
       // selected rooms for booking
       selectedRooms: [],
@@ -62,21 +75,64 @@ export default {
       showReviewForm: false,
       showReviewValidation: false,
       // search room
-      dateRange: null,
-      children: 0,
-      adults: 2,
-      rooms: 1,
-      checkInDate: null,
-      checkOutDate: null,
-      numberOfDays: null,
       isSearchRoomLoading: false
     }
   },
   computed: {
-    ...mapGetters('auth', ['isUserAuthenticated']),
+    ...mapGetters('auth', ['isUserAuthenticated', 'getUserId']),
     ...mapGetters('search', ['getSearchData']),
+    // The search bar shares the Vuex `search` store with the header's main
+    // search bar, so edits in either place stay in sync.
+    adults: {
+      get() {
+        return this.toCount(this.getSearchData.adults, 1)
+      },
+      set(value) {
+        this.updateAdults(this.toCount(value, 1))
+      }
+    },
+    children: {
+      get() {
+        return this.toCount(this.getSearchData.children, 0)
+      },
+      set(value) {
+        this.updateChildren(this.toCount(value, 0))
+      }
+    },
+    rooms: {
+      get() {
+        return this.toCount(this.getSearchData.rooms, 1)
+      },
+      set(value) {
+        this.updateRooms(this.toCount(value, 1))
+      }
+    },
+    dateRange: {
+      get() {
+        const { checkInDate, checkOutDate } = this.getSearchData
+        return checkInDate && checkOutDate ? [checkInDate, checkOutDate] : null
+      },
+      set(value) {
+        if (Array.isArray(value) && value[0] && value[1]) {
+          this.updateCheckInDate(value[0])
+          this.updateCheckOutDate(value[1])
+          this.updateNumberOfDays(this.calculateNumberOfDays(value[0], value[1]))
+        } else {
+          this.updateCheckInDate(null)
+          this.updateCheckOutDate(null)
+          this.updateNumberOfDays(null)
+        }
+      }
+    },
     guestDetails() {
-      return `${this.adults} người lớn · ${this.children} trẻ em · ${this.rooms} phòng`
+      return (
+        `${this.adults} ` +
+        this.$t('userHeader.guestInputPlaceholder_1') +
+        ` · ${this.children} ` +
+        this.$t('userHeader.guestInputPlaceholder_2') +
+        ` · ${this.rooms} ` +
+        this.$t('userHeader.guestInputPlaceholder_3')
+      )
     },
     totalGuests() {
       return this.toCount(this.adults, 1) + this.toCount(this.children, 0)
@@ -90,6 +146,19 @@ export default {
     remainingImages() {
       return this.hotelImages.length - (3 + this.initialThumbnailCount)
     },
+    // The preview section always shows the top 3 most recent reviews.
+    topReviews() {
+      return this.reviews.slice(0, 3)
+    },
+    // Total number of published reviews, from the hotel rating summary when
+    // available (the embedded list is capped).
+    totalReviewCount() {
+      return this.reviewsTotal || this.reviews.length
+    },
+    hasActiveReviewFilters() {
+      const f = this.reviewFilters
+      return Boolean(f.score || f.season || f.country || f.hasMedia || f.q)
+    },
     // Fallback avatar for reviewers without a profile picture (an empty `src`
     // resolves to the page URL and renders a broken image).
     defaultAvatar() {
@@ -99,12 +168,12 @@ export default {
     // filters, instead of always showing "Tuyệt hảo" regardless of the score.
     overallRatingLabel() {
       const rating = Number(this.hotel.overall_rating) || 0
-      if (rating >= 9) return 'Xuất sắc'
-      if (rating >= 8) return 'Rất tốt'
-      if (rating >= 7) return 'Tốt'
-      if (rating >= 6) return 'Dễ chịu'
-      if (rating > 0) return 'Chấp nhận được'
-      return 'Chưa có đánh giá'
+      if (rating >= 9) return this.$t('hotelDetails.rating.excellent')
+      if (rating >= 8) return this.$t('hotelDetails.rating.veryGood')
+      if (rating >= 7) return this.$t('hotelDetails.rating.good')
+      if (rating >= 6) return this.$t('hotelDetails.rating.pleasant')
+      if (rating > 0) return this.$t('hotelDetails.rating.acceptable')
+      return this.$t('hotelDetails.rating.noRating')
     },
     // calculate total number and total price of selected rooms
     totalSelectedRooms() {
@@ -124,46 +193,15 @@ export default {
       'updateRooms',
       'updateChildren'
     ]),
-    // Format a date as DD/MM/YYYY without a timezone shift. A bare
-    // `new Date('2026-10-26')` is parsed as UTC midnight and can render the
-    // previous day in negative-offset zones.
-    formatDate(value) {
-      if (!value) return ''
-      if (value instanceof Date) {
-        const y = value.getFullYear()
-        const m = String(value.getMonth() + 1).padStart(2, '0')
-        const d = String(value.getDate()).padStart(2, '0')
-        return `${d}/${m}/${y}`
-      }
-      const s = String(value).slice(0, 10)
-      const [y, m, d] = s.split('-')
-      if (!y || !m || !d) return s
-      return `${d}/${m}/${y}`
-    },
     calculateNumberOfDays(checkInDateString, checkOutDateString) {
       const checkInDate = new Date(checkInDateString)
       const checkOutDate = new Date(checkOutDateString)
       const timeDifference = checkOutDate - checkInDate
-      this.numberOfDays = timeDifference / (1000 * 60 * 60 * 24) + 1
+      return timeDifference / (1000 * 60 * 60 * 24) + 1
     },
-    extractDate() {
-      const dateRegex = /\b(\d{2}\/\d{2}\/\d{4})\b/g
-      const dates = this.dateRange.match(dateRegex)
-      if (dates) {
-        // Convert the date strings to YYYY-MM-DD format
-        for (let i = 0; i < dates.length; i++) {
-          // Split the string into parts: [DD, MM, YYYY]
-          const [day, month, year] = dates[i].split('/')
-
-          // Rearrange into YYYY-MM-DD format
-          dates[i] = `${year}-${month}-${day}`
-        }
-
-        this.checkInDate = dates[0]
-        this.checkOutDate = dates[1]
-        // Calculate the number of days between the start and end dates
-        this.calculateNumberOfDays(this.checkInDate, this.checkOutDate)
-      }
+    // Prevent selecting check-in dates in the past, matching the header bar.
+    disabledDate(time) {
+      return time.getTime() < Date.now() - 8.64e7
     },
     toArray(value) {
       if (Array.isArray(value)) return value
@@ -199,34 +237,73 @@ export default {
         available_rooms: room.availableRooms || room.available_rooms
       }
     },
+    // Reviews arrive in two shapes: the embedded hotel-details payload is
+    // camelCase, the paginated /reviews/hotels/:id endpoint returns raw rows
+    // (snake_case). Normalise both to one shape for the template.
     normalizeReview(review) {
+      const user = review.user || {}
+      const profilePicture = user.profilePictureUrl ?? user.profile_picture_url
+      const country = user.country ?? review.country ?? null
+
       return {
         ...review,
-        review_id: review.id,
-        profile_picture_url: getImageUrl(review.user?.profilePictureUrl),
-        username: review.user?.firstName || 'Khách',
-        country: review.user?.country,
-        created_at: review.createdAt,
-        rating: review.ratingOverall,
-        comment: review.comment
+        review_id: review.id ?? review.review_id,
+        profile_picture_url: getImageUrl(profilePicture),
+        username:
+          user.firstName ??
+          user.first_name ??
+          review.username ??
+          this.$t('hotelDetails.reviews.guestFallback'),
+        author_id: user.id ?? review.user_id ?? null,
+        country,
+        created_at: review.createdAt ?? review.created_at,
+        rating: Number(review.ratingOverall ?? review.rating_overall ?? review.rating) || 0,
+        title: review.title || '',
+        comment: review.comment || '',
+        is_verified: Boolean(review.isVerified ?? review.is_verified),
+        helpful_count: Number(review.helpfulCount ?? review.helpful_count) || 0,
+        // null = not voted, true/false = the viewer's vote (when authenticated).
+        viewer_vote: review.viewerHelpfulVote ?? review.viewer_helpful_vote ?? null,
+        media: this.normalizeReviewMedia(review.media),
+        reply: this.normalizeReviewReply(review.reply)
       }
     },
-    normalizeReviewCriterias(ratingBreakdown = {}) {
-      const labels = {
-        cleanliness: 'Sạch sẽ',
-        location: 'Vị trí',
-        service: 'Dịch vụ',
-        valueForMoney: 'Đáng giá tiền',
-        overall: 'Tổng quan'
-      }
+    normalizeReviewMedia(media) {
+      const list = Array.isArray(media) ? media : this.toArray(media)
 
-      return Object.entries(labels)
-        .map(([key, label]) => {
+      return list
+        .map((item) => {
+          if (!item) return null
+          if (typeof item === 'string') {
+            return { id: item, url: getImageUrl(item), thumbnail_url: getImageUrl(item) }
+          }
+
+          const url = item.thumbnailUrl ?? item.thumbnail_url ?? item.url ?? item.media_url
+          return {
+            id: item.id ?? url,
+            url: getImageUrl(item.url ?? item.media_url ?? item.thumbnail_url),
+            thumbnail_url: getImageUrl(url)
+          }
+        })
+        .filter((item) => item && item.url)
+    },
+    normalizeReviewReply(reply) {
+      if (!reply) return null
+      const text = reply.comment ?? reply.reply_text ?? reply.text
+      if (!text) return null
+
+      return { comment: text, created_at: reply.createdAt ?? reply.created_at ?? null }
+    },
+    normalizeReviewCriterias(ratingBreakdown = {}) {
+      const keys = ['cleanliness', 'location', 'service', 'valueForMoney', 'overall']
+
+      return keys
+        .map((key) => {
           const score = Number(ratingBreakdown[key])
           if (!Number.isFinite(score)) return null
 
           return {
-            criteria_name: label,
+            criteria_key: `hotelDetails.criteria.${key}`,
             average_score: score / 2
           }
         })
@@ -264,6 +341,7 @@ export default {
         }
         this.room_list = (details.rooms || []).map(this.normalizeRoom)
         this.reviews = (details.reviews || []).map(this.normalizeReview)
+        this.reviewsTotal = Number(details.ratingSummary?.totalReviews) || this.reviews.length
         this.reviewCriterias = this.normalizeReviewCriterias(details.ratingBreakdown)
         this.nearbyPlaces = (details.nearbyPlaces || []).map(this.normalizeNearbyPlace)
         this.hotelImages = (details.images || [])
@@ -278,9 +356,126 @@ export default {
     /******** comment popup *******/
     showCommentPopup() {
       this.openCommentPopup = true
+      this.fetchPopupReviews(1)
     },
     hideCommentPopup() {
       this.openCommentPopup = false
+    },
+    // Build the query params for the paginated reviews endpoint from the
+    // current filter state (empty values are omitted).
+    reviewQueryParams(page) {
+      const scoreBands = {
+        excellent: { minRating: 9 },
+        good: { minRating: 7, maxRating: 9 },
+        average: { minRating: 5, maxRating: 7 },
+        poor: { maxRating: 5 }
+      }
+      const monthsBySeason = {
+        marMay: '3,4,5',
+        junAug: '6,7,8',
+        sepNov: '9,10,11',
+        decFeb: '12,1,2'
+      }
+      const filters = this.reviewFilters
+      const band = scoreBands[filters.score] || {}
+
+      const params = { page, limit: this.reviewPagination.limit }
+      if (band.minRating !== undefined) params.minRating = band.minRating
+      if (band.maxRating !== undefined) params.maxRating = band.maxRating
+      if (monthsBySeason[filters.season]) params.months = monthsBySeason[filters.season]
+      if (filters.country) params.country = filters.country
+      if (filters.hasMedia) params.hasMedia = true
+      if (filters.q.trim()) params.q = filters.q.trim()
+
+      return params
+    },
+    async fetchPopupReviews(page = 1) {
+      this.reviewsLoading = true
+      try {
+        const response = await ReviewService.getHotelReviews(
+          this.hotel_id,
+          this.reviewQueryParams(page)
+        )
+        const data = response?.data ?? []
+        const meta = response?.meta ?? {}
+
+        this.popupReviews = data.map(this.normalizeReview)
+        const limit = meta.limit ?? this.reviewPagination.limit
+        const total = meta.total ?? this.popupReviews.length
+        this.reviewPagination = {
+          page: meta.page ?? page,
+          limit,
+          total,
+          totalPages: Math.max(1, Math.ceil(total / limit))
+        }
+        this.reviewCountries = meta.facets?.countries ?? []
+      } catch (error) {
+        errorHandler(error)
+        this.popupReviews = []
+      } finally {
+        this.reviewsLoading = false
+      }
+    },
+    applyReviewFilters() {
+      this.fetchPopupReviews(1)
+    },
+    clearReviewFilters() {
+      this.reviewFilters = { score: '', season: '', country: '', hasMedia: false, q: '' }
+      this.fetchPopupReviews(1)
+    },
+    goToReviewPage(page) {
+      if (this.reviewsLoading) return
+      if (page < 1 || page > this.reviewPagination.totalPages) return
+      if (page === this.reviewPagination.page) return
+      this.fetchPopupReviews(page)
+    },
+    // Map a 1-10 review score to the shared rating labels.
+    reviewRatingLabel(rating) {
+      const score = Number(rating) || 0
+      if (score >= 9) return this.$t('hotelDetails.rating.excellent')
+      if (score >= 8) return this.$t('hotelDetails.rating.veryGood')
+      if (score >= 7) return this.$t('hotelDetails.rating.good')
+      if (score >= 6) return this.$t('hotelDetails.rating.pleasant')
+      if (score > 0) return this.$t('hotelDetails.rating.acceptable')
+      return this.$t('hotelDetails.rating.noRating')
+    },
+    formatReviewDate(value) {
+      if (!value) return ''
+      return new Date(value).toLocaleDateString(this.$i18n.locale)
+    },
+    // Cast or retract the caller's helpful vote on a review. Requires an
+    // account; guests are sent to login and returned here afterwards.
+    async voteReview(review, isHelpful) {
+      if (!this.isUserAuthenticated) {
+        this.$router.push({ path: '/login', query: { redirect: this.$route.path } })
+        return
+      }
+
+      const index = this.popupReviews.findIndex((item) => item.review_id === review.review_id)
+      if (index === -1) return
+
+      // Clicking the active vote retracts it.
+      const retracting = this.popupReviews[index].viewer_vote === isHelpful
+
+      try {
+        const response = retracting
+          ? await ReviewService.removeReviewVote(review.review_id)
+          : await ReviewService.voteReviewHelpful(review.review_id, isHelpful)
+
+        const data = response?.data || {}
+        this.popupReviews[index] = {
+          ...this.popupReviews[index],
+          viewer_vote: data.isHelpful ?? null,
+          helpful_count: Number(data.helpfulCount) || 0
+        }
+      } catch (error) {
+        errorHandler(error)
+      }
+    },
+    // Criteria scores are normalised to a 0-5 scale on the client.
+    criteriaBarWidth(averageScore) {
+      const score = Number(averageScore) || 0
+      return `${Math.max(0, Math.min(100, (score / 5) * 100))}%`
     },
     /******** review popup *******/
     closeReviewValidation() {
@@ -304,34 +499,40 @@ export default {
       this.showGuestSelector = !this.showGuestSelector
     },
     updateGuests(type, action) {
+      const increment = action === 'increment'
       if (type === 'adults') {
-        if (action === 'increment' && this.adults < 30) this.adults++
-        else if (action === 'decrement' && this.adults > 1) this.adults--
+        if (increment && this.adults < 30) this.adults = this.adults + 1
+        else if (!increment && this.adults > 1) this.adults = this.adults - 1
       } else if (type === 'children') {
-        if (action === 'increment' && this.children < 10) this.children++
-        else if (action === 'decrement' && this.children > 0) this.children--
+        if (increment && this.children < 10) this.children = this.children + 1
+        else if (!increment && this.children > 0) this.children = this.children - 1
       } else if (type === 'rooms') {
-        if (action === 'increment' && this.rooms < 30) this.rooms++
-        else if (action === 'decrement' && this.rooms > 1) this.rooms--
+        if (increment && this.rooms < 30) this.rooms = this.rooms + 1
+        else if (!increment && this.rooms > 1) this.rooms = this.rooms - 1
       }
     },
     hideGuestSelector() {
       this.showGuestSelector = false
     },
     async applyChange() {
+      const { checkInDate, checkOutDate } = this.getSearchData
+
+      // The values come from the shared store, so they may be missing when a
+      // visitor lands on the hotel page without searching first.
+      if (!checkInDate || !checkOutDate) {
+        this.toast.error(this.$t('hotelDetails.search.datesRequired'))
+        return
+      }
+
       try {
         this.isSearchRoomLoading = true
 
-        this.extractDate(this.dateRange)
         const response = await HotelService.searchAvailableRooms(this.hotel_id, {
-          checkInDate: this.checkInDate,
-          checkOutDate: this.checkOutDate,
+          checkInDate,
+          checkOutDate,
           numberOfRooms: this.toCount(this.rooms, 1),
           numberOfGuests: this.totalGuests
         })
-
-        // update search data in store
-        this.updateSearchDataInStore()
 
         this.room_list = (response.data || []).map(this.normalizeRoom)
       } catch (error) {
@@ -374,6 +575,14 @@ export default {
     },
     // this method will be called when user click book button
     async processBooking() {
+      // Booking a hold requires an account. Send guests to the login page and
+      // bring them back here afterwards instead of surfacing the API's 401 as a
+      // "Authentication required" toast.
+      if (!this.isUserAuthenticated) {
+        this.$router.push({ path: '/login', query: { redirect: this.$route.path } })
+        return
+      }
+
       if (this.selectedRooms.length != 0) {
         const bookingInfor = {
           hotel: {
@@ -419,7 +628,13 @@ export default {
 
           this.$router.push('/book')
         } catch (error) {
-          errorHandler(error)
+          // A stale/expired session also surfaces as 401; redirect to login
+          // rather than showing the raw API message.
+          if (error.response?.status === 401) {
+            this.$router.push({ path: '/login', query: { redirect: this.$route.path } })
+          } else {
+            errorHandler(error)
+          }
         }
       }
     },
@@ -429,14 +644,6 @@ export default {
       } else {
         this.$router.push({ path: '/login', query: { redirect: this.$route.path } })
       }
-    },
-    updateSearchDataInStore() {
-      this.updateCheckInDate(this.checkInDate)
-      this.updateCheckOutDate(this.checkOutDate)
-      this.updateNumberOfDays(this.numberOfDays)
-      this.updateAdults(this.toCount(this.adults, 1))
-      this.updateRooms(this.toCount(this.rooms, 1))
-      this.updateChildren(this.toCount(this.children, 0))
     },
     calculateDistance(lat2, lon2) {
       const toRadians = (degrees) => degrees * (Math.PI / 180)
@@ -456,59 +663,9 @@ export default {
     }
   },
   async mounted() {
-    if (this.getSearchData) {
-      this.checkOutDate = this.getSearchData.checkOutDate
-      this.selectedLocation = this.getSearchData.location
-      if (this.getSearchData.checkInDate && this.getSearchData.checkOutDate) {
-        const startOfToday = new Date().setHours(0, 0, 0, 0)
-        let checkInDate = this.formatDate(this.getSearchData.checkInDate)
-        let checkOutDate = this.formatDate(this.getSearchData.checkOutDate)
-
-        if (new Date(this.getSearchData.checkInDate).getTime() < startOfToday) {
-          checkInDate = this.formatDate(new Date())
-        }
-        if (new Date(this.getSearchData.checkOutDate).getTime() < startOfToday) {
-          checkOutDate = this.formatDate(new Date(Date.now() + 1000 * 60 * 60 * 24))
-        }
-
-        this.dateRange =
-          this.$t('userHeader.dateInputPlaceholder_1') +
-          ' ' +
-          checkInDate +
-          ' ' +
-          this.$t('userHeader.dateInputPlaceholder_2') +
-          ' ' +
-          checkOutDate
-      }
-      this.children = this.toCount(this.getSearchData.children, 0)
-      this.adults = this.toCount(this.getSearchData.adults, 1)
-      this.rooms = this.toCount(this.getSearchData.rooms, 1)
-      this.numberOfDays = this.getSearchData.numberOfDays
-      this.checkInDate = this.getSearchData.checkInDate
-      // this.checkOutDate = this.getSearchData.checkOutDate
-    }
-
     this.hotel_id = this.$route.params.hotel_id
     // Fetch hotel details using hotelId
     await this.getHotelDetails()
-
-    // date picker popup
-    flatpickr(this.$refs.dateInput, {
-      dateFormat: 'd/m/Y', // Định dạng ngày
-      mode: 'range', // Cho phép chọn dải ngày
-
-      minDate: 'today', // Không cho phép chọn ngày trong quá khứ
-      showMonths: 2, // Hiển thị 2 tháng cạnh nhau
-      onChange: function (selectedDates, dateStr, instance) {},
-      locale: {
-        rangeSeparator: ' đến ' // Thay "to" bằng "đến"
-      },
-      onValueUpdate: function (selectedDates, dateStr, instance) {
-        // Thêm "Từ" vào trước ngày bắt đầu
-        const display = instance.element.value
-        instance.element.value = 'Từ ' + display
-      }
-    })
   }
 }
 </script>
@@ -533,12 +690,12 @@ export default {
       <div class="container">
         <div class="menu__list">
           <ul>
-            <li><a href="">Tổng quan</a></li>
-            <li><a href="#price">Thông tin & giá</a></li>
-            <li>Tiện nghi</li>
-            <li><a href="#policy">Chính sách</a></li>
-            <li>Ghi chú</li>
-            <li><a href="#review">Đánh giá của khách</a></li>
+            <li><a href="">{{ $t('hotelDetails.menu.overview') }}</a></li>
+            <li><a href="#price">{{ $t('hotelDetails.menu.infoAndPrice') }}</a></li>
+            <li>{{ $t('hotelDetails.menu.amenities') }}</li>
+            <li><a href="#policy">{{ $t('hotelDetails.menu.policy') }}</a></li>
+            <li>{{ $t('hotelDetails.menu.notes') }}</li>
+            <li><a href="#review">{{ $t('hotelDetails.menu.reviews') }}</a></li>
           </ul>
         </div>
       </div>
@@ -553,19 +710,18 @@ export default {
           <div class="overview__image">
             <div class="overview__image--title">
               <h2>{{ hotel.name }}</h2>
-              <button>Đặt ngay</button>
+              <button>{{ $t('hotelDetails.overview.bookNow') }}</button>
             </div>
             <div class="overview__image--location">
               <p><i class="fa-solid fa-location-dot"></i>{{ hotel.address }}</p>
             </div>
 
             <div class="gallery-container">
-              Featured large images
               <div class="featured-images">
                 <div class="featured-left" @click="openImageGallery">
                   <img
                     :src="hotelImages[0]"
-                    alt="Featured room 1"
+                    :alt="$t('hotelDetails.overview.featuredRoomAlt', { n: 1 })"
                     class="featured-image"
                     v-if="hotelImages.length > 0"
                   />
@@ -573,13 +729,13 @@ export default {
                 <div class="featured-right" @click="openImageGallery">
                   <img
                     :src="hotelImages[1]"
-                    alt="Featured room 2"
+                    :alt="$t('hotelDetails.overview.featuredRoomAlt', { n: 2 })"
                     class="featured-image"
                     v-if="hotelImages.length > 1"
                   />
                   <img
                     :src="hotelImages[2]"
-                    alt="Featured room 3"
+                    :alt="$t('hotelDetails.overview.featuredRoomAlt', { n: 3 })"
                     class="featured-image"
                     v-if="hotelImages.length > 2"
                   />
@@ -594,7 +750,11 @@ export default {
                   class="thumbnail-item"
                   @click="openImageGallery"
                 >
-                  <img :src="image" :alt="`Room ${index + 4}`" class="thumbnail-image" />
+                  <img
+                    :src="image"
+                    :alt="$t('hotelDetails.overview.roomAlt', { n: index + 4 })"
+                    class="thumbnail-image"
+                  />
                 </div>
                 <div
                   v-if="hasMoreImages"
@@ -602,11 +762,11 @@ export default {
                   @click="openImageGallery"
                 >
                   <div class="more-overlay">
-                    <span>+{{ remainingImages }} ảnh</span>
+                    <span>{{ $t('hotelDetails.overview.morePhotos', { count: remainingImages }) }}</span>
                   </div>
                   <img
                     :src="hotelImages[displayedThumbnails.length + 3]"
-                    :alt="`Room ${displayedThumbnails.length + 4}`"
+                    :alt="$t('hotelDetails.overview.roomAlt', { n: displayedThumbnails.length + 4 })"
                     class="thumbnail-image"
                   />
                 </div>
@@ -625,35 +785,35 @@ export default {
         <div class="information__total">
           <div class="information__text">
             <p>{{ this.hotel.description }}</p>
-            <h3>Các tiện nghi được ưa chuộng nhất</h3>
+            <h3>{{ $t('hotelDetails.amenities.title') }}</h3>
             <ul>
               <li>
                 <i class="fa-solid fa-bus"></i>
-                <p>Xe đưa đón sân bay</p>
+                <p>{{ $t('hotelDetails.amenities.airportShuttle') }}</p>
               </li>
               <li>
                 <i class="fa-solid fa-ban-smoking"></i>
-                <p>Phòng không hút thuốc</p>
+                <p>{{ $t('hotelDetails.amenities.nonSmoking') }}</p>
               </li>
               <li>
                 <i class="fa-solid fa-wifi"></i>
-                <p>WiFi miễn phí</p>
+                <p>{{ $t('hotelDetails.amenities.freeWifi') }}</p>
               </li>
               <li>
                 <i class="fa-solid fa-people-roof"></i>
-                <p>Phòng gia đình</p>
+                <p>{{ $t('hotelDetails.amenities.familyRooms') }}</p>
               </li>
               <li>
                 <i class="fa-solid fa-bell-concierge"></i>
-                <p>Lễ tân 24 giờ</p>
+                <p>{{ $t('hotelDetails.amenities.reception24h') }}</p>
               </li>
               <li>
                 <i class="fa-solid fa-elevator"></i>
-                <p>Thang máy</p>
+                <p>{{ $t('hotelDetails.amenities.elevator') }}</p>
               </li>
               <li>
                 <i class="fa-regular fa-snowflake"></i>
-                <p>Điều hòa nhiệt độ</p>
+                <p>{{ $t('hotelDetails.amenities.airConditioning') }}</p>
               </li>
             </ul>
           </div>
@@ -670,7 +830,7 @@ export default {
                   d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
                 />
               </svg>
-              Hiển thị trên bản đồ
+              {{ $t('searchResults.showOnMap') }}
             </button>
           </div>
         </div>
@@ -683,14 +843,19 @@ export default {
     <div class="search container">
       <div>
         <div class="search-bar">
-          <!-- Date picker input -->
+          <!-- Date picker (shares the search store with the header bar) -->
           <div class="date-picker">
-            <input
-              class="search-input"
-              type="text"
-              placeholder="Nhận phòng - Trả phòng"
+            <ElDatePicker
               v-model="dateRange"
-              ref="dateInput"
+              type="daterange"
+              class="search-date-picker"
+              :range-separator="$t('userHeader.dateRangeSeparator')"
+              :start-placeholder="$t('userHeader.checkInPlaceholder')"
+              :end-placeholder="$t('userHeader.checkOutPlaceholder')"
+              :aria-label="$t('hotelDetails.search.checkInOutPlaceholder')"
+              :disabled-date="disabledDate"
+              format="DD/MM/YYYY"
+              value-format="YYYY-MM-DD"
             />
           </div>
 
@@ -708,38 +873,75 @@ export default {
             <!-- Guest room selector -->
             <div v-if="showGuestSelector" class="guest-room-selector" id="guest-room-selector">
               <div class="selector-item">
-                <span>Người lớn</span>
+                <span>{{ $t('userHeader.guestInputPlaceholder_1') }}</span>
                 <div class="counter">
-                  <button class="decrement" @click="updateGuests('adults', 'decrement')">-</button>
-                  <span>{{ adults }}</span>
-                  <button class="increment" @click="updateGuests('adults', 'increment')">+</button>
-                </div>
-              </div>
-              <div class="selector-item">
-                <span>Trẻ em <small>(0 - 17 tuổi)</small></span>
-                <div class="counter">
-                  <button class="decrement" @click="updateGuests('children', 'decrement')">
+                  <button
+                    class="decrement"
+                    :disabled="adults <= 1"
+                    @click="updateGuests('adults', 'decrement')"
+                  >
                     -
                   </button>
-                  <span>{{ children }}</span>
-                  <button class="increment" @click="updateGuests('children', 'increment')">
+                  <span>{{ adults }}</span>
+                  <button
+                    class="increment"
+                    :disabled="adults >= 30"
+                    @click="updateGuests('adults', 'increment')"
+                  >
                     +
                   </button>
                 </div>
               </div>
               <div class="selector-item">
-                <span>Phòng</span>
+                <span
+                  >{{ $t('userHeader.guestInputPlaceholder_2') }}
+                  <small>{{ $t('userHeader.childAgeSuffix') }}</small></span
+                >
                 <div class="counter">
-                  <button class="decrement" @click="updateGuests('rooms', 'decrement')">-</button>
+                  <button
+                    class="decrement"
+                    :disabled="children <= 0"
+                    @click="updateGuests('children', 'decrement')"
+                  >
+                    -
+                  </button>
+                  <span>{{ children }}</span>
+                  <button
+                    class="increment"
+                    :disabled="children >= 10"
+                    @click="updateGuests('children', 'increment')"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <div class="selector-item">
+                <span>{{ $t('userHeader.guestInputPlaceholder_3') }}</span>
+                <div class="counter">
+                  <button
+                    class="decrement"
+                    :disabled="rooms <= 1"
+                    @click="updateGuests('rooms', 'decrement')"
+                  >
+                    -
+                  </button>
                   <span>{{ rooms }}</span>
-                  <button class="increment" @click="updateGuests('rooms', 'increment')">+</button>
+                  <button
+                    class="increment"
+                    :disabled="rooms >= 30"
+                    @click="updateGuests('rooms', 'increment')"
+                  >
+                    +
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Search button -->
-          <button class="search-button" @click="applyChange">Áp dụng</button>
+          <button class="search-button" @click="applyChange">
+            {{ $t('hotelDetails.search.apply') }}
+          </button>
         </div>
       </div>
     </div>
@@ -749,11 +951,11 @@ export default {
       <table>
         <thead>
           <tr class="table_header">
-            <th class="table_header_1">Loại chỗ nghỉ</th>
-            <th class="table_header_2">Số lượng khách</th>
-            <th class="table_header_3">Giá hôm nay</th>
-            <th class="table_header_4">Các lựa chọn</th>
-            <th class="table_header_5">Chọn phòng</th>
+            <th class="table_header_1">{{ $t('hotelDetails.table.propertyType') }}</th>
+            <th class="table_header_2">{{ $t('hotelDetails.table.guests') }}</th>
+            <th class="table_header_3">{{ $t('hotelDetails.table.todayPrice') }}</th>
+            <th class="table_header_4">{{ $t('hotelDetails.table.options') }}</th>
+            <th class="table_header_5">{{ $t('hotelDetails.table.selectRoom') }}</th>
             <th></th>
           </tr>
         </thead>
@@ -781,16 +983,19 @@ export default {
               <div class="price">
                 {{ parseInt(room.price_per_night).toLocaleString('en-US') }}
               </div>
-              <div class="tax-info">Đã bao gồm thuế và phí</div>
+              <div class="tax-info">{{ $t('map.priceIncludes') }}</div>
             </td>
             <td>
               <ul class="benefits">
-                <li>Miễn phí hủy bất kỳ lúc nào</li>
-                <li>Không cần thanh toán trước</li>
+                <li>{{ $t('hotelDetails.table.freeCancellation') }}</li>
+                <li>{{ $t('hotelDetails.table.noPrepayment') }}</li>
               </ul>
             </td>
             <td>
-              <select aria-label="Number of rooms" @change="handleRoomSelection($event, room)">
+              <select
+                :aria-label="$t('hotelDetails.table.roomsAriaLabel')"
+                @change="handleRoomSelection($event, room)"
+              >
                 <option value="0" selected>0</option>
                 <option v-for="n in room.available_rooms" :key="n" :value="n">
                   {{ n }} (USD {{ parseInt(n * room.price_per_night).toLocaleString('en-US') }})
@@ -800,14 +1005,14 @@ export default {
             <td v-if="index === 0" :rowspan="room_list.length">
               <div class="price__content">
                 <div class="booking-summary-rooms-and-price">
-                  {{ totalSelectedRooms }} Phòng
+                  {{ $t('hotelDetails.table.roomsSelected', { count: totalSelectedRooms }) }}
                   <div class="total-price" style="font-size: 20px">
                     USD {{ totalPriceSelectedRooms.toLocaleString('en-US') }}
                   </div>
                 </div>
-                <button @click="processBooking">Tôi sẽ đặt</button>
+                <button @click="processBooking">{{ $t('hotelDetails.table.bookButton') }}</button>
                 <div style="color: red; font-size: 13px" v-if="selectedRooms.length == 0">
-                  Vui lòng chọn phòng trước khi đặt
+                  {{ $t('hotelDetails.table.selectRoomsFirst') }}
                 </div>
               </div>
             </td>
@@ -817,8 +1022,8 @@ export default {
       <SkeletonGrid v-if="isSearchRoomLoading" :count="2" image-height="90px" />
       <EmptyState
         v-else-if="room_list.length === 0"
-        title="No rooms available"
-        message="Try different dates or guest counts."
+        :title="$t('hotelDetails.table.noRoomsTitle')"
+        :message="$t('hotelDetails.table.noRoomsMessage')"
         icon="fa-solid fa-bed"
       />
     </div>
@@ -829,34 +1034,38 @@ export default {
     <div class="review__open" v-if="openCommentPopup">
       <div class="review__open--left"></div>
       <div class="review__open--right">
-        <strong>Đánh giá của khách</strong>
+        <strong>{{ $t('hotelDetails.reviews.title') }}</strong>
         <button class="close" @click="hideCommentPopup()">x</button>
         <div class="review__open--point">
           <span class="point">{{ this.hotel.overall_rating }}</span>
           <div>
             <span style="font-weight: 500">{{ overallRatingLabel }}</span>
             <br />
-            <span>{{ this.reviews.length }} đánh giá</span>
+            <span>{{ $t('userHome.reviewCount', { count: totalReviewCount }) }}</span>
           </div>
           <p>
-            Chúng tôi cố gắng mang đến 100% đánh giá thật <i class="fa-solid fa-circle-info"></i>
+            {{ $t('hotelDetails.reviews.authentic') }} <i class="fa-solid fa-circle-info"></i>
           </p>
-          <button @click="writeReview">Viết đánh giá</button>
+          <button @click="writeReview">{{ $t('hotelDetails.reviews.writeReview') }}</button>
         </div>
         <hr />
         <div class="review__process">
-          <strong>Hạng mục</strong>
+          <strong>{{ $t('hotelDetails.reviews.categories') }}</strong>
           <div class="review__process--bar">
             <div class="row">
-              <div class="col-lg-4 col-md-6 col-12" v-for="review in reviewCriterias" :key="review.criteria_name">
+              <div
+                class="col-lg-4 col-md-6 col-12"
+                v-for="review in reviewCriterias"
+                :key="review.criteria_key"
+              >
                 <div class="category">
-                  <div>{{ review.criteria_name }}</div>
+                  <div>{{ $t(review.criteria_key) }}</div>
                   <div>
                     {{ Number((review.average_score / 5) * 10).toFixed(1) }}
                   </div>
                 </div>
                 <div class="process--bar">
-                  <div class="bar" style="width: 92%"></div>
+                  <div class="bar" :style="{ width: criteriaBarWidth(review.average_score) }"></div>
                 </div>
               </div>
             </div>
@@ -864,72 +1073,99 @@ export default {
         </div>
         <hr />
         <div class="review__number">
-          <strong>Bộ lọc</strong>
+          <strong>{{ $t('hotelDetails.reviews.filters.title') }}</strong>
           <ul>
             <li>
-              <p>Khách đánh giá</p>
-              <select name="" id="" aria-label="Khách đánh giá">
-                <option value="">Tất cả({{ this.reviews.length }})</option>
-                <option value="">Gia đình(11)</option>
-                <option value="">Cặp đôi(2)</option>
-                <option value="">Khách lẻ(9)</option>
-                <option value="">Du khách doanh nhân(1)</option>
+              <p>{{ $t('hotelDetails.reviews.filters.score') }}</p>
+              <select
+                v-model="reviewFilters.score"
+                :aria-label="$t('hotelDetails.reviews.filters.score')"
+                @change="applyReviewFilters"
+              >
+                <option value="">{{ $t('hotelDetails.reviews.filters.scoreAny') }}</option>
+                <option value="excellent">
+                  {{ $t('hotelDetails.reviews.filters.scores.excellent') }}
+                </option>
+                <option value="good">{{ $t('hotelDetails.reviews.filters.scores.good') }}</option>
+                <option value="average">
+                  {{ $t('hotelDetails.reviews.filters.scores.average') }}
+                </option>
+                <option value="poor">{{ $t('hotelDetails.reviews.filters.scores.poor') }}</option>
               </select>
             </li>
             <li>
-              <p>Điểm đánh giá</p>
-              <select name="" id="" aria-label="Điểm đánh giá">
-                <option value="">Tất cả({{ this.reviews.length }})</option>
-                <option value="">Tuyệt hảo: 9+ (19)</option>
-                <option value="">Tốt: 7-9 (2)</option>
-                <option value="">Tàm tạm: 5-7 (1)</option>
-                <option value="">Rất tệ: 1-3 (1)</option>
+              <p>{{ $t('hotelDetails.reviews.filters.season') }}</p>
+              <select
+                v-model="reviewFilters.season"
+                :aria-label="$t('hotelDetails.reviews.filters.season')"
+                @change="applyReviewFilters"
+              >
+                <option value="">{{ $t('hotelDetails.reviews.filters.seasonAny') }}</option>
+                <option value="marMay">{{ $t('hotelDetails.reviews.filters.seasons.marMay') }}</option>
+                <option value="junAug">{{ $t('hotelDetails.reviews.filters.seasons.junAug') }}</option>
+                <option value="sepNov">{{ $t('hotelDetails.reviews.filters.seasons.sepNov') }}</option>
+                <option value="decFeb">{{ $t('hotelDetails.reviews.filters.seasons.decFeb') }}</option>
               </select>
             </li>
             <li>
-              <p>Ngôn ngữ</p>
-              <select name="" id="" aria-label="Ngôn ngữ">
-                <option value="">Tất cả ({{ this.reviews.length }})</option>
-                <option value="">Tiếng Việt (6)</option>
-                <option value="">Tiếng Anh (6)</option>
-                <option value="">Tiếng Hàn Quốc (1)</option>
-                <option value="">Tiếng Pháp (5)</option>
+              <p>{{ $t('hotelDetails.reviews.filters.country') }}</p>
+              <select
+                v-model="reviewFilters.country"
+                :aria-label="$t('hotelDetails.reviews.filters.country')"
+                @change="applyReviewFilters"
+              >
+                <option value="">{{ $t('hotelDetails.reviews.filters.countryAny') }}</option>
+                <option v-for="item in reviewCountries" :key="item.country" :value="item.country">
+                  {{ item.country }} ({{ item.count }})
+                </option>
               </select>
             </li>
-            <li>
-              <p>Thời gian trong năm</p>
-              <select name="" id="" aria-label="Thời gian trong năm">
-                <option value="">Tất cả({{ this.reviews.length }})</option>
-                <option value="">Tháng 3-5</option>
-                <option value="">Tháng 6-8</option>
-                <option value="">Tháng 9-11</option>
-                <option value="">Tháng 12-2</option>
-              </select>
+            <li class="review__number--toggle">
+              <label>
+                <input
+                  type="checkbox"
+                  v-model="reviewFilters.hasMedia"
+                  @change="applyReviewFilters"
+                />
+                {{ $t('hotelDetails.reviews.filters.hasMedia') }}
+              </label>
             </li>
           </ul>
-          <p>Chọn chủ để để lọc đánh giá</p>
-          <button class="visible"><i class="fa-solid fa-plus"></i> Yên tĩnh</button>
-          <button class="visible"><i class="fa-solid fa-plus"></i> Phòng</button>
-          <button class="visible"><i class="fa-solid fa-plus"></i> Vị trí</button>
-          <button class="visible"><i class="fa-solid fa-plus"></i> Bãi biển</button>
-
-          <button><i class="fa-solid fa-plus"></i> Suite</button>
-          <button><i class="fa-solid fa-plus"></i> Gia đình</button>
-          <button><i class="fa-solid fa-plus"></i> Xe đạp</button>
-          <button><i class="fa-solid fa-plus"></i> Tiếng Anh</button>
-          <button><i class="fa-solid fa-plus"></i> Ban công</button>
-          <button><i class="fa-solid fa-plus"></i> Nhà hàng</button>
-          <button><i class="fa-solid fa-plus"></i> Sạch sẽ</button>
-          <button><i class="fa-solid fa-plus"></i> Taxi</button>
-          <button><i class="fa-solid fa-plus"></i> Ô tô</button>
-
-          <button class="search visible"><i class="fa-solid fa-magnifying-glass"></i></button>
-          <button class="smooth">Thu gọn</button>
-          <button class="smooth2 visible">Hiển thị thêm</button>
+          <div class="review__number--search">
+            <input
+              type="text"
+              v-model="reviewFilters.q"
+              :placeholder="$t('hotelDetails.reviews.filters.keywordPlaceholder')"
+              :aria-label="$t('hotelDetails.reviews.filters.keywordPlaceholder')"
+              @keyup.enter="applyReviewFilters"
+            />
+            <button
+              class="search visible"
+              :aria-label="$t('hotelDetails.reviews.filters.search')"
+              @click="applyReviewFilters"
+            >
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+            <button v-if="hasActiveReviewFilters" class="smooth visible" @click="clearReviewFilters">
+              {{ $t('hotelDetails.reviews.filters.clear') }}
+            </button>
+          </div>
         </div>
         <hr />
-        <strong>Đánh giá của khách</strong>
-        <div class="review__open--text" v-for="review in reviews" :key="review.review_id">
+        <div class="review__open--headline">
+          <strong>{{ $t('hotelDetails.reviews.title') }}</strong>
+          <span>{{
+            $t('hotelDetails.reviews.filters.results', { count: reviewPagination.total })
+          }}</span>
+        </div>
+
+        <p v-if="reviewsLoading" class="review__open--status">
+          {{ $t('hotelDetails.reviews.loading') }}
+        </p>
+        <p v-else-if="popupReviews.length === 0" class="review__open--status">
+          {{ $t('hotelDetails.reviews.filters.empty') }}
+        </p>
+        <div class="review__open--text" v-for="review in popupReviews" :key="review.review_id">
           <div class="review__open--infor">
             <div class="name">
               <img
@@ -940,46 +1176,100 @@ export default {
               <div class="infor">
                 <span style="font-weight: 600">{{ review.username }}</span>
                 <br />
-                <span v-if="review.country">{{ review.country }}</span>
-                <span v-else>Việt Nam</span>
+                <span>{{ review.country || $t('hotelDetails.reviews.countryFallback') }}</span>
+                <span v-if="review.is_verified" class="verified-badge">
+                  <i class="fa-solid fa-circle-check"></i>
+                  {{ $t('hotelDetails.reviews.verified') }}
+                </span>
               </div>
             </div>
             <div>
               <div class="service">
-                <i class="fa-solid fa-bed"></i> <span>Nhà 1 phòng ngủ</span>
+                <i class="fa-regular fa-calendar"></i>
+                <span>{{ formatReviewDate(review.created_at) }}</span>
               </div>
-              <div class="service">
-                <i class="fa-regular fa-calendar"></i> <span>7 đêm · tháng 3/2023</span>
+              <div v-if="review.helpful_count > 0" class="service">
+                <i class="fa-regular fa-thumbs-up"></i>
+                <span>{{
+                  $t('hotelDetails.reviews.helpfulCount', { count: review.helpful_count })
+                }}</span>
               </div>
-              <div class="service"><i class="fa-solid fa-person"></i> <span>Khách lẻ</span></div>
             </div>
           </div>
           <div class="review__open--desc">
             <div class="point">
               <div>
-                <p>Ngày đánh giá: {{ new Date(review.created_at).toLocaleDateString('vi-VN') }}</p>
-                <strong v-if="review.rating >= 3">Xuất sắc</strong>
-                <strong v-else>Chưa tốt</strong>
+                <p>
+                  {{
+                    $t('hotelDetails.reviews.reviewDate', {
+                      date: formatReviewDate(review.created_at)
+                    })
+                  }}
+                </p>
+                <strong>{{ reviewRatingLabel(review.rating) }}</strong>
               </div>
               <span>{{ review.rating }}</span>
             </div>
             <div class="text">
-              <i class="fa-regular fa-face-smile-beam"></i>
-              <span> {{ review.comment }}</span>
+              <p v-if="review.title"><strong>{{ review.title }}</strong></p>
+              <span>{{ review.comment }}</span>
             </div>
-            <div class="button">
-              <button><i class="fa-regular fa-thumbs-up"></i> Hữu ích</button>
-              <button><i class="fa-regular fa-thumbs-down"></i> Không hữu ích</button>
+            <div v-if="review.media.length" class="review__open--media">
+              <img
+                v-for="media in review.media"
+                :key="media.id"
+                :src="media.thumbnail_url || media.url"
+                :alt="$t('hotelDetails.reviews.photoAlt')"
+              />
+            </div>
+            <div v-if="review.reply" class="review__open--reply">
+              <strong>{{ $t('hotelDetails.reviews.replyLabel') }}</strong>
+              <p>{{ review.reply.comment }}</p>
+            </div>
+            <div v-if="review.author_id !== getUserId" class="review__open--vote">
+              <button
+                type="button"
+                :class="{ active: review.viewer_vote === true }"
+                :aria-pressed="review.viewer_vote === true ? 'true' : 'false'"
+                @click="voteReview(review, true)"
+              >
+                <i class="fa-regular fa-thumbs-up"></i>
+                {{ $t('hotelDetails.reviews.helpful') }}
+              </button>
+              <button
+                type="button"
+                :class="{ active: review.viewer_vote === false }"
+                :aria-pressed="review.viewer_vote === false ? 'true' : 'false'"
+                @click="voteReview(review, false)"
+              >
+                <i class="fa-regular fa-thumbs-down"></i>
+                {{ $t('hotelDetails.reviews.notHelpful') }}
+              </button>
             </div>
           </div>
         </div>
         <hr />
-        <div class="pagination">
-          <button><i class="fa-solid fa-arrow-left"></i></button>
-          <button>1</button>
-          <button>2</button>
-          <button>3</button>
-          <button><i class="fa-solid fa-arrow-right"></i></button>
+        <div v-if="reviewPagination.totalPages > 1" class="pagination">
+          <button
+            :aria-label="$t('hotelDetails.reviews.pagination.prev')"
+            :disabled="reviewPagination.page <= 1 || reviewsLoading"
+            @click="goToReviewPage(reviewPagination.page - 1)"
+          >
+            <i class="fa-solid fa-arrow-left"></i>
+          </button>
+          <span class="pagination__status">{{
+            $t('hotelDetails.reviews.pagination.pageOf', {
+              page: reviewPagination.page,
+              total: reviewPagination.totalPages
+            })
+          }}</span>
+          <button
+            :aria-label="$t('hotelDetails.reviews.pagination.next')"
+            :disabled="reviewPagination.page >= reviewPagination.totalPages || reviewsLoading"
+            @click="goToReviewPage(reviewPagination.page + 1)"
+          >
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -990,59 +1280,66 @@ export default {
         <div class="review__total">
           <div class="review__point">
             <div class="review__point--left">
-              <h3>Đánh giá của khách</h3>
+              <h3>{{ $t('hotelDetails.reviews.title') }}</h3>
               <span class="point">{{ this.hotel.overall_rating }}</span>
               <span style="font-weight: 500; margin-left: 5px"
-                >{{ overallRatingLabel }} - {{ this.reviews.length }} đánh giá
+                >{{ overallRatingLabel }} -
+                {{ $t('userHome.reviewCount', { count: totalReviewCount }) }}
               </span>
             </div>
             <div class="review__point--right">
-              <button>Xem phòng trống</button>
+              <button>{{ $t('hotelDetails.reviews.viewRooms') }}</button>
             </div>
           </div>
           <div class="review__process">
-            <strong>Hạng mục</strong>
+            <strong>{{ $t('hotelDetails.reviews.categories') }}</strong>
             <div class="review__process--bar">
               <div class="row">
-                <div class="col-lg-4 col-md-6 col-12" v-for="review in reviewCriterias" :key="review.criteria_name">
+                <div
+                  class="col-lg-4 col-md-6 col-12"
+                  v-for="review in reviewCriterias"
+                  :key="review.criteria_key"
+                >
                   <div class="category">
-                    <div>{{ review.criteria_name }}</div>
+                    <div>{{ $t(review.criteria_key) }}</div>
                     <div>
                       {{ Number((review.average_score / 5) * 10).toFixed(1) }}
                     </div>
                   </div>
                   <div class="process--bar">
-                    <div class="bar" style="width: 92%"></div>
+                    <div class="bar" :style="{ width: criteriaBarWidth(review.average_score) }"></div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
           <div class="review__text">
-            <strong>Khách lưu trú ở đây thích điều gì</strong>
+            <strong>{{ $t('hotelDetails.reviews.whatGuestsLiked') }}</strong>
             <div class="row">
-              <div class="col-xl-4 col-md-6 col-12" v-for="(review, index) in reviews" :key="index">
-                <div class="reviewer" v-if="index <= 2">
+              <div class="col-xl-4 col-md-6 col-12" v-for="review in topReviews" :key="review.review_id">
+                <div class="reviewer">
                   <div class="name">
                     <img :src="review.profile_picture_url || defaultAvatar" alt="avatar" />
                     <div class="infor">
                       <span style="font-weight: 600">{{ review.username }}</span>
                       <br />
-                      <span v-if="review.country">{{ review.country }}</span>
-                      <span v-else>Việt Nam</span>
+                      <span>{{ review.country || $t('hotelDetails.reviews.countryFallback') }}</span>
                     </div>
                   </div>
                   <div class="text">
                     <p>“{{ review.comment }}”</p>
-                    <a href="">Tìm hiểu thêm</a>
-                    <br />
-                    <a href="">Xem bản dịch</a>
+                    <span class="reviewer__meta">
+                      <span class="reviewer__score">{{ review.rating }}</span>
+                      {{ reviewRatingLabel(review.rating) }}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <button class="btnAll" @click="showCommentPopup()">Đọc tất cả đánh giá</button>
+          <button class="btnAll" @click="showCommentPopup()">
+            {{ $t('hotelDetails.reviews.readAll') }}
+          </button>
         </div>
       </div>
     </div>
@@ -1054,16 +1351,17 @@ export default {
         <div class="surrounding__total">
           <div class="sur__title">
             <div class="surrounding__name">
-              <h3>Xung quanh khách sạn</h3>
-              <a href="">Vị trí tuyệt vời - Hiển thị bản đồ</a>
+              <h3>{{ $t('hotelDetails.nearby.title') }}</h3>
+              <a href="">{{ $t('hotelDetails.nearby.greatLocation') }}</a>
             </div>
             <div class="sur__button">
-              <button>Xem phòng trống</button>
+              <button>{{ $t('hotelDetails.reviews.viewRooms') }}</button>
             </div>
           </div>
           <div class="row">
             <div class="col-xl-4 col-md-6 col-12">
-              <i class="fa-solid fa-person-walking"></i> <strong>Xung quanh có gì</strong>
+              <i class="fa-solid fa-person-walking"></i>
+              <strong>{{ $t('hotelDetails.nearby.whatsAround') }}</strong>
               <div
                 class="sur__have"
                 v-for="place in nearbyPlaces.slice(0, 10)"
@@ -1129,66 +1427,72 @@ export default {
         <div class="policy__total">
           <div class="policy__title">
             <div class="policy__name">
-              <h3>Chính sách</h3>
-              <span>Duke Bungalow nhận yêu cầu đặc biệt - gửi yêu cầu trong bước kế tiếp!</span>
+              <h3>{{ $t('hotelDetails.policy.title') }}</h3>
+              <span>{{
+                $t('hotelDetails.policy.specialRequest', { hotel: this.hotel.name })
+              }}</span>
             </div>
             <div class="policy__button">
-              <button>Xem phòng trống</button>
+              <button>{{ $t('hotelDetails.reviews.viewRooms') }}</button>
             </div>
           </div>
           <div class="policy__condition">
             <div class="policy__condition--total">
               <div class="policy__condition--title">
-                <i class="fa-solid fa-circle-info"></i> <strong>Hủy đặt phòng/ Trả trước</strong>
+                <i class="fa-solid fa-circle-info"></i>
+                <strong>{{ $t('hotelDetails.policy.cancellation.title') }}</strong>
               </div>
               <div class="policy__condition--text">
                 <p>
-                  Các chính sách hủy và thanh toán trước sẽ khác nhau tùy vào từng loại chỗ nghỉ.
+                  {{ $t('hotelDetails.policy.cancellation.p1') }}
                 </p>
                 <p>
-                  Vui lòng kiểm tra <a href="">các điều kiện</a> có thể được áp dụng cho mỗi lựa
-                  chọn của bạn.
+                  {{ $t('hotelDetails.policy.cancellation.p2Prefix')
+                  }}<a href="">{{ $t('hotelDetails.policy.cancellation.p2Link') }}</a
+                  >{{ $t('hotelDetails.policy.cancellation.p2Suffix') }}
                 </p>
               </div>
             </div>
             <div class="policy__condition--total">
               <div class="policy__condition--title">
-                <i class="fa-solid fa-hands-holding-child"></i> <strong>Trẻ em và giường</strong>
+                <i class="fa-solid fa-hands-holding-child"></i>
+                <strong>{{ $t('hotelDetails.policy.children.title') }}</strong>
               </div>
               <div class="policy__condition--text">
-                <p><strong>Chính sách trẻ em</strong></p>
-                <p>Phù hợp cho tất cả trẻ em.</p>
+                <p><strong>{{ $t('hotelDetails.policy.children.policyLabel') }}</strong></p>
+                <p>{{ $t('hotelDetails.policy.children.suitable') }}</p>
                 <p>
-                  Để xem thông tin giá và tình trạng phòng trống chính xác, vui lòng thêm số lượng
-                  và độ tuổi của trẻ em trong nhóm của bạn khi tìm kiếm.
+                  {{ $t('hotelDetails.policy.children.priceInfo') }}
                 </p>
-                <p><strong>Chính sách trẻ em</strong></p>
-                <p>Chỗ nghỉ này không có nôi/cũi và giường phụ.</p>
+                <p><strong>{{ $t('hotelDetails.policy.children.policyLabel') }}</strong></p>
+                <p>{{ $t('hotelDetails.policy.children.noCrib') }}</p>
               </div>
             </div>
             <div class="policy__condition--total">
               <div class="policy__condition--title">
-                <i class="fa-solid fa-person"></i> <strong>Không giới hạn độ tuổi</strong>
+                <i class="fa-solid fa-person"></i>
+                <strong>{{ $t('hotelDetails.policy.age.title') }}</strong>
               </div>
               <div class="policy__condition--text">
-                <p>Không có yêu cầu về độ tuổi khi nhận phòng</p>
+                <p>{{ $t('hotelDetails.policy.age.text') }}</p>
               </div>
             </div>
             <div class="policy__condition--total">
               <div class="policy__condition--title">
                 <i class="fa-solid fa-credit-card"></i>
-                <strong>Chỉ thanh toán bằng tiền mặt</strong>
+                <strong>{{ $t('hotelDetails.policy.cash.title') }}</strong>
               </div>
               <div class="policy__condition--text">
-                <p>Chỗ nghỉ này chỉ chấp nhận thanh toán bằng tiền mặt.</p>
+                <p>{{ $t('hotelDetails.policy.cash.text') }}</p>
               </div>
             </div>
             <div class="policy__condition--total">
               <div class="policy__condition--title">
-                <i class="fa-solid fa-ban-smoking"></i> <strong> Hút thuốc</strong>
+                <i class="fa-solid fa-ban-smoking"></i>
+                <strong>{{ $t('hotelDetails.policy.smoking.title') }}</strong>
               </div>
               <div class="policy__condition--text">
-                <p>Không cho phép hút thuốc.</p>
+                <p>{{ $t('hotelDetails.policy.smoking.text') }}</p>
               </div>
             </div>
           </div>
@@ -1469,17 +1773,24 @@ export default {
   height: 90%;
 }
 
-.date-picker .search-input {
+/* Element Plus date range picker, styled to fit the yellow search bar. */
+.date-picker :deep(.search-date-picker) {
+  width: 100%;
   height: 100%;
-  padding: 0 10px 0 40px;
+}
+
+.date-picker :deep(.el-date-editor) {
+  height: 100%;
+  padding: 0 10px;
   border: none;
   border-radius: 4px;
+  box-shadow: none;
   font-size: 16px;
-  background-repeat: no-repeat;
-  background-position: 10px center;
-  background-size: 16px;
-  width: 100%;
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>');
+}
+
+.date-picker :deep(.el-range-input) {
+  font-size: 16px;
+  color: #333;
 }
 
 .guest-room-wrapper {
@@ -1871,6 +2182,149 @@ select {
 .pagination button:hover {
   background-color: #007bff57;
   color: #fff;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+}
+
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination__status {
+  font-size: 14px;
+  color: #333;
+}
+
+.review__open .review__number--toggle {
+  display: flex;
+  align-items: flex-end;
+}
+
+.review__open .review__number--toggle label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  padding-bottom: 6px;
+}
+
+.review__open .review__number--search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.review__open .review__number--search input {
+  flex: 1;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  padding: 8px 10px;
+}
+
+.review__open .review__number--search button {
+  display: inline-block;
+  margin: 0;
+}
+
+.review__open--headline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.review__open--headline span {
+  font-size: 14px;
+  color: #666;
+}
+
+.review__open--status {
+  color: #666;
+  padding: 10px 0;
+}
+
+.review__open--media {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.review__open--media img {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.review__open--reply {
+  background: #f4f7fb;
+  border-left: 3px solid #0056b3;
+  border-radius: 4px;
+  padding: 10px 12px;
+}
+
+.review__open--reply p {
+  margin: 4px 0 0;
+}
+
+.review__open--vote {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.review__open--vote button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #d0d7de;
+  background: #fff;
+  color: #333;
+  border-radius: 20px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.review__open--vote button:hover {
+  background: #f1f3f4;
+}
+
+.review__open--vote button.active {
+  border-color: #0056b3;
+  background: #e6f0fb;
+  color: #0056b3;
+  font-weight: 600;
+}
+
+.verified-badge {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #137333;
+}
+
+.reviewer__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #555;
+}
+
+.reviewer__score {
+  background: #0056b3;
+  color: #fff;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-weight: 600;
 }
 
 .review__open--infor .service i {

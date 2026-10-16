@@ -23,6 +23,24 @@ const store = createStore({
       getters: {
         getSearchData: (state) => state.searchData,
       },
+      mutations: {
+        setLocation: (state, value) => (state.searchData.location = value),
+        setCheckInDate: (state, value) => (state.searchData.checkInDate = value),
+        setCheckOutDate: (state, value) => (state.searchData.checkOutDate = value),
+        setNumberOfDays: (state, value) => (state.searchData.numberOfDays = value),
+        setAdults: (state, value) => (state.searchData.adults = value),
+        setChildren: (state, value) => (state.searchData.children = value),
+        setRooms: (state, value) => (state.searchData.rooms = value),
+      },
+      actions: {
+        updateLocation: ({ commit }, value) => commit('setLocation', value),
+        updateCheckInDate: ({ commit }, value) => commit('setCheckInDate', value),
+        updateCheckOutDate: ({ commit }, value) => commit('setCheckOutDate', value),
+        updateNumberOfDays: ({ commit }, value) => commit('setNumberOfDays', value),
+        updateAdults: ({ commit }, value) => commit('setAdults', value),
+        updateChildren: ({ commit }, value) => commit('setChildren', value),
+        updateRooms: ({ commit }, value) => commit('setRooms', value),
+      },
     },
   },
 });

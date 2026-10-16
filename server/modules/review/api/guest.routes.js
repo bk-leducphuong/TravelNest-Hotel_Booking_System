@@ -30,4 +30,18 @@ router.get('/check', authenticate, validate(schema.checkAlreadyReviewed), contro
 // Create a review for a completed booking
 router.post('/', authenticate, validate(schema.createReview), controller.postReview);
 
+// Helpful / not-helpful votes (one vote per user per review)
+router.put(
+  '/:reviewId/vote',
+  authenticate,
+  validate(schema.castReviewVote),
+  controller.putReviewVote
+);
+router.delete(
+  '/:reviewId/vote',
+  authenticate,
+  validate(schema.removeReviewVote),
+  controller.deleteReviewVote
+);
+
 module.exports = router;

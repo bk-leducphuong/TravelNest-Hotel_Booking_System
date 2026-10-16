@@ -1,14 +1,30 @@
 const { Op } = require('sequelize');
 
 jest.mock('@models/index.js', () => ({
-  reviews: { findAndCountAll: jest.fn(), findAll: jest.fn() },
+  reviews: {
+    findAndCountAll: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+  },
   review_replies: {},
   review_media: {},
+  review_helpful_votes: {
+    findAll: jest.fn(),
+    upsert: jest.fn(),
+    count: jest.fn(),
+    destroy: jest.fn(),
+  },
   users: {},
   hotels: {},
   images: { __model: 'images' },
 }));
-jest.mock('@config/database.config', () => ({ literal: jest.fn() }));
+jest.mock('@config/database.config', () => ({
+  literal: jest.fn((value) => ({ literal: value })),
+  query: jest.fn(),
+  transaction: jest.fn((callback) => callback('tx')),
+  QueryTypes: { SELECT: 'SELECT' },
+}));
 
 const reviewRepository = require('@modules/review/infrastructure/review.repository');
 const { reviews: Reviews, images: Images } = require('@models/index.js');

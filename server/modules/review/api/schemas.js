@@ -17,7 +17,19 @@ const getHotelReviews = {
   params: Joi.object({
     hotelId: uuid.required(),
   }).required(),
-  query: Joi.object({ ...paginationQuery }).unknown(false),
+  query: Joi.object({
+    ...paginationQuery,
+    // Score band (ratings use the canonical 1-10 scale).
+    minRating: Joi.number().min(1).max(10),
+    maxRating: Joi.number().min(1).max(10),
+    // Comma-separated month numbers, e.g. "3,4,5".
+    months: Joi.string()
+      .pattern(/^(1[0-2]|[1-9])(,(1[0-2]|[1-9]))*$/)
+      .message('"months" must be a comma-separated list of month numbers (1-12)'),
+    country: Joi.string().min(1).max(100),
+    hasMedia: Joi.boolean().truthy('true').falsy('false'),
+    q: Joi.string().min(1).max(100),
+  }).unknown(false),
 };
 
 const getUserReviews = {
@@ -67,6 +79,17 @@ const adminGetReview = {
   params: Joi.object({ reviewId: uuid.required() }).required(),
 };
 
+const castReviewVote = {
+  params: Joi.object({ reviewId: uuid.required() }).required(),
+  body: Joi.object({
+    isHelpful: Joi.boolean().required(),
+  }).required(),
+};
+
+const removeReviewVote = {
+  params: Joi.object({ reviewId: uuid.required() }).required(),
+};
+
 const adminReviewSummary = {
   query: Joi.object({ hotelId: uuid.required() }).required(),
 };
@@ -92,6 +115,8 @@ module.exports = {
   validateReview: eligibilityQuery,
   checkAlreadyReviewed: eligibilityQuery,
   createReview,
+  castReviewVote,
+  removeReviewVote,
   adminListReviews,
   adminGetReview,
   adminReviewSummary,

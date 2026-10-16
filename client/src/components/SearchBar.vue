@@ -40,15 +40,14 @@
             <ElDatePicker
               v-model="dateRange"
               type="daterange"
-              range-separator="đến"
-              start-placeholder="Nhận phòng"
-              end-placeholder="Trả phòng"
-              aria-label="Check-in and check-out dates"
+              :range-separator="$t('userHeader.dateRangeSeparator')"
+              :start-placeholder="$t('userHeader.checkInPlaceholder')"
+              :end-placeholder="$t('userHeader.checkOutPlaceholder')"
+              :aria-label="$t('userHeader.checkInPlaceholder')"
               :prefix-icon="CalendarIcon"
               :disabled-date="disabledDate"
               format="DD/MM/YYYY"
               value-format="YYYY-MM-DD"
-              @change="handleDateChange"
               class="search-input"
             />
           </div>
@@ -78,7 +77,8 @@
               </div>
               <div class="selector-item">
                 <span
-                  >{{ $t('userHeader.guestInputPlaceholder_2') }} <small>(0 - 17 tuổi)</small></span
+                  >{{ $t('userHeader.guestInputPlaceholder_2') }}
+                  <small>{{ $t('userHeader.childAgeSuffix') }}</small></span
                 >
                 <ElInputNumber
                   v-model="children"
@@ -112,7 +112,7 @@
 </template>
 
 <script>
-  import { mapGetters } from 'vuex';
+  import { mapGetters, mapActions } from 'vuex';
   import { useToast } from 'vue-toastification';
   import { Location, Calendar } from '@element-plus/icons-vue';
   import { shallowRef } from 'vue';
@@ -139,20 +139,73 @@
     data() {
       return {
         showGuestSelector: false,
-        selectedLocation: null,
         selectedDestinationId: null,
         selectedDestinationName: null,
-        dateRange: null,
-        adults: 2,
-        children: 0,
-        rooms: 1,
-        checkInDate: null,
-        checkOutDate: null,
-        numberOfDays: null,
       };
     },
     computed: {
       ...mapGetters('search', ['getSearchData']),
+      // The Vuex `search` store is the single source of truth for the search
+      // criteria. Binding both this bar and the hotel-detail bar to it keeps
+      // them in sync in both directions.
+      selectedLocation: {
+        get() {
+          return this.getSearchData.location || '';
+        },
+        set(value) {
+          this.updateLocation(value || '');
+        },
+      },
+      adults: {
+        get() {
+          return this.getSearchData.adults;
+        },
+        set(value) {
+          this.updateAdults(value);
+        },
+      },
+      children: {
+        get() {
+          return this.getSearchData.children;
+        },
+        set(value) {
+          this.updateChildren(value);
+        },
+      },
+      rooms: {
+        get() {
+          return this.getSearchData.rooms;
+        },
+        set(value) {
+          this.updateRooms(value);
+        },
+      },
+      checkInDate() {
+        return this.getSearchData.checkInDate;
+      },
+      checkOutDate() {
+        return this.getSearchData.checkOutDate;
+      },
+      numberOfDays() {
+        return this.getSearchData.numberOfDays;
+      },
+      dateRange: {
+        get() {
+          const { checkInDate, checkOutDate } = this.getSearchData;
+          return checkInDate && checkOutDate ? [checkInDate, checkOutDate] : null;
+        },
+        set(value) {
+          if (Array.isArray(value) && value[0] && value[1]) {
+            this.updateCheckInDate(value[0]);
+            this.updateCheckOutDate(value[1]);
+            this.updateNumberOfDays(this.daysBetween(value[0], value[1]));
+          } else {
+            this.updateCheckInDate(null);
+            this.updateCheckOutDate(null);
+            this.updateNumberOfDays(null);
+          }
+        },
+      },
       guestDetails() {
         return (
           `${this.adults} ` +
@@ -165,6 +218,15 @@
       },
     },
     methods: {
+      ...mapActions('search', [
+        'updateLocation',
+        'updateCheckInDate',
+        'updateCheckOutDate',
+        'updateNumberOfDays',
+        'updateAdults',
+        'updateChildren',
+        'updateRooms',
+      ]),
       async querySearch(queryString, cb) {
         if (!queryString || !queryString.trim()) {
           cb([]);
@@ -198,22 +260,11 @@
         // Disable dates before today
         return time.getTime() < Date.now() - 8.64e7;
       },
-      handleDateChange(value) {
-        if (value && value.length === 2) {
-          this.checkInDate = value[0];
-          this.checkOutDate = value[1];
-          this.calculateNumberOfDays(this.checkInDate, this.checkOutDate);
-        } else {
-          this.checkInDate = null;
-          this.checkOutDate = null;
-          this.numberOfDays = null;
-        }
-      },
-      calculateNumberOfDays(checkInDateString, checkOutDateString) {
+      daysBetween(checkInDateString, checkOutDateString) {
         const checkInDate = new Date(checkInDateString);
         const checkOutDate = new Date(checkOutDateString);
         const timeDifference = checkOutDate - checkInDate;
-        this.numberOfDays = timeDifference / (1000 * 60 * 60 * 24) + 1;
+        return timeDifference / (1000 * 60 * 60 * 24) + 1;
       },
       toggleGuestSelector() {
         this.showGuestSelector = !this.showGuestSelector;
@@ -251,31 +302,30 @@
       },
     },
     async mounted() {
-      if (this.getSearchData) {
-        this.selectedLocation = this.getSearchData.location;
-        if (this.getSearchData.checkInDate && this.getSearchData.checkOutDate) {
-          // Ensure dates are not in the past
-          let checkInDate = this.getSearchData.checkInDate;
-          let checkOutDate = this.getSearchData.checkOutDate;
+      // Normalise dates that are already in the past so the shared search
+      // state is valid for every bar that reads it.
+      const { checkInDate, checkOutDate } = this.getSearchData;
+      if (!checkInDate || !checkOutDate) return;
 
-          if (new Date(checkInDate).getTime() < new Date().getTime()) {
-            checkInDate = new Date().toISOString().split('T')[0];
-          }
-          if (new Date(checkOutDate).getTime() < new Date().getTime()) {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            checkOutDate = tomorrow.toISOString().split('T')[0];
-          }
+      let nextCheckInDate = checkInDate;
+      let nextCheckOutDate = checkOutDate;
 
-          this.dateRange = [checkInDate, checkOutDate];
-          this.checkInDate = checkInDate;
-          this.checkOutDate = checkOutDate;
-        }
-        this.children = this.getSearchData.children;
-        this.adults = this.getSearchData.adults;
-        this.rooms = this.getSearchData.rooms;
-        this.numberOfDays = this.getSearchData.numberOfDays;
+      if (new Date(checkInDate).getTime() < new Date().getTime()) {
+        nextCheckInDate = new Date().toISOString().split('T')[0];
       }
+      if (new Date(checkOutDate).getTime() < new Date().getTime()) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        nextCheckOutDate = tomorrow.toISOString().split('T')[0];
+      }
+
+      if (nextCheckInDate !== checkInDate) {
+        this.updateCheckInDate(nextCheckInDate);
+      }
+      if (nextCheckOutDate !== checkOutDate) {
+        this.updateCheckOutDate(nextCheckOutDate);
+      }
+      this.updateNumberOfDays(this.daysBetween(nextCheckInDate, nextCheckOutDate));
     },
   };
 </script>
