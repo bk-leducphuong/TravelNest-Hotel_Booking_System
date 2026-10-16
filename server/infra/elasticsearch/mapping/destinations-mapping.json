@@ -43,6 +43,9 @@
         "type": "text",
         "analyzer": "destination_name_analyzer"
       },
+      "display_name_compact": {
+        "type": "keyword"
+      },
       "slug": {
         "type": "keyword"
       },

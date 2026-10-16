@@ -69,6 +69,10 @@ async function findBestMatchDestinationByName(text) {
   return await destinationRepository.findBestMatchByName(text);
 }
 
+async function suggestDestinations(text, limit) {
+  return await destinationRepository.suggest(text, limit);
+}
+
 // City images (used by search to enrich destination cards).
 async function getCityImagesByCityIds(cityIds, options = {}) {
   return await imageRepository.getCityImagesByCityIds(cityIds, options);
@@ -94,6 +98,7 @@ module.exports = {
   // destinations
   getActiveDestinationById,
   findBestMatchDestinationByName,
+  suggestDestinations,
   getCityImagesByCityIds,
 
   // hotel search-snapshot projection (used by the snapshot worker + seeders)

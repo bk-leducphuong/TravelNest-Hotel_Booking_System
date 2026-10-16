@@ -13,6 +13,11 @@
           "type": "custom",
           "tokenizer": "standard",
           "filter": ["lowercase", "asciifolding"]
+        },
+        "hotel_name_search_analyzer": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "asciifolding"]
         }
       },
       "filter": {
@@ -32,6 +37,7 @@
       "hotel_name": {
         "type": "text",
         "analyzer": "hotel_name_analyzer",
+        "search_analyzer": "hotel_name_search_analyzer",
         "fields": {
           "keyword": {
             "type": "keyword"
@@ -52,6 +58,9 @@
             "type": "keyword"
           }
         }
+      },
+      "city_compact": {
+        "type": "keyword"
       },
       "country_id": {
         "type": "keyword"

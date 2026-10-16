@@ -290,6 +290,7 @@ class SearchRepository {
   async searchHotelsFromDatabase(params) {
     const {
       city,
+      cityId,
       country,
       minRating,
       hotelClass,
@@ -304,7 +305,11 @@ class SearchRepository {
       has_available_rooms: true,
     };
 
-    if (city) {
+    // Prefer the resolved city id; it is exact and normalization-proof. Only
+    // fall back to a name LIKE when no id was resolved.
+    if (cityId) {
+      where.city_id = cityId;
+    } else if (city) {
       where.city = { [Op.like]: `%${city}%` };
     }
 

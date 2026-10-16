@@ -58,6 +58,7 @@ const searchHotels = asyncHandler(async (req, res) => {
     // Location
     city: req.query.city,
     country: req.query.country,
+    destinationId: req.query.destinationId,
     latitude: parseNumber(req.query.latitude),
     longitude: parseNumber(req.query.longitude),
     radius: parseNumber(req.query.radius),
