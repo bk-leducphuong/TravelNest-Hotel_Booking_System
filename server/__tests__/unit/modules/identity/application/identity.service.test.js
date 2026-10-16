@@ -3,6 +3,7 @@ const ApiError = require('@utils/ApiError');
 jest.mock('@modules/identity/infrastructure/auth.repository', () => ({
   findByKeycloakUserId: jest.fn(),
   findByEmail: jest.fn(),
+  findIncludingDeleted: jest.fn(),
   createUser: jest.fn(),
   bindKeycloakUserId: jest.fn(),
   findRolesByNames: jest.fn(),
@@ -133,6 +134,87 @@ describe('IdentityService', () => {
       );
       expect(authRepository.createUser.mock.calls[0][0].email_verified_at).toBeInstanceOf(Date);
       expect(result).toBe(hydratedUser);
+    });
+
+    it('rejects a soft-deleted local account instead of retrying forever', async () => {
+      authRepository.findByKeycloakUserId.mockResolvedValue(null);
+      authRepository.findByEmail.mockResolvedValue(null);
+      authRepository.findIncludingDeleted.mockResolvedValue({
+        id: 'user-deleted',
+        email: 'gone@example.com',
+        keycloak_user_id: 'kc-user-deleted',
+        status: 'active',
+        deleted_at: new Date('2026-10-12T13:11:11Z'),
+      });
+
+      await expect(
+        identityService.resolveAuthenticatedUser({
+          subject: 'kc-user-deleted',
+          email: 'gone@example.com',
+          roles: ['user'],
+          payload: { email_verified: true },
+        })
+      ).rejects.toMatchObject({
+        statusCode: 403,
+        code: 'ACCOUNT_DELETED',
+      });
+
+      expect(authRepository.createUser).not.toHaveBeenCalled();
+    });
+
+    it('resolves a concurrent first-login race instead of surfacing a duplicate key error', async () => {
+      const racedUser = { id: 'user-raced', email: 'raced@example.com' };
+      const hydratedUser = {
+        id: 'user-raced',
+        email: 'raced@example.com',
+        status: 'active',
+        roles: [{ role: { name: 'user' } }],
+        hotel_roles: [],
+      };
+      const uniqueError = Object.assign(new Error('Duplicate entry'), {
+        name: 'SequelizeUniqueConstraintError',
+      });
+
+      authRepository.findByKeycloakUserId
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(racedUser);
+      authRepository.findByEmail.mockResolvedValue(null);
+      authRepository.findIncludingDeleted.mockResolvedValue(null);
+      authRepository.createUser.mockRejectedValue(uniqueError);
+      authRepository.findRolesByNames.mockResolvedValue([{ id: 'role-1', name: 'user' }]);
+      authRepository.getUserWithContext.mockResolvedValue(hydratedUser);
+
+      const result = await identityService.resolveAuthenticatedUser({
+        subject: 'kc-user-raced',
+        email: 'raced@example.com',
+        roles: ['user'],
+        payload: { email_verified: true },
+      });
+
+      expect(result).toBe(hydratedUser);
+    });
+
+    it('fails with ACCOUNT_CONFLICT when a duplicate key cannot be re-resolved', async () => {
+      const uniqueError = Object.assign(new Error('Duplicate entry'), {
+        name: 'SequelizeUniqueConstraintError',
+      });
+
+      authRepository.findByKeycloakUserId.mockResolvedValue(null);
+      authRepository.findByEmail.mockResolvedValue(null);
+      authRepository.findIncludingDeleted.mockResolvedValue(null);
+      authRepository.createUser.mockRejectedValue(uniqueError);
+
+      await expect(
+        identityService.resolveAuthenticatedUser({
+          subject: 'kc-user-conflict',
+          email: 'conflict@example.com',
+          roles: ['user'],
+          payload: { email_verified: true },
+        })
+      ).rejects.toMatchObject({
+        statusCode: 409,
+        code: 'ACCOUNT_CONFLICT',
+      });
     });
 
     it('propagates downstream provisioning failures', async () => {

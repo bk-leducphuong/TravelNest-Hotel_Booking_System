@@ -123,6 +123,36 @@ class AuthRepository {
   }
 
   /**
+   * Find a user by email and/or Keycloak subject INCLUDING soft-deleted rows.
+   *
+   * `users` is paranoid, so the queries above hide soft-deleted accounts — but
+   * the unique index on `users.email` still covers them. Without this lookup a
+   * deleted account looks "new", the service tries to insert, and the duplicate
+   * key error bubbles up as an opaque 401 that the SPA retries forever.
+   *
+   * @param {{ email?: string|null, keycloakUserId?: string|null }} identifiers
+   * @returns {Promise<Object|null>}
+   */
+  async findIncludingDeleted({ email = null, keycloakUserId = null } = {}) {
+    const conditions = [];
+    if (email) {
+      conditions.push({ email });
+    }
+    if (keycloakUserId) {
+      conditions.push({ keycloak_user_id: keycloakUserId });
+    }
+    if (conditions.length === 0) {
+      return null;
+    }
+
+    return await Users.findOne({
+      where: { [Op.or]: conditions },
+      attributes: ['id', 'email', 'keycloak_user_id', 'status', 'deleted_at'],
+      paranoid: false,
+    });
+  }
+
+  /**
    * Find user by email or phone number with role check
    * @param {string} email - User email
    * @param {string} phoneNumber - User phone number
