@@ -7,14 +7,25 @@
     <div v-if="isVerificationRequired" class="verification-card">
       <h2>Xác minh email để tiếp tục</h2>
       <p>
-        Tài khoản Keycloak của bạn đã đăng nhập nhưng email vẫn chưa được xác minh. Hãy mở email
-        xác minh, hoàn tất bước xác nhận, rồi thử lại.
+        Tài khoản Keycloak của bạn đã đăng nhập nhưng email vẫn chưa được xác minh. Hãy mở email xác
+        minh, hoàn tất bước xác nhận, rồi thử lại.
       </p>
       <div class="actions">
         <button type="button" class="btn" @click="retryBootstrap">Tôi đã xác minh email</button>
         <button type="button" class="btn btn-secondary" @click="startAuthFlow">
           Tiếp tục với Keycloak
         </button>
+      </div>
+    </div>
+
+    <div v-else-if="sessionRejected" class="verification-card">
+      <h2>Tài khoản không khả dụng</h2>
+      <p>
+        Không thể thiết lập phiên đăng nhập cho tài khoản này. Tài khoản có thể đã bị xóa hoặc bị vô
+        hiệu hóa. Vui lòng liên hệ hỗ trợ, hoặc đăng xuất để dùng tài khoản khác.
+      </p>
+      <div class="actions">
+        <button type="button" class="btn" @click="signOut">Đăng xuất và dùng tài khoản khác</button>
       </div>
     </div>
 
@@ -35,6 +46,10 @@
 <script>
   import { mapActions, mapGetters } from 'vuex';
   import { useToast } from 'vue-toastification';
+  import {
+    isAuthenticated as isKeycloakAuthenticated,
+    logout as keycloakLogout,
+  } from '@/services/keycloak.service';
   import LoginHeader from '@/components/LoginHeader.vue';
   import { adminAppUrl } from '@/utils/adminApp';
 
@@ -49,6 +64,7 @@
     data() {
       return {
         authStarted: false,
+        sessionRejected: false,
       };
     },
     computed: {
@@ -75,9 +91,7 @@
       ...mapActions('auth', ['login', 'register', 'resetPassword', 'checkAuth']),
       redirectAuthenticatedUser() {
         if (this.isAdminAuthenticated) {
-          window.location.replace(
-            this.$route.query.redirect || adminAppUrl('/')
-          );
+          window.location.replace(this.$route.query.redirect || adminAppUrl('/'));
           return;
         }
 
@@ -119,11 +133,25 @@
           this.toast.error(error.message || 'Email của bạn vẫn chưa được xác minh.');
         }
       },
+      async signOut() {
+        await keycloakLogout();
+      },
     },
     mounted() {
       this.redirectAuthenticatedUser();
 
-      if (!this.isUserAuthenticated && !this.isAdminAuthenticated && !this.isVerificationRequired) {
+      // Keycloak still holds a session but the app session could not be
+      // established (e.g. the account was deleted or disabled). Restarting the
+      // Keycloak flow would immediately return with the same session and land
+      // back here — an endless reload. Require an explicit action instead.
+      this.sessionRejected = isKeycloakAuthenticated() && !this.isUserAuthenticated;
+
+      if (
+        !this.sessionRejected &&
+        !this.isUserAuthenticated &&
+        !this.isAdminAuthenticated &&
+        !this.isVerificationRequired
+      ) {
         this.startAuthFlow();
       }
     },
@@ -198,4 +226,4 @@
   .hint {
     font-size: 14px;
   }
- </style>
+</style>

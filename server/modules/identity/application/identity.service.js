@@ -80,15 +80,53 @@ class IdentityService {
 
         await authRepository.bindKeycloakUserId(user.id, claims.subject);
       } else {
-        const { firstName, lastName } = deriveNames(claims);
-        user = await authRepository.createUser({
-          keycloak_user_id: claims.subject,
+        // A soft-deleted account still occupies the unique `users.email` index,
+        // so inserting a "new" user for the same email fails with a duplicate
+        // key error. Detect that and return a terminal, actionable error instead
+        // of a 500 that the client is left to retry.
+        const existing = await authRepository.findIncludingDeleted({
           email,
-          first_name: firstName,
-          last_name: lastName,
-          status: 'active',
-          email_verified_at: new Date(),
+          keycloakUserId: claims.subject,
         });
+
+        if (existing?.deleted_at) {
+          throw new ApiError(
+            403,
+            'ACCOUNT_DELETED',
+            'This account has been deleted. Please contact support.'
+          );
+        }
+
+        const { firstName, lastName } = deriveNames(claims);
+
+        try {
+          user = await authRepository.createUser({
+            keycloak_user_id: claims.subject,
+            email,
+            first_name: firstName,
+            last_name: lastName,
+            status: 'active',
+            email_verified_at: new Date(),
+          });
+        } catch (error) {
+          // Concurrent first logins for the same identity can race between the
+          // lookup above and the insert. Re-resolve rather than failing.
+          if (error?.name !== 'SequelizeUniqueConstraintError') {
+            throw error;
+          }
+
+          user =
+            (await authRepository.findByKeycloakUserId(claims.subject)) ||
+            (await authRepository.findByEmail(email));
+
+          if (!user) {
+            throw new ApiError(
+              409,
+              'ACCOUNT_CONFLICT',
+              'An account with this email address already exists.'
+            );
+          }
+        }
       }
     }
 
