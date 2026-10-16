@@ -12,6 +12,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { labelKey: "nav.dashboard", to: "/" },
   { labelKey: "nav.property", to: "/properties", permission: "hotel.read" },
   { labelKey: "nav.rooms", to: "/rooms", permission: "room.read" },
+  { labelKey: "nav.reservations", to: "/reservations", permission: "booking.read" },
   { labelKey: "nav.bookings", to: "/bookings", permission: "booking.read" },
   { labelKey: "nav.availability", to: "/availability", permission: "room.read" },
   { labelKey: "nav.payments", to: "/payments", permission: "payment.read" },

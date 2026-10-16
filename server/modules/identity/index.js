@@ -44,6 +44,11 @@ async function userHasHotelAccess(userId, hotelId) {
   return await identityService.userHasHotelAccess(userId, hotelId);
 }
 
+/** Look up a user by email (used to attach an existing guest to a manual booking). */
+async function findUserByEmail(email) {
+  return await userRepository.findByEmail(email);
+}
+
 module.exports = {
   // HTTP edge (mounted by routes/v1/index.js).
   authRoutes,
@@ -72,4 +77,7 @@ module.exports = {
   assignHotelOwner,
   getPrimaryHotelIdForUser,
   userHasHotelAccess,
+
+  // User lookup (used by manual booking creation).
+  findUserByEmail,
 };

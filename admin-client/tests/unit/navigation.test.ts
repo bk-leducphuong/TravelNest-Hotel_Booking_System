@@ -5,6 +5,7 @@ describe("admin navigation", () => {
   it("includes the rooms and settings sections", () => {
     const paths = ADMIN_NAV.map((item) => item.to);
     expect(paths).toContain("/rooms");
+    expect(paths).toContain("/reservations");
     expect(paths).toContain("/settings");
     expect(paths).toContain("/settings/team");
   });

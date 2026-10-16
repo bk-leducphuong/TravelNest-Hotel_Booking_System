@@ -199,3 +199,62 @@ export async function cancelBooking(
   );
   return response.data;
 }
+
+export interface CreateBookingPayload {
+  roomId: string;
+  checkInDate: string;
+  checkOutDate: string;
+  quantity?: number;
+  numberOfGuests?: number;
+  buyerId?: string;
+  guestEmail?: string;
+  specialRequests?: string;
+  guestDetails?: Record<string, unknown>;
+  totalPrice?: number;
+}
+
+/** Create a booking on behalf of a guest (phone / walk-in). */
+export async function createBooking(payload: CreateBookingPayload): Promise<BookingDetail> {
+  const response = await apiFetch<{ data: { booking: BookingDetail } }>("/admin/bookings", {
+    method: "POST",
+    body: payload,
+  });
+  return response.data.booking;
+}
+
+export interface ReservationBoard {
+  hotelId: string;
+  date: string;
+  arrivals: BookingListItem[];
+  departures: BookingListItem[];
+  inHouse: BookingListItem[];
+}
+
+export interface ReservationCalendar {
+  hotelId: string;
+  startDate: string;
+  endDate: string;
+  bookings: BookingListItem[];
+}
+
+/** Front-desk board (arrivals / departures / in-house) for a single day. */
+export async function fetchReservationBoard(
+  hotelId: string,
+  params: { date?: string } = {}
+): Promise<ReservationBoard> {
+  const response = await apiFetch<{ data: ReservationBoard }>(
+    `/admin/bookings/hotels/${encodeURIComponent(hotelId)}/board${toQuery(params)}`
+  );
+  return response.data;
+}
+
+/** Bookings overlapping a date range, for the reservations calendar grid. */
+export async function fetchReservationCalendar(
+  hotelId: string,
+  params: { startDate: string; endDate: string }
+): Promise<ReservationCalendar> {
+  const response = await apiFetch<{ data: ReservationCalendar }>(
+    `/admin/bookings/hotels/${encodeURIComponent(hotelId)}/calendar${toQuery(params)}`
+  );
+  return response.data;
+}
