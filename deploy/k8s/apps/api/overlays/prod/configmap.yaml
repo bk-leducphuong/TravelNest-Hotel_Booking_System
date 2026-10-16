@@ -6,6 +6,8 @@ data:
   NODE_ENV: production
   PORT: "3000"
   CLIENT_HOST: https://deployserver.work
+  ADMIN_CLIENT_HOST: https://admin.deployserver.work
+  SUPERADMIN_CLIENT_HOST: https://superadmin.deployserver.work
   DB_USER: travelnest
   DB_NAME: travelnest
   REDIS_DB: "1"
