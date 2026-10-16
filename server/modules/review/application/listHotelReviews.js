@@ -1,4 +1,5 @@
-const reviewRepository = require('../infrastructure/review.repository');
+const reviewReadRepository = require('../infrastructure/review-read.repository');
+const reviewVoteRepository = require('../infrastructure/review-vote.repository');
 
 const MAX_LIMIT = 100;
 
@@ -60,14 +61,14 @@ async function listHotelReviews(
   };
 
   const [result, countries] = await Promise.all([
-    reviewRepository.findPublishedByHotel(hotelId, filters),
-    reviewRepository.findCountryFacetsByHotel(hotelId),
+    reviewReadRepository.findPublishedByHotel(hotelId, filters),
+    reviewReadRepository.findCountryFacetsByHotel(hotelId),
   ]);
 
   const reviews = result.rows;
 
   if (viewerId && reviews.length > 0) {
-    const votes = await reviewRepository.findVotesByReviewIds(
+    const votes = await reviewVoteRepository.findVotesByReviewIds(
       reviews.map((review) => review.id),
       viewerId
     );

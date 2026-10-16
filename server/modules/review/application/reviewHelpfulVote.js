@@ -1,13 +1,13 @@
 const ApiError = require('@utils/ApiError');
 
-const reviewRepository = require('../infrastructure/review.repository');
+const reviewVoteRepository = require('../infrastructure/review-vote.repository');
 
 /**
  * Confirms the review exists, is published and is not the caller's own review.
  * You may not vote on your own review.
  */
 async function assertVotableReview(reviewId, userId) {
-  const review = await reviewRepository.findVoteTarget(reviewId);
+  const review = await reviewVoteRepository.findVoteTarget(reviewId);
 
   if (!review || review.status !== 'published') {
     throw new ApiError(404, 'REVIEW_NOT_FOUND', 'Review not found');
@@ -27,7 +27,7 @@ async function assertVotableReview(reviewId, userId) {
 async function castReviewVote(userId, reviewId, isHelpful) {
   await assertVotableReview(reviewId, userId);
 
-  const helpfulCount = await reviewRepository.applyHelpfulVote({ reviewId, userId, isHelpful });
+  const helpfulCount = await reviewVoteRepository.applyHelpfulVote({ reviewId, userId, isHelpful });
 
   return { isHelpful, helpfulCount };
 }
@@ -38,7 +38,7 @@ async function castReviewVote(userId, reviewId, isHelpful) {
 async function removeReviewVote(userId, reviewId) {
   await assertVotableReview(reviewId, userId);
 
-  const helpfulCount = await reviewRepository.removeHelpfulVote({ reviewId, userId });
+  const helpfulCount = await reviewVoteRepository.removeHelpfulVote({ reviewId, userId });
 
   return { isHelpful: null, helpfulCount };
 }

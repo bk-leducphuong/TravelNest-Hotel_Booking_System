@@ -1,10 +1,10 @@
-jest.mock('@modules/review/infrastructure/review.repository', () => ({
+jest.mock('@modules/review/infrastructure/review-vote.repository', () => ({
   findVoteTarget: jest.fn(),
   applyHelpfulVote: jest.fn(),
   removeHelpfulVote: jest.fn(),
 }));
 
-const reviewRepository = require('@modules/review/infrastructure/review.repository');
+const reviewVoteRepository = require('@modules/review/infrastructure/review-vote.repository');
 const {
   castReviewVote,
   removeReviewVote,
@@ -13,19 +13,19 @@ const {
 describe('review/application/reviewHelpfulVote', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    reviewRepository.findVoteTarget.mockResolvedValue({
+    reviewVoteRepository.findVoteTarget.mockResolvedValue({
       id: 'r1',
       user_id: 'author',
       status: 'published',
     });
-    reviewRepository.applyHelpfulVote.mockResolvedValue(4);
-    reviewRepository.removeHelpfulVote.mockResolvedValue(3);
+    reviewVoteRepository.applyHelpfulVote.mockResolvedValue(4);
+    reviewVoteRepository.removeHelpfulVote.mockResolvedValue(3);
   });
 
   it('casts a vote and returns the recomputed helpful count', async () => {
     const result = await castReviewVote('u1', 'r1', true);
 
-    expect(reviewRepository.applyHelpfulVote).toHaveBeenCalledWith({
+    expect(reviewVoteRepository.applyHelpfulVote).toHaveBeenCalledWith({
       reviewId: 'r1',
       userId: 'u1',
       isHelpful: true,
@@ -36,7 +36,7 @@ describe('review/application/reviewHelpfulVote', () => {
   it('removes a vote and returns the recomputed helpful count', async () => {
     const result = await removeReviewVote('u1', 'r1');
 
-    expect(reviewRepository.removeHelpfulVote).toHaveBeenCalledWith({
+    expect(reviewVoteRepository.removeHelpfulVote).toHaveBeenCalledWith({
       reviewId: 'r1',
       userId: 'u1',
     });
@@ -44,17 +44,17 @@ describe('review/application/reviewHelpfulVote', () => {
   });
 
   it('rejects a missing or unpublished review', async () => {
-    reviewRepository.findVoteTarget.mockResolvedValue(null);
+    reviewVoteRepository.findVoteTarget.mockResolvedValue(null);
 
     await expect(castReviewVote('u1', 'r1', true)).rejects.toMatchObject({
       statusCode: 404,
       code: 'REVIEW_NOT_FOUND',
     });
-    expect(reviewRepository.applyHelpfulVote).not.toHaveBeenCalled();
+    expect(reviewVoteRepository.applyHelpfulVote).not.toHaveBeenCalled();
   });
 
   it('rejects voting on your own review', async () => {
-    reviewRepository.findVoteTarget.mockResolvedValue({
+    reviewVoteRepository.findVoteTarget.mockResolvedValue({
       id: 'r1',
       user_id: 'u1',
       status: 'published',
@@ -64,6 +64,6 @@ describe('review/application/reviewHelpfulVote', () => {
       statusCode: 400,
       code: 'CANNOT_VOTE_OWN_REVIEW',
     });
-    expect(reviewRepository.applyHelpfulVote).not.toHaveBeenCalled();
+    expect(reviewVoteRepository.applyHelpfulVote).not.toHaveBeenCalled();
   });
 });
