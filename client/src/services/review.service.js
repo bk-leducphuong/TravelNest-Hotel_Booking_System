@@ -19,5 +19,14 @@ export const ReviewService = {
 
   createReview(reviewData) {
     return http.post('/reviews', reviewData)
+  },
+
+  // Helpful / not-helpful votes (one per user per review).
+  voteReviewHelpful(reviewId, isHelpful) {
+    return http.put(`/reviews/${reviewId}/vote`, { isHelpful })
+  },
+
+  removeReviewVote(reviewId) {
+    return http.delete(`/reviews/${reviewId}/vote`)
   }
 }
