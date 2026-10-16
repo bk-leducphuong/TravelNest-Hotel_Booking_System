@@ -21,6 +21,7 @@ const router = express.Router();
 router.use('/me', meRoutes);
 router.use('/hotels', catalogModule.adminRoutes);
 router.use('/locations', catalogModule.locationAdminRoutes);
+router.use('/amenities', catalogModule.amenityAdminRoutes);
 router.use('/reviews', reviewModule.adminRoutes);
 router.use('/inventory', inventoryModule.adminRoutes);
 router.use('/payments', paymentModule.adminRoutes);

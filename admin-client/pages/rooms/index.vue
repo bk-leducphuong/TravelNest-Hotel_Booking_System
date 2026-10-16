@@ -215,8 +215,11 @@ watch(() => auth.activeHotelId, load, { immediate: true });
               <el-tag :type="statusTagType(row.status)" size="small">{{ row.status }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column :label="$t('common.actions')" width="200" fixed="right">
+          <el-table-column :label="$t('common.actions')" width="260" fixed="right">
             <template #default="{ row }">
+              <NuxtLink :to="`/rooms/${row.id}`">
+                <el-button size="small" type="primary" plain>{{ $t("rooms.manage") }}</el-button>
+              </NuxtLink>
               <Can permission="room.update">
                 <el-button size="small" @click="openEdit(row)">{{ $t("common.edit") }}</el-button>
               </Can>

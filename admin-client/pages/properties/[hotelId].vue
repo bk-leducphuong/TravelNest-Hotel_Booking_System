@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import {
   HOTEL_STATUSES,
   POLICY_TYPES,
@@ -8,15 +9,24 @@ import {
   deleteHotelPhoto,
   deletePolicy,
   deleteRoom,
+  createCancellationRule,
+  deleteCancellationRule,
+  fetchAmenities,
+  fetchCancellationRules,
   fetchCities,
   fetchCountries,
   fetchHotel,
+  fetchHotelAmenities,
   fetchHotelPhotos,
+  setHotelAmenities,
   setPrimaryHotelPhoto,
+  updateCancellationRule,
   updateHotel,
   updatePolicy,
   updateRoom,
   uploadHotelPhoto,
+  type Amenity,
+  type CancellationRule,
   type City,
   type Country,
   type HotelDetail,
@@ -26,6 +36,7 @@ import {
 } from "~/services/api/catalog";
 
 const route = useRoute();
+const { t } = useI18n();
 const hotelId = computed(() => String(route.params.hotelId));
 const { t } = useI18n();
 
@@ -46,6 +57,26 @@ const photos = ref<HotelPhoto[]>([]);
 const countries = ref<Country[]>([]);
 const cities = ref<City[]>([]);
 const loadingLocations = ref(false);
+
+const amenities = ref<Amenity[]>([]);
+const selectedAmenityIds = ref<string[]>([]);
+const savingAmenities = ref(false);
+
+const rules = ref<CancellationRule[]>([]);
+const roomOptions = ref<Array<{ id: string; room_name: string }>>([]);
+const ruleDialog = ref(false);
+const editingRuleId = ref<string | null>(null);
+const savingRule = ref(false);
+const ruleForm = reactive({
+  roomId: null as string | null | undefined,
+  isRefundable: true,
+  freeCancellationUntilHoursBeforeCheckin: undefined as number | undefined,
+  refundPercentBeforeDeadline: 100,
+  refundPercentAfterDeadline: 0,
+  cancellationFeeType: "none" as string,
+  cancellationFeeValue: undefined as number | undefined,
+  isActive: true,
+});
 
 const activeTab = ref("overview");
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -150,6 +181,131 @@ const loadLocations = async () => {
   }
 };
 
+const amenitiesByCategory = computed(() => {
+  const groups = new Map<string, Amenity[]>();
+  amenities.value.forEach((amenity) => {
+    const list = groups.get(amenity.category) ?? [];
+    list.push(amenity);
+    groups.set(amenity.category, list);
+  });
+  return Array.from(groups.entries()).map(([category, items]) => ({ category, items }));
+});
+
+const loadAmenities = async () => {
+  try {
+    const [catalog, assigned] = await Promise.all([
+      fetchAmenities({ limit: 200 }),
+      fetchHotelAmenities(hotelId.value),
+    ]);
+    amenities.value = catalog.data;
+    selectedAmenityIds.value = assigned;
+  } catch (error) {
+    ElMessage.error((error as Error).message);
+  }
+};
+
+const saveAmenities = async () => {
+  savingAmenities.value = true;
+  try {
+    await setHotelAmenities(hotelId.value, selectedAmenityIds.value);
+    ElMessage.success(t("properties.amenitiesUpdated"));
+  } catch (error) {
+    ElMessage.error((error as Error).message);
+  } finally {
+    savingAmenities.value = false;
+  }
+};
+
+const loadRules = async () => {
+  try {
+    rules.value = await fetchCancellationRules(hotelId.value);
+  } catch (error) {
+    ElMessage.error((error as Error).message);
+  }
+};
+
+const openCreateRule = () => {
+  editingRuleId.value = null;
+  Object.assign(ruleForm, {
+    roomId: null,
+    isRefundable: true,
+    freeCancellationUntilHoursBeforeCheckin: undefined,
+    refundPercentBeforeDeadline: 100,
+    refundPercentAfterDeadline: 0,
+    cancellationFeeType: "none",
+    cancellationFeeValue: undefined,
+    isActive: true,
+  });
+  ruleDialog.value = true;
+};
+
+const openEditRule = (rule: CancellationRule) => {
+  editingRuleId.value = rule.id;
+  Object.assign(ruleForm, {
+    roomId: rule.room_id ?? null,
+    isRefundable: rule.is_refundable,
+    freeCancellationUntilHoursBeforeCheckin:
+      toNumberOrUndefined(rule.free_cancellation_until_hours_before_checkin),
+    refundPercentBeforeDeadline: Number(rule.refund_percent_before_deadline ?? 100),
+    refundPercentAfterDeadline: Number(rule.refund_percent_after_deadline ?? 0),
+    cancellationFeeType: rule.cancellation_fee_type ?? "none",
+    cancellationFeeValue: toNumberOrUndefined(rule.cancellation_fee_value),
+    isActive: rule.is_active,
+  });
+  ruleDialog.value = true;
+};
+
+const submitRule = async () => {
+  savingRule.value = true;
+  try {
+    const payload = {
+      roomId: ruleForm.roomId ?? null,
+      isRefundable: ruleForm.isRefundable,
+      freeCancellationUntilHoursBeforeCheckin:
+        ruleForm.freeCancellationUntilHoursBeforeCheckin ?? null,
+      refundPercentBeforeDeadline: ruleForm.refundPercentBeforeDeadline,
+      refundPercentAfterDeadline: ruleForm.refundPercentAfterDeadline,
+      cancellationFeeType: ruleForm.cancellationFeeType,
+      cancellationFeeValue: ruleForm.cancellationFeeValue ?? null,
+      isActive: ruleForm.isActive,
+    };
+    if (editingRuleId.value) {
+      await updateCancellationRule(hotelId.value, editingRuleId.value, payload);
+      ElMessage.success(t("properties.ruleUpdated"));
+    } else {
+      await createCancellationRule(hotelId.value, payload);
+      ElMessage.success(t("properties.ruleCreated"));
+    }
+    ruleDialog.value = false;
+    await loadRules();
+  } catch (error) {
+    ElMessage.error((error as Error).message);
+  } finally {
+    savingRule.value = false;
+  }
+};
+
+const removeRule = async (rule: CancellationRule) => {
+  try {
+    await ElMessageBox.confirm(t("properties.confirmDeleteRule"), t("properties.deleteRuleTitle"), {
+      type: "warning",
+      confirmButtonText: t("common.delete"),
+    });
+  } catch {
+    return;
+  }
+  try {
+    await deleteCancellationRule(hotelId.value, rule.id);
+    ElMessage.success(t("properties.ruleDeleted"));
+    await loadRules();
+  } catch (error) {
+    ElMessage.error((error as Error).message);
+  }
+};
+
+const roomName = (roomId?: string | null) =>
+  roomId ? roomOptions.value.find((room) => room.id === roomId)?.room_name ?? roomId : t("properties.hotelWide");
+
 const loadDetail = async () => {
   loading.value = true;
   try {
@@ -157,9 +313,10 @@ const loadDetail = async () => {
     hotel.value = detail.hotel;
     rooms.value = detail.rooms;
     policies.value = detail.policies;
+    roomOptions.value = detail.rooms.map((room) => ({ id: room.id, room_name: room.room_name }));
     applyHotelForm(detail.hotel);
     photos.value = await fetchHotelPhotos(hotelId.value).catch(() => []);
-    await loadLocations();
+    await Promise.all([loadLocations(), loadAmenities(), loadRules()]);
   } catch (error) {
     ElMessage.error((error as Error).message);
   } finally {
@@ -576,8 +733,11 @@ watch(hotelId, loadDetail, { immediate: true });
             <el-table-column prop="max_guests" :label="$t('properties.rooms.col.guests')" width="90" />
             <el-table-column prop="quantity" :label="$t('properties.rooms.col.allotment')" width="110" />
             <el-table-column prop="status" :label="$t('common.status')" width="110" />
-            <el-table-column :label="$t('common.actions')" width="170" fixed="right">
+            <el-table-column :label="$t('common.actions')" width="250" fixed="right">
               <template #default="{ row }">
+                <NuxtLink :to="`/rooms/${row.id}`">
+                  <el-button size="small" type="primary" plain>{{ $t("rooms.manage") }}</el-button>
+                </NuxtLink>
                 <Can permission="room.update">
                   <el-button size="small" @click="openEditRoom(row)">
                     {{ $t("properties.action.edit") }}
@@ -691,6 +851,85 @@ watch(hotelId, loadDetail, { immediate: true });
           </div>
         </el-card>
       </el-tab-pane>
+
+      <el-tab-pane :label="$t('properties.amenities')" name="amenities">
+        <el-card class="shadow-sm">
+          <p class="mb-4 text-sm text-slate-500">{{ $t("properties.amenitiesHint") }}</p>
+
+          <el-empty v-if="amenities.length === 0" description="—" />
+          <template v-else>
+            <div v-for="group in amenitiesByCategory" :key="group.category" class="mb-5">
+              <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                {{ group.category.replace(/_/g, " ") }}
+              </p>
+              <el-checkbox-group v-model="selectedAmenityIds">
+                <el-checkbox v-for="amenity in group.items" :key="amenity.id" :value="amenity.id">
+                  {{ amenity.name }}
+                </el-checkbox>
+              </el-checkbox-group>
+            </div>
+            <Can permission="hotel.update">
+              <el-button type="primary" :loading="savingAmenities" @click="saveAmenities">
+                {{ $t("properties.saveAmenities") }}
+              </el-button>
+            </Can>
+          </template>
+        </el-card>
+      </el-tab-pane>
+
+      <el-tab-pane :label="$t('properties.cancellationRules')" name="cancellation-rules">
+        <el-card class="shadow-sm">
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm text-slate-500">{{ $t("properties.cancellationRulesHint") }}</p>
+            <Can permission="hotel.update">
+              <el-button type="primary" size="small" @click="openCreateRule">
+                {{ $t("properties.addRule") }}
+              </el-button>
+            </Can>
+          </div>
+
+          <el-empty v-if="rules.length === 0" :description="$t('properties.noRules')" />
+          <el-table v-else :data="rules" style="width: 100%">
+            <el-table-column :label="$t('properties.room')" min-width="180">
+              <template #default="{ row }">{{ roomName(row.room_id) }}</template>
+            </el-table-column>
+            <el-table-column :label="$t('properties.refundable')" width="120">
+              <template #default="{ row }">
+                <el-tag :type="row.is_refundable ? 'success' : 'info'" size="small">
+                  {{ row.is_refundable ? "Yes" : "No" }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column
+              :label="$t('properties.refundBefore')"
+              width="150"
+              prop="refund_percent_before_deadline"
+            />
+            <el-table-column
+              :label="$t('properties.refundAfter')"
+              width="150"
+              prop="refund_percent_after_deadline"
+            />
+            <el-table-column :label="$t('properties.active')" width="110">
+              <template #default="{ row }">
+                <el-tag :type="row.is_active ? 'success' : 'info'" size="small">
+                  {{ row.is_active ? "Active" : "Inactive" }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column :label="$t('common.actions')" width="180" fixed="right">
+              <template #default="{ row }">
+                <Can permission="hotel.update">
+                  <el-button size="small" @click="openEditRule(row)">{{ $t("common.edit") }}</el-button>
+                  <el-button size="small" type="danger" plain @click="removeRule(row)">
+                    {{ $t("common.delete") }}
+                  </el-button>
+                </Can>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-tab-pane>
     </el-tabs>
 
     <el-dialog
@@ -777,6 +1016,76 @@ watch(hotelId, loadDetail, { immediate: true });
       <template #footer>
         <el-button @click="policyDialog = false">{{ $t("common.cancel") }}</el-button>
         <el-button type="primary" :loading="savingPolicy" @click="submitPolicy">
+          {{ $t("common.save") }}
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog
+      v-model="ruleDialog"
+      :title="editingRuleId ? $t('properties.editRule') : $t('properties.addRule')"
+      width="620px"
+    >
+      <el-form label-position="top">
+        <el-form-item :label="$t('properties.room')">
+          <el-select
+            v-model="ruleForm.roomId"
+            clearable
+            class="w-full"
+            :placeholder="$t('properties.hotelWide')"
+          >
+            <el-option
+              v-for="room in roomOptions"
+              :key="room.id"
+              :label="room.room_name"
+              :value="room.id"
+            />
+          </el-select>
+        </el-form-item>
+        <div class="grid grid-cols-2 gap-3">
+          <el-form-item :label="$t('properties.refundable')">
+            <el-switch v-model="ruleForm.isRefundable" />
+          </el-form-item>
+          <el-form-item :label="$t('properties.active')">
+            <el-switch v-model="ruleForm.isActive" />
+          </el-form-item>
+          <el-form-item :label="$t('properties.freeCancellationHours')">
+            <el-input-number
+              v-model="ruleForm.freeCancellationUntilHoursBeforeCheckin"
+              :min="0"
+              class="w-full"
+            />
+          </el-form-item>
+          <el-form-item :label="$t('properties.feeType')">
+            <el-select v-model="ruleForm.cancellationFeeType" class="w-full">
+              <el-option label="none" value="none" />
+              <el-option label="percentage" value="percentage" />
+            </el-select>
+          </el-form-item>
+          <el-form-item :label="$t('properties.refundBefore')">
+            <el-input-number
+              v-model="ruleForm.refundPercentBeforeDeadline"
+              :min="0"
+              :max="100"
+              class="w-full"
+            />
+          </el-form-item>
+          <el-form-item :label="$t('properties.refundAfter')">
+            <el-input-number
+              v-model="ruleForm.refundPercentAfterDeadline"
+              :min="0"
+              :max="100"
+              class="w-full"
+            />
+          </el-form-item>
+          <el-form-item :label="$t('properties.feeValue')">
+            <el-input-number v-model="ruleForm.cancellationFeeValue" :min="0" class="w-full" />
+          </el-form-item>
+        </div>
+      </el-form>
+      <template #footer>
+        <el-button @click="ruleDialog = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="savingRule" @click="submitRule">
           {{ $t("common.save") }}
         </el-button>
       </template>

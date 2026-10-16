@@ -1,5 +1,17 @@
 const { rooms: Rooms } = require('@platform/database');
 
+const ROOM_ADMIN_ATTRIBUTES = [
+  'id',
+  'hotel_id',
+  'room_name',
+  'room_type',
+  'bed_type',
+  'quantity',
+  'max_guests',
+  'room_size',
+  'status',
+];
+
 /**
  * Catalog room repository - read access to room metadata.
  * Inventory needs room_id/quantity/hotel context to manage availability.
@@ -12,6 +24,7 @@ class RoomRepository {
         max_guests: data.maxGuests,
         hotel_id: data.hotelId,
         ...(data.roomType !== undefined ? { room_type: data.roomType } : {}),
+        ...(data.bedType !== undefined ? { bed_type: data.bedType } : {}),
         ...(data.quantity !== undefined ? { quantity: data.quantity } : {}),
         ...(data.roomSize !== undefined ? { room_size: data.roomSize } : {}),
         ...(data.status !== undefined ? { status: data.status } : {}),
@@ -47,7 +60,7 @@ class RoomRepository {
   async findByHotelId(hotelId) {
     return await Rooms.findAll({
       where: { hotel_id: hotelId },
-      attributes: ['id', 'hotel_id', 'room_name', 'room_type', 'quantity', 'max_guests', 'status'],
+      attributes: ROOM_ADMIN_ATTRIBUTES,
       order: [['room_name', 'ASC']],
     });
   }
@@ -55,14 +68,14 @@ class RoomRepository {
   async findById(roomId) {
     return await Rooms.findOne({
       where: { id: roomId },
-      attributes: ['id', 'hotel_id', 'room_name', 'room_type', 'quantity', 'max_guests', 'status'],
+      attributes: ROOM_ADMIN_ATTRIBUTES,
     });
   }
 
   async findByIdAndHotelId(roomId, hotelId) {
     return await Rooms.findOne({
       where: { id: roomId, hotel_id: hotelId },
-      attributes: ['id', 'hotel_id', 'room_name', 'room_type', 'quantity', 'max_guests', 'status'],
+      attributes: ROOM_ADMIN_ATTRIBUTES,
     });
   }
 }

@@ -29,6 +29,7 @@ export interface Room {
   hotel_id: string;
   room_name: string;
   room_type?: string | null;
+  bed_type?: string | null;
   max_guests?: number | null;
   quantity?: number | null;
   room_size?: number | null;
@@ -75,6 +76,37 @@ export const POLICY_TYPES = [
 export const HOTEL_STATUSES = ["active", "inactive", "suspended"] as const;
 
 export const ROOM_STATUSES = ["active", "inactive", "maintenance"] as const;
+
+export const BED_TYPES = [
+  "single",
+  "double",
+  "queen",
+  "king",
+  "super_king",
+  "twin",
+  "bunk",
+  "sofa_bed",
+  "murphy",
+] as const;
+
+export const AMENITY_CATEGORIES = [
+  "general",
+  "room_features",
+  "bathroom",
+  "food_drink",
+  "services",
+  "business",
+  "wellness",
+  "transportation",
+  "entertainment",
+  "safety",
+  "bedding",
+  "technology",
+  "comfort",
+  "view",
+  "kitchen",
+  "accessibility",
+] as const;
 
 export interface HotelDetailResult {
   hotel: HotelDetail;
@@ -144,6 +176,7 @@ export interface HotelUpdatePayload {
 export interface RoomPayload {
   roomName?: string;
   roomType?: string;
+  bedType?: string;
   maxGuests?: number;
   quantity?: number;
   roomSize?: number;
@@ -323,4 +356,169 @@ export async function fetchCountries(
     `/admin/locations/countries${toQuery(filters)}`
   );
   return { data: response.data, meta: response.meta };
+}
+
+// --- Amenities (catalog + hotel/room assignment) ---
+
+export interface Amenity {
+  id: string;
+  code: string;
+  name: string;
+  icon?: string | null;
+  category: string;
+  applicable_to?: string;
+  description?: string | null;
+  display_order?: number;
+}
+
+export interface AmenityFilters {
+  search?: string;
+  category?: string;
+  applicableTo?: string;
+  page?: number;
+  limit?: number;
+}
+
+interface AmenityIdsResult {
+  hotelId?: string;
+  roomId?: string;
+  amenityIds: string[];
+}
+
+export async function fetchAmenities(
+  filters: AmenityFilters = {}
+): Promise<{ data: Amenity[]; meta: HotelListMeta }> {
+  const response = await apiFetch<{ data: Amenity[]; meta: HotelListMeta }>(
+    `/admin/amenities${toQuery(filters)}`
+  );
+  return { data: response.data, meta: response.meta };
+}
+
+export async function fetchHotelAmenities(hotelId: string): Promise<string[]> {
+  const response = await apiFetch<{ data: AmenityIdsResult }>(
+    `/admin/hotels/${encodeURIComponent(hotelId)}/amenities`
+  );
+  return response.data.amenityIds;
+}
+
+export async function setHotelAmenities(hotelId: string, amenityIds: string[]): Promise<string[]> {
+  const response = await apiFetch<{ data: AmenityIdsResult }>(
+    `/admin/hotels/${encodeURIComponent(hotelId)}/amenities`,
+    { method: "PUT", body: { amenityIds } }
+  );
+  return response.data.amenityIds;
+}
+
+export async function fetchRoomAmenities(hotelId: string, roomId: string): Promise<string[]> {
+  const response = await apiFetch<{ data: AmenityIdsResult }>(
+    `/admin/hotels/${encodeURIComponent(hotelId)}/rooms/${encodeURIComponent(roomId)}/amenities`
+  );
+  return response.data.amenityIds;
+}
+
+export async function setRoomAmenities(
+  hotelId: string,
+  roomId: string,
+  amenityIds: string[]
+): Promise<string[]> {
+  const response = await apiFetch<{ data: AmenityIdsResult }>(
+    `/admin/hotels/${encodeURIComponent(hotelId)}/rooms/${encodeURIComponent(roomId)}/amenities`,
+    { method: "PUT", body: { amenityIds } }
+  );
+  return response.data.amenityIds;
+}
+
+// --- Cancellation rules ---
+
+export interface CancellationRule {
+  id: string;
+  hotel_id: string;
+  room_id?: string | null;
+  is_refundable: boolean;
+  free_cancellation_until_hours_before_checkin?: number | null;
+  refund_percent_before_deadline: string | number;
+  refund_percent_after_deadline: string | number;
+  cancellation_fee_type: string;
+  cancellation_fee_value?: string | number | null;
+  is_active: boolean;
+}
+
+export interface CancellationRulePayload {
+  roomId?: string | null;
+  isRefundable?: boolean;
+  freeCancellationUntilHoursBeforeCheckin?: number | null;
+  refundPercentBeforeDeadline?: number;
+  refundPercentAfterDeadline?: number;
+  cancellationFeeType?: string;
+  cancellationFeeValue?: number | null;
+  isActive?: boolean;
+}
+
+export async function fetchCancellationRules(hotelId: string): Promise<CancellationRule[]> {
+  const response = await apiFetch<{ data: { rules: CancellationRule[] } }>(
+    `/admin/hotels/${encodeURIComponent(hotelId)}/cancellation-rules`
+  );
+  return response.data.rules;
+}
+
+export async function createCancellationRule(
+  hotelId: string,
+  payload: CancellationRulePayload
+): Promise<CancellationRule> {
+  const response = await apiFetch<{ data: { rule: CancellationRule } }>(
+    `/admin/hotels/${encodeURIComponent(hotelId)}/cancellation-rules`,
+    { method: "POST", body: payload }
+  );
+  return response.data.rule;
+}
+
+export async function updateCancellationRule(
+  hotelId: string,
+  ruleId: string,
+  payload: CancellationRulePayload
+): Promise<CancellationRule> {
+  const response = await apiFetch<{ data: { rule: CancellationRule } }>(
+    `/admin/hotels/${encodeURIComponent(hotelId)}/cancellation-rules/${encodeURIComponent(ruleId)}`,
+    { method: "PATCH", body: payload }
+  );
+  return response.data.rule;
+}
+
+export async function deleteCancellationRule(hotelId: string, ruleId: string): Promise<void> {
+  await apiFetch(
+    `/admin/hotels/${encodeURIComponent(hotelId)}/cancellation-rules/${encodeURIComponent(ruleId)}`,
+    { method: "DELETE" }
+  );
+}
+
+// --- Room photos (media module supports entityType=room) ---
+
+export async function fetchRoomPhotos(roomId: string): Promise<HotelPhoto[]> {
+  const response = await apiFetch<ImagesResponse>(
+    `/images/room/${encodeURIComponent(roomId)}`
+  );
+  return response.data.images;
+}
+
+export async function uploadRoomPhoto(
+  roomId: string,
+  file: File,
+  isPrimary = false
+): Promise<HotelPhoto> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("is_primary", isPrimary ? "true" : "false");
+
+  const response = await apiFetch<{ data: HotelPhoto }>(
+    `/images/room/${encodeURIComponent(roomId)}`,
+    { method: "POST", body: form }
+  );
+  return response.data;
+}
+
+export async function setPrimaryRoomPhoto(roomId: string, imageId: string): Promise<void> {
+  await apiFetch(
+    `/images/room/${encodeURIComponent(roomId)}/primary/${encodeURIComponent(imageId)}`,
+    { method: "PUT" }
+  );
 }

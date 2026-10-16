@@ -3,6 +3,8 @@ const write = require('./hotel/write');
 const reviews = require('./hotel/reviews');
 const nearby = require('./hotel/nearby');
 const policies = require('./hotel/policies');
+const amenities = require('./hotel/amenities');
+const cancellationRules = require('./hotel/cancellation-rules');
 
 /**
  * Catalog hotel repository (aggregate).
@@ -16,4 +18,6 @@ module.exports = {
   ...reviews,
   ...nearby,
   ...policies,
+  ...amenities,
+  ...cancellationRules,
 };

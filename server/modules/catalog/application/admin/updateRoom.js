@@ -7,6 +7,7 @@ const roomRepository = require('../../infrastructure/room-admin.repository');
 const EDITABLE_FIELDS = {
   roomName: 'room_name',
   roomType: 'room_type',
+  bedType: 'bed_type',
   maxGuests: 'max_guests',
   quantity: 'quantity',
   roomSize: 'room_size',
