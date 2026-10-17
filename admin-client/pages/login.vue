@@ -5,6 +5,7 @@ definePageMeta({
 
 const auth = useAuthStore();
 const route = useRoute();
+const { t } = useI18n();
 
 const loading = ref(false);
 
@@ -15,17 +16,17 @@ const hasError = computed(() => Boolean(errorCode.value));
 const errorMessage = computed(() => {
   switch (errorCode.value) {
     case "ACCOUNT_DELETED":
-      return "This account has been deleted. Please contact support if you believe this is a mistake.";
+      return t("auth.error.accountDeleted");
     case "ACCOUNT_INACTIVE":
-      return "This account is inactive. Please contact support.";
+      return t("auth.error.accountInactive");
     case "ACCOUNT_CONFLICT":
-      return "An account with this email address already exists. Please contact support.";
+      return t("auth.error.accountConflict");
     case "EMAIL_VERIFICATION_REQUIRED":
-      return "Please verify your email address before signing in.";
+      return t("auth.error.emailVerificationRequired");
     case "KEYCLOAK_SUBJECT_MISMATCH":
-      return "This account is linked to a different sign-in identity. Please contact support.";
+      return t("auth.error.subjectMismatch");
     default:
-      return "We couldn't complete sign-in. Please try again, or contact support if it keeps happening.";
+      return t("auth.error.generic");
   }
 });
 
@@ -68,7 +69,7 @@ const onSignOut = async () => {
             TravelNest Admin
           </h1>
           <p class="text-sm text-slate-500">
-            Sign in to manage your properties and bookings
+            {{ $t('auth.signInSubtitle') }}
           </p>
         </div>
       </div>
@@ -79,7 +80,7 @@ const onSignOut = async () => {
         type="error"
         :closable="false"
         show-icon
-        title="Sign-in failed"
+        :title="$t('auth.signInFailed')"
         :description="errorMessage"
       />
 
@@ -90,7 +91,7 @@ const onSignOut = async () => {
         :loading="loading"
         @click="onSignOut"
       >
-        Sign out and use a different account
+        {{ $t('auth.signOutDifferent') }}
       </el-button>
       <el-button
         v-else
@@ -99,11 +100,11 @@ const onSignOut = async () => {
         :loading="loading"
         @click="onSignIn"
       >
-        Sign in with TravelNest
+        {{ $t('auth.signInWith') }}
       </el-button>
 
       <p class="mt-4 text-center text-xs text-slate-400">
-        You will be redirected to the secure sign-in page.
+        {{ $t('auth.redirectNotice') }}
       </p>
     </div>
   </div>

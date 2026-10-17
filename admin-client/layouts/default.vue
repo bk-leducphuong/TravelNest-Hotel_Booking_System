@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const auth = useAuthStore();
 const { can } = usePermissions();
+const { locale, locales, setLocale } = useI18n();
 
 const navItems = computed(() => ADMIN_NAV.filter((item) => !item.permission || can(item.permission)));
 
@@ -10,6 +11,10 @@ const onHotelChange = (hotelId: string) => {
 
 const onLogout = () => {
   auth.logout();
+};
+
+const onLocaleChange = (value: string) => {
+  setLocale(value);
 };
 </script>
 
@@ -34,7 +39,7 @@ const onLogout = () => {
             class="block rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
             active-class="bg-emerald-600 text-white hover:bg-emerald-600"
           >
-            {{ item.label }}
+            {{ $t(item.labelKey) }}
           </NuxtLink>
         </nav>
 
@@ -47,12 +52,12 @@ const onLogout = () => {
         <header class="sticky top-0 z-20 border-b bg-white/80 backdrop-blur">
           <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <div class="flex items-center gap-3">
-              <span class="text-sm font-medium text-slate-500">Hotel</span>
+              <span class="text-sm font-medium text-slate-500">{{ $t('shell.hotelLabel') }}</span>
               <el-select
                 v-if="auth.hasHotels"
                 :model-value="auth.activeHotelId ?? undefined"
                 class="w-64"
-                placeholder="Select a hotel"
+                :placeholder="$t('shell.selectHotel')"
                 @update:model-value="onHotelChange"
               >
                 <el-option
@@ -62,14 +67,28 @@ const onLogout = () => {
                   :value="hotel.id"
                 />
               </el-select>
-              <el-tag v-else type="info">All hotels</el-tag>
+              <el-tag v-else type="info">{{ $t('shell.allHotels') }}</el-tag>
             </div>
 
             <div class="flex items-center gap-3">
               <el-tag v-if="auth.activeHotel?.role" type="success" effect="plain">
                 {{ auth.activeHotel?.role }}
               </el-tag>
-              <el-button size="small" @click="onLogout">Logout</el-button>
+              <el-select
+                :model-value="locale"
+                size="small"
+                class="w-32"
+                :aria-label="$t('shell.language')"
+                @update:model-value="onLocaleChange"
+              >
+                <el-option
+                  v-for="available in locales"
+                  :key="available.code"
+                  :label="available.name"
+                  :value="available.code"
+                />
+              </el-select>
+              <el-button size="small" @click="onLogout">{{ $t('shell.logout') }}</el-button>
             </div>
           </div>
         </header>

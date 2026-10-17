@@ -7,18 +7,19 @@ import {
 } from "~/services/api/bookings";
 import {
   allowedNextStatuses,
-  bookingStatusLabel,
   canCancelBooking,
 } from "~/utils/bookings";
 
 const route = useRoute();
 const router = useRouter();
-const { can } = usePermissions();
+const { t } = useI18n();
 
 const bookingId = computed(() => String(route.params.bookingId));
 const loading = ref(false);
 const actionLoading = ref(false);
 const booking = ref<BookingDetail | null>(null);
+
+const statusLabel = (status: string) => t(`bookings.status.${status}`);
 
 const cancelDialog = reactive({
   visible: false,
@@ -60,7 +61,7 @@ const onStatus = async (status: string) => {
   actionLoading.value = true;
   try {
     await updateBookingStatus(bookingId.value, status);
-    ElMessage.success(`Booking marked as ${bookingStatusLabel(status)}`);
+    ElMessage.success(t("bookings.toast.marked", { status: statusLabel(status) }));
     await load();
   } catch (error) {
     ElMessage.error((error as Error).message);
@@ -86,9 +87,11 @@ const confirmCancel = async () => {
     });
 
     if (result.refundError) {
-      ElMessage.warning(`Booking cancelled, but the refund failed: ${result.refundError}`);
+      ElMessage.warning(
+        t("bookings.toast.cancelRefundFailed", { error: result.refundError })
+      );
     } else {
-      ElMessage.success("Booking cancelled");
+      ElMessage.success(t("bookings.toast.cancelled"));
     }
 
     cancelDialog.visible = false;
@@ -107,9 +110,11 @@ watch(bookingId, load, { immediate: true });
   <section v-loading="loading" class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <el-button link @click="router.push('/bookings')">← Bookings</el-button>
+        <el-button link @click="router.push('/bookings')">
+          ← {{ $t("nav.bookings") }}
+        </el-button>
         <h2 class="text-2xl font-semibold tracking-tight text-slate-900">
-          {{ booking?.booking_code || "Booking" }}
+          {{ booking?.booking_code || $t("bookings.fallbackTitle") }}
         </h2>
         <BookingStatusTag v-if="booking" :status="booking.status" />
       </div>
@@ -123,79 +128,98 @@ watch(bookingId, load, { immediate: true });
               :loading="actionLoading"
               @click="onStatus(status)"
             >
-              Mark {{ bookingStatusLabel(status) }}
+              {{ $t("bookings.action.mark", { status: statusLabel(status) }) }}
             </el-button>
           </Can>
           <Can permission="booking.cancel">
             <el-button v-if="cancellable" type="danger" plain @click="openCancel">
-              Cancel booking
+              {{ $t("bookings.action.cancel") }}
             </el-button>
           </Can>
         </template>
       </div>
     </div>
 
-    <el-empty v-if="!loading && !booking" description="Booking not found" />
+    <el-empty
+      v-if="!loading && !booking"
+      :description="$t('bookings.empty.detail')"
+    />
 
     <template v-if="booking">
       <el-card class="shadow-sm">
-        <template #header><span class="font-medium">Overview</span></template>
+        <template #header>
+          <span class="font-medium">{{ $t("bookings.section.overview") }}</span>
+        </template>
         <el-descriptions :column="3" border>
-          <el-descriptions-item label="Guest">{{ buyerLabel }}</el-descriptions-item>
-          <el-descriptions-item label="Hotel">{{ booking.hotel?.name || "—" }}</el-descriptions-item>
-          <el-descriptions-item label="Booked on">
+          <el-descriptions-item :label="$t('bookings.col.guest')">{{ buyerLabel }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('bookings.col.hotel')">
+            {{ booking.hotel?.name || "—" }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('bookings.col.bookedOn')">
             {{ new Date(booking.created_at).toLocaleString() }}
           </el-descriptions-item>
-          <el-descriptions-item label="Check-in">{{ booking.check_in_date }}</el-descriptions-item>
-          <el-descriptions-item label="Check-out">{{ booking.check_out_date }}</el-descriptions-item>
-          <el-descriptions-item label="Guests / Rooms">
+          <el-descriptions-item :label="$t('bookings.col.checkIn')">
+            {{ booking.check_in_date }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('bookings.col.checkOut')">
+            {{ booking.check_out_date }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('bookings.col.guestsRooms')">
             {{ booking.number_of_guests }} / {{ booking.quantity }}
           </el-descriptions-item>
-          <el-descriptions-item label="Total">
+          <el-descriptions-item :label="$t('common.total')">
             {{ money(booking.total_price, booking.currency) }}
           </el-descriptions-item>
-          <el-descriptions-item label="Currency">{{ booking.currency }}</el-descriptions-item>
-          <el-descriptions-item label="Special requests">
+          <el-descriptions-item :label="$t('bookings.col.currency')">
+            {{ booking.currency }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('bookings.col.specialRequests')">
             {{ booking.special_requests || "—" }}
           </el-descriptions-item>
         </el-descriptions>
       </el-card>
 
       <el-card v-if="booking.bookingRooms?.length" class="shadow-sm">
-        <template #header><span class="font-medium">Rooms</span></template>
+        <template #header>
+          <span class="font-medium">{{ $t("bookings.section.rooms") }}</span>
+        </template>
         <el-table :data="booking.bookingRooms" row-key="id">
-          <el-table-column label="Room">
+          <el-table-column :label="$t('bookings.col.room')">
             <template #default="{ row }">{{ row.room?.room_name || row.room_id }}</template>
           </el-table-column>
-          <el-table-column prop="quantity" label="Quantity" width="120" />
-          <el-table-column label="Line total" width="160" align="right">
+          <el-table-column prop="quantity" :label="$t('bookings.col.quantity')" width="120" />
+          <el-table-column :label="$t('bookings.col.lineTotal')" width="160" align="right">
             <template #default="{ row }">{{ money(row.total_price, booking.currency) }}</template>
           </el-table-column>
         </el-table>
       </el-card>
 
       <el-card v-if="booking.transaction" class="shadow-sm">
-        <template #header><span class="font-medium">Payment</span></template>
+        <template #header>
+          <span class="font-medium">{{ $t("bookings.section.payment") }}</span>
+        </template>
         <el-descriptions :column="3" border class="mb-4">
-          <el-descriptions-item label="Transaction status">
+          <el-descriptions-item :label="$t('bookings.col.transactionStatus')">
             {{ booking.transaction.status }}
           </el-descriptions-item>
-          <el-descriptions-item label="Amount">
+          <el-descriptions-item :label="$t('bookings.col.amount')">
             {{ money(booking.transaction.amount, booking.transaction.currency) }}
           </el-descriptions-item>
-          <el-descriptions-item label="Type">
+          <el-descriptions-item :label="$t('bookings.col.type')">
             {{ booking.transaction.transaction_type }}
           </el-descriptions-item>
         </el-descriptions>
 
         <template v-if="booking.transaction.payments?.length">
-          <p class="mb-2 text-sm font-medium text-slate-600">Payments</p>
+          <p class="mb-2 text-sm font-medium text-slate-600">
+            {{ $t("bookings.section.payments") }}
+          </p>
           <el-table :data="booking.transaction.payments" row-key="id" class="mb-4">
-            <el-table-column prop="payment_status" label="Status" />
-            <el-table-column label="Amount" align="right">
+            <el-table-column prop="payment_status" :label="$t('common.status')" />
+            <el-table-column :label="$t('bookings.col.amount')" align="right">
               <template #default="{ row }">{{ money(row.amount, row.currency) }}</template>
             </el-table-column>
-            <el-table-column label="Card" width="160">
+            <el-table-column :label="$t('bookings.col.card')" width="160">
               <template #default="{ row }">
                 {{ row.card_brand ? `${row.card_brand} •••• ${row.card_last4}` : "—" }}
               </template>
@@ -204,40 +228,56 @@ watch(bookingId, load, { immediate: true });
         </template>
 
         <template v-if="booking.transaction.refunds?.length">
-          <p class="mb-2 text-sm font-medium text-slate-600">Refunds</p>
+          <p class="mb-2 text-sm font-medium text-slate-600">
+            {{ $t("bookings.section.refunds") }}
+          </p>
           <el-table :data="booking.transaction.refunds" row-key="id">
-            <el-table-column prop="status" label="Status" />
-            <el-table-column label="Amount" align="right">
+            <el-table-column prop="status" :label="$t('common.status')" />
+            <el-table-column :label="$t('bookings.col.amount')" align="right">
               <template #default="{ row }">{{ money(row.amount, row.currency) }}</template>
             </el-table-column>
-            <el-table-column prop="reason" label="Reason" />
+            <el-table-column prop="reason" :label="$t('bookings.col.reason')" />
           </el-table>
         </template>
       </el-card>
     </template>
 
-    <el-dialog v-model="cancelDialog.visible" title="Cancel booking" width="480px">
+    <el-dialog
+      v-model="cancelDialog.visible"
+      :title="$t('bookings.dialog.cancelTitle')"
+      width="480px"
+    >
       <el-form label-position="top">
-        <el-form-item label="Reason">
-          <el-input v-model="cancelDialog.reason" type="textarea" :rows="3" placeholder="Optional" />
+        <el-form-item :label="$t('bookings.dialog.reason')">
+          <el-input
+            v-model="cancelDialog.reason"
+            type="textarea"
+            :rows="3"
+            :placeholder="$t('bookings.dialog.optional')"
+          />
         </el-form-item>
-        <el-form-item label="Process refund">
+        <el-form-item :label="$t('bookings.dialog.processRefund')">
           <el-switch v-model="cancelDialog.processRefund" />
         </el-form-item>
-        <el-form-item v-if="cancelDialog.processRefund" label="Refund amount (blank = full refund)">
+        <el-form-item
+          v-if="cancelDialog.processRefund"
+          :label="$t('bookings.dialog.refundAmount')"
+        >
           <el-input-number
             v-model="cancelDialog.refundAmount"
             :min="0"
             :controls="false"
-            placeholder="Full remaining balance"
+            :placeholder="$t('bookings.dialog.fullBalance')"
           />
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="cancelDialog.visible = false">Keep booking</el-button>
+        <el-button @click="cancelDialog.visible = false">
+          {{ $t("bookings.dialog.keep") }}
+        </el-button>
         <el-button type="danger" :loading="actionLoading" @click="confirmCancel">
-          Cancel & release inventory
+          {{ $t("bookings.dialog.confirmCancel") }}
         </el-button>
       </template>
     </el-dialog>

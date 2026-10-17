@@ -1,5 +1,6 @@
 export interface AdminNavItem {
-  label: string;
+  /** i18n key; translate with `$t(item.labelKey)` at render time. */
+  labelKey: string;
   to: string;
   permission?: string;
 }
@@ -8,11 +9,11 @@ export interface AdminNavItem {
  * Sidebar navigation. Items are hidden when the user lacks the permission.
  */
 export const ADMIN_NAV: AdminNavItem[] = [
-  { label: "Dashboard", to: "/" },
-  { label: "Property", to: "/properties", permission: "hotel.read" },
-  { label: "Bookings", to: "/bookings", permission: "booking.read" },
-  { label: "Availability", to: "/availability", permission: "room.read" },
-  { label: "Payments", to: "/payments", permission: "payment.read" },
-  { label: "Payouts", to: "/payouts", permission: "payment.read" },
-  { label: "Reviews", to: "/reviews", permission: "review.read" },
+  { labelKey: "nav.dashboard", to: "/" },
+  { labelKey: "nav.property", to: "/properties", permission: "hotel.read" },
+  { labelKey: "nav.bookings", to: "/bookings", permission: "booking.read" },
+  { labelKey: "nav.availability", to: "/availability", permission: "room.read" },
+  { labelKey: "nav.payments", to: "/payments", permission: "payment.read" },
+  { labelKey: "nav.payouts", to: "/payouts", permission: "payment.read" },
+  { labelKey: "nav.reviews", to: "/reviews", permission: "review.read" },
 ];

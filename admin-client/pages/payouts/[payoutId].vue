@@ -8,14 +8,13 @@ import {
 import { formatDateTime, formatMoney } from "~/utils/format";
 import {
   canProcessPayout,
-  humanize,
   payoutStatusTagType,
   payoutTransitions,
 } from "~/utils/payouts";
 
 const route = useRoute();
 const router = useRouter();
-const { can } = usePermissions();
+const { t } = useI18n();
 
 const payoutId = computed(() => String(route.params.payoutId));
 const loading = ref(false);
@@ -55,7 +54,7 @@ const onProcess = async () => {
   submitting.value = true;
   try {
     await processPayout(payoutId.value);
-    ElMessage.success("Payout processed");
+    ElMessage.success(t("payouts.toast.processed"));
     await load();
   } catch (error) {
     ElMessage.error((error as Error).message);
@@ -73,7 +72,7 @@ const openStatus = () => {
 
 const confirmStatus = async () => {
   if (!statusDialog.status) {
-    ElMessage.warning("Choose a status");
+    ElMessage.warning(t("payouts.toast.chooseStatus"));
     return;
   }
   submitting.value = true;
@@ -83,7 +82,7 @@ const confirmStatus = async () => {
       failureCode: statusDialog.failureCode || undefined,
       failureMessage: statusDialog.failureMessage || undefined,
     });
-    ElMessage.success("Payout status updated");
+    ElMessage.success(t("payouts.toast.statusUpdated"));
     statusDialog.visible = false;
     await load();
   } catch (error) {
@@ -100,10 +99,12 @@ watch(payoutId, load, { immediate: true });
   <section v-loading="loading" class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <el-button link @click="router.push('/payouts')">← Payouts</el-button>
-        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Payout</h2>
+        <el-button link @click="router.push('/payouts')">← {{ $t("nav.payouts") }}</el-button>
+        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">
+          {{ $t("payouts.detail.title") }}
+        </h2>
         <el-tag v-if="payout" :type="payoutStatusTagType(payout.status)" effect="light">
-          {{ humanize(payout.status) }}
+          {{ $t(`payouts.status.${payout.status}`) }}
         </el-tag>
       </div>
       <div v-if="payout" class="flex flex-wrap items-center gap-2">
@@ -114,100 +115,128 @@ watch(payoutId, load, { immediate: true });
             :loading="submitting"
             @click="onProcess"
           >
-            Process payout
+            {{ $t("payouts.action.process") }}
           </el-button>
           <el-button
             v-if="availableTransitions.length"
             :loading="submitting"
             @click="openStatus"
           >
-            Set status
+            {{ $t("payouts.action.setStatus") }}
           </el-button>
         </Can>
       </div>
     </div>
 
-    <el-empty v-if="!loading && !payout" description="Payout not found" />
+    <el-empty v-if="!loading && !payout" :description="$t('payouts.detail.notFound')" />
 
     <template v-if="payout">
       <el-card class="shadow-sm">
-        <template #header><span class="font-medium">Overview</span></template>
+        <template #header>
+          <span class="font-medium">{{ $t("payouts.section.overview") }}</span>
+        </template>
         <el-descriptions :column="3" border>
-          <el-descriptions-item label="Amount">
+          <el-descriptions-item :label="$t('payouts.col.amount')">
             {{ formatMoney(payout.amount, payout.currency) }}
           </el-descriptions-item>
-          <el-descriptions-item label="Platform fee">
+          <el-descriptions-item :label="$t('payouts.col.platformFee')">
             {{ formatMoney(payout.platform_fee_amount, payout.currency) }}
           </el-descriptions-item>
-          <el-descriptions-item label="Net">
+          <el-descriptions-item :label="$t('payouts.col.net')">
             {{ formatMoney(netAmount, payout.currency) }}
           </el-descriptions-item>
-          <el-descriptions-item label="Owner">{{ payout.owner?.email || payout.owner_id }}</el-descriptions-item>
-          <el-descriptions-item label="Period">
+          <el-descriptions-item :label="$t('payouts.col.owner')">
+            {{ payout.owner?.email || payout.owner_id }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('payouts.col.period')">
             {{ payout.period_start?.slice(0, 10) || "—" }} → {{ payout.period_end?.slice(0, 10) || "—" }}
           </el-descriptions-item>
-          <el-descriptions-item label="Paid at">{{ formatDateTime(payout.paid_at) }}</el-descriptions-item>
-          <el-descriptions-item label="Transfer id">
+          <el-descriptions-item :label="$t('payouts.col.paidAt')">
+            {{ formatDateTime(payout.paid_at) }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('payouts.col.transferId')">
             {{ payout.provider_transfer_id || "—" }}
           </el-descriptions-item>
-          <el-descriptions-item label="Connected account">
+          <el-descriptions-item :label="$t('payouts.col.connectedAccount')">
             {{ payout.connected_payment_account?.provider_account_id || "—" }}
           </el-descriptions-item>
-          <el-descriptions-item label="Created">{{ formatDateTime(payout.created_at) }}</el-descriptions-item>
-          <el-descriptions-item v-if="payout.failure_message" label="Failure" :span="3">
+          <el-descriptions-item :label="$t('payouts.col.created')">
+            {{ formatDateTime(payout.created_at) }}
+          </el-descriptions-item>
+          <el-descriptions-item v-if="payout.failure_message" :label="$t('payouts.col.failure')" :span="3">
             {{ payout.failure_code }} — {{ payout.failure_message }}
           </el-descriptions-item>
         </el-descriptions>
       </el-card>
 
       <el-card class="shadow-sm">
-        <template #header><span class="font-medium">Items</span></template>
-        <el-empty v-if="!payout.items?.length" description="No items" :image-size="60" />
+        <template #header>
+          <span class="font-medium">{{ $t("payouts.section.items") }}</span>
+        </template>
+        <el-empty
+          v-if="!payout.items?.length"
+          :description="$t('payouts.detail.noItems')"
+          :image-size="60"
+        />
         <el-table v-else :data="payout.items" row-key="id">
-          <el-table-column label="Booking" min-width="180">
+          <el-table-column :label="$t('payouts.col.booking')" min-width="180">
             <template #default="{ row }">
               <NuxtLink :to="`/bookings/${row.booking_id}`" class="text-emerald-600">
                 {{ row.booking_id }}
               </NuxtLink>
             </template>
           </el-table-column>
-          <el-table-column label="Gross" align="right">
+          <el-table-column :label="$t('payouts.col.gross')" align="right">
             <template #default="{ row }">{{ formatMoney(row.gross_amount, row.currency) }}</template>
           </el-table-column>
-          <el-table-column label="Platform fee" align="right">
+          <el-table-column :label="$t('payouts.col.platformFee')" align="right">
             <template #default="{ row }">{{ formatMoney(row.platform_fee_amount, row.currency) }}</template>
           </el-table-column>
-          <el-table-column label="Net" align="right">
+          <el-table-column :label="$t('payouts.col.net')" align="right">
             <template #default="{ row }">{{ formatMoney(row.net_amount, row.currency) }}</template>
           </el-table-column>
         </el-table>
       </el-card>
     </template>
 
-    <el-dialog v-model="statusDialog.visible" title="Set payout status" width="440px">
+    <el-dialog
+      v-model="statusDialog.visible"
+      :title="$t('payouts.dialog.setStatusTitle')"
+      width="440px"
+    >
       <el-form label-position="top">
-        <el-form-item label="Status">
+        <el-form-item :label="$t('common.status')">
           <el-select v-model="statusDialog.status" class="w-full">
             <el-option
               v-for="status in availableTransitions"
               :key="status"
-              :label="humanize(status)"
+              :label="$t(`payouts.status.${status}`)"
               :value="status"
             />
           </el-select>
         </el-form-item>
         <template v-if="statusDialog.status === 'failed'">
-          <el-form-item label="Failure code">
-            <el-input v-model="statusDialog.failureCode" placeholder="Optional" />
+          <el-form-item :label="$t('payouts.dialog.failureCode')">
+            <el-input
+              v-model="statusDialog.failureCode"
+              :placeholder="$t('payouts.dialog.optional')"
+            />
           </el-form-item>
-          <el-form-item label="Failure message">
-            <el-input v-model="statusDialog.failureMessage" type="textarea" :rows="2" placeholder="Optional" />
+          <el-form-item :label="$t('payouts.dialog.failureMessage')">
+            <el-input
+              v-model="statusDialog.failureMessage"
+              type="textarea"
+              :rows="2"
+              :placeholder="$t('payouts.dialog.optional')"
+            />
           </el-form-item>
         </template>
       </el-form>
       <template #footer>
-        <el-button @click="statusDialog.visible = false">Cancel</el-button>
-        <el-button type="primary" :loading="submitting" @click="confirmStatus">Save</el-button>
+        <el-button @click="statusDialog.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="confirmStatus">
+          {{ $t("common.save") }}
+        </el-button>
       </template>
     </el-dialog>
   </section>

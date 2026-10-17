@@ -5,11 +5,11 @@ import {
   type PayoutListItem,
 } from "~/services/api/payouts";
 import { formatDateTime, formatMoney } from "~/utils/format";
-import { PAYOUT_STATUSES, humanize, payoutStatusTagType } from "~/utils/payouts";
+import { PAYOUT_STATUSES, payoutStatusTagType } from "~/utils/payouts";
 
 const auth = useAuthStore();
 const router = useRouter();
-const { can } = usePermissions();
+const { t } = useI18n();
 
 const loading = ref(false);
 const generating = ref(false);
@@ -26,7 +26,12 @@ const filters = reactive({
 
 const generateDialog = reactive({ visible: false, cutoffDate: "" });
 
-const statusOptions = PAYOUT_STATUSES.map((status) => ({ value: status, label: humanize(status) }));
+const statusOptions = computed(() =>
+  PAYOUT_STATUSES.map((status) => ({
+    value: status,
+    label: t(`payouts.status.${status}`),
+  }))
+);
 
 const load = async () => {
   if (!auth.activeHotelId) {
@@ -75,7 +80,9 @@ const confirmGenerate = async () => {
     const result = await generateEligiblePayouts({
       cutoffDate: generateDialog.cutoffDate || undefined,
     });
-    ElMessage.success(`Scanned ${result.scanned} bookings, created ${result.created} payout(s).`);
+    ElMessage.success(
+      t("payouts.toast.generated", { scanned: result.scanned, created: result.created })
+    );
     generateDialog.visible = false;
     await load();
   } catch (error) {
@@ -99,60 +106,91 @@ watch(
   <section class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Payouts</h2>
-        <p class="mt-1 text-sm text-slate-500">{{ auth.activeHotel?.name || "No hotel selected" }}</p>
+        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">
+          {{ $t("nav.payouts") }}
+        </h2>
+        <p class="mt-1 text-sm text-slate-500">
+          {{ auth.activeHotel?.name || $t("dashboard.noHotelSelected") }}
+        </p>
       </div>
       <div class="flex items-center gap-2">
-        <NuxtLink to="/payouts/connected-accounts"><el-button>Connected accounts</el-button></NuxtLink>
+        <NuxtLink to="/payouts/connected-accounts">
+          <el-button>{{ $t("payouts.connectedAccountsLink") }}</el-button>
+        </NuxtLink>
         <Can permission="payment.process">
           <el-button type="primary" :disabled="!auth.activeHotelId" @click="openGenerate">
-            Generate eligible
+            {{ $t("payouts.action.generate") }}
           </el-button>
         </Can>
-        <el-button :loading="loading" :disabled="!auth.activeHotelId" @click="load">Refresh</el-button>
+        <el-button :loading="loading" :disabled="!auth.activeHotelId" @click="load">
+          {{ $t("common.refresh") }}
+        </el-button>
       </div>
     </div>
 
-    <el-empty v-if="!auth.activeHotelId" description="Select a hotel to view payouts." />
+    <el-empty v-if="!auth.activeHotelId" :description="$t('payouts.empty.selectHotel')" />
 
     <template v-else>
       <el-card class="shadow-sm">
         <div class="flex flex-wrap items-end gap-3">
-          <el-select v-model="filters.status" placeholder="All statuses" clearable class="w-48">
+          <el-select
+            v-model="filters.status"
+            :placeholder="$t('payouts.filter.allStatuses')"
+            clearable
+            class="w-48"
+          >
             <el-option v-for="option in statusOptions" :key="option.value" :label="option.label" :value="option.value" />
           </el-select>
-          <el-date-picker v-model="filters.dateFrom" type="date" placeholder="From" value-format="YYYY-MM-DD" />
-          <el-date-picker v-model="filters.dateTo" type="date" placeholder="To" value-format="YYYY-MM-DD" />
-          <el-button type="primary" @click="applyFilters">Apply</el-button>
-          <el-button @click="resetFilters">Reset</el-button>
+          <el-date-picker
+            v-model="filters.dateFrom"
+            type="date"
+            :placeholder="$t('payouts.filter.from')"
+            value-format="YYYY-MM-DD"
+          />
+          <el-date-picker
+            v-model="filters.dateTo"
+            type="date"
+            :placeholder="$t('payouts.filter.to')"
+            value-format="YYYY-MM-DD"
+          />
+          <el-button type="primary" @click="applyFilters">
+            {{ $t("payouts.filter.apply") }}
+          </el-button>
+          <el-button @click="resetFilters">{{ $t("payouts.filter.reset") }}</el-button>
         </div>
       </el-card>
 
       <el-card class="shadow-sm">
         <el-table v-loading="loading" :data="payouts" row-key="id" @row-click="openPayout">
-          <el-table-column label="Created" width="170">
+          <el-table-column :label="$t('payouts.col.created')" width="170">
             <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
           </el-table-column>
-          <el-table-column label="Amount" width="140" align="right">
+          <el-table-column :label="$t('payouts.col.amount')" width="140" align="right">
             <template #default="{ row }">{{ formatMoney(row.amount, row.currency) }}</template>
           </el-table-column>
-          <el-table-column label="Platform fee" width="140" align="right">
+          <el-table-column :label="$t('payouts.col.platformFee')" width="140" align="right">
             <template #default="{ row }">{{ formatMoney(row.platform_fee_amount, row.currency) }}</template>
           </el-table-column>
-          <el-table-column label="Status" width="140">
+          <el-table-column :label="$t('common.status')" width="140">
             <template #default="{ row }">
-              <el-tag :type="payoutStatusTagType(row.status)" effect="light">{{ humanize(row.status) }}</el-tag>
+              <el-tag :type="payoutStatusTagType(row.status)" effect="light">
+                {{ $t(`payouts.status.${row.status}`) }}
+              </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="Transfer id" min-width="180">
+          <el-table-column :label="$t('payouts.col.transferId')" min-width="180">
             <template #default="{ row }">{{ row.provider_transfer_id || "—" }}</template>
           </el-table-column>
           <el-table-column label="" width="90" align="right">
             <template #default="{ row }">
-              <el-button link type="primary" @click.stop="openPayout(row)">View</el-button>
+              <el-button link type="primary" @click.stop="openPayout(row)">
+                {{ $t("common.view") }}
+              </el-button>
             </template>
           </el-table-column>
-          <template #empty><el-empty description="No payouts found" :image-size="60" /></template>
+          <template #empty>
+            <el-empty :description="$t('payouts.empty.list')" :image-size="60" />
+          </template>
         </el-table>
 
         <div class="mt-4 flex justify-end">
@@ -167,25 +205,30 @@ watch(
       </el-card>
     </template>
 
-    <el-dialog v-model="generateDialog.visible" title="Generate eligible payouts" width="420px">
+    <el-dialog
+      v-model="generateDialog.visible"
+      :title="$t('payouts.dialog.generateTitle')"
+      width="420px"
+    >
       <el-form label-position="top">
-        <el-form-item label="Cut-off date (optional)">
+        <el-form-item :label="$t('payouts.dialog.cutoff')">
           <el-date-picker
             v-model="generateDialog.cutoffDate"
             type="date"
-            placeholder="Today"
+            :placeholder="$t('payouts.dialog.today')"
             value-format="YYYY-MM-DD"
             class="w-full"
           />
         </el-form-item>
         <p class="text-xs text-slate-500">
-          Creates one payout per eligible booking (confirmed/completed with a completed payment).
-          Idempotent per booking.
+          {{ $t("payouts.dialog.generateHint") }}
         </p>
       </el-form>
       <template #footer>
-        <el-button @click="generateDialog.visible = false">Cancel</el-button>
-        <el-button type="primary" :loading="generating" @click="confirmGenerate">Generate</el-button>
+        <el-button @click="generateDialog.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="generating" @click="confirmGenerate">
+          {{ $t("payouts.dialog.generate") }}
+        </el-button>
       </template>
     </el-dialog>
   </section>

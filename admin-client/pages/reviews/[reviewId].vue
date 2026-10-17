@@ -11,7 +11,6 @@ import { formatDateTime } from "~/utils/format";
 import {
   canReplyToReview,
   formatRating,
-  reviewStatusLabel,
   reviewStatusTagType,
   reviewTransitions,
 } from "~/utils/reviews";
@@ -19,11 +18,14 @@ import {
 const route = useRoute();
 const router = useRouter();
 const { can } = usePermissions();
+const { t } = useI18n();
 
 const reviewId = computed(() => String(route.params.reviewId));
 const loading = ref(false);
 const busy = ref(false);
 const review = ref<Review | null>(null);
+
+const statusLabel = (status: string) => t(`reviews.status.${status}`);
 
 const replyDraft = ref("");
 const editingReply = ref(false);
@@ -49,10 +51,10 @@ const criteria = computed(() => {
     return [];
   }
   return [
-    { label: "Cleanliness", score: value.rating_cleanliness },
-    { label: "Location", score: value.rating_location },
-    { label: "Service", score: value.rating_service },
-    { label: "Value", score: value.rating_value },
+    { labelKey: "reviews.criteria.cleanliness", score: value.rating_cleanliness },
+    { labelKey: "reviews.criteria.location", score: value.rating_location },
+    { labelKey: "reviews.criteria.service", score: value.rating_service },
+    { labelKey: "reviews.criteria.value", score: value.rating_value },
   ];
 });
 
@@ -88,7 +90,9 @@ const confirmModeration = async () => {
       status: moderationDialog.target,
       reason: moderationDialog.reason || undefined,
     });
-    ElMessage.success(`Review ${reviewStatusLabel(moderationDialog.target).toLowerCase()}`);
+    ElMessage.success(
+      t("reviews.toast.statusSet", { status: statusLabel(moderationDialog.target) })
+    );
     moderationDialog.visible = false;
     await load();
   } catch (error) {
@@ -100,17 +104,17 @@ const confirmModeration = async () => {
 
 const submitReply = async () => {
   if (!replyDraft.value.trim()) {
-    ElMessage.warning("Reply cannot be empty");
+    ElMessage.warning(t("reviews.toast.replyRequired"));
     return;
   }
   busy.value = true;
   try {
     if (review.value?.reply) {
       await updateReviewReply(reviewId.value, replyDraft.value.trim());
-      ElMessage.success("Reply updated");
+      ElMessage.success(t("reviews.toast.replyUpdated"));
     } else {
       await replyToReview(reviewId.value, replyDraft.value.trim());
-      ElMessage.success("Reply posted");
+      ElMessage.success(t("reviews.toast.replyPosted"));
     }
     await load();
   } catch (error) {
@@ -124,7 +128,7 @@ const removeReply = async () => {
   busy.value = true;
   try {
     await deleteReviewReply(reviewId.value);
-    ElMessage.success("Reply removed");
+    ElMessage.success(t("reviews.toast.replyRemoved"));
     await load();
   } catch (error) {
     ElMessage.error((error as Error).message);
@@ -140,10 +144,12 @@ watch(reviewId, load, { immediate: true });
   <section v-loading="loading" class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <el-button link @click="router.push('/reviews')">← Reviews</el-button>
-        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Review</h2>
+        <el-button link @click="router.push('/reviews')">← {{ $t("nav.reviews") }}</el-button>
+        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">
+          {{ $t("reviews.detail.title") }}
+        </h2>
         <el-tag v-if="review" :type="reviewStatusTagType(review.status)" effect="light">
-          {{ reviewStatusLabel(review.status) }}
+          {{ statusLabel(review.status) }}
         </el-tag>
       </div>
       <div v-if="review" class="flex flex-wrap items-center gap-2">
@@ -156,29 +162,45 @@ watch(reviewId, load, { immediate: true });
             :disabled="busy"
             @click="openModeration(target)"
           >
-            {{ target === "published" ? "Publish" : target === "hidden" ? "Hide" : "Delete" }}
+            {{
+              $t(
+                target === "published"
+                  ? "reviews.action.publish"
+                  : target === "hidden"
+                    ? "reviews.action.hide"
+                    : "reviews.action.delete"
+              )
+            }}
           </el-button>
         </Can>
       </div>
     </div>
 
-    <el-empty v-if="!loading && !review" description="Review not found" />
+    <el-empty v-if="!loading && !review" :description="$t('reviews.detail.notFound')" />
 
     <template v-if="review">
       <el-card class="shadow-sm">
-        <template #header><span class="font-medium">Review</span></template>
+        <template #header>
+          <span class="font-medium">{{ $t("reviews.section.review") }}</span>
+        </template>
         <el-descriptions :column="3" border class="mb-4">
-          <el-descriptions-item label="Reviewer">{{ reviewerLabel }}</el-descriptions-item>
-          <el-descriptions-item label="Hotel">{{ review.hotel?.name || "—" }}</el-descriptions-item>
-          <el-descriptions-item label="Submitted">{{ formatDateTime(review.created_at) }}</el-descriptions-item>
-          <el-descriptions-item label="Overall rating">
+          <el-descriptions-item :label="$t('reviews.col.reviewer')">{{ reviewerLabel }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('reviews.col.hotel')">
+            {{ review.hotel?.name || "—" }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('reviews.col.submitted')">
+            {{ formatDateTime(review.created_at) }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('reviews.col.overallRating')">
             <span class="text-lg font-semibold">{{ formatRating(review.rating_overall) }}</span> / 10
           </el-descriptions-item>
-          <el-descriptions-item label="Verified">
-            {{ review.is_verified ? "Yes" : "No" }}
+          <el-descriptions-item :label="$t('reviews.col.verified')">
+            {{ review.is_verified ? $t("reviews.yes") : $t("reviews.no") }}
           </el-descriptions-item>
-          <el-descriptions-item label="Helpful votes">{{ review.helpful_count }}</el-descriptions-item>
-          <el-descriptions-item label="Booking" :span="3">
+          <el-descriptions-item :label="$t('reviews.col.helpfulVotes')">
+            {{ review.helpful_count }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('reviews.col.booking')" :span="3">
             <NuxtLink v-if="review.booking_id" :to="`/bookings/${review.booking_id}`" class="text-emerald-600">
               {{ review.booking_id }}
             </NuxtLink>
@@ -187,8 +209,8 @@ watch(reviewId, load, { immediate: true });
         </el-descriptions>
 
         <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div v-for="item in criteria" :key="item.label" class="rounded-lg border border-slate-200 p-3">
-            <p class="text-xs text-slate-500">{{ item.label }}</p>
+          <div v-for="item in criteria" :key="item.labelKey" class="rounded-lg border border-slate-200 p-3">
+            <p class="text-xs text-slate-500">{{ $t(item.labelKey) }}</p>
             <p class="text-lg font-semibold text-slate-900">{{ formatRating(item.score) }}</p>
           </div>
         </div>
@@ -212,12 +234,14 @@ watch(reviewId, load, { immediate: true });
       <el-card class="shadow-sm">
         <template #header>
           <div class="flex items-center justify-between">
-            <span class="font-medium">Property reply</span>
+            <span class="font-medium">{{ $t("reviews.reply.title") }}</span>
             <Can permission="review.reply">
               <div v-if="review.reply && !editingReply" class="flex gap-2">
-                <el-button size="small" @click="editingReply = true">Edit</el-button>
+                <el-button size="small" @click="editingReply = true">
+                  {{ $t("reviews.action.edit") }}
+                </el-button>
                 <el-button size="small" type="danger" plain :loading="busy" @click="removeReply">
-                  Delete
+                  {{ $t("reviews.action.delete") }}
                 </el-button>
               </div>
             </Can>
@@ -227,7 +251,7 @@ watch(reviewId, load, { immediate: true });
         <template v-if="review.reply && !editingReply">
           <p class="whitespace-pre-line text-sm text-slate-700">{{ review.reply.reply_text }}</p>
           <p class="mt-2 text-xs text-slate-400">
-            {{ review.reply.user ? `${review.reply.user.first_name ?? ""} ${review.reply.user.last_name ?? ""}`.trim() : "Staff" }}
+            {{ review.reply.user ? `${review.reply.user.first_name ?? ""} ${review.reply.user.last_name ?? ""}`.trim() : $t("reviews.reply.staff") }}
             · {{ formatDateTime(review.reply.created_at) }}
           </p>
         </template>
@@ -238,35 +262,52 @@ watch(reviewId, load, { immediate: true });
               v-model="replyDraft"
               type="textarea"
               :rows="4"
-              :placeholder="canReplyToReview(review.status) ? 'Write a reply…' : 'Replies are disabled for deleted reviews.'"
+              :placeholder="
+                canReplyToReview(review.status)
+                  ? $t('reviews.reply.placeholder')
+                  : $t('reviews.reply.disabled')
+              "
               :disabled="!canReplyToReview(review.status)"
             />
             <div class="mt-3 flex gap-2">
-              <el-button type="primary" :loading="busy" :disabled="!canReplyToReview(review.status)" @click="submitReply">
-                {{ review.reply ? "Save reply" : "Post reply" }}
+              <el-button
+                type="primary"
+                :loading="busy"
+                :disabled="!canReplyToReview(review.status)"
+                @click="submitReply"
+              >
+                {{ review.reply ? $t("reviews.reply.save") : $t("reviews.reply.post") }}
               </el-button>
-              <el-button v-if="review.reply" @click="editingReply = false">Cancel</el-button>
+              <el-button v-if="review.reply" @click="editingReply = false">
+                {{ $t("common.cancel") }}
+              </el-button>
             </div>
           </div>
-          <p v-else class="text-sm text-slate-500">You do not have permission to reply to reviews.</p>
+          <p v-else class="text-sm text-slate-500">{{ $t("reviews.reply.noPermission") }}</p>
         </template>
       </el-card>
     </template>
 
-    <el-dialog v-model="moderationDialog.visible" title="Moderate review" width="440px">
+    <el-dialog
+      v-model="moderationDialog.visible"
+      :title="$t('reviews.dialog.title')"
+      width="440px"
+    >
       <p class="mb-3 text-sm text-slate-600">
-        Set this review to
-        <strong>{{ reviewStatusLabel(moderationDialog.target) }}</strong>.
+        {{ $t("reviews.dialog.setToPrefix") }}
+        <strong>{{ statusLabel(moderationDialog.target) }}</strong>{{ $t("reviews.dialog.setToSuffix") }}
       </p>
       <el-input
         v-model="moderationDialog.reason"
         type="textarea"
         :rows="3"
-        placeholder="Reason (recorded in the audit log)"
+        :placeholder="$t('reviews.dialog.reason')"
       />
       <template #footer>
-        <el-button @click="moderationDialog.visible = false">Cancel</el-button>
-        <el-button type="primary" :loading="busy" @click="confirmModeration">Confirm</el-button>
+        <el-button @click="moderationDialog.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="busy" @click="confirmModeration">
+          {{ $t("reviews.dialog.confirm") }}
+        </el-button>
       </template>
     </el-dialog>
   </section>
