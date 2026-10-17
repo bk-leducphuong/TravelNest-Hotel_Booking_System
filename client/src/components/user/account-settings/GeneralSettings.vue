@@ -1,30 +1,33 @@
 <template>
   <section class="settings-panel">
     <header class="panel-header">
-      <h1>Customisation preferences</h1>
+      <h1>{{ $t('account.general.title') }}</h1>
       <p>
-        This section is present in the new settings shell, but language and currency editing have
-        not been connected to supported backend APIs yet.
+        {{ $t('account.general.description') }}
       </p>
     </header>
 
     <article class="detail-card muted-card">
       <div class="detail-row">
         <div>
-          <h2>Language</h2>
-          <p>Stored preference management is not available in the current account API.</p>
+          <h2>{{ $t('account.general.language') }}</h2>
+          <p>{{ $t('account.general.languageDescription') }}</p>
         </div>
-        <button type="button" class="disabled-button" disabled>Coming soon</button>
+        <button type="button" class="disabled-button" disabled>
+          {{ $t('account.status.comingSoon') }}
+        </button>
       </div>
     </article>
 
     <article class="detail-card muted-card">
       <div class="detail-row">
         <div>
-          <h2>Currency</h2>
-          <p>Currency controls stay visible here until the preference endpoint is introduced.</p>
+          <h2>{{ $t('account.general.currency') }}</h2>
+          <p>{{ $t('account.general.currencyDescription') }}</p>
         </div>
-        <button type="button" class="disabled-button" disabled>Coming soon</button>
+        <button type="button" class="disabled-button" disabled>
+          {{ $t('account.status.comingSoon') }}
+        </button>
       </div>
     </article>
   </section>

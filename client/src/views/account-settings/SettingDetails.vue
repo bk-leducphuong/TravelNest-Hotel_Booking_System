@@ -58,10 +58,10 @@ export default {
   <main class="settings-page">
     <aside class="settings-sidebar">
       <button type="button" class="back-link" @click="$router.push('/account-settings')">
-        Back to overview
+        {{ $t('account.details.backToOverview') }}
       </button>
 
-      <nav class="settings-nav" aria-label="Account settings sections">
+      <nav class="settings-nav" :aria-label="$t('account.details.navAriaLabel')">
         <button
           v-for="section in sections"
           :key="section.slug"
@@ -71,11 +71,11 @@ export default {
           @click="openSection(section.slug)"
         >
           <span class="settings-nav-copy">
-            <span class="settings-nav-title">{{ section.title }}</span>
-            <span class="settings-nav-summary">{{ section.summary }}</span>
+            <span class="settings-nav-title">{{ $t(section.titleKey) }}</span>
+            <span class="settings-nav-summary">{{ $t(section.summaryKey) }}</span>
           </span>
           <span class="settings-nav-status" :class="{ muted: !section.available }">
-            {{ section.available ? 'Live' : 'Soon' }}
+            {{ section.available ? $t('account.status.live') : $t('account.status.soon') }}
           </span>
         </button>
       </nav>

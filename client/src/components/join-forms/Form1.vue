@@ -25,17 +25,17 @@ export default {
     <!--  form-1  -->
     <div class="card">
       <div class="question">
-        <h3 class="title">Chỗ nghỉ Quý vị muốn đăng ký nằm ở đâu?</h3>
+        <h3 class="title">{{ $t('join.form.locationTitle') }}</h3>
       </div>
       <div class="form-group">
-        <label for="Street_name">Tên đường và số nhà</label>
+        <label for="Street_name">{{ $t('join.form.streetLabel') }}</label>
         <input type="text" name="Street_name" v-model="getJoinFormData.streetName" id="Street_name" />
       </div>
       <div class="form-group">
-        <label for="city">Thành phố</label>
+        <label for="city">{{ $t('join.form.cityLabel') }}</label>
         <input type="text" name="city" v-model="getJoinFormData.city" id="city" />
       </div>
-      <button type="button" class="next" @click="goNext" :disabled="!checkForNext">Tiếp tục</button>
+      <button type="button" class="next" @click="goNext" :disabled="!checkForNext">{{ $t('join.form.continueButton') }}</button>
     </div>
   </form>
 </template>

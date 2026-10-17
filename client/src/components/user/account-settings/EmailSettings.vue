@@ -11,22 +11,23 @@ export default {
 <template>
   <section class="settings-panel">
     <header class="panel-header">
-      <h1>Email preferences</h1>
+      <h1>{{ $t('account.email.title') }}</h1>
       <p>
-        Account email visibility is preserved here, but notification preference management is not
-        backed by the current API yet.
+        {{ $t('account.email.description') }}
       </p>
     </header>
 
     <article class="detail-card">
       <div class="detail-row">
         <div>
-          <h2>Account email</h2>
+          <h2>{{ $t('account.email.accountEmail') }}</h2>
           <p>
-            {{ getUserInformation?.email || 'No email loaded' }}
+            {{ getUserInformation?.email || $t('account.email.noEmailLoaded') }}
           </p>
         </div>
-        <button type="button" class="disabled-button" disabled>Coming soon</button>
+        <button type="button" class="disabled-button" disabled>
+          {{ $t('account.status.comingSoon') }}
+        </button>
       </div>
     </article>
   </section>

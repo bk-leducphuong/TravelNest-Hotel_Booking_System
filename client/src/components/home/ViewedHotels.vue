@@ -31,7 +31,7 @@
                 <p class="hotel-location">{{ displayAddress(hotel.address) }}</p>
                 <div class="hotel-rating" v-if="hotel.ratingSummary">
                   <span class="rating-badge">{{ hotel.ratingSummary.overallRating }}</span>
-                  <span class="review-count">{{ hotel.ratingSummary.totalReviews }} đánh giá</span>
+                  <span class="review-count">{{ $t('userHome.reviewCount', { count: hotel.ratingSummary.totalReviews }) }}</span>
                 </div>
               </div>
             </div>

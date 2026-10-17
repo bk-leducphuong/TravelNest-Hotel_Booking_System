@@ -4,57 +4,57 @@
   <div class="footer">
     <div class="footer-content">
       <div class="footer-column">
-        <h3>Support</h3>
+        <h3>{{ $t('footer.support') }}</h3>
         <ul>
-          <li><a>Coronavirus (COVID-19) FAQs</a></li>
-          <li><a>Manage your trips</a></li>
-          <li><a>Contact Customer Service</a></li>
-          <li><a>Safety resource centre</a></li>
+          <li><a>{{ $t('footer.covidFaqs') }}</a></li>
+          <li><a>{{ $t('footer.manageTrips') }}</a></li>
+          <li><a>{{ $t('footer.contactService') }}</a></li>
+          <li><a>{{ $t('footer.safetyCentre') }}</a></li>
         </ul>
       </div>
       <div class="footer-column">
-        <h3>Discover</h3>
+        <h3>{{ $t('footer.discover') }}</h3>
         <ul>
-          <li><a>Genius loyalty programme</a></li>
-          <li><a>Seasonal and holiday deals</a></li>
-          <li><a>Travel articles</a></li>
-          <li><a>Booking.com for Business</a></li>
-          <li><a>Traveller Review Awards</a></li>
-          <li><a>Car hire</a></li>
-          <li><a>Flight finder</a></li>
-          <li><a>Restaurant reservations</a></li>
-          <li><a>Booking.com for Travel Agents</a></li>
+          <li><a>{{ $t('footer.geniusLoyalty') }}</a></li>
+          <li><a>{{ $t('footer.seasonalDeals') }}</a></li>
+          <li><a>{{ $t('footer.travelArticles') }}</a></li>
+          <li><a>{{ $t('footer.forBusiness') }}</a></li>
+          <li><a>{{ $t('footer.reviewAwards') }}</a></li>
+          <li><a>{{ $t('footer.carHire') }}</a></li>
+          <li><a>{{ $t('footer.flightFinder') }}</a></li>
+          <li><a>{{ $t('footer.restaurantReservations') }}</a></li>
+          <li><a>{{ $t('footer.forTravelAgents') }}</a></li>
         </ul>
       </div>
       <div class="footer-column">
-        <h3>Terms and settings</h3>
+        <h3>{{ $t('footer.termsAndSettings') }}</h3>
         <ul>
-          <li><a>Privacy & cookies</a></li>
-          <li><a>Terms and conditions</a></li>
-          <li><a>Partner dispute</a></li>
-          <li><a>Modern Slavery Statement</a></li>
-          <li><a>Human Rights Statement</a></li>
+          <li><a>{{ $t('footer.privacyCookies') }}</a></li>
+          <li><a>{{ $t('footer.termsConditions') }}</a></li>
+          <li><a>{{ $t('footer.partnerDispute') }}</a></li>
+          <li><a>{{ $t('footer.modernSlavery') }}</a></li>
+          <li><a>{{ $t('footer.humanRights') }}</a></li>
         </ul>
       </div>
       <div class="footer-column">
-        <h3>Partners</h3>
+        <h3>{{ $t('footer.partners') }}</h3>
         <ul>
-          <li><a>Extranet login</a></li>
-          <li><a>Partner help</a></li>
-          <li><a>List your property</a></li>
-          <li><a>Become an affiliate</a></li>
+          <li><a>{{ $t('footer.extranetLogin') }}</a></li>
+          <li><a>{{ $t('footer.partnerHelp') }}</a></li>
+          <li><a>{{ $t('footer.listProperty') }}</a></li>
+          <li><a>{{ $t('footer.becomeAffiliate') }}</a></li>
         </ul>
       </div>
       <div class="footer-column">
-        <h3>About</h3>
+        <h3>{{ $t('footer.about') }}</h3>
         <ul>
-          <li><a>About Booking.com</a></li>
-          <li><a>How we work</a></li>
-          <li><a>Sustainability</a></li>
-          <li><a>Press centre</a></li>
-          <li><a>Careers</a></li>
-          <li><a>Investor relations</a></li>
-          <li><a>Corporate contact</a></li>
+          <li><a>{{ $t('footer.aboutBooking') }}</a></li>
+          <li><a>{{ $t('footer.howWeWork') }}</a></li>
+          <li><a>{{ $t('footer.sustainability') }}</a></li>
+          <li><a>{{ $t('footer.pressCentre') }}</a></li>
+          <li><a>{{ $t('footer.careers') }}</a></li>
+          <li><a>{{ $t('footer.investorRelations') }}</a></li>
+          <li><a>{{ $t('footer.corporateContact') }}</a></li>
         </ul>
       </div>
     </div>
@@ -65,10 +65,9 @@
     </div>
     <div class="footer-bottom">
       <p>
-        TravelNest is part of Booking Holdings Inc., the world leader in online travel and related
-        services.
+        {{ $t('footer.disclaimer') }}
       </p>
-      <p>Copyright © 1996–2024 TravelNest™. All rights reserved.</p>
+      <p>{{ $t('footer.copyright') }}</p>
     </div>
     <div class="brand-logos">
       <span class="brand-name">TravelNest</span>

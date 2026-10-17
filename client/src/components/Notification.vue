@@ -21,10 +21,10 @@
         <!-- Notification Header -->
         <div class="notification-header">
           <div class="notification-title">
-            <span>Notifications</span>
+            <span>{{ $t('misc.notifications.title') }}</span>
           </div>
           <div class="mark-all-read-btn" @click="markAllRead()" v-if="numberOfNewNotifications > 0">
-            <span>Mark all as read</span>
+            <span>{{ $t('misc.notifications.markAllRead') }}</span>
           </div>
         </div>
 
@@ -33,7 +33,7 @@
           <!-- Empty state -->
           <ElEmpty
             v-if="notifications.length === 0"
-            description="You have no notifications"
+            :description="$t('misc.notifications.empty')"
             :image-size="80"
           />
 
@@ -151,9 +151,9 @@
 
           await NotificationService.markAllAsRead();
           
-          this.toast.success('All notifications marked as read');
+          this.toast.success(this.$t('misc.notifications.allMarkedRead'));
         } catch (error) {
-          this.toast.error('Error marking notifications as read');
+          this.toast.error(this.$t('misc.notifications.markReadError'));
           console.error(error);
         }
       },
@@ -164,12 +164,22 @@
 
         const diffMs = Date.now() - date.getTime();
         const minutes = Math.round(diffMs / 60000);
-        if (minutes < 1) return 'just now';
-        if (minutes < 60) return `${minutes} min ago`;
+        if (minutes < 1) return this.$t('misc.notifications.justNow');
+        if (minutes < 60) return this.$t('misc.notifications.minutesAgo', { count: minutes });
         const hours = Math.round(minutes / 60);
-        if (hours < 24) return `${hours} hr${hours === 1 ? '' : 's'} ago`;
+        if (hours < 24) {
+          return this.$t(
+            hours === 1 ? 'misc.notifications.hourAgo' : 'misc.notifications.hoursAgo',
+            { count: hours }
+          );
+        }
         const days = Math.round(hours / 24);
-        if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`;
+        if (days < 30) {
+          return this.$t(
+            days === 1 ? 'misc.notifications.dayAgo' : 'misc.notifications.daysAgo',
+            { count: days }
+          );
+        }
         return date.toLocaleDateString();
       },
       async viewDetails(notification) {

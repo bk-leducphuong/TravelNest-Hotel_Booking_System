@@ -29,25 +29,25 @@ export default {
     bedOptions: [
       {
         index: 0,
-        name: 'Giường đơn',
+        name: 'join.form.bedSingle',
         width: '90 - 130',
         quantity: 0
       },
       {
         index: 1,
-        name: 'Giường đôi',
+        name: 'join.form.bedDouble',
         width: '131 - 150',
         quantity: 0
       },
       {
         index: 2,
-        name: 'Giường lớn (cỡ King)',
+        name: 'join.form.bedKing',
         width: '151 - 180',
         quantity: 0
       },
       {
         index: 3,
-        name: 'Giường cực lớn (cỡ Super-King)',
+        name: 'join.form.bedSuperKing',
         width: '181 - 210',
         quantity: 0
       }

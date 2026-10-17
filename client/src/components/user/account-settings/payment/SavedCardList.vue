@@ -4,12 +4,16 @@
       <div class="saved-card-main">
         <div class="saved-card-header">
           <span class="saved-card-brand">{{ cardBrandLabel(method.brand) }}</span>
-          <span v-if="method.isDefault" class="default-badge">Default</span>
+          <span v-if="method.isDefault" class="default-badge">
+            {{ $t('account.payment.defaultBadge') }}
+          </span>
         </div>
         <div class="saved-card-number">•••• •••• •••• {{ method.last4 || '••••' }}</div>
         <div class="saved-card-meta">
-          <span>{{ method.cardholderName || 'Card' }}</span>
-          <span>Expires {{ formatCardExpiry(method.expMonth, method.expYear) }}</span>
+          <span>{{ method.cardholderName || $t('account.payment.cardFallback') }}</span>
+          <span>
+            {{ $t('account.payment.expires', { date: formatCardExpiry(method.expMonth, method.expYear) }) }}
+          </span>
         </div>
       </div>
 
@@ -21,7 +25,7 @@
           :disabled="busy"
           @click="$emit('set-default', method.id)"
         >
-          Set as default
+          {{ $t('account.payment.setAsDefault') }}
         </button>
         <button
           type="button"
@@ -29,7 +33,7 @@
           :disabled="busy"
           @click="$emit('remove', method)"
         >
-          Remove
+          {{ $t('account.common.remove') }}
         </button>
       </div>
     </li>

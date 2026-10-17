@@ -1,10 +1,10 @@
 <!-- CookieConsent.vue -->
 <template>
   <div v-if="!consentGiven" class="cookie-consent">
-    <p>This website uses cookies to enhance the user experience.</p>
+    <p>{{ $t('misc.cookie.message') }}</p>
     <div class="button-group">
-      <button @click="acceptCookies">Accept</button>
-      <button @click="rejectCookies">Reject</button>
+      <button @click="acceptCookies">{{ $t('misc.cookie.accept') }}</button>
+      <button @click="rejectCookies">{{ $t('misc.cookie.reject') }}</button>
     </div>
   </div>
 </template>

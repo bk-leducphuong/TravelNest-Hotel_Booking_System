@@ -25,8 +25,6 @@ export default {
       booking: null,
       isLoading: false,
       isLoaded: false,
-      startTitle: 'Canceling your booking, please wait!',
-      endTitle: 'Booking cancelled successfully!',
       redirectUrl: '/bookings',
       fail: false,
       disableCancelBtn: false,
@@ -34,6 +32,12 @@ export default {
     }
   },
   computed: {
+    startTitle() {
+      return this.$t('bookingFlow.cancelingWait')
+    },
+    endTitle() {
+      return this.$t('bookingFlow.cancelledSuccess')
+    },
     // Normalize the API booking to the shape the template uses.
     getBookingInformation() {
       const b = this.booking
@@ -129,41 +133,41 @@ export default {
   <div class="cancel-container">
     <!-- step 1 -->
     <div class="cancel-left" v-if="step === 1">
-      <a @click="this.$router.back()" class="back-link">&lt; Back to my booking</a>
-      <h1 class="section-title">Step {{ step }} of 2</h1>
-      <h2 class="reason-title">Reason for canceling</h2>
+      <a @click="this.$router.back()" class="back-link">&lt; {{ $t('bookingFlow.backToBooking') }}</a>
+      <h1 class="section-title">{{ $t('bookingFlow.stepOf', { step, total: 2 }) }}</h1>
+      <h2 class="reason-title">{{ $t('bookingFlow.reasonForCanceling') }}</h2>
       <p class="reason-desc">
-        We can help you find alternative solutions if you need to make changes to your booking.
+        {{ $t('bookingFlow.reasonDesc') }}
       </p>
       <form @submit.prevent>
-        <label for="reason" class="reason-label">Reason</label>
+        <label for="reason" class="reason-label">{{ $t('bookingFlow.reason') }}</label>
         <select id="reason" class="reason-select" v-model="reason">
-          <option value="Change of dates or destination">Change of dates or destination</option>
-          <option value="Found a better price">Found a better price</option>
-          <option value="Change of plans">Change of plans</option>
-          <option value="Other">Other</option>
+          <option value="Change of dates or destination">{{ $t('bookingFlow.reasonChangeDates') }}</option>
+          <option value="Found a better price">{{ $t('bookingFlow.reasonBetterPrice') }}</option>
+          <option value="Change of plans">{{ $t('bookingFlow.reasonChangePlans') }}</option>
+          <option value="Other">{{ $t('bookingFlow.reasonOther') }}</option>
         </select>
         <div class="buttons">
-          <button type="submit" class="btn-primary" @click="nextStep">Continue</button>
-          <a @click="this.$router.push('/bookings')" class="btn-link">I want to keep this booking</a>
+          <button type="submit" class="btn-primary" @click="nextStep">{{ $t('bookingFlow.continue') }}</button>
+          <a @click="this.$router.push('/bookings')" class="btn-link">{{ $t('bookingFlow.keepBooking') }}</a>
         </div>
       </form>
     </div>
 
     <!-- step 2 -->
     <div class="cancel-left" v-if="step === 2">
-      <a class="back-link" @click="backStep">&lt; Previous step</a>
-      <h1 class="section-title">Step {{ step }} of 2</h1>
-      <h2 class="reason-title">Confirm cancellation</h2>
+      <a class="back-link" @click="backStep">&lt; {{ $t('bookingFlow.previousStep') }}</a>
+      <h1 class="section-title">{{ $t('bookingFlow.stepOf', { step, total: 2 }) }}</h1>
+      <h2 class="reason-title">{{ $t('bookingFlow.confirmCancellation') }}</h2>
       <p class="payment-note">
-        When you cancel your booking, your money will be refunded in 24 hours. If dont, please contact us to support. For any questions,
-        <a href="#" class="btn-link">contact us directly</a>.
+        {{ $t('bookingFlow.cancelRefundNote') }}
+        <a href="#" class="btn-link">{{ $t('bookingFlow.contactUs') }}</a>.
       </p>
       <div class="buttons">
         <button class="cancel-btn" @click="cancelBooking" :disabled="disableCancelBtn">
-            <span>Cancel Booking</span>
+            <span>{{ $t('bookingFlow.cancelBooking') }}</span>
         </button>
-        <a @click="this.$router.push('/bookings')" class="btn-link">I want to keep this booking</a>
+        <a @click="this.$router.push('/bookings')" class="btn-link">{{ $t('bookingFlow.keepBooking') }}</a>
       </div>
     </div>
 
@@ -199,7 +203,7 @@ export default {
             }}
           </div>
           <div v-for="room in getBookingInformation.rooms" :key="room.roomId">
-            <div style="font-weight: 500;">Booked rooms:</div>
+            <div style="font-weight: 500;">{{ $t('bookingFlow.bookedRooms') }}</div>
             <span>{{ room.roomName }} x {{ room.quantity }}</span>
           </div>
         </div>
@@ -207,18 +211,16 @@ export default {
       <div class="line-break"></div>
       <div class="pricing">
         <p>
-          <span>Your booking:</span>
+          <span>{{ $t('bookingFlow.yourBooking') }}</span>
           <span>USD {{ parseInt(getBookingInformation.totalPrice).toLocaleString('en-US') }}</span>
         </p>
-        <p><span>Cancellation fee:</span><span>USD 0</span></p>
-        <p><strong>You'll be charged:</strong><span>USD 0</span></p>
+        <p><span>{{ $t('bookingFlow.cancellationFee') }}</span><span>USD 0</span></p>
+        <p><strong>{{ $t('bookingFlow.youWillBeCharged') }}</strong><span>USD 0</span></p>
       </div>
       <div class="cancellation-policy">
-        <h3>Cancellation policy</h3>
+        <h3>{{ $t('bookingFlow.cancellationPolicy') }}</h3>
         <p>
-          You can cancel for free until 2 days before arrival. If you cancel within 2 days of
-          arrival, the cancellation fee will be the cost of the first night. If you don't show up,
-          the no-show fee will be the same as the cancellation fee.
+          {{ $t('bookingFlow.cancellationPolicyText') }}
         </p>
         <button
           type="button"
@@ -226,23 +228,22 @@ export default {
           :aria-expanded="showPolicy ? 'true' : 'false'"
           @click="togglePolicy"
         >
-          {{ showPolicy ? 'Hide cancellation policy' : 'View cancellation policy' }}
+          {{ showPolicy ? $t('bookingFlow.hidePolicy') : $t('bookingFlow.viewPolicy') }}
         </button>
         <div v-if="showPolicy" class="policy-details">
           <p v-if="policyRooms.length === 0" class="policy-empty">
-            The full cancellation policy is shown on your booking confirmation.
+            {{ $t('bookingFlow.policyEmpty') }}
           </p>
           <ul v-else>
             <li v-for="rule in policyRooms" :key="rule.roomId">
-              <strong>{{ rule.isRefundable ? 'Refundable' : 'Non-refundable' }}</strong>
+              <strong>{{ rule.isRefundable ? $t('bookingFlow.refundable') : $t('bookingFlow.nonRefundable') }}</strong>
               <span v-if="rule.freeCancellationUntilHoursBeforeCheckin">
-                — free cancellation until
-                {{ rule.freeCancellationUntilHoursBeforeCheckin }}h before check-in
+                {{ $t('bookingFlow.freeCancellationUntil', { hours: rule.freeCancellationUntilHoursBeforeCheckin }) }}
               </span>
               <span v-if="rule.refundPercentBeforeDeadline">
-                ({{ rule.refundPercentBeforeDeadline }}% refund before the deadline<span
+                {{ $t('bookingFlow.refundBeforeDeadline', { percent: rule.refundPercentBeforeDeadline }) }}<span
                   v-if="rule.refundPercentAfterDeadline"
-                  >, {{ rule.refundPercentAfterDeadline }}% after</span
+                  >{{ $t('bookingFlow.refundAfterDeadline', { percent: rule.refundPercentAfterDeadline }) }}</span
                 >)
               </span>
             </li>

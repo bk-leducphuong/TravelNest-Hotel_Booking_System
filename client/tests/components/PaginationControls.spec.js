@@ -1,6 +1,21 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { createI18n } from 'vue-i18n'
 import PaginationControls from '@/components/common/PaginationControls.vue'
+
+// The component renders its labels/summary through vue-i18n. Feed it the same
+// English strings so the existing assertions keep checking real output.
+const i18n = createI18n({
+  locale: 'en',
+  messages: {
+    en: {
+      'misc.pagination.ariaLabel': 'Pagination',
+      'misc.pagination.previous': 'Previous',
+      'misc.pagination.next': 'Next',
+      'misc.pagination.summary': 'Showing {start}-{end} of {total}',
+    },
+  },
+})
 
 const mountControls = (props = {}) =>
   mount(PaginationControls, {
@@ -11,6 +26,7 @@ const mountControls = (props = {}) =>
       limit: 20,
       ...props,
     },
+    global: { plugins: [i18n] },
   })
 
 const buttons = (wrapper) => wrapper.findAll('.pagination-button')

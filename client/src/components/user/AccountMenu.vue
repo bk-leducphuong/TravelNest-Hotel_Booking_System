@@ -13,32 +13,32 @@ import { getImageUrl } from '@/utils/images'
 
 const menuItems = [
   {
-    label: 'Manage account',
+    labelKey: 'account.menu.manageAccount',
     route: '/account-settings',
     icon: House,
   },
   {
-    label: 'Bookings & Trips',
+    labelKey: 'account.menu.bookings',
     route: '/bookings',
     icon: Document,
   },
   {
-    label: 'Genius loyalty programme',
+    labelKey: 'account.menu.genius',
     disabled: true,
     icon: Star,
   },
   {
-    label: 'Rewards & Wallet',
+    labelKey: 'account.menu.rewards',
     disabled: true,
     icon: CreditCard,
   },
   {
-    label: 'Reviews',
+    labelKey: 'account.menu.reviews',
     route: '/reviews',
     icon: ChatDotRound,
   },
   {
-    label: 'Saved',
+    labelKey: 'account.menu.saved',
     route: '/saved-hotels',
     icon: Star,
   },
@@ -58,7 +58,7 @@ export default {
     ...mapGetters('user', ['getUserInformation']),
     displayName() {
       const user = this.getUserInformation || {}
-      return user.full_name || user.username || 'User Name'
+      return user.full_name || user.username || this.$t('account.menu.userNameFallback')
     },
     displayAvatar() {
       return getImageUrl(this.getUserInformation?.profile_picture_url)
@@ -96,7 +96,7 @@ export default {
 
       <span class="identity">
         <span class="name">{{ displayName }}</span>
-        <span class="tier">Genius Level ?</span>
+        <span class="tier">{{ $t('account.menu.geniusLevel') }}</span>
       </span>
 
       <el-icon class="trigger-icon"><ArrowDown /></el-icon>
@@ -106,20 +106,20 @@ export default {
       <el-dropdown-menu class="account-dropdown">
         <el-dropdown-item
           v-for="item in menuItems"
-          :key="item.label"
+          :key="item.labelKey"
           :command="item.route"
           :disabled="item.disabled"
         >
           <div class="menu-item">
             <el-icon class="menu-icon"><component :is="item.icon" /></el-icon>
-            <span>{{ item.label }}</span>
+            <span>{{ $t(item.labelKey) }}</span>
           </div>
         </el-dropdown-item>
 
         <el-dropdown-item divided command="logout">
           <div class="menu-item">
             <el-icon class="menu-icon"><SwitchButton /></el-icon>
-            <span>Sign out</span>
+            <span>{{ $t('account.menu.signOut') }}</span>
           </div>
         </el-dropdown-item>
       </el-dropdown-menu>

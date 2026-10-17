@@ -23,12 +23,12 @@ export default {
   data() {
     return {
       reviewCriteria: [
-        { name: 'Cleanliness', value: null },
-        { name: 'Staff', value: null },
-        { name: 'Facilities', value: null },
-        { name: 'Comfort', value: null },
-        { name: 'Location', value: null },
-        { name: 'Value for money', value: null }
+        { name: 'Cleanliness', labelKey: 'reviewsPage.criteria.cleanliness', value: null },
+        { name: 'Staff', labelKey: 'reviewsPage.criteria.staff', value: null },
+        { name: 'Facilities', labelKey: 'reviewsPage.criteria.facilities', value: null },
+        { name: 'Comfort', labelKey: 'reviewsPage.criteria.comfort', value: null },
+        { name: 'Location', labelKey: 'reviewsPage.criteria.location', value: null },
+        { name: 'Value for money', labelKey: 'reviewsPage.criteria.valueForMoney', value: null }
       ],
       overallRating: null,
       comment: null,
@@ -51,7 +51,7 @@ export default {
           hotelId: this.hotelId
         })
         if (!response?.data?.isValid) {
-          this.toast.error('This booking is not eligible for review')
+          this.toast.error(this.$t('reviewsPage.notEligible'))
           this.$router.push('/reviews')
         }
       } catch (error) {
@@ -66,7 +66,7 @@ export default {
           hotelId: this.hotelId
         })
         if (response?.data?.exists) {
-          this.toast.info('You have already reviewed this stay')
+          this.toast.info(this.$t('reviewsPage.alreadyReviewed'))
           this.$router.push('/reviews')
         }
       } catch (error) {
@@ -92,7 +92,7 @@ export default {
     },
     async postReview() {
       if (!this.checkValidReview()) {
-        this.toast.error('Please fill in all the required fields')
+        this.toast.error(this.$t('reviewsPage.fillRequired'))
         return
       }
 
@@ -105,7 +105,7 @@ export default {
           comment: this.comment
         })
 
-        this.toast.success('Review posted successfully')
+        this.toast.success(this.$t('reviewsPage.postSuccess'))
         this.$router.push('/reviews')
       } catch (error) {
         errorHandler(error)
@@ -125,14 +125,14 @@ export default {
   <TheHeader :isSearchOpen="false" />
   <div class="review-container">
     <div class="review-section">
-      <h3>Review {{ this.$route.query.hn }}</h3>
-      <p>Let me know how your stay was.</p>
+      <h3>{{ $t('reviewsPage.reviewTitle', { hotel: this.$route.query.hn }) }}</h3>
+      <p>{{ $t('reviewsPage.reviewSubtitle') }}</p>
     </div>
     <!-- Section 1: Service Rating -->
     <div class="review-section">
-      <h3>Rate Our Services (optional)</h3>
+      <h3>{{ $t('reviewsPage.rateServices') }}</h3>
       <div v-for="criteria in reviewCriteria" :key="criteria.name">
-        <label>{{ criteria.name }}</label>
+        <label>{{ $t(criteria.labelKey) }}</label>
         <div class="rating-group faces">
           <input type="radio" v-model="criteria.value" value="1" :id="`${criteria.name}-1`" />
           <label :for="`${criteria.name}-1`" :class="{ selected: criteria.value == 1 }">😡</label>
@@ -150,8 +150,8 @@ export default {
 
     <!-- Section 2: Overall Rating -->
     <div class="review-section">
-      <h3>Overall Rating</h3>
-      <p>How was your stay experienced at this hotel?</p>
+      <h3>{{ $t('reviewsPage.overallRating') }}</h3>
+      <p>{{ $t('reviewsPage.overallQuestion') }}</p>
       <div class="rating-group faces">
         <input type="radio" v-model="overallRating" value="1" :id="`overall-1`" />
         <label :for="`overall-1`" :class="{ selected: overallRating == 1 }">😡</label>
@@ -168,17 +168,17 @@ export default {
 
     <!-- Section 3: Comments -->
     <div class="review-section">
-      <h3>Write Your Comments</h3>
-      <p>Please write your reviews about your feeling during staying at this hotel.</p>
-      <textarea name="comments" id="comments" v-model="comment" placeholder="Write your feedback here..."></textarea>
+      <h3>{{ $t('reviewsPage.writeComments') }}</h3>
+      <p>{{ $t('reviewsPage.commentsHint') }}</p>
+      <textarea name="comments" id="comments" v-model="comment" :placeholder="$t('reviewsPage.feedbackPlaceholder')"></textarea>
       <div style="display: flex; align-items: center; gap: 5px">
         <input type="checkbox" name="booking_code" value="bc" style="width: 18px; height: 18px" />
-        <span for="booking_code">Post this review as a anonymous</span>
+        <span for="booking_code">{{ $t('reviewsPage.anonymous') }}</span>
       </div>
     </div>
 
     <!-- Submit Button -->
-    <button type="submit" @click="postReview">Submit Review</button>
+    <button type="submit" @click="postReview">{{ $t('reviewsPage.submitReview') }}</button>
   </div>
 </template>
 <style scoped>

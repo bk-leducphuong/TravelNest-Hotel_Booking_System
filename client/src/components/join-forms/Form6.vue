@@ -101,7 +101,7 @@ export default {
     // upload image
     async uploadImage(hotel_id, room_id) {
       if (this.getUploadImage.imageFiles.length < 5) {
-        throw new Error('Bạn chưa chọn đủ số lượng ảnh!')
+        throw new Error(this.$t('join.form.notEnoughImages'))
       }
 
       const formData = new FormData()
@@ -158,7 +158,7 @@ export default {
 
     async finishJoinForm() {
       if (!this.isFormComplete()) {
-        this.toast.error('Pls fill all the fields')
+        this.toast.error(this.$t('join.form.fillAllFields'))
         return
       }
 
@@ -167,7 +167,7 @@ export default {
         const data = response?.data
 
         if (!data?.hotel_id) {
-          this.toast.error('Error submitting join form')
+          this.toast.error(this.$t('join.form.submitError'))
           return
         }
 
@@ -176,13 +176,13 @@ export default {
         // navigating away.
         await this.uploadImage(data.hotel_id, data.room_id)
 
-        this.toast.success('Join form submitted successfully')
+        this.toast.success(this.$t('join.form.submitSuccess'))
         goToAdminApp('/')
       } catch (error) {
         const message =
           error?.response?.data?.error?.message ||
           error?.message ||
-          'Error submitting join form'
+          this.$t('join.form.submitError')
         this.toast.error(message)
         console.log(error)
       }
@@ -198,48 +198,46 @@ export default {
         <div class="stepss step-1">
           <i class="fa-solid fa-circle-check"></i>
           <div>
-            <span>Bước 1</span>
+            <span>{{ $t('join.form.stepLabel', { n: 1 }) }}</span>
             <br />
             <span>
-              <h3>Thông tin chỗ nghỉ</h3>
+              <h3>{{ $t('join.form.step1Title') }}</h3>
             </span>
             <span
-              >Các thông tin cơ bản. Nhập tên chỗ nghỉ, địa chỉ, tiện nghi và nhiều hơn nữa.</span
+              >{{ $t('join.form.step1Desc') }}</span
             >
           </div>
-          <span>Hoàn thành</span>
+          <span>{{ $t('join.form.completed') }}</span>
         </div>
         <hr />
         <div class="stepss step-2">
           <i class="fa-solid fa-bed"></i>
           <div>
-            <span>Bước 2</span>
+            <span>{{ $t('join.form.stepLabel', { n: 2 }) }}</span>
             <br />
             <span>
-              <h3>Phòng</h3>
+              <h3>{{ $t('join.form.step2Title') }}</h3>
             </span>
             <span
-              >Hãy cho chúng tôi biết về phòng đầu tiên của Quý vị. Sau khi đã thiết lập xong một
-              căn, Quý vị có thể thêm nhiều căn nữa.</span
+              >{{ $t('join.form.step2Desc') }}</span
             >
           </div>
-          <button id="addRoom" @click="openAddRoomPopup">Thêm phòng</button>
+          <button id="addRoom" @click="openAddRoomPopup">{{ $t('join.form.addRoom') }}</button>
         </div>
         <hr />
         <div class="stepss step-3">
           <i class="fa-solid fa-image"></i>
           <div>
-            <span>Bước 3</span>
+            <span>{{ $t('join.form.stepLabel', { n: 3 }) }}</span>
             <br />
             <span>
-              <h3>Ảnh</h3>
+              <h3>{{ $t('join.form.step3Title') }}</h3>
             </span>
             <span
-              >Chia sẻ một số hình ảnh chỗ nghỉ của Quý vị để khách biết mình nên có những kỳ vọng
-              gì.</span
+              >{{ $t('join.form.step3Desc') }}</span
             >
           </div>
-          <button id="conkac" @click="openAddImagePopup()">Thêm ảnh</button>
+          <button id="conkac" @click="openAddImagePopup()">{{ $t('join.form.addImages') }}</button>
         </div>
         <hr />
         <!-- <div class="stepss step-4">
@@ -256,7 +254,7 @@ export default {
         </div> -->
         <br />
         <div class="form-button-container">
-          <button type="button" class="previous" @click="$emit('previous')">Quay lại</button>
+          <button type="button" class="previous" @click="$emit('previous')">{{ $t('join.form.backButton') }}</button>
           <button
             style="
               font-weight: bold;
@@ -269,7 +267,7 @@ export default {
             class="next"
             @click="finishJoinForm"
           >
-            Lưu thông tin
+            {{ $t('join.form.saveInfo') }}
           </button>
         </div>
       </div>
@@ -277,16 +275,16 @@ export default {
       <!-- add image popup -->
       <div class="step-image" v-if="isAddImageOpened">
         <form action="">
-          <h3>Khách sạn của Quý vị trông ra sao</h3>
+          <h3>{{ $t('join.form.imageSectionTitle') }}</h3>
           <p>
-            <strong>Đăng tải ít nhất 5 ảnh.</strong> Càng đăng nhiều, Quý vị càng có cơ hội nhận đặt
-            phòng. Quý vị có thể thêm ảnh sau.
+            <strong>{{ $t('join.form.uploadMinImagesStrong') }}</strong>
+            {{ $t('join.form.uploadMinImagesRest') }}
           </p>
           <div class="upload-container" id="dropZone">
             <i class="fa-regular fa-image"></i>
-            <h3>Kéo và thả hoặc</h3>
+            <h3>{{ $t('join.form.dragDrop') }}</h3>
             <label class="upload-button" for="fileInput">
-              <span>Đăng tải ảnh</span>
+              <span>{{ $t('join.form.uploadImage') }}</span>
             </label>
             <input
               type="file"
@@ -295,7 +293,7 @@ export default {
               multiple
               @change="handleFiles"
             />
-            <p>jpg/jpeg hoặc png, tối đa 10MB mỗi file</p>
+            <p>{{ $t('join.form.uploadHint') }}</p>
           </div>
         </form>
         <button class="back1" @click="closeAddImagePopup">
@@ -307,7 +305,7 @@ export default {
             v-for="(preview, index) in getUploadImage.imagePreviews"
             :key="index"
             :src="preview"
-            alt="Image preview"
+            :alt="$t('join.form.imagePreviewAlt')"
             class="preview-image"
           />
           <br />
@@ -317,20 +315,20 @@ export default {
 
       <!-- add room popup -->
       <div class="container1" v-if="isAddRoomOpened">
-        <h2>Chi tiết phòng</h2>
+        <h2>{{ $t('join.form.roomDetailsTitle') }}</h2>
 
         <div class="section">
-          <label>Đây là loại chỗ nghỉ gì?</label>
+          <label>{{ $t('join.form.roomTypeQuestion') }}</label>
           <select v-model="getJoinFormData.roomDetails.roomType">
-            <option value="Phòng giường đôi">Phòng giường đôi</option>
-            <option value="Phòng giường đơn">Phòng giường đơn</option>
-            <option value="Phòng gia đình">Phòng gia đình</option>
+            <option value="Phòng giường đôi">{{ $t('join.form.roomTypeDouble') }}</option>
+            <option value="Phòng giường đơn">{{ $t('join.form.roomTypeSingle') }}</option>
+            <option value="Phòng gia đình">{{ $t('join.form.roomTypeFamily') }}</option>
             <!-- Thêm các tùy chọn khác nếu cần -->
           </select>
         </div>
 
         <div class="section">
-          <label>Quý vị có bao nhiêu phòng loại này?</label>
+          <label>{{ $t('join.form.numberOfRoomsQuestion') }}</label>
           <input
             type="number"
             value="1"
@@ -340,11 +338,11 @@ export default {
         </div>
 
         <div class="section">
-          <label>Có loại giường nào trong phòng này?</label>
+          <label>{{ $t('join.form.bedTypesQuestion') }}</label>
           <div class="bed-option" v-for="(bed, index) in getJoinFormData.bedOptions" :key="index">
             <span
-              ><i class="fa-solid fa-bed"></i>{{ bed.name }}<br /><small
-                >Rộng {{ bed.width }} cm</small
+              ><i class="fa-solid fa-bed"></i>{{ $t(bed.name) }}<br /><small
+                >{{ $t('join.form.bedWidth', { width: bed.width }) }}</small
               ></span
             >
             <div class="counter">
@@ -354,12 +352,12 @@ export default {
             </div>
           </div>
           <div class="add-option">
-            <i class="fa-solid fa-arrow-down"></i> Thêm các lựa chọn giường
+            <i class="fa-solid fa-arrow-down"></i> {{ $t('join.form.addBedOptions') }}
           </div>
-          <div class="erase-option"><i class="fa-solid fa-arrow-up"></i> Thu gọn các lựa chọn</div>
+          <div class="erase-option"><i class="fa-solid fa-arrow-up"></i> {{ $t('join.form.collapseBedOptions') }}</div>
           <div class="bed-option erase">
             <span
-              ><i class="fa-solid fa-bed"></i> Giường tầng<br /><small>Nhiều kích cỡ</small></span
+              ><i class="fa-solid fa-bed"></i> {{ $t('join.form.bunkBed') }}<br /><small>{{ $t('join.form.multipleSizes') }}</small></span
             >
             <div class="counter">
               <button onclick="decrement(this)">-</button>
@@ -369,7 +367,7 @@ export default {
           </div>
           <div class="bed-option erase">
             <span
-              ><i class="fa-solid fa-couch"></i> Giường sofa<br /><small>Nhiều kích cỡ</small></span
+              ><i class="fa-solid fa-couch"></i> {{ $t('join.form.sofaBed') }}<br /><small>{{ $t('join.form.multipleSizes') }}</small></span
             >
             <div class="counter">
               <button onclick="decrement(this)">-</button>
@@ -379,7 +377,7 @@ export default {
           </div>
           <div class="bed-option erase">
             <span
-              ><i class="fa-solid fa-couch"></i> Nệm futon<br /><small>Nhiều kích cỡ</small></span
+              ><i class="fa-solid fa-couch"></i> {{ $t('join.form.futonMattress') }}<br /><small>{{ $t('join.form.multipleSizes') }}</small></span
             >
             <div class="counter">
               <button onclick="decrement(this)">-</button>
@@ -389,7 +387,7 @@ export default {
           </div>
           <br />
           <div>
-            <label>Có bao nhiêu khách có thể nghỉ ở phòng này</label>
+            <label>{{ $t('join.form.numberOfGuestsQuestion') }}</label>
             <div class="number-guest">
               <input type="number" min="1" v-model="getJoinFormData.roomDetails.numberOfGuests" />
             </div>
@@ -398,7 +396,7 @@ export default {
               style="margin-top: 10px; padding: 10px 20px"
               @click="closeAddRoomPopup"
             >
-              Lưu
+              {{ $t('join.form.save') }}
             </button>
           </div>
         </div>
@@ -433,7 +431,7 @@ export default {
               </div>
               <div class="form-row">
                 <label for="card-name">Cardholder Name</label>
-                <input type="text" id="card-name" placeholder="John Doe" v-model="getJoinFormData.onlinePaymentMethodInfor.cardHolderName"/>
+                <input type="text" id="card-name" :placeholder="$t('join.form.cardHolderPlaceholder')" v-model="getJoinFormData.onlinePaymentMethodInfor.cardHolderName"/>
               </div>
               <div class="card-details">
                 <div class="form-row">

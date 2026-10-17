@@ -23,11 +23,10 @@
   <TheHeader :isSearchOpen="false" />
   <main class="account-settings-home">
     <section class="hero">
-      <p class="eyebrow">Account settings</p>
-      <h1>Manage your account</h1>
+      <p class="eyebrow">{{ $t('account.home.eyebrow') }}</p>
+      <h1>{{ $t('account.home.title') }}</h1>
       <p class="hero-copy">
-        Use the new settings area to update supported profile and security details without relying
-        on legacy account endpoints.
+        {{ $t('account.home.description') }}
       </p>
     </section>
 
@@ -40,14 +39,14 @@
         @click="openSection(section.slug)"
       >
         <div class="section-card-header">
-          <h2>{{ section.title }}</h2>
+          <h2>{{ $t(section.titleKey) }}</h2>
           <span class="status-pill" :class="{ 'status-pill-muted': !section.available }">
-            {{ section.available ? 'Available' : 'Coming soon' }}
+            {{ section.available ? $t('account.status.available') : $t('account.status.comingSoon') }}
           </span>
         </div>
-        <p>{{ section.summary }}</p>
+        <p>{{ $t(section.summaryKey) }}</p>
         <button type="button" class="section-link">
-          {{ section.cta }}
+          {{ $t(section.ctaKey) }}
         </button>
       </article>
     </section>

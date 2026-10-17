@@ -37,43 +37,41 @@ export default {
 <template>
   <Header :isSearchOpen="false" />
   <div class="confirmation-container" v-if="getBookingInformation.status === 'confirmed'">
-    <h1 class="greeting">Thanks, {{ getUserInformation.username}}!</h1>
-    <h2 class="confirmation-title">Your booking in {{ getBookingInformation.hotel.name }} is confirmed.</h2>
+    <h1 class="greeting">{{ $t('bookingFlow.thanksUser', { name: getUserInformation.username }) }}</h1>
+    <h2 class="confirmation-title">{{ $t('bookingFlow.bookingConfirmedIn', { hotel: getBookingInformation.hotel.name }) }}</h2>
     <ul class="details-list">
       <li>
-        <span class="icon">✔</span> We sent your confirmation email to
-        <strong>{{ getUserInformation.email }}</strong> <a href="#" class="edit-link">Edit</a>
+        <span class="icon">✔</span> {{ $t('bookingFlow.confirmationEmailSent') }}
+        <strong>{{ getUserInformation.email }}</strong> <a href="#" class="edit-link">{{ $t('bookingFlow.edit') }}</a>
       </li>
       <li>
-        <span class="icon">✔</span> <a href="#" class="highlight-link">Get a better room </a> for
-        just PKR 1,721.26
+        <span class="icon">✔</span> <a href="#" class="highlight-link">{{ $t('bookingFlow.getBetterRoom') }} </a> {{ $t('bookingFlow.getBetterRoomPrice') }}
       </li>
       <li>
-        <span class="icon">✔</span> Your <strong>payment</strong> will be handled by
-        <strong>Chalet Islamabad</strong>. The <strong>Price</strong> section below has more
-        details.
+        <span class="icon">✔</span> {{ $t('bookingFlow.paymentHandledPrefix') }} <strong>{{ $t('bookingFlow.paymentWord') }}</strong> {{ $t('bookingFlow.paymentHandledMid') }}
+        <strong>Chalet Islamabad</strong>. {{ $t('bookingFlow.priceSectionPrefix') }} <strong>{{ $t('bookingFlow.priceWord') }}</strong> {{ $t('bookingFlow.priceSectionSuffix') }}
       </li>
       <li>
-        <span class="icon">✔</span> Get paperless confirmation when you
-        <a href="#" class="highlight-link">download the app</a>
+        <span class="icon">✔</span> {{ $t('bookingFlow.paperlessPrefix') }}
+        <a href="#" class="highlight-link">{{ $t('bookingFlow.downloadApp') }}</a>
       </li>
       <li>
-        <span class="icon">✔</span> <strong>PKR 1,898 Credits</strong> will be added to your
-        <a href="#" class="highlight-link">Wallet</a> 14 days after your stay.
+        <span class="icon">✔</span> <strong>{{ $t('bookingFlow.creditsAmount') }}</strong> {{ $t('bookingFlow.creditsAddedTo') }}
+        <a href="#" class="highlight-link">{{ $t('bookingFlow.wallet') }}</a> {{ $t('bookingFlow.creditsTail') }}
       </li>
     </ul>
     <div class="button-container">
-      <button class="button print-btn"><i class="fa-solid fa-print"></i>  Print confirmation</button>
-      <button class="button save-btn"><i class="fa-solid fa-floppy-disk"></i>  Save confirmation to phone</button>
+      <button class="button print-btn"><i class="fa-solid fa-print"></i>  {{ $t('bookingFlow.printConfirmation') }}</button>
+      <button class="button save-btn"><i class="fa-solid fa-floppy-disk"></i>  {{ $t('bookingFlow.saveConfirmation') }}</button>
     </div>
   </div>
 
   <div class="confirmation-container" v-if="getBookingInformation.status != 'confirmed'">
-    <h1 class="greeting">Thank you for using our service!</h1>
-    <h2 class="confirmation-title">Your booking in {{ getBookingInformation.hotel?.name }} is {{ statusLabel(getBookingInformation.status) }}.</h2>
+    <h1 class="greeting">{{ $t('bookingFlow.thankYouService') }}</h1>
+    <h2 class="confirmation-title">{{ $t('bookingFlow.bookingStatusIn', { hotel: getBookingInformation.hotel?.name, status: statusLabel(getBookingInformation.status) }) }}</h2>
   </div>
 
-  <h1 class="section-title">Check Your Details</h1>
+  <h1 class="section-title">{{ $t('bookingFlow.checkYourDetailsTitle') }}</h1>
   <div class="details-container">
     <!-- Left Section -->
     <div class="details-left">
@@ -86,34 +84,34 @@ export default {
             <span class="badge">Genius</span>
           </div>
         </div>
-        <p><strong>Booking code:</strong> {{ getBookingInformation.booking_code }}</p>
-        <p><strong>PIN Code:</strong> 4338 <span class="lock-icon">🔒</span></p>
-        <h3 class="subheading">Booking Details</h3>
+        <p><strong>{{ $t('bookingFlow.bookingCode') }}</strong> {{ getBookingInformation.booking_code }}</p>
+        <p><strong>{{ $t('bookingFlow.pinCode') }}</strong> 4338 <span class="lock-icon">🔒</span></p>
+        <h3 class="subheading">{{ $t('bookingFlow.bookingDetailsTitle') }}</h3>
         <p v-for="room in getBookingInformation.rooms" :key="room.roomId || room.roomName">{{ room.roomName }} x {{ room.quantity }}</p>
-        <p><strong>You booked for:</strong> {{ getBookingInformation.numberOfGuests }} adult</p>
-        <p><strong>Check-in:</strong> {{ new Date(getBookingInformation.checkInDate).toString().split(' ').slice(0, 4).join(' ') }} (12:00 PM - 12:00 AM)</p>
-        <p><strong>Check-out:</strong>  {{ new Date(getBookingInformation.checkOutDate).toString().split(' ').slice(0, 4).join(' ') }}  (12:00 PM - 1:00 PM)</p>
+        <p><strong>{{ $t('bookingFlow.youBookedForAdults', { count: getBookingInformation.numberOfGuests }) }}</strong></p>
+        <p><strong>{{ $t('bookingFlow.checkInLabel') }}</strong> {{ new Date(getBookingInformation.checkInDate).toString().split(' ').slice(0, 4).join(' ') }} (12:00 PM - 12:00 AM)</p>
+        <p><strong>{{ $t('bookingFlow.checkOutLabel') }}</strong>  {{ new Date(getBookingInformation.checkOutDate).toString().split(' ').slice(0, 4).join(' ') }}  (12:00 PM - 1:00 PM)</p>
       </div>
     </div>
 
     <!-- Right Section -->
     <div class="details-right" v-if="isCancellable">
-      <h2 class="subheading">Is everything correct?</h2>
+      <h2 class="subheading">{{ $t('bookingFlow.isEverythingCorrect') }}</h2>
       <p class="note">
-        You can always view or change your booking online – no registration required.
+        {{ $t('bookingFlow.changeBookingNote') }}
       </p>
       <ul class="action-list">
-        <li><RouterLink :to="{path: `/bookings/${bookingCode}/cancel`}" class="action-link"><i class="fa-solid fa-xmark" style="color: #ea1010;"></i> Cancel your booking</RouterLink></li>
-        <li><RouterLink to="/" class="action-link"><i class="fa-solid fa-wrench" style="color: #005eff;"></i> Book another room</RouterLink></li>
+        <li><RouterLink :to="{path: `/bookings/${bookingCode}/cancel`}" class="action-link"><i class="fa-solid fa-xmark" style="color: #ea1010;"></i> {{ $t('bookingFlow.cancelYourBooking') }}</RouterLink></li>
+        <li><RouterLink to="/" class="action-link"><i class="fa-solid fa-wrench" style="color: #005eff;"></i> {{ $t('bookingFlow.bookAnotherRoom') }}</RouterLink></li>
       </ul>
     </div>
     <div class="details-right" v-if="!isCancellable">
-      <h2 class="subheading">What happens next?</h2>
+      <h2 class="subheading">{{ $t('bookingFlow.whatHappensNext') }}</h2>
       <p class="note">
-        This booking can no longer be changed. You can start a new search any time.
+        {{ $t('bookingFlow.bookingLockedNote') }}
       </p>
       <ul class="action-list">
-        <li><RouterLink to="/" class="action-link"><i class="fa-solid fa-wrench" style="color: #005eff;"></i> Book another room</RouterLink></li>
+        <li><RouterLink to="/" class="action-link"><i class="fa-solid fa-wrench" style="color: #005eff;"></i> {{ $t('bookingFlow.bookAnotherRoom') }}</RouterLink></li>
       </ul>
     </div>
   </div>

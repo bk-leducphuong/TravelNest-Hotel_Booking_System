@@ -32,10 +32,10 @@ export default {
             withCredentials: true
           }
         )
-        this.toast.success('Review posted successfully!')
+        this.toast.success(this.$t('reviewsPage.form.postSuccess'))
         this.$emit('close-review-form')
       } catch (error) {
-        this.toast.error('Error posting review!')
+        this.toast.error(this.$t('reviewsPage.form.postError'))
       }
     }
   }
@@ -44,39 +44,39 @@ export default {
 <template>
   <div class="popup">
     <div class="popup-content">
-      <h2>Write a Review</h2>
+      <h2>{{ $t('reviewsPage.form.title') }}</h2>
       <form @submit.prevent="postReview">
-        <label for="rating">Rating:</label>
+        <label for="rating">{{ $t('reviewsPage.form.ratingLabel') }}</label>
         <select id="rating" name="rating" v-model="rating">
-          <option value="5">5 - Excellent</option>
-          <option value="4">4 - Very Good</option>
-          <option value="3">3 - Average</option>
-          <option value="2">2 - Below Average</option>
-          <option value="1">1 - Poor</option>
+          <option value="5">{{ $t('reviewsPage.form.rating5') }}</option>
+          <option value="4">{{ $t('reviewsPage.form.rating4') }}</option>
+          <option value="3">{{ $t('reviewsPage.form.rating3') }}</option>
+          <option value="2">{{ $t('reviewsPage.form.rating2') }}</option>
+          <option value="1">{{ $t('reviewsPage.form.rating1') }}</option>
         </select>
 
-        <label for="title">Review Title:</label>
+        <label for="title">{{ $t('reviewsPage.form.titleLabel') }}</label>
         <input
           type="text"
           id="title"
           name="title"
-          placeholder="Enter a title for your review"
+          :placeholder="$t('reviewsPage.form.titlePlaceholder')"
           required
         />
 
-        <label for="review">Review:</label>
+        <label for="review">{{ $t('reviewsPage.form.reviewLabel') }}</label>
         <textarea
           id="review"
           name="review"
           rows="5"
           v-model="review"
-          placeholder="Share your thoughts about your stay"
+          :placeholder="$t('reviewsPage.form.reviewPlaceholder')"
           required
         ></textarea>
 
         <div class="buttons">
-          <button type="button" class="close-btn" @click="$emit('close-review-form')">Close</button>
-          <button type="submit" class="submit-btn">Submit Review</button>
+          <button type="button" class="close-btn" @click="$emit('close-review-form')">{{ $t('reviewsPage.form.close') }}</button>
+          <button type="submit" class="submit-btn">{{ $t('reviewsPage.form.submit') }}</button>
         </div>
       </form>
     </div>

@@ -43,6 +43,7 @@ const mountView = () =>
     global: {
       mocks: {
         $store: { getters: { 'user/getUserInformation': { full_name: 'Ada Lovelace' } } },
+        $t: (key) => key,
       },
       stubs: {
         // Avoid booting Stripe.js in jsdom.

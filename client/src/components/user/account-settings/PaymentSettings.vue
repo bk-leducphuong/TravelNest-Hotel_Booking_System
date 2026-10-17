@@ -56,7 +56,7 @@
           const response = await PaymentService.listPaymentMethods();
           this.methods = response.data || [];
         } catch (error) {
-          this.toast.error(this.getErrorMessage(error, 'Failed to load payment methods'));
+          this.toast.error(this.getErrorMessage(error, this.$t('account.payment.errors.load')));
         } finally {
           this.isLoading = false;
         }
@@ -69,7 +69,7 @@
       },
       async handleCardSaved() {
         this.isAddModalOpen = false;
-        this.toast.success('Card saved');
+        this.toast.success(this.$t('account.payment.toasts.cardSaved'));
         await this.loadPaymentMethods();
       },
       requestRemoval(method) {
@@ -89,10 +89,10 @@
         try {
           await PaymentService.removePaymentMethod(id);
           this.pendingRemoval = null;
-          this.toast.success('Card removed');
+          this.toast.success(this.$t('account.payment.toasts.cardRemoved'));
           await this.loadPaymentMethods();
         } catch (error) {
-          this.toast.error(this.getErrorMessage(error, 'Unable to remove this card'));
+          this.toast.error(this.getErrorMessage(error, this.$t('account.payment.errors.remove')));
         } finally {
           this.removingId = '';
         }
@@ -102,10 +102,10 @@
 
         try {
           await PaymentService.setDefaultPaymentMethod(paymentMethodId);
-          this.toast.success('Default card updated');
+          this.toast.success(this.$t('account.payment.toasts.defaultUpdated'));
           await this.loadPaymentMethods();
         } catch (error) {
-          this.toast.error(this.getErrorMessage(error, 'Unable to set the default card'));
+          this.toast.error(this.getErrorMessage(error, this.$t('account.payment.errors.setDefault')));
         } finally {
           this.settingDefaultId = '';
         }
@@ -118,19 +118,19 @@
   <section class="settings-panel">
     <header class="panel-header">
       <div>
-        <h1>Payment methods</h1>
-        <p>Manage the cards saved to your account and choose which one is used by default.</p>
+        <h1>{{ $t('account.payment.title') }}</h1>
+        <p>{{ $t('account.payment.description') }}</p>
       </div>
       <button type="button" class="primary-button" :disabled="isBusy" @click="openAddModal">
-        Add card
+        {{ $t('account.payment.addCard') }}
       </button>
     </header>
 
-    <div v-if="isLoading" class="empty-state">Loading your saved cards...</div>
+    <div v-if="isLoading" class="empty-state">{{ $t('account.payment.loading') }}</div>
 
     <article v-else-if="methods.length === 0" class="detail-card muted-card">
-      <h2>Saved payment methods</h2>
-      <p>You have no saved cards yet. Add a card to check out faster next time.</p>
+      <h2>{{ $t('account.payment.savedTitle') }}</h2>
+      <p>{{ $t('account.payment.emptyState') }}</p>
     </article>
 
     <SavedCardList
@@ -150,9 +150,11 @@
 
     <ConfirmDialog
       v-if="pendingRemoval"
-      title="Remove this card?"
-      :message="`This will remove the card ending in ${pendingRemoval.last4 || '••••'} from your account.`"
-      confirm-label="Remove card"
+      :title="$t('account.payment.confirmRemove.title')"
+      :message="
+        $t('account.payment.confirmRemove.message', { last4: pendingRemoval.last4 || '••••' })
+      "
+      :confirm-label="$t('account.payment.confirmRemove.confirmLabel')"
       :busy="Boolean(removingId)"
       @cancel="cancelRemoval"
       @confirm="confirmRemoval"

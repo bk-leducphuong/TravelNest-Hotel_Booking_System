@@ -5,40 +5,43 @@
     <p>{{ description }}</p>
 
     <div v-if="isVerificationRequired" class="verification-card">
-      <h2>Xác minh email để tiếp tục</h2>
+      <h2>{{ $t('authPage.verifyEmailTitle') }}</h2>
       <p>
-        Tài khoản Keycloak của bạn đã đăng nhập nhưng email vẫn chưa được xác minh. Hãy mở email xác
-        minh, hoàn tất bước xác nhận, rồi thử lại.
+        {{ $t('authPage.verifyEmailMessage') }}
       </p>
       <div class="actions">
-        <button type="button" class="btn" @click="retryBootstrap">Tôi đã xác minh email</button>
+        <button type="button" class="btn" @click="retryBootstrap">
+          {{ $t('authPage.verifiedEmailButton') }}
+        </button>
         <button type="button" class="btn btn-secondary" @click="startAuthFlow">
-          Tiếp tục với Keycloak
+          {{ $t('authPage.continueWithKeycloak') }}
         </button>
       </div>
     </div>
 
     <div v-else-if="sessionRejected" class="verification-card">
-      <h2>Tài khoản không khả dụng</h2>
+      <h2>{{ $t('authPage.accountUnavailableTitle') }}</h2>
       <p>
-        Không thể thiết lập phiên đăng nhập cho tài khoản này. Tài khoản có thể đã bị xóa hoặc bị vô
-        hiệu hóa. Vui lòng liên hệ hỗ trợ, hoặc đăng xuất để dùng tài khoản khác.
+        {{ $t('authPage.accountUnavailableMessage') }}
       </p>
       <div class="actions">
-        <button type="button" class="btn" @click="signOut">Đăng xuất và dùng tài khoản khác</button>
+        <button type="button" class="btn" @click="signOut">
+          {{ $t('authPage.signOutAndSwitch') }}
+        </button>
       </div>
     </div>
 
     <div v-else class="actions">
-      <button type="button" class="btn" @click="startAuthFlow">Tiếp tục với Keycloak</button>
+      <button type="button" class="btn" @click="startAuthFlow">
+        {{ $t('authPage.continueWithKeycloak') }}
+      </button>
       <button type="button" class="btn btn-secondary" @click="startResetPassword">
-        Quên mật khẩu?
+        {{ $t('authPage.forgotPassword') }}
       </button>
     </div>
 
     <p class="hint">
-      Nếu trình duyệt không tự chuyển trang, hãy dùng nút phía trên để mở trang xác thực của
-      Keycloak.
+      {{ $t('authPage.browserRedirectHint') }}
     </p>
   </div>
 </template>
@@ -78,13 +81,13 @@
       },
       heading() {
         return this.requestedAction === 'register'
-          ? 'Đang chuyển bạn tới trang đăng ký'
-          : 'Đang chuyển bạn tới trang đăng nhập';
+          ? this.$t('authPage.redirectingToRegister')
+          : this.$t('authPage.redirectingToLogin');
       },
       description() {
         return this.requestedAction === 'register'
-          ? 'TravelNest sẽ mở trang đăng ký được lưu trữ trên Keycloak.'
-          : 'TravelNest sẽ mở trang đăng nhập được lưu trữ trên Keycloak.';
+          ? this.$t('authPage.descriptionRegister')
+          : this.$t('authPage.descriptionLogin');
       },
     },
     methods: {
@@ -115,14 +118,14 @@
           await this.login({ redirectRoute: this.$route.query.redirect || '/' });
         } catch (error) {
           this.authStarted = false;
-          this.toast.error(error.message || 'Không thể chuyển tới Keycloak.');
+          this.toast.error(error.message || this.$t('authPage.errors.redirectFailed'));
         }
       },
       async startResetPassword() {
         try {
           await this.resetPassword({ redirectRoute: this.$route.query.redirect || '/' });
         } catch (error) {
-          this.toast.error(error.message || 'Không thể bắt đầu quy trình đặt lại mật khẩu.');
+          this.toast.error(error.message || this.$t('authPage.errors.resetPasswordFailed'));
         }
       },
       async retryBootstrap() {
@@ -130,7 +133,7 @@
           await this.checkAuth();
           this.redirectAuthenticatedUser();
         } catch (error) {
-          this.toast.error(error.message || 'Email của bạn vẫn chưa được xác minh.');
+          this.toast.error(error.message || this.$t('authPage.errors.emailNotVerified'));
         }
       },
       async signOut() {

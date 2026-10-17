@@ -20,63 +20,63 @@ export default {
 <template>
   <form class="multi-step-form">
     <div class="card">
-      <h3 class="title">Cho chúng tôi biết thêm về khách sạn của quý vị</h3>
+      <h3 class="title">{{ $t('join.form.aboutHotelTitle') }}</h3>
       <div class="form-group">
-        <h4 class="step-title">Khách sạn của Quý vị tên gì?</h4>
-        <label for="alt-name">Tên chỗ nghỉ</label>
+        <h4 class="step-title">{{ $t('join.form.hotelNameQuestion') }}</h4>
+        <label for="alt-name">{{ $t('join.form.hotelNameLabel') }}</label>
         <input type="text" name="alt-name" id="alt-name" v-model="getJoinFormData.hotelName" />
-        <p class="sub-title">Tên này sẽ được hiển thị tới khách khi họ tìm kiếm chỗ nghỉ.</p>
+        <p class="sub-title">{{ $t('join.form.hotelNameHint') }}</p>
       </div>
       <hr class="divider" />
       <div class="rating-form">
-        <h3>Khách sạn của Quý vị được xếp hạng mấy sao?</h3>
+        <h3>{{ $t('join.form.ratingQuestion') }}</h3>
         <div class="rating-options">
           <label class="rating-option">
             <input type="radio" name="rating" v-model="getJoinFormData.rating" :value="null" />
             <span class="radio-custom"></span>
-            <span class="label-text">Không áp dụng</span>
+            <span class="label-text">{{ $t('join.form.ratingNotApplicable') }}</span>
           </label>
 
           <label class="rating-option">
             <input type="radio" name="rating" value="1" v-model="getJoinFormData.rating" />
             <span class="radio-custom"></span>
-            <span class="label-text">1 sao</span>
+            <span class="label-text">{{ $t('join.form.ratingStars', { count: 1 }) }}</span>
             <span class="stars">⭐</span>
           </label>
 
           <label class="rating-option">
             <input type="radio" name="rating" value="2" v-model="getJoinFormData.rating" />
             <span class="radio-custom"></span>
-            <span class="label-text">2 sao</span>
+            <span class="label-text">{{ $t('join.form.ratingStars', { count: 2 }) }}</span>
             <span class="stars">⭐⭐</span>
           </label>
 
           <label class="rating-option">
             <input type="radio" name="rating" value="3" v-model="getJoinFormData.rating" />
             <span class="radio-custom"></span>
-            <span class="label-text">3 sao</span>
+            <span class="label-text">{{ $t('join.form.ratingStars', { count: 3 }) }}</span>
             <span class="stars">⭐⭐⭐</span>
           </label>
 
           <label class="rating-option">
             <input type="radio" name="rating" value="4" v-model="getJoinFormData.rating" />
             <span class="radio-custom"></span>
-            <span class="label-text">4 sao</span>
+            <span class="label-text">{{ $t('join.form.ratingStars', { count: 4 }) }}</span>
             <span class="stars">⭐⭐⭐⭐</span>
           </label>
 
           <label class="rating-option">
             <input type="radio" name="rating" value="5" v-model="getJoinFormData.rating" />
             <span class="radio-custom"></span>
-            <span class="label-text">5 sao</span>
+            <span class="label-text">{{ $t('join.form.ratingStars', { count: 5 }) }}</span>
             <span class="stars">⭐⭐⭐⭐⭐</span>
           </label>
         </div>
       </div>
       <div class="form-button-container">
-        <button type="button" class="previous" @click="$emit('previous')">Quay lại</button>
+        <button type="button" class="previous" @click="$emit('previous')">{{ $t('join.form.backButton') }}</button>
         <button type="button" class="next" @click="goNext" :disabled="!checkForNext">
-          Tiếp tục
+          {{ $t('join.form.continueButton') }}
         </button>
       </div>
     </div>

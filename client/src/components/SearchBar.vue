@@ -274,7 +274,7 @@
       },
       async submitSearch() {
         if (!this.selectedLocation || !this.checkInDate || !this.checkOutDate) {
-          this.toast.error('Vui lòng chọn địa điểm và ngày bắt đầu và kết thúc');
+          this.toast.error(this.$t('userHeader.searchValidationError'));
           return;
         }
 
