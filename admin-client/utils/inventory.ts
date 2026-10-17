@@ -5,15 +5,16 @@
 export const INVENTORY_STATUSES = ["open", "close", "sold_out", "maintenance"] as const;
 export type InventoryStatus = (typeof INVENTORY_STATUSES)[number];
 
-const STATUS_LABELS: Record<string, string> = {
-  open: "Open",
-  close: "Closed",
-  sold_out: "Sold out",
-  maintenance: "Maintenance",
+const STATUS_KEYS: Record<string, string> = {
+  open: "inventory.status.open",
+  close: "inventory.status.close",
+  sold_out: "inventory.status.sold_out",
+  maintenance: "inventory.status.maintenance",
 };
 
-export function inventoryStatusLabel(status: string): string {
-  return STATUS_LABELS[status] ?? status;
+/** i18n key for a status; unknown statuses fall through unchanged. */
+export function inventoryStatusKey(status: string): string {
+  return STATUS_KEYS[status] ?? status;
 }
 
 export function inventoryStatusTagType(
@@ -92,19 +93,27 @@ export function monthMatrix(year: number, month: number): (string | null)[][] {
   return weeks;
 }
 
-export const MONTH_LABELS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+export const MONTH_KEYS = [
+  "inventory.month.1",
+  "inventory.month.2",
+  "inventory.month.3",
+  "inventory.month.4",
+  "inventory.month.5",
+  "inventory.month.6",
+  "inventory.month.7",
+  "inventory.month.8",
+  "inventory.month.9",
+  "inventory.month.10",
+  "inventory.month.11",
+  "inventory.month.12",
 ];
 
-export const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+export const WEEKDAY_KEYS = [
+  "inventory.weekday.mon",
+  "inventory.weekday.tue",
+  "inventory.weekday.wed",
+  "inventory.weekday.thu",
+  "inventory.weekday.fri",
+  "inventory.weekday.sat",
+  "inventory.weekday.sun",
+];

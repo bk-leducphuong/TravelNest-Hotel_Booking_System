@@ -1,23 +1,23 @@
 <template>
-  <aside class="hotel-filter-sidebar" aria-label="Hotel filters">
+  <aside class="hotel-filter-sidebar" :aria-label="$t('filters.ariaLabel')">
     <div class="filter-header">
-      <strong>Bộ lọc</strong>
+      <strong>{{ $t('filters.title') }}</strong>
       <button
         type="button"
         class="clear-button"
         :disabled="isLoading || !hasActiveFilters"
         @click="$emit('clear-filters')"
       >
-        Xóa tất cả
+        {{ $t('filters.clearAll') }}
       </button>
     </div>
 
     <section class="filter-section budget-section">
-      <h3>Ngân sách mỗi đêm</h3>
-      <div class="budget-mode">Mỗi đêm</div>
+      <h3>{{ $t('filters.budgetTitle') }}</h3>
+      <div class="budget-mode">{{ $t('filters.perNight') }}</div>
       <div class="budget-inputs">
         <label>
-          <span>Tối thiểu</span>
+          <span>{{ $t('filters.min') }}</span>
           <input
             v-model.number="localBudget.minPrice"
             type="number"
@@ -29,14 +29,14 @@
           />
         </label>
         <label>
-          <span>Tối đa</span>
+          <span>{{ $t('filters.max') }}</span>
           <input
             v-model.number="localBudget.maxPrice"
             type="number"
             min="0"
             step="10"
             :disabled="isLoading"
-            placeholder="Không giới hạn"
+            :placeholder="$t('filters.noLimit')"
             @input="scheduleBudgetEmit"
           />
         </label>
@@ -44,12 +44,12 @@
       <p class="budget-summary">
         {{ currency }}
         {{ formatAmount(filters.minPrice || 0) }} -
-        {{ filters.maxPrice ? formatAmount(filters.maxPrice) : 'Không giới hạn' }}
+        {{ filters.maxPrice ? formatAmount(filters.maxPrice) : $t('filters.noLimit') }}
       </p>
     </section>
 
     <section class="filter-section">
-      <h3>Các bộ lọc phổ biến</h3>
+      <h3>{{ $t('filters.popular') }}</h3>
       <label class="filter-option">
         <span>
           <input
@@ -58,7 +58,7 @@
             :disabled="isLoading"
             @change="updateBoolean('freeCancellation', $event.target.checked)"
           />
-          Miễn phí hủy
+          {{ $t('filters.freeCancellation') }}
         </span>
         <small>{{ getCount('freeCancellation') }}</small>
       </label>
@@ -74,14 +74,14 @@
             :disabled="isLoading"
             @change="togglePopular(option, $event.target.checked)"
           />
-          {{ option.label }}
+          {{ $t(option.labelKey) }}
         </span>
         <small>{{ getCount(option.countKey || option.value) }}</small>
       </label>
     </section>
 
     <section class="filter-section">
-      <h3>Bữa ăn</h3>
+      <h3>{{ $t('filters.meals') }}</h3>
       <label v-for="option in mealOptions" :key="option.value" class="filter-option">
         <span>
           <input
@@ -90,15 +90,15 @@
             :disabled="isLoading"
             @change="toggleArrayValue('mealPlans', option.value, $event.target.checked)"
           />
-          {{ option.label }}
+          {{ $t(option.labelKey) }}
         </span>
         <small>{{ getCount(option.value) }}</small>
       </label>
     </section>
 
     <section class="filter-section">
-      <h3>Khoảng cách</h3>
-      <p v-if="!hasCoordinates" class="hint">Cần tọa độ để lọc theo khoảng cách.</p>
+      <h3>{{ $t('filters.distance') }}</h3>
+      <p v-if="!hasCoordinates" class="hint">{{ $t('filters.distanceHint') }}</p>
       <label v-for="option in distanceOptions" :key="option.value" class="filter-option">
         <span>
           <input
@@ -108,13 +108,13 @@
             :disabled="isLoading || !hasCoordinates"
             @change="updateValue('radius', option.value)"
           />
-          {{ option.label }}
+          {{ $t(option.labelKey, { count: option.value }) }}
         </span>
       </label>
     </section>
 
     <section class="filter-section">
-      <h3>Xếp hạng sao</h3>
+      <h3>{{ $t('filters.starRating') }}</h3>
       <label v-for="star in starOptions" :key="star" class="filter-option">
         <span>
           <input
@@ -123,14 +123,14 @@
             :disabled="isLoading"
             @change="toggleArrayValue('hotelClass', star, $event.target.checked)"
           />
-          {{ star }} sao
+          {{ $t('filters.stars', { count: star }) }}
         </span>
         <small>{{ getStarCount(star) }}</small>
       </label>
     </section>
 
     <section class="filter-section">
-      <h3>Điểm đánh giá</h3>
+      <h3>{{ $t('filters.reviewScore') }}</h3>
       <label v-for="option in reviewScoreOptions" :key="option.value" class="filter-option">
         <span>
           <input
@@ -140,14 +140,14 @@
             :disabled="isLoading"
             @change="updateValue('minRating', option.value)"
           />
-          {{ option.label }}
+          {{ $t(option.labelKey) }}
         </span>
         <small>{{ getRatingCount(option.value) }}</small>
       </label>
     </section>
 
     <section class="filter-section">
-      <h3>Tiện nghi</h3>
+      <h3>{{ $t('filters.amenities') }}</h3>
       <label v-for="option in facilityOptions" :key="option.value" class="filter-option">
         <span>
           <input
@@ -156,7 +156,7 @@
             :disabled="isLoading"
             @change="toggleArrayValue('amenities', option.value, $event.target.checked)"
           />
-          {{ option.label }}
+          {{ $t(option.labelKey) }}
         </span>
         <small>{{ getCount(option.value) }}</small>
       </label>
@@ -200,47 +200,47 @@
           maxPrice: this.filters.maxPrice,
         },
         popularOptions: [
-          { key: 'breakfast', label: 'Bao gồm bữa sáng', type: 'amenity', value: 'BREAKFAST_INCLUDED' },
-          { key: 'pool', label: 'Hồ bơi', type: 'amenity', value: 'POOL' },
-          { key: 'bathtub', label: 'Bồn tắm', type: 'amenity', value: 'BATHTUB' },
-          { key: 'balcony', label: 'Ban công', type: 'amenity', value: 'BALCONY' },
-          { key: 'excellent', label: 'Tuyệt hảo: 9 điểm trở lên', type: 'rating', value: 4.5 },
-          { key: 'four-star', label: '4 sao', type: 'star', value: 4 },
+          { key: 'breakfast', labelKey: 'filters.breakfastIncluded', type: 'amenity', value: 'BREAKFAST_INCLUDED' },
+          { key: 'pool', labelKey: 'filters.pool', type: 'amenity', value: 'POOL' },
+          { key: 'bathtub', labelKey: 'filters.bathtub', type: 'amenity', value: 'BATHTUB' },
+          { key: 'balcony', labelKey: 'filters.balcony', type: 'amenity', value: 'BALCONY' },
+          { key: 'excellent', labelKey: 'filters.excellentPlus', type: 'rating', value: 4.5 },
+          { key: 'four-star', labelKey: 'filters.fourStar', type: 'star', value: 4 },
         ],
         mealOptions: [
-          { label: 'Bao gồm bữa sáng', value: 'BREAKFAST_INCLUDED' },
-          { label: 'Bao bữa sáng & bữa tối', value: 'HALF_BOARD' },
-          { label: 'Bao bữa sáng, trưa & tối', value: 'FULL_BOARD' },
-          { label: 'Trọn gói', value: 'ALL_INCLUSIVE' },
+          { labelKey: 'filters.breakfastIncluded', value: 'BREAKFAST_INCLUDED' },
+          { labelKey: 'filters.halfBoard', value: 'HALF_BOARD' },
+          { labelKey: 'filters.fullBoard', value: 'FULL_BOARD' },
+          { labelKey: 'filters.allInclusive', value: 'ALL_INCLUSIVE' },
         ],
         distanceOptions: [
-          { label: 'Trong vòng 1 km', value: 1 },
-          { label: 'Trong vòng 3 km', value: 3 },
-          { label: 'Trong vòng 5 km', value: 5 },
-          { label: 'Trong vòng 10 km', value: 10 },
-          { label: 'Trong vòng 25 km', value: 25 },
-          { label: 'Trong vòng 50 km', value: 50 },
+          { labelKey: 'filters.withinKm', value: 1 },
+          { labelKey: 'filters.withinKm', value: 3 },
+          { labelKey: 'filters.withinKm', value: 5 },
+          { labelKey: 'filters.withinKm', value: 10 },
+          { labelKey: 'filters.withinKm', value: 25 },
+          { labelKey: 'filters.withinKm', value: 50 },
         ],
         starOptions: [5, 4, 3, 2, 1],
         reviewScoreOptions: [
-          { label: 'Tuyệt hảo: 9+', value: 4.5 },
-          { label: 'Rất tốt: 8+', value: 4 },
-          { label: 'Tốt: 7+', value: 3.5 },
-          { label: 'Dễ chịu: 6+', value: 3 },
+          { labelKey: 'filters.scoreExcellent', value: 4.5 },
+          { labelKey: 'filters.scoreVeryGood', value: 4 },
+          { labelKey: 'filters.scoreGood', value: 3.5 },
+          { labelKey: 'filters.scorePleasant', value: 3 },
         ],
         facilityOptions: [
-          { label: 'WiFi miễn phí', value: 'FREE_WIFI' },
-          { label: 'Chỗ đậu xe', value: 'PARKING' },
-          { label: 'Hồ bơi', value: 'POOL' },
-          { label: 'Trung tâm thể dục', value: 'FITNESS_CENTER' },
-          { label: 'Spa', value: 'SPA' },
-          { label: 'Xe đưa đón sân bay', value: 'AIRPORT_SHUTTLE' },
-          { label: 'Nhà hàng', value: 'RESTAURANT' },
-          { label: 'Quầy bar', value: 'BAR' },
-          { label: 'Dịch vụ phòng', value: 'ROOM_SERVICE' },
-          { label: 'Điều hòa nhiệt độ', value: 'AIR_CONDITIONING' },
-          { label: 'Phòng không hút thuốc', value: 'NON_SMOKING' },
-          { label: 'Phù hợp xe lăn', value: 'WHEELCHAIR_ACCESSIBLE' },
+          { labelKey: 'filters.wifi', value: 'FREE_WIFI' },
+          { labelKey: 'filters.parking', value: 'PARKING' },
+          { labelKey: 'filters.pool', value: 'POOL' },
+          { labelKey: 'filters.fitnessCenter', value: 'FITNESS_CENTER' },
+          { labelKey: 'filters.spa', value: 'SPA' },
+          { labelKey: 'filters.airportShuttle', value: 'AIRPORT_SHUTTLE' },
+          { labelKey: 'filters.restaurant', value: 'RESTAURANT' },
+          { labelKey: 'filters.bar', value: 'BAR' },
+          { labelKey: 'filters.roomService', value: 'ROOM_SERVICE' },
+          { labelKey: 'filters.airConditioning', value: 'AIR_CONDITIONING' },
+          { labelKey: 'filters.nonSmoking', value: 'NON_SMOKING' },
+          { labelKey: 'filters.wheelchairAccessible', value: 'WHEELCHAIR_ACCESSIBLE' },
         ],
       };
     },

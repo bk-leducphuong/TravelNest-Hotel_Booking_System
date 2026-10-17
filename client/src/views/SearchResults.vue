@@ -73,7 +73,11 @@
           this.pagination.limit,
           this.totalResults
         );
-        return `Hiển thị ${start}-${end} trong ${this.totalResults} chỗ nghỉ`;
+        return this.$t('searchResults.showingRange', {
+          start,
+          end,
+          total: this.totalResults,
+        });
       },
       sortByParam() {
         const map = {
@@ -112,7 +116,7 @@
             await this.searchHotels();
             this.isLoading = false;
           } else {
-            this.toast.error('Vui lòng nhập đầy đủ thông tin tìm kiếm!!');
+            this.toast.error(this.$t('searchResults.incompleteSearch'));
           }
         },
         immediate: true,
@@ -342,7 +346,7 @@
           this.searchError =
             error?.response?.data?.error?.message ||
             error?.response?.data?.message ||
-            'Could not load results. Please adjust your filters and try again.';
+            this.$t('searchResults.loadError');
           this.hotels = [];
           this.noResultsFound = false;
         }
@@ -573,9 +577,11 @@
                     </div>
                     <div class="inner-review">
                       <div class="award">
-                        <span>Tốt</span>
+                        <span>{{ $t('searchResults.ratingGood') }}</span>
                         <br />
-                        <span>{{ hotel.review_count ?? 0 }} đánh giá</span>
+                        <span>{{
+                          $t('searchResults.reviewCount', { count: hotel.review_count ?? 0 })
+                        }}</span>
                       </div>
                       <div class="point">
                         {{ hotel.avg_rating ?? '—' }}
@@ -584,25 +590,27 @@
                   </div>
                   <div class="inner-infor">
                     <div class="information">
-                      <span class="title">Phòng tiêu chuẩn giường đôi</span>
+                      <span class="title">{{ $t('searchResults.standardDoubleRoom') }}</span>
                       <br />
-                      <span> 1 giường đôi</span>
+                      <span> {{ $t('searchResults.oneDoubleBed') }}</span>
                       <br />
                       <span class="desc" v-if="hotel.has_free_cancellation">
-                        <i class="fa-solid fa-check"></i> Miễn phí hủy
+                        <i class="fa-solid fa-check"></i> {{ $t('searchResults.freeCancellation') }}
                       </span>
                       <br />
                       <span class="desc"
-                        ><i class="fa-solid fa-check"></i> Không cần thanh toán trước -
+                        ><i class="fa-solid fa-check"></i> {{ $t('searchResults.noPrepayment') }}
                       </span>
-                      <span class="desc">Thanh toán tại chỗ nghỉ</span>
+                      <span class="desc">{{ $t('searchResults.payAtProperty') }}</span>
                       <br />
-                      <p class="last">Chỉ còn 4 phòng với giá này trên trang chúng tôi</p>
+                      <p class="last">{{ $t('searchResults.roomsLeft') }}</p>
                     </div>
                     <div class="price">
                       <span class="people"
-                        >{{ getSearchData?.numberOfDays || 2 }} đêm,
-                        {{ getSearchData?.adults || 2 }} người lớn</span
+                        >{{
+                          $t('searchResults.nightsCount', { count: getSearchData?.numberOfDays || 2 })
+                        }},
+                        {{ $t('searchResults.adultsCount', { count: getSearchData?.adults || 2 }) }}</span
                       >
                       <br />
                       <span class="newPrice">
@@ -610,8 +618,8 @@
                         {{ (hotel.min_price_for_dates ?? 0).toLocaleString('en-US') }}
                       </span>
                       <br />
-                      <span class="desc">Đã bao gồm thuế và phí</span>
-                      <button>Xem chỗ trống</button>
+                      <span class="desc">{{ $t('searchResults.priceIncludes') }}</span>
+                      <button>{{ $t('searchResults.viewAvailability') }}</button>
                     </div>
                   </div>
                 </div>
@@ -620,8 +628,8 @@
 
               <EmptyState
                 v-else
-                title="No hotels found"
-                message="Try adjusting your dates, location or filters."
+                :title="$t('searchResults.noHotelsTitle')"
+                :message="$t('searchResults.noHotelsMessage')"
                 icon="fa-solid fa-magnifying-glass"
               />
 

@@ -1,14 +1,14 @@
 <template>
   <div class="modal-overlay" @click.self="$emit('cancel')">
     <div class="modal-card">
-      <h2>{{ title }}</h2>
+      <h2>{{ dialogTitle }}</h2>
       <p>{{ message }}</p>
       <div class="modal-actions">
         <button type="button" class="secondary-button" :disabled="busy" @click="$emit('cancel')">
-          Cancel
+          {{ $t('account.common.cancel') }}
         </button>
         <button type="button" class="danger-button" :disabled="busy" @click="$emit('confirm')">
-          {{ busy ? 'Removing...' : confirmLabel }}
+          {{ busy ? $t('account.common.removing') : dialogConfirmLabel }}
         </button>
       </div>
     </div>
@@ -21,7 +21,7 @@
     props: {
       title: {
         type: String,
-        default: 'Are you sure?',
+        default: '',
       },
       message: {
         type: String,
@@ -29,7 +29,7 @@
       },
       confirmLabel: {
         type: String,
-        default: 'Confirm',
+        default: '',
       },
       busy: {
         type: Boolean,
@@ -37,6 +37,14 @@
       },
     },
     emits: ['cancel', 'confirm'],
+    computed: {
+      dialogTitle() {
+        return this.title || this.$t('account.common.areYouSure');
+      },
+      dialogConfirmLabel() {
+        return this.confirmLabel || this.$t('account.common.confirm');
+      },
+    },
   };
 </script>
 

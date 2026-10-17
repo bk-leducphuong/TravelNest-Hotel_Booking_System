@@ -2,9 +2,9 @@
   <div class="modal-overlay" @click.self="handleClose">
     <div class="modal-card">
       <div class="modal-header">
-        <h2>Add a card</h2>
+        <h2>{{ $t('account.payment.addCardModal.title') }}</h2>
         <button type="button" class="ghost-button" :disabled="saving" @click="handleClose">
-          Close
+          {{ $t('account.common.close') }}
         </button>
       </div>
 
@@ -14,10 +14,10 @@
 
         <div class="modal-actions">
           <button type="button" class="secondary-button" :disabled="saving" @click="handleClose">
-            Cancel
+            {{ $t('account.common.cancel') }}
           </button>
           <button type="submit" class="primary-button" :disabled="saving || !stripeReady">
-            {{ saving ? 'Saving...' : 'Save card' }}
+            {{ saving ? $t('account.common.saving') : $t('account.payment.addCardModal.save') }}
           </button>
         </div>
       </form>
@@ -59,7 +59,7 @@
         });
         this.stripeReady = true;
       } catch (error) {
-        this.errorMessage = 'Unable to load the secure card form. Please try again.';
+        this.errorMessage = this.$t('account.payment.addCardModal.loadError');
       }
     },
     beforeUnmount() {
@@ -102,7 +102,9 @@
           this.$emit('saved');
         } catch (error) {
           this.errorMessage =
-            error.response?.data?.error?.message || error.message || 'Unable to save this card.';
+            error.response?.data?.error?.message ||
+            error.message ||
+            this.$t('account.payment.addCardModal.saveError');
         } finally {
           this.saving = false;
         }

@@ -86,7 +86,9 @@ export default {
         this.hotels = this.hotels.filter((saved) => saved.hotel_id !== hotel.hotel_id)
         const name = hotel.hotelInformation?.name
         this.toast.success(
-          name ? `${name} removed from saved hotels` : 'Removed from saved hotels'
+          name
+            ? this.$t('savedHotel.page.removedWithName', { name })
+            : this.$t('savedHotel.page.removed')
         )
       } catch (error) {
         errorHandler(error)
@@ -130,15 +132,16 @@ export default {
   <TheHeader :isSearchOpen="false" />
   <div class="header-container">
     <div class="header-title">
-      Saved hotels <span class="info-label">( {{ hotels.length }} properties saved )</span>
+      {{ $t('savedHotel.page.title') }}
+      <span class="info-label">{{ $t('savedHotel.page.savedCount', { count: hotels.length }) }}</span>
     </div>
   </div>
   <div class="slider-container">
     <SkeletonGrid v-if="isLoading" :count="4" image-height="200px" />
     <EmptyState
       v-else-if="hotels.length === 0"
-      title="No saved hotels"
-      message="Tap the heart on a hotel to save it here."
+      :title="$t('savedHotel.page.emptyTitle')"
+      :message="$t('savedHotel.page.emptyMessage')"
       icon="fa-regular fa-heart"
     />
     <template v-else>
@@ -158,7 +161,7 @@ export default {
           <button
             class="close-button"
             type="button"
-            :aria-label="`Remove ${hotel.hotelInformation.name} from saved hotels`"
+            :aria-label="$t('savedHotel.page.removeAria', { name: hotel.hotelInformation.name })"
             @click.stop="deleteSavedHotel(hotel)"
           >
             <i class="fa fa-times" aria-hidden="true"></i>
@@ -172,7 +175,7 @@ export default {
             <h3 class="hotel-name">{{ hotel.hotelInformation.name }}</h3>
             <div
               class="star-rating"
-              :aria-label="`${hotel.hotelInformation.hotel_class || 0} star property`"
+              :aria-label="$t('savedHotel.page.starsAria', { count: hotel.hotelInformation.hotel_class || 0 })"
             >
               {{ starString(hotel.hotelInformation.hotel_class) }}
             </div>

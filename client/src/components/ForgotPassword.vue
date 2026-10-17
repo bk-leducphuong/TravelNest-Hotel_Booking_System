@@ -14,7 +14,7 @@ export default {
         await this.resetPassword({ redirectRoute: this.$route.fullPath })
         this.$emit('close')
       } catch (error) {
-        this.toast.error(error.message || 'Unable to open the Keycloak reset password flow.')
+        this.toast.error(error.message || this.$t('authPage.errors.keycloakResetFailed'))
       }
     }
   }
@@ -29,11 +29,11 @@ export default {
         style="position: absolute; top: 15px; right: 15px; cursor: pointer"
         @click="this.$emit('close')"
       ></i>
-      <h1 class="title">Reset Password</h1>
-      <p class="subtitle">Password reset is now handled by Keycloak.</p>
+      <h1 class="title">{{ $t('authPage.resetPasswordTitle') }}</h1>
+      <p class="subtitle">{{ $t('authPage.resetPasswordSubtitle') }}</p>
 
       <button type="button" class="submit-password-btn" @click="startResetPassword">
-        Continue to Keycloak
+        {{ $t('authPage.continueToKeycloak') }}
       </button>
     </div>
   </div>

@@ -54,10 +54,9 @@ export default {
     <!--  form-2  -->
     <div class="card">
       <div class="map-section">
-        <h1 class="title">Ghim vị trí chỗ nghỉ quý vị</h1>
+        <h1 class="title">{{ $t('join.form.mapTitle') }}</h1>
         <p class="sub-title">
-          Đây là vị trí mà khách sẽ thấy trên trang web của chúng tôi. Di chuyển bản đồ để tìm vị
-          trí chính xác của chỗ nghỉ, sau đó nhấn để thả ghim.
+          {{ $t('join.form.mapSubtitle') }}
         </p>
         <div class="map-container">
           <iframe
@@ -72,14 +71,14 @@ export default {
                 d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
               />
             </svg>
-            Hiển thị trên bản đồ
+            {{ $t('searchResults.showOnMap') }}
           </button>
         </div>
       </div>
       <div class="form-button-container">
-        <button type="button" class="previous" @click="$emit('previous')">Quay lại</button>
+        <button type="button" class="previous" @click="$emit('previous')">{{ $t('join.form.backButton') }}</button>
         <button type="button" class="next" @click="goNext" :disabled="!checkForNext">
-          Tiếp tục
+          {{ $t('join.form.continueButton') }}
         </button>
       </div>
     </div>

@@ -40,7 +40,7 @@ export default {
             <div class="slider-content">
                 <button class="prev-button" @click="prevImage">&#10094;</button>
                 <div class="image-container">
-                    <img :src="images[currentImageIndex]" alt="Image Slider" />
+                    <img :src="images[currentImageIndex]" :alt="$t('gallery.sliderImageAlt')" />
                 </div>
                 <button class="next-button" @click="nextImage">&#10095;</button>
             </div>
@@ -51,7 +51,7 @@ export default {
                 <div class="thumbnail-list">
                     <img v-for="(image, index) in images" :key="index" :src="image"
                         :class="{ active: index === currentImageIndex }" @click="setImage(index)"
-                        class="thumbnail-image" alt="Thumbnail" />
+                        class="thumbnail-image" :alt="$t('gallery.thumbnailAlt')" />
                 </div>
             </div>
         </div>

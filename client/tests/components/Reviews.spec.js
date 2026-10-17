@@ -48,6 +48,8 @@ const mountView = ({ routeQuery = {}, reviews = emptyReviews, bookings = [] } = 
     global: {
       plugins: [store],
       mocks: {
+        $t: (key, params) =>
+          params ? `${key}:${params.start}-${params.end}/${params.total}` : key,
         $route: { query: routeQuery },
         $router: { push, replace },
       },
@@ -82,7 +84,7 @@ describe('Reviews', () => {
       published: 40,
       hidden: 5,
     })
-    expect(wrapper.text()).toContain('Showing 1-20 of 45 reviews')
+    expect(wrapper.text()).toContain('reviewsPage.paginationSummary:1-20/45')
   })
 
   it('splits the counters: All = published + hidden, Reviewed = published (#110)', async () => {

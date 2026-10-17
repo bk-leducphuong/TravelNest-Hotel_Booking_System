@@ -18,6 +18,7 @@ import { fetchReviewSummary, type ReviewSummary } from "~/services/api/reviews";
 
 const auth = useAuthStore();
 const { can } = usePermissions();
+const { t } = useI18n();
 
 const loading = ref(false);
 const bookingStats = ref<BookingStats | null>(null);
@@ -34,46 +35,56 @@ const money = (value?: number) =>
     maximumFractionDigits: 0,
   }).format(value ?? 0);
 
-const statusLabel = (status: string) =>
-  status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+const statusLabel = (status: string) => t(`bookings.status.${status}`);
 
 const cards = computed(() => [
   {
-    label: "Gross revenue",
+    label: t("dashboard.card.grossRevenue"),
     value: money(paymentSummary.value?.grossAmount),
-    hint: `${paymentSummary.value?.totalTransactions ?? 0} transactions`,
+    hint: t("dashboard.hint.transactions", {
+      count: paymentSummary.value?.totalTransactions ?? 0,
+    }),
     show: can("payment.read"),
   },
   {
-    label: "Net revenue",
+    label: t("dashboard.card.netRevenue"),
     value: money(paymentSummary.value?.netAmount),
-    hint: `${money(paymentSummary.value?.refundedAmount)} refunded`,
+    hint: t("dashboard.hint.refunded", {
+      amount: money(paymentSummary.value?.refundedAmount),
+    }),
     show: can("payment.read"),
   },
   {
-    label: "Occupancy",
+    label: t("dashboard.card.occupancy"),
     value: `${occupancy.value?.occupancyRate ?? 0}%`,
-    hint: `${occupancy.value?.bookedRooms ?? 0}/${occupancy.value?.totalRooms ?? 0} room-nights`,
+    hint: t("dashboard.hint.roomNights", {
+      booked: occupancy.value?.bookedRooms ?? 0,
+      total: occupancy.value?.totalRooms ?? 0,
+    }),
     show: can("room.read"),
   },
   {
-    label: "Bookings",
+    label: t("dashboard.card.bookings"),
     value: String(bookingStats.value?.total ?? 0),
-    hint: `${bookingStats.value?.arrivalsToday ?? 0} arrivals today`,
+    hint: t("dashboard.hint.arrivalsToday", {
+      count: bookingStats.value?.arrivalsToday ?? 0,
+    }),
     show: can("booking.read"),
   },
   {
-    label: "Average rating",
+    label: t("dashboard.card.averageRating"),
     value: (reviewSummary.value?.averageRating ?? 0).toFixed(1),
-    hint: `${reviewSummary.value?.publishedCount ?? 0} published reviews`,
+    hint: t("dashboard.hint.publishedReviews", {
+      count: reviewSummary.value?.publishedCount ?? 0,
+    }),
     show: can("review.read"),
   },
   {
-    label: "Pending payouts",
+    label: t("dashboard.card.pendingPayouts"),
     value: money(payoutSummary.value?.pendingAmount),
     hint: payoutSummary.value?.payoutReady
-      ? "Payouts ready"
-      : "Onboarding incomplete",
+      ? t("dashboard.hint.payoutsReady")
+      : t("dashboard.hint.onboardingIncomplete"),
     show: can("payment.read"),
   },
 ]);
@@ -100,9 +111,9 @@ const occupancySegments = computed(() => {
   const booked = occupancy.value?.bookedRooms ?? 0;
   const total = occupancy.value?.totalRooms ?? 0;
   return [
-    { label: "Booked", value: booked, color: "#059669" },
+    { label: t("dashboard.chart.booked"), value: booked, color: "#059669" },
     {
-      label: "Available",
+      label: t("dashboard.chart.available"),
       value: Math.max(total - booked, 0),
       color: "#cbd5e1",
     },
@@ -111,17 +122,17 @@ const occupancySegments = computed(() => {
 
 const revenueBars = computed(() => [
   {
-    label: "Gross",
+    label: t("dashboard.chart.gross"),
     value: paymentSummary.value?.grossAmount ?? 0,
     color: "#059669",
   },
   {
-    label: "Net",
+    label: t("dashboard.chart.net"),
     value: paymentSummary.value?.netAmount ?? 0,
     color: "#0284c7",
   },
   {
-    label: "Refunded",
+    label: t("dashboard.chart.refunded"),
     value: paymentSummary.value?.refundedAmount ?? 0,
     color: "#e11d48",
   },
@@ -181,10 +192,10 @@ watch(() => auth.activeHotelId, load, { immediate: true });
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <h2 class="text-2xl font-semibold tracking-tight text-slate-900">
-          Dashboard
+          {{ $t('dashboard.title') }}
         </h2>
         <p class="mt-1 text-sm text-slate-500">
-          {{ auth.activeHotel?.name || "No hotel selected" }}
+          {{ auth.activeHotel?.name || $t('dashboard.noHotelSelected') }}
           <span v-if="occupancy"
             >· {{ occupancy.startDate }} → {{ occupancy.endDate }}</span
           >
@@ -195,13 +206,13 @@ watch(() => auth.activeHotelId, load, { immediate: true });
         :disabled="!auth.activeHotelId"
         @click="load"
       >
-        Refresh
+        {{ $t('common.refresh') }}
       </el-button>
     </div>
 
     <el-empty
       v-if="!auth.activeHotelId"
-      description="No hotel is assigned to your account. Ask an administrator to add you to a hotel."
+      :description="$t('dashboard.noHotelAssigned')"
     />
 
     <template v-else>
@@ -224,14 +235,14 @@ watch(() => auth.activeHotelId, load, { immediate: true });
 
       <el-card v-if="can('booking.read')" v-loading="loading" class="shadow-sm">
         <template #header>
-          <span class="font-medium">Bookings — last 14 days</span>
+          <span class="font-medium">{{ $t('dashboard.chart.bookingsLast14Days') }}</span>
         </template>
         <el-empty
           v-if="
             !bookingTrend ||
             bookingTrend.points.every((point) => point.count === 0)
           "
-          description="No bookings in this period"
+          :description="$t('dashboard.empty.noBookingsPeriod')"
           :image-size="60"
         />
         <TrendChart v-else :points="trendPoints" />
@@ -240,18 +251,18 @@ watch(() => auth.activeHotelId, load, { immediate: true });
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <el-card v-if="can('room.read')" v-loading="loading" class="shadow-sm">
           <template #header>
-            <span class="font-medium">Occupancy</span>
+            <span class="font-medium">{{ $t('dashboard.chart.occupancy') }}</span>
           </template>
           <el-empty
             v-if="!occupancy"
-            description="No occupancy data"
+            :description="$t('dashboard.empty.noOccupancy')"
             :image-size="60"
           />
           <DonutChart
             v-else
             :segments="occupancySegments"
             :center-value="`${occupancy.occupancyRate}%`"
-            center-label="occupied"
+            :center-label="$t('dashboard.chart.occupied')"
           />
         </el-card>
 
@@ -261,11 +272,11 @@ watch(() => auth.activeHotelId, load, { immediate: true });
           class="shadow-sm"
         >
           <template #header>
-            <span class="font-medium">Revenue</span>
+            <span class="font-medium">{{ $t('dashboard.chart.revenue') }}</span>
           </template>
           <el-empty
             v-if="!paymentSummary"
-            description="No payment data"
+            :description="$t('dashboard.empty.noPayment')"
             :image-size="60"
           />
           <BarChart v-else :bars="revenueBars" :value-formatter="money" />
@@ -274,11 +285,11 @@ watch(() => auth.activeHotelId, load, { immediate: true });
 
       <el-card v-if="can('booking.read')" v-loading="loading" class="shadow-sm">
         <template #header>
-          <span class="font-medium">Bookings by status</span>
+          <span class="font-medium">{{ $t('dashboard.chart.bookingsByStatus') }}</span>
         </template>
         <el-empty
           v-if="bookingStatusRows.length === 0"
-          description="No bookings yet"
+          :description="$t('dashboard.empty.noBookings')"
           :image-size="60"
         />
         <ul v-else class="space-y-3">

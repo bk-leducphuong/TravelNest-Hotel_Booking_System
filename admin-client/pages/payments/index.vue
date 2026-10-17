@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { fetchTransactions, type TransactionListItem } from "~/services/api/payments";
 import { formatDateTime, formatMoney } from "~/utils/format";
-import { TRANSACTION_STATUSES, TRANSACTION_TYPES, humanize, transactionStatusTagType } from "~/utils/payments";
+import { TRANSACTION_STATUSES, TRANSACTION_TYPES, transactionStatusTagType } from "~/utils/payments";
 
 const auth = useAuthStore();
 const router = useRouter();
+const { t } = useI18n();
 
 const loading = ref(false);
 const transactions = ref<TransactionListItem[]>([]);
@@ -19,8 +20,18 @@ const filters = reactive({
   limit: 20,
 });
 
-const statusOptions = TRANSACTION_STATUSES.map((status) => ({ value: status, label: humanize(status) }));
-const typeOptions = TRANSACTION_TYPES.map((type) => ({ value: type, label: humanize(type) }));
+const statusOptions = computed(() =>
+  TRANSACTION_STATUSES.map((status) => ({
+    value: status,
+    label: t(`payments.transactionStatus.${status}`),
+  }))
+);
+const typeOptions = computed(() =>
+  TRANSACTION_TYPES.map((type) => ({
+    value: type,
+    label: t(`payments.transactionType.${type}`),
+  }))
+);
 
 const load = async () => {
   if (!auth.activeHotelId) {
@@ -75,60 +86,99 @@ watch(
   <section class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Payments</h2>
-        <p class="mt-1 text-sm text-slate-500">{{ auth.activeHotel?.name || "No hotel selected" }}</p>
+        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">
+          {{ $t("nav.payments") }}
+        </h2>
+        <p class="mt-1 text-sm text-slate-500">
+          {{ auth.activeHotel?.name || $t("dashboard.noHotelSelected") }}
+        </p>
       </div>
       <div class="flex items-center gap-2">
-        <NuxtLink to="/payments/refunds"><el-button>Refunds</el-button></NuxtLink>
-        <el-button :loading="loading" :disabled="!auth.activeHotelId" @click="load">Refresh</el-button>
+        <NuxtLink to="/payments/refunds">
+          <el-button>{{ $t("payments.action.refunds") }}</el-button>
+        </NuxtLink>
+        <el-button :loading="loading" :disabled="!auth.activeHotelId" @click="load">
+          {{ $t("common.refresh") }}
+        </el-button>
       </div>
     </div>
 
-    <el-empty v-if="!auth.activeHotelId" description="Select a hotel to view payments." />
+    <el-empty
+      v-if="!auth.activeHotelId"
+      :description="$t('payments.empty.selectHotel')"
+    />
 
     <template v-else>
       <el-card class="shadow-sm">
         <div class="flex flex-wrap items-end gap-3">
-          <el-select v-model="filters.status" placeholder="All statuses" clearable class="w-52">
+          <el-select
+            v-model="filters.status"
+            :placeholder="$t('payments.filter.allStatuses')"
+            clearable
+            class="w-52"
+          >
             <el-option v-for="option in statusOptions" :key="option.value" :label="option.label" :value="option.value" />
           </el-select>
-          <el-select v-model="filters.transactionType" placeholder="All types" clearable class="w-40">
+          <el-select
+            v-model="filters.transactionType"
+            :placeholder="$t('payments.filter.allTypes')"
+            clearable
+            class="w-40"
+          >
             <el-option v-for="option in typeOptions" :key="option.value" :label="option.label" :value="option.value" />
           </el-select>
-          <el-date-picker v-model="filters.dateFrom" type="date" placeholder="From" value-format="YYYY-MM-DD" />
-          <el-date-picker v-model="filters.dateTo" type="date" placeholder="To" value-format="YYYY-MM-DD" />
-          <el-button type="primary" @click="applyFilters">Apply</el-button>
-          <el-button @click="resetFilters">Reset</el-button>
+          <el-date-picker
+            v-model="filters.dateFrom"
+            type="date"
+            :placeholder="$t('payments.filter.from')"
+            value-format="YYYY-MM-DD"
+          />
+          <el-date-picker
+            v-model="filters.dateTo"
+            type="date"
+            :placeholder="$t('payments.filter.to')"
+            value-format="YYYY-MM-DD"
+          />
+          <el-button type="primary" @click="applyFilters">
+            {{ $t("payments.filter.apply") }}
+          </el-button>
+          <el-button @click="resetFilters">{{ $t("payments.filter.reset") }}</el-button>
         </div>
       </el-card>
 
       <el-card class="shadow-sm">
         <el-table v-loading="loading" :data="transactions" row-key="id" @row-click="openTransaction">
-          <el-table-column label="Date" width="180">
+          <el-table-column :label="$t('payments.col.date')" width="180">
             <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
           </el-table-column>
-          <el-table-column label="Booking" width="150">
+          <el-table-column :label="$t('payments.col.booking')" width="150">
             <template #default="{ row }">{{ row.booking?.booking_code || "—" }}</template>
           </el-table-column>
-          <el-table-column label="Type" width="110">
-            <template #default="{ row }">{{ humanize(row.transaction_type) }}</template>
+          <el-table-column :label="$t('payments.col.type')" width="110">
+            <template #default="{ row }">
+              {{ $t(`payments.transactionType.${row.transaction_type}`) }}
+            </template>
           </el-table-column>
-          <el-table-column label="Amount" width="140" align="right">
+          <el-table-column :label="$t('payments.col.amount')" width="140" align="right">
             <template #default="{ row }">{{ formatMoney(row.amount, row.currency) }}</template>
           </el-table-column>
-          <el-table-column label="Status" width="170">
+          <el-table-column :label="$t('common.status')" width="170">
             <template #default="{ row }">
               <el-tag :type="transactionStatusTagType(row.status)" effect="light">
-                {{ humanize(row.status) }}
+                {{ $t(`payments.transactionStatus.${row.status}`) }}
               </el-tag>
             </template>
           </el-table-column>
           <el-table-column label="" width="90" align="right">
             <template #default="{ row }">
-              <el-button link type="primary" @click.stop="openTransaction(row)">View</el-button>
+              <el-button link type="primary" @click.stop="openTransaction(row)">
+                {{ $t("common.view") }}
+              </el-button>
             </template>
           </el-table-column>
-          <template #empty><el-empty description="No transactions found" :image-size="60" /></template>
+          <template #empty>
+            <el-empty :description="$t('payments.empty.transactions')" :image-size="60" />
+          </template>
         </el-table>
 
         <div class="mt-4 flex justify-end">

@@ -1,20 +1,21 @@
 <template>
   <section class="settings-panel">
     <header class="panel-header">
-      <h1>Privacy and data</h1>
+      <h1>{{ $t('account.privacy.title') }}</h1>
       <p>
-        Privacy request workflows remain visible in the new settings shell, but the self-service
-        request flow is not connected to a backend endpoint in this pass.
+        {{ $t('account.privacy.description') }}
       </p>
     </header>
 
     <article class="detail-card muted-card">
       <div class="detail-row">
         <div>
-          <h2>Privacy requests</h2>
-          <p>Export, deletion, and privacy-right request actions will be enabled once the API exists.</p>
+          <h2>{{ $t('account.privacy.requests.title') }}</h2>
+          <p>{{ $t('account.privacy.requests.description') }}</p>
         </div>
-        <button type="button" class="disabled-button" disabled>Coming soon</button>
+        <button type="button" class="disabled-button" disabled>
+          {{ $t('account.status.comingSoon') }}
+        </button>
       </div>
     </article>
   </section>

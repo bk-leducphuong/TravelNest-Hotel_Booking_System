@@ -19,20 +19,9 @@
       return { toast };
     },
     data() {
-      const arrivalOptions = [
-        { value: 'unknown', label: "I don't know" },
-        ...Array.from({ length: 24 }, (_, hour) => {
-          const nextHour = (hour + 1) % 24;
-          const start = `${String(hour).padStart(2, '0')}:00`;
-          const end = `${String(nextHour).padStart(2, '0')}:00`;
-          return { value: String(hour), label: `${start} - ${end}` };
-        }),
-      ];
-
       return {
         currentStep: 2,
         steps: [1, 2, 3],
-        arrivalOptions,
         isHoldConvertedToBooking: false,
         isReleasingHold: false,
         userSocket: null,
@@ -46,6 +35,17 @@
 
       progress() {
         return ((this.currentStep - 1) / (this.steps.length - 1)) * 100;
+      },
+      arrivalOptions() {
+        return [
+          { value: 'unknown', label: this.$t('bookingFlow.arrivalUnknown') },
+          ...Array.from({ length: 24 }, (_, hour) => {
+            const nextHour = (hour + 1) % 24;
+            const start = `${String(hour).padStart(2, '0')}:00`;
+            const end = `${String(nextHour).padStart(2, '0')}:00`;
+            return { value: String(hour), label: `${start} - ${end}` };
+          }),
+        ];
       },
       priceSummary() {
         const price = this.getBookingInfor?.priceBreakdown || {};
@@ -85,7 +85,7 @@
             this.currentStep++;
             window.scrollTo(0, 0);
           } else {
-            this.toast.error('Bạn chưa cung cấp đầy đủ thông tin!');
+            this.toast.error(this.$t('bookingFlow.incompleteDetails'));
           }
         }
       },
@@ -123,7 +123,7 @@
         }
 
         this.isHoldConvertedToBooking = true;
-        this.toast.error('Your room hold has expired. Please select the room again.');
+        this.toast.error(this.$t('bookingFlow.holdExpired'));
 
         this.$router.replace({
           name: 'HotelDetails',
@@ -182,47 +182,47 @@
         <div class="hotel-address">{{ getBookingInfor.hotel.address }}</div>
         <div class="rating">
           <span class="rating-score">{{ getBookingInfor.hotel.overall_rating }}</span>
-          <span>Great location</span>
+          <span>{{ $t('bookingFlow.greatLocation') }}</span>
         </div>
       </div>
 
       <div class="booking-details-container">
-        <h3 style="font-size: 20px">Chi tiết đặt phòng của bạn</h3>
+        <h3 style="font-size: 20px">{{ $t('bookingFlow.yourBookingDetails') }}</h3>
         <div class="dates">
           <div class="date-box">
-            <strong>Nhận phòng</strong>
+            <strong>{{ $t('bookingFlow.checkIn') }}</strong>
             <div>{{ getSearchData.checkInDate }}</div>
-            <div>Từ {{ getBookingInfor.hotel.check_in_time }}</div>
+            <div>{{ $t('bookingFlow.fromTime', { time: getBookingInfor.hotel.check_in_time }) }}</div>
           </div>
           <div class="date-box">
-            <strong>Trả phòng</strong>
+            <strong>{{ $t('bookingFlow.checkOut') }}</strong>
             <div>{{ getSearchData.checkOutDate }}</div>
-            <div>Đến {{ getBookingInfor.hotel.check_out_time }}</div>
+            <div>{{ $t('bookingFlow.toTime', { time: getBookingInfor.hotel.check_out_time }) }}</div>
           </div>
         </div>
-        <div>Tổng thời gian lưu trú: 2 đêm</div>
+        <div>{{ $t('bookingFlow.totalStay', { nights: 2 }) }}</div>
         <hr style="border: 1px solid #e7e7e7; margin-top: 16px" />
         <div class="room-details">
-          Bạn đã chọn
+          {{ $t('bookingFlow.youSelected') }}
           <h6>
-            {{ getBookingInfor.totalRooms }} phòng cho {{ getSearchData.adults }} người lớn
-            <span v-if="getSearchData.children != 0">và 1 trẻ em</span>
+            {{ $t('bookingFlow.roomsForAdults', { rooms: getBookingInfor.totalRooms, adults: getSearchData.adults }) }}
+            <span v-if="getSearchData.children != 0">{{ $t('bookingFlow.andOneChild') }}</span>
           </h6>
           <div v-for="(room, index) in getBookingInfor.selectedRooms" :key="index">
             {{ room.roomQuantity }} x {{ room.roomName }}
           </div>
         </div>
         <div style="margin-top: 20px">
-          <span class="back-button" @click="this.$router.go(-1)">Đổi lựa chọn của bạn</span>
+          <span class="back-button" @click="this.$router.go(-1)">{{ $t('bookingFlow.changeSelection') }}</span>
         </div>
       </div>
 
       <div class="hotel-info price-card">
-        <h2 class="card-title">Your price summary</h2>
+        <h2 class="card-title">{{ $t('bookingFlow.priceSummary') }}</h2>
 
         <div class="price-summary">
           <div class="main-price">
-            <span class="price-label">Total</span>
+            <span class="price-label">{{ $t('bookingFlow.total') }}</span>
             <span class="price-amount">
               {{ priceSummary.currency }} {{ priceSummary.totalPrice.toLocaleString('en-US') }}
             </span>
@@ -231,13 +231,13 @@
 
         <div class="price-information">
           <div class="fee-row">
-            <span class="fee-label">Room price</span>
+            <span class="fee-label">{{ $t('bookingFlow.roomPrice') }}</span>
             <span class="fee-amount">
               {{ priceSummary.currency }} {{ priceSummary.subtotal.toLocaleString('en-US') }}
             </span>
           </div>
           <div class="fee-row">
-            <span class="fee-label">Taxes and charges</span>
+            <span class="fee-label">{{ $t('bookingFlow.taxesAndCharges') }}</span>
             <span class="fee-amount">
               {{ priceSummary.currency }}
               {{ (priceSummary.taxAmount + priceSummary.serviceFeeAmount).toLocaleString('en-US') }}
@@ -257,7 +257,7 @@
               <img :src="getImageUrl(getUserInformation.profile_picture_url)" alt="Profile" />
             </div>
             <div class="text-container">
-              <p class="status-text">You are signed in</p>
+              <p class="status-text">{{ $t('bookingFlow.signedIn') }}</p>
               <p class="email-text">{{ getUserInformation.email }}</p>
             </div>
           </div>
@@ -265,21 +265,21 @@
       </div>
       <!--enter details-->
       <div class="hotel-info details-card">
-        <h1>Check your details</h1>
+        <h1>{{ $t('bookingFlow.checkYourDetails') }}</h1>
 
         <div class="info-banner">
           <span class="info-icon">ℹ️</span>
-          You can change your details in<RouterLink
+          {{ $t('bookingFlow.changeDetailsPrefix') }}<RouterLink
             style="color: #006aff"
             :to="{ path: '/account-settings/personal-information' }"
-            >settings</RouterLink
+            >{{ $t('bookingFlow.settings') }}</RouterLink
           >!
         </div>
 
         <form>
           <div class="two-columns">
             <div class="form-group">
-              <label>Full name<span class="required">*</span></label>
+              <label>{{ $t('bookingFlow.fullName') }}<span class="required">*</span></label>
               <input
                 v-if="getUserInformation"
                 :disabled="getUserInformation.full_name != null"
@@ -287,24 +287,24 @@
                 type="text"
                 required
               />
-              <input type="text" v-else placeholder="your full name" />
+              <input type="text" v-else :placeholder="$t('bookingFlow.fullNamePlaceholder')" />
             </div>
           </div>
 
           <div class="form-group">
-            <label>Email address <span class="required">*</span></label>
+            <label>{{ $t('bookingFlow.emailAddress') }} <span class="required">*</span></label>
             <input
               v-if="getUserInformation"
               disabled
               :placeholder="getUserInformation.email"
               type="email"
             />
-            <input type="email" placeholder="Your email" v-else />
-            <div class="helper-text">Confirmation email goes to this address</div>
+            <input type="email" :placeholder="$t('bookingFlow.emailPlaceholder')" v-else />
+            <div class="helper-text">{{ $t('bookingFlow.confirmationEmailNote') }}</div>
           </div>
 
           <div class="form-group">
-            <label>Phone number <span class="required">*</span></label>
+            <label>{{ $t('bookingFlow.phoneNumber') }} <span class="required">*</span></label>
             <div class="phone-input">
               <select class="phone-code">
                 <option selected>VN +84</option>
@@ -312,65 +312,64 @@
               <input
                 v-model="phoneNumber"
                 type="tel"
-                placeholder="Your phone number"
+                :placeholder="$t('bookingFlow.phonePlaceholder')"
                 class="phone-number"
                 required
               />
             </div>
-            <div class="helper-text">Needed by the property to validate your booking</div>
+            <div class="helper-text">{{ $t('bookingFlow.phoneNote') }}</div>
           </div>
         </form>
       </div>
       <div class="hotel-info">
-        <h1>Special requests</h1>
+        <h1>{{ $t('bookingFlow.specialRequests') }}</h1>
         <p class="description">
-          Special requests cannot be guaranteed – but the property will do its best to meet your
-          needs. You can always make a special request after your booking is complete!
+          {{ $t('bookingFlow.specialRequestsDesc') }}
         </p>
 
         <label class="textarea-label">
-          Please write your requests in English or Vietnamese.
-          <span class="optional">(optional)</span>
+          {{ $t('bookingFlow.specialRequestsHint') }}
+          <span class="optional">{{ $t('bookingFlow.optional') }}</span>
         </label>
         <textarea></textarea>
 
         <div class="checkbox-item">
           <input type="checkbox" id="parking" />
           <label for="parking" class="checkbox-label"
-            >I would like free private parking on site</label
+            >{{ $t('bookingFlow.freeParking') }}</label
           >
         </div>
       </div>
       <div class="hotel-info">
-        <h1>Your arrival time</h1>
+        <h1>{{ $t('bookingFlow.arrivalTime') }}</h1>
         <div class="info-row">
           <span class="icon check">✓</span>
-          <span class="info-text">Your room will be ready for check-in at 14:00</span>
+          <span class="info-text">{{ $t('bookingFlow.roomReady') }}</span>
         </div>
 
         <div class="info-row">
           <span class="icon desk">👥</span>
-          <span class="info-text">24-hour front desk – Help whenever you need it!</span>
+          <span class="info-text">{{ $t('bookingFlow.frontDesk') }}</span>
         </div>
 
         <div class="arrival-select">
           <label class="select-label">
-            Add your estimated arrival time
-            <span class="optional">(optional)</span>
+            {{ $t('bookingFlow.addArrivalTime') }}
+            <span class="optional">{{ $t('bookingFlow.optional') }}</span>
           </label>
           <select>
-            <option selected disabled>Please select</option>
+            <option selected disabled>{{ $t('bookingFlow.pleaseSelect') }}</option>
             <option v-for="option in arrivalOptions" :key="option.value" :value="option.value">
               {{ option.label }}
             </option>
           </select>
-          <p class="timezone-note">Time is for Hanoi time zone</p>
+          <p class="timezone-note">{{ $t('bookingFlow.timezoneNote') }}</p>
         </div>
       </div>
 
       <div style="display: flex; justify-content: flex-end">
         <button class="next-button" @click="nextStep()">
-          Next: Final details
+          {{ $t('bookingFlow.nextFinalDetails') }}
           <span class="arrow">›</span>
         </button>
       </div>
@@ -378,7 +377,7 @@
 
     <div class="sub_container2" v-if="currentStep == 3">
       <div class="hotel-info">
-        <h1>How do you want to pay?</h1>
+        <h1>{{ $t('bookingFlow.howToPay') }}</h1>
         <CheckOut
           :bookingInfor="getBookingInfor"
           :searchData="getSearchData"

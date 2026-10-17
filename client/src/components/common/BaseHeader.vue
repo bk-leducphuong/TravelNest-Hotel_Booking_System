@@ -10,7 +10,7 @@
           <ul>
             <li><strong>USD</strong></li>
             <li @click="openLanguagePopup()">
-            <img :src="flagUrl" :style="imageStyle" alt="Language" />
+            <img :src="flagUrl" :style="imageStyle" :alt="$t('misc.languageFlagAlt')" />
             </li>
             <li><i class="fa-regular fa-circle-question"></i></li>
             <!-- Slot for additional navigation items -->
@@ -27,7 +27,7 @@
         <ul>
           <li><strong>USD</strong></li>
           <li @click="openLanguagePopup()">
-            <img :src="flagUrl" :style="imageStyle" alt="Language" />
+            <img :src="flagUrl" :style="imageStyle" :alt="$t('misc.languageFlagAlt')" />
           </li>
           <li><i class="fa-regular fa-circle-question"></i></li>
           <!-- Slot for additional navigation items -->

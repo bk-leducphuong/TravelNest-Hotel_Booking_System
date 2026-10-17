@@ -24,6 +24,11 @@ export default {
       const diff = Math.round((b - a) / 86400000);
       return Number.isFinite(diff) && diff > 0 ? diff : 1;
     },
+    nightsLabel() {
+      return this.nights === 1
+        ? this.$t('bookingFlow.nightSingular')
+        : this.$t('bookingFlow.nightPlural', { count: this.nights });
+    },
   },
   methods: {
     // Format a `YYYY-MM-DD` (or ISO) date without a timezone shift — parsing
@@ -110,7 +115,7 @@ export default {
             <li><strong>USD</strong></li>
             <li><img src="" alt="" /></li>
             <li><i class="fa-regular fa-circle-question"></i></li>
-            <li class="login">Trợ giúp</li>
+            <li class="login">{{ $t('joinHeader.help') }}</li>
           </ul>
         </div>
       </div>
@@ -121,60 +126,60 @@ export default {
     <div class="success-card">
       <div class="success-header">
         <div class="success-icon"><i class="fa fa-check" aria-hidden="true" style="font-size: 50px; color: green;"></i></div>
-        <h1 class="success-title">Your booking is confirmed!</h1>
-        <p v-if="bookingInformation">Booking ID: {{ bookingInformation.booking_code }}</p>
+        <h1 class="success-title">{{ $t('bookingFlow.bookingConfirmedTitle') }}</h1>
+        <p v-if="bookingInformation">{{ $t('bookingFlow.bookingId', { code: bookingInformation.booking_code }) }}</p>
       </div>
 
       <div class="booking-details">
         <div class="detail-section">
-          <h2 class="section-title">Hotel Information</h2>
+          <h2 class="section-title">{{ $t('bookingFlow.hotelInformation') }}</h2>
           <div class="detail-grid">
             <div class="detail-item">
-              <div class="detail-label">Hotel Name</div>
+              <div class="detail-label">{{ $t('bookingFlow.hotelName') }}</div>
               <div class="detail-value">{{ bookingInformation.hotel.name }}</div>
             </div>
             <div class="detail-item">
-              <div class="detail-label">Room Type</div>
+              <div class="detail-label">{{ $t('bookingFlow.roomType') }}</div>
               <div class="detail-value" v-for="room in bookingInformation.rooms" :key="room.roomId || room.roomName">{{ room.roomName }} x {{ room.quantity }}</div>
             </div>
           </div>
         </div>
 
         <div class="detail-section">
-          <h2 class="section-title">Stay Details</h2>
+          <h2 class="section-title">{{ $t('bookingFlow.stayDetails') }}</h2>
           <div class="detail-grid">
             <div class="detail-item">
-              <div class="detail-label">Check-in</div>
+              <div class="detail-label">{{ $t('bookingFlow.checkIn') }}</div>
               <div class="detail-value">{{ formatDate(bookingInformation.checkInDate) }}</div>
             </div>
             <div class="detail-item">
-              <div class="detail-label">Check-out</div>
+              <div class="detail-label">{{ $t('bookingFlow.checkOut') }}</div>
               <div class="detail-value">{{ formatDate(bookingInformation.checkOutDate) }}</div>
             </div>
             <div class="detail-item">
-              <div class="detail-label">Length of Stay</div>
-              <div class="detail-value">{{ nights }} night{{ nights === 1 ? '' : 's' }}</div>
+              <div class="detail-label">{{ $t('bookingFlow.lengthOfStay') }}</div>
+              <div class="detail-value">{{ nightsLabel }}</div>
             </div>
             <div class="detail-item">
-              <div class="detail-label">Guests</div>
-              <div class="detail-value">{{ bookingInformation.numberOfGuests }} Adults</div>
+              <div class="detail-label">{{ $t('hotelDetails.table.guests') }}</div>
+              <div class="detail-value">{{ $t('bookingFlow.adultsCount', { count: bookingInformation.numberOfGuests }) }}</div>
             </div>
           </div>
         </div>
 
         <div class="detail-section">
-          <h2 class="section-title">Price Summary</h2>
+          <h2 class="section-title">{{ $t('bookingFlow.priceSummaryTitle') }}</h2>
           <div class="price-summary">
             <div class="price-row">
-              <span>Room Rate ({{ nights }} night{{ nights === 1 ? '' : 's' }})</span>
+              <span>{{ $t('bookingFlow.roomRate') }} ({{ nightsLabel }})</span>
               <span>USD {{ parseInt(bookingInformation.totalPrice).toLocaleString('en-US') }}</span>
             </div>
             <div class="price-row">
-              <span>Taxes & Fees</span>
+              <span>{{ $t('bookingFlow.taxesAndFees') }}</span>
               <span>USD 0</span>
             </div>
             <div class="price-row total-row">
-              <span>Total Amount Paid</span>
+              <span>{{ $t('bookingFlow.totalAmountPaid') }}</span>
               <span>USD {{ parseInt(bookingInformation.totalPrice).toLocaleString('en-US') }}</span>
             </div>
           </div>
@@ -182,8 +187,8 @@ export default {
       </div>
 
       <div class="action-buttons">
-        <a @click="this.$router.push('/')" class="btn btn-primary">Home</a>
-        <a class="btn btn-secondary">Download Receipt</a>
+        <a @click="this.$router.push('/')" class="btn btn-primary">{{ $t('bookingFlow.home') }}</a>
+        <a class="btn btn-secondary">{{ $t('bookingFlow.downloadReceipt') }}</a>
       </div>
     </div>
   </div>

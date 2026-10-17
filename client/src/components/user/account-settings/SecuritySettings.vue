@@ -12,16 +12,16 @@ export default {
     return {
       unsupportedActions: [
         {
-          title: 'Two-factor authentication',
-          description: 'Additional sign-in factors are not exposed by the current account API.',
+          titleKey: 'account.security.twoFactor.title',
+          descriptionKey: 'account.security.twoFactor.description',
         },
         {
-          title: 'Active sessions',
-          description: 'Remote session management is still being moved onto the new backend surface.',
+          titleKey: 'account.security.activeSessions.title',
+          descriptionKey: 'account.security.activeSessions.description',
         },
         {
-          title: 'Delete account',
-          description: 'Account deletion is not wired to a supported self-service endpoint yet.',
+          titleKey: 'account.security.deleteAccount.title',
+          descriptionKey: 'account.security.deleteAccount.description',
         },
       ],
     }
@@ -32,15 +32,15 @@ export default {
 <template>
   <section class="settings-panel">
     <header class="panel-header">
-      <h1>Security settings</h1>
-      <p>Manage your password in the secure account portal. Other security controls remain visible but unavailable.</p>
+      <h1>{{ $t('account.security.title') }}</h1>
+      <p>{{ $t('account.security.description') }}</p>
     </header>
 
     <article class="detail-card">
       <div class="detail-header">
         <div>
-          <h2>Password</h2>
-          <p>Your password is managed by your TravelNest account provider (Keycloak).</p>
+          <h2>{{ $t('account.security.password.title') }}</h2>
+          <p>{{ $t('account.security.password.description') }}</p>
         </div>
         <a
           class="secondary-button"
@@ -48,22 +48,28 @@ export default {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Manage password
+          {{ $t('account.security.password.manage') }}
         </a>
       </div>
 
       <div class="value-row">
-        Use the secure account portal to change your password and review sign-in security.
+        {{ $t('account.security.password.hint') }}
       </div>
     </article>
 
-    <article v-for="action in unsupportedActions" :key="action.title" class="detail-card muted-card">
+    <article
+      v-for="action in unsupportedActions"
+      :key="action.titleKey"
+      class="detail-card muted-card"
+    >
       <div class="detail-header">
         <div>
-          <h2>{{ action.title }}</h2>
-          <p>{{ action.description }}</p>
+          <h2>{{ $t(action.titleKey) }}</h2>
+          <p>{{ $t(action.descriptionKey) }}</p>
         </div>
-        <button type="button" class="disabled-button" disabled>Unavailable</button>
+        <button type="button" class="disabled-button" disabled>
+          {{ $t('account.status.unavailable') }}
+        </button>
       </div>
     </article>
   </section>

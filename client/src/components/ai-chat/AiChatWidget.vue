@@ -1,19 +1,19 @@
 <script>
 import { ChatDotRound, Close, Position, RefreshLeft } from '@element-plus/icons-vue'
 
-const initialMessages = [
+const createInitialMessages = ($t) => [
   {
     id: 1,
     role: 'assistant',
-    text: 'Hi, I am your TravelNest assistant. I can help with stays, bookings, amenities, and travel planning.',
+    text: $t('aiChat.initialMessage'),
     createdAt: new Date()
   }
 ]
 
-const suggestionPrompts = [
-  'Find a hotel near the beach',
-  'Help me choose room options',
-  'What should I check before booking?'
+const suggestionKeys = [
+  'aiChat.suggestions.beach',
+  'aiChat.suggestions.rooms',
+  'aiChat.suggestions.checkBeforeBooking'
 ]
 
 export default {
@@ -32,14 +32,16 @@ export default {
       isTyping: false,
       errorMessage: '',
       hasInteracted: false,
-      messages: [...initialMessages],
-      suggestions: suggestionPrompts,
+      messages: createInitialMessages(this.$t),
       replyTimer: null
     }
   },
   computed: {
     canSend() {
       return this.input.trim().length > 0 && !this.isTyping
+    },
+    suggestions() {
+      return suggestionKeys.map((key) => this.$t(key))
     }
   },
   watch: {
@@ -114,7 +116,7 @@ export default {
             this.hasUnread = true
           }
         } catch (error) {
-          this.errorMessage = 'The assistant could not reply right now. Please try again.'
+          this.errorMessage = this.$t('aiChat.errorReply')
         } finally {
           this.isTyping = false
         }
@@ -124,18 +126,18 @@ export default {
       const normalizedText = text.toLowerCase()
 
       if (normalizedText.includes('beach')) {
-        return 'For beach stays, compare distance to the shoreline, recent guest ratings, breakfast options, and flexible cancellation before booking.'
+        return this.$t('aiChat.replies.beach')
       }
 
       if (normalizedText.includes('room')) {
-        return 'Room choice usually depends on guest count, bed type, included meals, cancellation policy, and whether taxes or fees are included in the final price.'
+        return this.$t('aiChat.replies.room')
       }
 
       if (normalizedText.includes('booking') || normalizedText.includes('book')) {
-        return 'Before booking, confirm dates, guest details, check-in rules, payment method, cancellation policy, and the hotel address.'
+        return this.$t('aiChat.replies.booking')
       }
 
-      return 'I can help narrow down destinations, compare hotel options, explain booking details, or prepare questions to ask the property.'
+      return this.$t('aiChat.replies.fallback')
     },
     resetSession() {
       window.clearTimeout(this.replyTimer)
@@ -144,7 +146,7 @@ export default {
       this.errorMessage = ''
       this.hasUnread = false
       this.hasInteracted = false
-      this.messages = [...initialMessages]
+      this.messages = createInitialMessages(this.$t)
 
       this.$nextTick(() => {
         this.resizeTextarea()
@@ -175,18 +177,18 @@ export default {
 <template>
   <div class="ai-chat-widget" :class="{ 'ai-chat-widget--open': isOpen }">
     <Transition name="ai-chat-panel">
-      <section v-if="isOpen" class="ai-chat-panel" aria-label="AI chat assistant">
+      <section v-if="isOpen" class="ai-chat-panel" :aria-label="$t('aiChat.assistantAria')">
         <header class="ai-chat-header">
           <div>
-            <p class="ai-chat-kicker">TravelNest AI</p>
-            <h2>Trip assistant</h2>
+            <p class="ai-chat-kicker">{{ $t('aiChat.kicker') }}</p>
+            <h2>{{ $t('aiChat.title') }}</h2>
           </div>
 
           <div class="ai-chat-header-actions">
-            <button type="button" class="ai-chat-icon-button" aria-label="Reset chat" @click="resetSession">
+            <button type="button" class="ai-chat-icon-button" :aria-label="$t('aiChat.resetAria')" @click="resetSession">
               <RefreshLeft />
             </button>
-            <button type="button" class="ai-chat-icon-button" aria-label="Close chat" @click="closePanel">
+            <button type="button" class="ai-chat-icon-button" :aria-label="$t('aiChat.closeAria')" @click="closePanel">
               <Close />
             </button>
           </div>
@@ -204,7 +206,7 @@ export default {
             </div>
           </div>
 
-          <div v-if="!hasInteracted" class="ai-chat-suggestions" aria-label="Suggested questions">
+          <div v-if="!hasInteracted" class="ai-chat-suggestions" :aria-label="$t('aiChat.suggestionsAria')">
             <button
               v-for="suggestion in suggestions"
               :key="suggestion"
@@ -217,7 +219,7 @@ export default {
           </div>
 
           <div v-if="isTyping" class="ai-chat-message-row ai-chat-message-row--assistant">
-            <div class="ai-chat-message ai-chat-typing" aria-label="Assistant is typing">
+            <div class="ai-chat-message ai-chat-typing" :aria-label="$t('aiChat.typingAria')">
               <span></span>
               <span></span>
               <span></span>
@@ -227,7 +229,7 @@ export default {
 
         <div v-if="errorMessage" class="ai-chat-error" role="alert">
           <span>{{ errorMessage }}</span>
-          <button type="button" @click="dismissError">Dismiss</button>
+          <button type="button" @click="dismissError">{{ $t('aiChat.dismiss') }}</button>
         </div>
 
         <form class="ai-chat-composer" @submit.prevent="sendMessage">
@@ -235,11 +237,11 @@ export default {
             ref="messageInput"
             v-model="input"
             rows="1"
-            placeholder="Ask about your trip..."
-            aria-label="Message"
+            :placeholder="$t('aiChat.inputPlaceholder')"
+            :aria-label="$t('aiChat.inputAria')"
             @keydown="handleKeydown"
           ></textarea>
-          <button type="submit" class="ai-chat-send" :disabled="!canSend" aria-label="Send message">
+          <button type="submit" class="ai-chat-send" :disabled="!canSend" :aria-label="$t('aiChat.sendAria')">
             <Position />
           </button>
         </form>
@@ -250,12 +252,12 @@ export default {
       type="button"
       class="ai-chat-launcher"
       :aria-expanded="isOpen"
-      aria-label="Open AI chat assistant"
+      :aria-label="$t('aiChat.openAria')"
       @click="togglePanel"
     >
       <ChatDotRound v-if="!isOpen" />
       <Close v-else />
-      <span v-if="hasUnread && !isOpen" class="ai-chat-unread-dot" aria-label="Unread message"></span>
+      <span v-if="hasUnread && !isOpen" class="ai-chat-unread-dot" :aria-label="$t('aiChat.unreadAria')"></span>
     </button>
   </div>
 </template>

@@ -20,8 +20,26 @@ export default defineNuxtConfig({
     "@nuxt/eslint",
     "@pinia/nuxt",
     "@nuxtjs/tailwindcss",
+    "@nuxtjs/i18n",
     "@nuxt/test-utils/module",
   ],
+  i18n: {
+    // The admin console is a client-side SPA behind Keycloak; keeping the
+    // locale out of the URL (no_prefix) avoids interfering with auth redirects.
+    strategy: "no_prefix",
+    defaultLocale: "en",
+    lazy: true,
+    langDir: "locales",
+    locales: [
+      { code: "en", name: "English", file: "en.json" },
+      { code: "vi", name: "Tiếng Việt", file: "vi.json" },
+    ],
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: "tn_admin_locale",
+      redirectOn: "root",
+    },
+  },
   elementPlus: {
     /** Options */
   },

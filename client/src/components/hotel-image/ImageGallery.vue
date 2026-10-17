@@ -76,7 +76,7 @@ export default {
         <div class="hotel-title">
           <h1 class="hotel-name">Mai Hotel</h1>
           <span class="stars">⭐⭐⭐</span>
-          <button class="book-now">Đặt ngay</button>
+          <button class="book-now">{{ $t('gallery.bookNow') }}</button>
         </div>
 
         <button class="close-button" @click="closePopup">&times;</button>
@@ -88,9 +88,9 @@ export default {
           :class="{ selected: currentSelectedRoomId === 0 }"
           @click="selectRoom(0)"
         >
-          <img :src="hotelImages[0]" alt="Overview" class="room-image" />
+          <img :src="hotelImages[0]" :alt="$t('gallery.overviewAlt')" class="room-image" />
           <div class="room-info">
-            <div class="room-type">Tổng quan</div>
+            <div class="room-type">{{ $t('gallery.overview') }}</div>
           </div>
         </div>
         <div
@@ -115,7 +115,7 @@ export default {
       <div class="gallery">
         <img
           :src="image"
-          alt="Room 1"
+          :alt="$t('gallery.roomImageAlt')"
           class="gallery-image"
           v-for="(image, index) in currentImages"
           :key="index"

@@ -35,7 +35,7 @@ export default {
       const { page, limit, total } = this.pagination
       const start = (page - 1) * limit + 1
       const end = Math.min(page * limit, total)
-      return `Showing ${start}-${end} of ${total} bookings`
+      return this.$t('bookingFlow.paginationSummary', { start, end, total })
     }
   },
   watch: {
@@ -194,15 +194,15 @@ export default {
 <template>
   <Header :isSearchOpen="false" />
   <div class="header-container">
-    <div class="header-title">Bookings & Trips</div>
+    <div class="header-title">{{ $t('bookingFlow.bookingsAndTrips') }}</div>
     <div class="header">
       <div class="header-left">
-        <select class="dropdown" id="trip-list" aria-label="Filter trips" @change="arrangeBookings($event.target.value)">
-          <option value="all">Tất cả</option>
-          <option value="today">Hôm nay</option>
-          <option value="last-week">1 tuần trước</option>
-          <option value="last-month">1 tháng trước</option>
-          <option value="last-year">1 năm trước</option>
+        <select class="dropdown" id="trip-list" :aria-label="$t('bookingFlow.filterTripsAria')" @change="arrangeBookings($event.target.value)">
+          <option value="all">{{ $t('bookingFlow.filterAll') }}</option>
+          <option value="today">{{ $t('bookingFlow.filterToday') }}</option>
+          <option value="last-week">{{ $t('bookingFlow.filterLastWeek') }}</option>
+          <option value="last-month">{{ $t('bookingFlow.filterLastMonth') }}</option>
+          <option value="last-year">{{ $t('bookingFlow.filterLastYear') }}</option>
         </select>
       </div>
     </div>
@@ -211,15 +211,15 @@ export default {
     <SkeletonGrid v-if="isLoading" :count="3" image-height="110px" />
     <EmptyState
       v-else-if="bookings.length === 0"
-      title="No bookings yet"
-      message="When you book a stay, it will appear here."
+      :title="$t('bookingFlow.noBookingsTitle')"
+      :message="$t('bookingFlow.noBookingsMessage')"
       icon="fa-solid fa-suitcase-rolling"
     />
     <template v-else>
       <div class="booking-container" v-for="booking in bookings" :key="booking.booking_code">
       <h3 style="margin-bottom: 5px; font-weight: 700">{{ booking.hotel.name }}</h3>
       <p>
-        Booked on {{ formatDate(booking.bookedOn) }}
+        {{ $t('bookingFlow.bookedOn', { date: formatDate(booking.bookedOn) }) }}
       </p>
       <div class="booking-content-container">
         <div class="section">
@@ -233,7 +233,7 @@ export default {
                 {{ formatDate(booking.checkInDate) }} -
                 {{ formatDate(booking.checkOutDate) }}
               </p>
-              <p>Free cancellation</p>
+              <p>{{ $t('bookingFlow.freeCancellation') }}</p>
               <p
                 :class="{
                   active: booking.status === 'confirmed',

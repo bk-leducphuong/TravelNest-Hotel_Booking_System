@@ -8,8 +8,8 @@
         >
       </li>
       <li v-if="!this.isUserAuthenticated">
-        <a @click="this.$router.push('/login?action=register')" class="login" style="margin-right: 5px">Đăng ký</a>
-        <a @click="this.$router.push('/login')" class="login" style="margin-left: 5px">Đăng nhập</a>
+        <a @click="this.$router.push('/login?action=register')" class="login" style="margin-right: 5px">{{ $t('userHeader.register') }}</a>
+        <a @click="this.$router.push('/login')" class="login" style="margin-left: 5px">{{ $t('userHeader.login') }}</a>
       </li>
       <li v-if="this.isUserAuthenticated">
         <AccountMenu />

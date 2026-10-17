@@ -32,7 +32,10 @@
               <div class="search-content">
                 <h2 class="search-title">{{ displayLocation(search) }}</h2>
                 <p class="search-details">
-                  From {{ formatDate(getCheckIn(search)) }} to {{ formatDate(getCheckOut(search)) }}
+                  {{ $t('userHeader.dateInputPlaceholder_1') }}
+                  {{ formatDate(getCheckIn(search)) }}
+                  {{ $t('userHeader.dateInputPlaceholder_2') }}
+                  {{ formatDate(getCheckOut(search)) }}
                 </p>
               </div>
               <button

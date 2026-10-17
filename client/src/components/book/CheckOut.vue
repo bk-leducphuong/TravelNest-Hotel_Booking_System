@@ -10,18 +10,18 @@
   />
   <div class="payment-form">
     <div v-if="savedMethods.length" class="saved-methods">
-      <h3>Payment method</h3>
+      <h3>{{ $t('bookingFlow.paymentMethod') }}</h3>
 
       <label class="method-option">
         <input v-model="selectedMethodId" type="radio" value="new" />
-        <span class="method-option-label">Use a new card</span>
+        <span class="method-option-label">{{ $t('bookingFlow.useNewCard') }}</span>
       </label>
 
       <label v-for="method in savedMethods" :key="method.id" class="method-option">
         <input v-model="selectedMethodId" type="radio" :value="method.id" />
         <span class="method-option-label">
           {{ cardBrandLabel(method.brand) }} •••• {{ method.last4 }}
-          <em v-if="method.isDefault"> · Default</em>
+          <em v-if="method.isDefault"> {{ $t('bookingFlow.defaultCard') }}</em>
         </span>
         <span class="method-option-expiry">
           {{ formatCardExpiry(method.expMonth, method.expYear) }}
@@ -39,7 +39,7 @@
       </div>
 
       <button type="submit" :disabled="processing">
-        {{ processing ? 'Processing...' : 'Pay' }}
+        {{ processing ? $t('bookingFlow.processing') : $t('bookingFlow.pay') }}
       </button>
     </form>
   </div>
@@ -81,8 +81,6 @@
         paymentStatus: null,
         isLoading: false,
         isLoaded: false,
-        startTitle: 'Thanh toán của bạn đang được xử lí...',
-        endTitle: 'Thanh toán thành công!',
         redirectUrl: '',
         fail: false,
         idempotencyKey: uuidv4(),
@@ -93,6 +91,12 @@
     },
     computed: {
       ...mapGetters('book', ['getBookingInfor']),
+      startTitle() {
+        return this.$t('bookingFlow.paymentProcessing');
+      },
+      endTitle() {
+        return this.$t('bookingFlow.paymentSuccess');
+      },
     },
     async mounted() {
       // Initialize Stripe with your publishable key
@@ -142,7 +146,7 @@
           this.paymentStatus = null;
 
           if (!this.bookingInfor.holdId) {
-            throw new Error('Your room hold is missing. Please select the room again.');
+            throw new Error(this.$t('bookingFlow.holdMissing'));
           }
 
           const bookingResponse =

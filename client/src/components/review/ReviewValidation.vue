@@ -43,11 +43,11 @@ export default {
           })
         } else {
           this.$emit('close')
-          this.toast.error('Không tìm thấy mã đặt phòng này!')
+          this.toast.error(this.$t('reviewsPage.validation.bookingNotFound'))
         }
       } catch (error) {
         this.$emit('close')
-        this.toast.error('Không tìm thấy mã đặt phòng này!')
+        this.toast.error(this.$t('reviewsPage.validation.bookingNotFound'))
       }
     }
   }
@@ -57,14 +57,14 @@ export default {
   <div class="popup">
     <div class="popup-content">
       <i class="fa fa-times close-btn" aria-hidden="true" @click="$emit('close')"></i>
-      <h2>Nhập chi tiết đặt phòng của bạn</h2>
-      <p>Vui lòng kiểm tra email xác nhận đặt phòng để tìm mã số đặt phòng và PIN</p>
+      <h2>{{ $t('reviewsPage.validation.title') }}</h2>
+      <p>{{ $t('reviewsPage.validation.hint') }}</p>
       <form @submit.prevent="validateUser">
-        <label for="room-number">Mã số đặt phòng</label>
+        <label for="room-number">{{ $t('reviewsPage.validation.bookingCode') }}</label>
         <input type="text" id="room-number" name="room-number" v-model="bookingCode" />
-        <label for="pin">Mã PIN</label>
+        <label for="pin">{{ $t('reviewsPage.validation.pin') }}</label>
         <input type="text" id="pin" name="pin" />
-        <button type="submit">Đánh giá ký nghị của bạn</button>
+        <button type="submit">{{ $t('reviewsPage.validation.submit') }}</button>
       </form>
     </div>
   </div>

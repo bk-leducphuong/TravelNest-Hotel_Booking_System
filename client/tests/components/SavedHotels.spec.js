@@ -45,6 +45,7 @@ const mountView = (hotels) => {
       mocks: {
         $store: { getters: { 'user/getUserInformation': {} } },
         $router: { push },
+        $t: (key) => key,
       },
       stubs: {
         TheHeader: true,

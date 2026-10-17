@@ -11,11 +11,6 @@ import { BookingService } from '@/services/booking.service'
 import { getFirstImageUrl, getImageUrl } from '@/utils/images'
 import { totalPagesFrom } from '@/utils/pagination'
 
-// Neutral inline placeholder used when a property/review image fails to load.
-const PLACEHOLDER_IMAGE = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="125" height="125" role="img" aria-label="No image"><rect width="100%" height="100%" fill="#f2f2f2"/><text x="50%" y="50%" font-family="Arial, sans-serif" font-size="12" fill="#9aa0a6" text-anchor="middle" dominant-baseline="middle">No image</text></svg>'
-)}`
-
 export default {
   components: {
     TheHeader,
@@ -75,7 +70,7 @@ export default {
       const { page, limit, total } = this.pagination
       const start = (page - 1) * limit + 1
       const end = Math.min(page * limit, total)
-      return `Showing ${start}-${end} of ${total} reviews`
+      return this.$t('reviewsPage.paginationSummary', { start, end, total })
     }
   },
   watch: {
@@ -178,11 +173,17 @@ export default {
       return [...media].sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
     },
     // Swap a broken/empty image for a neutral placeholder instead of a broken icon.
+    placeholderImage() {
+      const label = this.$t('reviewsPage.noImage')
+      return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="125" height="125" role="img" aria-label="${label}"><rect width="100%" height="100%" fill="#f2f2f2"/><text x="50%" y="50%" font-family="Arial, sans-serif" font-size="12" fill="#9aa0a6" text-anchor="middle" dominant-baseline="middle">${label}</text></svg>`
+      )}`
+    },
     onImageError(event) {
       const el = event?.target
       if (!el || el.dataset.fallbackApplied) return
       el.dataset.fallbackApplied = 'true'
-      el.src = PLACEHOLDER_IMAGE
+      el.src = this.placeholderImage()
     },
     getFirstImageUrl,
     getImageUrl
@@ -201,16 +202,16 @@ export default {
   <div class="review-dashboard">
     <div class="left-container">
       <div class="profile-section">
-        <img v-if="getUserInformation" :src="getImageUrl(getUserInformation.profile_picture_url)" alt="Profile" class="profile-image" />
+        <img v-if="getUserInformation" :src="getImageUrl(getUserInformation.profile_picture_url)" :alt="$t('reviewsPage.profileAlt')" class="profile-image" />
         <div>
           <h2 class="profile-name" v-if="getUserInformation">{{ getUserInformation.username }}</h2>
-          <a class="edit-profile" @click="this.$router.push('/account-settings/personal-information')">Edit your profile</a>
+          <a class="edit-profile" @click="this.$router.push('/account-settings/personal-information')">{{ $t('reviewsPage.editProfile') }}</a>
         </div>
       </div>
 
       <div class="nav-links">
         <a class="nav-link" :class="{ selected: viewMode === 'all' }" @click="viewMode = 'all'">
-          All reviews
+          {{ $t('reviewsPage.allReviews') }}
           <span class="review-count">{{ allReviewsCount }}</span>
         </a>
         <a
@@ -218,7 +219,7 @@ export default {
           :class="{ selected: viewMode === 'notReviewed' }"
           @click="viewMode = 'notReviewed'"
         >
-          Not reviewed yet
+          {{ $t('reviewsPage.notReviewedYet') }}
           <span class="review-count">{{ notReviewed }}</span>
         </a>
         <a
@@ -226,7 +227,7 @@ export default {
           :class="{ selected: viewMode === 'reviewed' }"
           @click="viewMode = 'reviewed'"
         >
-          Reviewed
+          {{ $t('reviewsPage.reviewed') }}
           <span class="review-count">{{ reviewed }}</span>
         </a>
       </div>
@@ -235,8 +236,8 @@ export default {
       <SkeletonGrid v-if="isLoading" :count="2" image-height="125px" />
       <EmptyState
         v-else-if="displayedReviews.length === 0 && displayedBookings.length === 0"
-        title="No reviews yet"
-        message="Complete a stay to leave a review."
+        :title="$t('reviewsPage.emptyTitle')"
+        :message="$t('reviewsPage.emptyMessage')"
         icon="fa-regular fa-star"
       />
       <template v-else>
@@ -247,7 +248,7 @@ export default {
             <img
               v-if="getFirstImageUrl(booking.hotel?.image_urls)"
               :src="getFirstImageUrl(booking.hotel?.image_urls)"
-              alt="Property"
+              :alt="$t('reviewsPage.propertyAlt')"
               class="property-image"
               @error="onImageError"
             />
@@ -255,15 +256,15 @@ export default {
               <i class="fa-regular fa-image"></i>
             </div>
             <div class="review-content">
-              <h4>You haven't reviewed your stay at {{ booking.hotel?.name }}</h4>
+              <h4>{{ $t('reviewsPage.notReviewedStay', { hotel: booking.hotel?.name }) }}</h4>
               <div>
-                <span>You only have 60 days left to review.</span>
+                <span>{{ $t('reviewsPage.daysLeft') }}</span>
               </div>
               <button
                 class="review-button"
                 @click="makeReview(booking.booking_code, booking.hotel?.id, booking.hotel?.name)"
               >
-                Review your stay
+                {{ $t('reviewsPage.reviewYourStay') }}
               </button>
             </div>
           </div>
@@ -285,7 +286,7 @@ export default {
             <img
               v-if="getFirstImageUrl(review.hotel?.image_urls)"
               :src="getFirstImageUrl(review.hotel?.image_urls)"
-              alt="Property"
+              :alt="$t('reviewsPage.propertyAlt')"
               class="property-image"
               @error="onImageError"
             />
@@ -293,10 +294,10 @@ export default {
               <i class="fa-regular fa-image"></i>
             </div>
             <div class="review-content">
-              <h4>You reviewed your stay at {{ review.hotel?.name }}</h4>
+              <h4>{{ $t('reviewsPage.reviewedStay', { hotel: review.hotel?.name }) }}</h4>
               <div class="review-meta">
-                <span class="review-status">Reviewed</span>
-                <span v-if="review.status === 'hidden'" class="review-hidden-badge">Hidden</span>
+                <span class="review-status">{{ $t('reviewsPage.reviewed') }}</span>
+                <span v-if="review.status === 'hidden'" class="review-hidden-badge">{{ $t('reviewsPage.hidden') }}</span>
                 <i
                   class="fa-solid review-toggle-icon"
                   :class="isReviewExpanded(review.id) ? 'fa-chevron-up' : 'fa-chevron-down'"
@@ -309,22 +310,22 @@ export default {
               <div v-if="isReviewExpanded(review.id)" class="review-details">
                 <div v-if="review.rating_overall" class="review-rating">
                   <span class="score-badge">{{ review.rating_overall }}</span>
-                  <span class="review-rating-label">out of 10</span>
+                  <span class="review-rating-label">{{ $t('reviewsPage.outOfTen') }}</span>
                 </div>
                 <p v-if="review.status === 'hidden'" class="review-hidden-note">
-                  This review is hidden by moderation and only visible to you.
+                  {{ $t('reviewsPage.hiddenNote') }}
                 </p>
                 <div v-if="sortedMedia(review.media).length" class="review-media">
                   <img
                     v-for="(media, index) in sortedMedia(review.media)"
                     :key="media.id || index"
                     :src="getImageUrl(media.thumbnail_url || media.url)"
-                    alt="Review photo"
+                    :alt="$t('reviewsPage.reviewPhotoAlt')"
                     class="review-media-item"
                     @error="onImageError"
                   />
                 </div>
-                <p v-else class="review-media-empty">No photos attached to this review.</p>
+                <p v-else class="review-media-empty">{{ $t('reviewsPage.noPhotos') }}</p>
               </div>
             </div>
           </div>

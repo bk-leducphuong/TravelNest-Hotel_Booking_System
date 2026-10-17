@@ -20,6 +20,18 @@ vi.mock('@/components/common/EmptyState.vue', () => ({
 
 const emptyResponse = { data: [], meta: { page: 1, limit: 10, total: 0 } }
 
+// Minimal `$t` stub: resolves the English copy the component renders and
+// interpolates {placeholders} so text assertions keep working.
+const messages = {
+  'bookingFlow.paginationSummary': 'Showing {start}-{end} of {total} bookings',
+}
+
+const translate = (key, params) => {
+  const message = messages[key] ?? key
+  if (!params) return message
+  return message.replace(/\{(\w+)\}/g, (_, name) => params[name])
+}
+
 const bookingRow = (code) => ({
   booking_code: code,
   created_at: '2026-01-05T10:00:00.000Z',
@@ -50,7 +62,7 @@ const mountView = ({ routeQuery = {}, response = emptyResponse } = {}) => {
       mocks: {
         $route: { query: routeQuery },
         $router: { push },
-        $t: (key) => key,
+        $t: translate,
       },
     },
   })
