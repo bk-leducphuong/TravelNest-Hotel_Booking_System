@@ -16,7 +16,7 @@ const { Cities, Countries } = require('@platform/database');
 const {
   findCitiesForAdmin,
   findCountriesForAdmin,
-} = require('@modules/catalog/infrastructure/hotel/find');
+} = require('@modules/catalog/infrastructure/hotel/locations');
 
 describe('catalog location lookups', () => {
   beforeEach(() => {
