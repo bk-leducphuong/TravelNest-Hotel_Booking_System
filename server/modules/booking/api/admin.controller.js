@@ -6,6 +6,9 @@ const { getBookingStats } = require('../application/admin/getBookingStats');
 const { getBookingTrend } = require('../application/admin/getBookingTrend');
 const { updateBookingStatus } = require('../application/admin/updateBookingStatus');
 const { forceCancelBooking } = require('../application/admin/forceCancelBooking');
+const { createManualBooking } = require('../application/admin/createManualBooking');
+const { getReservationCalendar } = require('../application/admin/getReservationCalendar');
+const { getReservationBoard } = require('../application/admin/getReservationBoard');
 
 const listBookingsHandler = asyncHandler(async (req, res) => {
   const result = await listBookings({
@@ -59,6 +62,26 @@ const cancelBookingHandler = asyncHandler(async (req, res) => {
   res.status(200).json({ data: result });
 });
 
+const createBookingHandler = asyncHandler(async (req, res) => {
+  const hotelId = req.hotelContext?.hotelId || req.body.hotelId;
+  const result = await createManualBooking(hotelId, req.body, {
+    actorUserId: req.user.id,
+    requestId: req.id,
+  });
+
+  res.status(201).json({ data: result });
+});
+
+const getReservationCalendarHandler = asyncHandler(async (req, res) => {
+  const data = await getReservationCalendar(req.params.hotelId, req.query);
+  res.status(200).json({ data });
+});
+
+const getReservationBoardHandler = asyncHandler(async (req, res) => {
+  const data = await getReservationBoard(req.params.hotelId, req.query);
+  res.status(200).json({ data });
+});
+
 module.exports = {
   listBookingsHandler,
   getBookingHandler,
@@ -66,4 +89,7 @@ module.exports = {
   getBookingTrendHandler,
   updateBookingStatusHandler,
   cancelBookingHandler,
+  createBookingHandler,
+  getReservationCalendarHandler,
+  getReservationBoardHandler,
 };

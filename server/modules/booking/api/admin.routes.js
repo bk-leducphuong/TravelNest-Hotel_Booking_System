@@ -41,6 +41,13 @@ router.get(
   controller.listBookingsHandler
 );
 
+router.post(
+  '/',
+  requireHotelPermission(PERMISSIONS.BOOKING_CREATE),
+  validate(schema.createBooking),
+  controller.createBookingHandler
+);
+
 router.get(
   '/hotels/:hotelId/stats',
   requireHotelPermission(PERMISSIONS.BOOKING_READ),
@@ -53,6 +60,20 @@ router.get(
   requireHotelPermission(PERMISSIONS.BOOKING_READ),
   validate(schema.getBookingTrend),
   controller.getBookingTrendHandler
+);
+
+router.get(
+  '/hotels/:hotelId/calendar',
+  requireHotelPermission(PERMISSIONS.BOOKING_READ),
+  validate(schema.getReservationCalendar),
+  controller.getReservationCalendarHandler
+);
+
+router.get(
+  '/hotels/:hotelId/board',
+  requireHotelPermission(PERMISSIONS.BOOKING_READ),
+  validate(schema.getReservationBoard),
+  controller.getReservationBoardHandler
 );
 
 router.get(

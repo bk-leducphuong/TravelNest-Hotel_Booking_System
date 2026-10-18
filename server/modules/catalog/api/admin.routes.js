@@ -102,4 +102,64 @@ router.delete(
   controller.deletePolicyHandler
 );
 
+// --- Amenities (assignment; the catalog lives at /admin/amenities) ---
+
+router.get(
+  '/:hotelId/amenities',
+  requireHotelPermission(PERMISSIONS.HOTEL_READ),
+  validate(schema.hotelParams),
+  controller.getHotelAmenitiesHandler
+);
+
+router.put(
+  '/:hotelId/amenities',
+  requireHotelPermission(PERMISSIONS.HOTEL_UPDATE),
+  validate(schema.setHotelAmenities),
+  controller.setHotelAmenitiesHandler
+);
+
+router.get(
+  '/:hotelId/rooms/:roomId/amenities',
+  requireHotelPermission(PERMISSIONS.ROOM_READ),
+  validate(schema.roomParams),
+  controller.getRoomAmenitiesHandler
+);
+
+router.put(
+  '/:hotelId/rooms/:roomId/amenities',
+  requireHotelPermission(PERMISSIONS.ROOM_UPDATE),
+  validate(schema.setRoomAmenities),
+  controller.setRoomAmenitiesHandler
+);
+
+// --- Cancellation rules ---
+
+router.get(
+  '/:hotelId/cancellation-rules',
+  requireHotelPermission(PERMISSIONS.HOTEL_READ),
+  validate(schema.hotelParams),
+  controller.listCancellationRulesHandler
+);
+
+router.post(
+  '/:hotelId/cancellation-rules',
+  requireHotelPermission(PERMISSIONS.HOTEL_UPDATE),
+  validate(schema.createCancellationRule),
+  controller.createCancellationRuleHandler
+);
+
+router.patch(
+  '/:hotelId/cancellation-rules/:ruleId',
+  requireHotelPermission(PERMISSIONS.HOTEL_UPDATE),
+  validate(schema.updateCancellationRule),
+  controller.updateCancellationRuleHandler
+);
+
+router.delete(
+  '/:hotelId/cancellation-rules/:ruleId',
+  requireHotelPermission(PERMISSIONS.HOTEL_UPDATE),
+  validate(schema.cancellationRuleParams),
+  controller.deleteCancellationRuleHandler
+);
+
 module.exports = router;

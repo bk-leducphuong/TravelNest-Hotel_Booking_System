@@ -1,7 +1,7 @@
 const Sequelize = require('sequelize');
 const { uuidv7 } = require('uuidv7');
 
-const { ROOM_TYPES, ROOM_STATUSES } = require('../../../../constants/rooms');
+const { ROOM_TYPES, ROOM_STATUSES, BED_TYPES } = require('../../../../constants/rooms');
 module.exports = function (sequelize, DataTypes) {
   const Room = sequelize.define(
     'rooms',
@@ -43,6 +43,11 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.ENUM(...ROOM_TYPES),
         allowNull: true,
         comment: 'Standardized room type classification',
+      },
+      bed_type: {
+        type: DataTypes.ENUM(...BED_TYPES),
+        allowNull: true,
+        comment: 'Primary bed configuration (e.g., king, twin)',
       },
       quantity: {
         type: DataTypes.INTEGER,
