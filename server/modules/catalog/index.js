@@ -1,6 +1,7 @@
 const roomRepository = require('./infrastructure/room-admin.repository');
 const guestRoutes = require('./api/guest.routes');
 const adminRoutes = require('./api/admin.routes');
+const locationAdminRoutes = require('./api/location.routes');
 const hotelRepository = require('./infrastructure/hotel.repository');
 const destinationRepository = require('./infrastructure/destination.repository');
 const imageRepository = require('./infrastructure/image.repository');
@@ -81,6 +82,7 @@ async function getCityImagesByCityIds(cityIds, options = {}) {
 module.exports = {
   guestRoutes,
   adminRoutes,
+  locationAdminRoutes,
 
   // rooms
   getRoomsForHotel,

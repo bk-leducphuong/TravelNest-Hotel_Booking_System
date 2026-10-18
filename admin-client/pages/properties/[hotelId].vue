@@ -8,6 +8,8 @@ import {
   deleteHotelPhoto,
   deletePolicy,
   deleteRoom,
+  fetchCities,
+  fetchCountries,
   fetchHotel,
   fetchHotelPhotos,
   setPrimaryHotelPhoto,
@@ -15,6 +17,8 @@ import {
   updatePolicy,
   updateRoom,
   uploadHotelPhoto,
+  type City,
+  type Country,
   type HotelDetail,
   type HotelPhoto,
   type HotelPolicy,
@@ -39,6 +43,10 @@ const rooms = ref<Room[]>([]);
 const policies = ref<HotelPolicy[]>([]);
 const photos = ref<HotelPhoto[]>([]);
 
+const countries = ref<Country[]>([]);
+const cities = ref<City[]>([]);
+const loadingLocations = ref(false);
+
 const activeTab = ref("overview");
 const fileInput = ref<HTMLInputElement | null>(null);
 
@@ -48,6 +56,8 @@ const hotelForm = reactive({
   name: "",
   description: "",
   address: "",
+  cityId: undefined as string | undefined,
+  countryId: undefined as string | undefined,
   phoneNumber: "",
   latitude: undefined as number | undefined,
   longitude: undefined as number | undefined,
@@ -95,6 +105,8 @@ const applyHotelForm = (data: HotelDetail) => {
   hotelForm.name = data.name ?? "";
   hotelForm.description = data.description ?? "";
   hotelForm.address = data.address ?? "";
+  hotelForm.cityId = data.city_id ?? undefined;
+  hotelForm.countryId = data.country_id ?? undefined;
   hotelForm.phoneNumber = data.phone_number ?? "";
   hotelForm.latitude = toNumberOrUndefined(data.latitude);
   hotelForm.longitude = toNumberOrUndefined(data.longitude);
@@ -108,6 +120,36 @@ const applyHotelForm = (data: HotelDetail) => {
   hotelForm.timezone = data.timezone ?? "";
 };
 
+const loadCountries = async () => {
+  try {
+    const result = await fetchCountries({ limit: 300 });
+    countries.value = result.data;
+  } catch (error) {
+    ElMessage.error((error as Error).message);
+  }
+};
+
+const loadCities = async () => {
+  try {
+    const result = await fetchCities({
+      countryId: hotelForm.countryId || undefined,
+      limit: 200,
+    });
+    cities.value = result.data;
+  } catch (error) {
+    ElMessage.error((error as Error).message);
+  }
+};
+
+const loadLocations = async () => {
+  loadingLocations.value = true;
+  try {
+    await Promise.all([loadCountries(), loadCities()]);
+  } finally {
+    loadingLocations.value = false;
+  }
+};
+
 const loadDetail = async () => {
   loading.value = true;
   try {
@@ -117,6 +159,7 @@ const loadDetail = async () => {
     policies.value = detail.policies;
     applyHotelForm(detail.hotel);
     photos.value = await fetchHotelPhotos(hotelId.value).catch(() => []);
+    await loadLocations();
   } catch (error) {
     ElMessage.error((error as Error).message);
   } finally {
@@ -131,6 +174,8 @@ const saveHotel = async () => {
       name: hotelForm.name,
       description: hotelForm.description,
       address: hotelForm.address,
+      cityId: hotelForm.cityId ?? undefined,
+      countryId: hotelForm.countryId ?? undefined,
       phoneNumber: hotelForm.phoneNumber,
       latitude: hotelForm.latitude,
       longitude: hotelForm.longitude,
@@ -370,11 +415,18 @@ const removePhoto = async (photo: HotelPhoto) => {
   }
 };
 
+watch(
+  () => hotelForm.countryId,
+  () => {
+    loadCities();
+  }
+);
+
 watch(hotelId, loadDetail, { immediate: true });
 </script>
 
 <template>
-  <section class="space-y-6" v-loading="loading">
+  <section v-loading="loading" class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <NuxtLink to="/properties" class="text-sm text-emerald-600 hover:underline">
@@ -410,6 +462,40 @@ watch(hotelId, loadDetail, { immediate: true });
               </el-form-item>
               <el-form-item :label="$t('properties.form.address')">
                 <el-input v-model="hotelForm.address" />
+              </el-form-item>
+              <el-form-item :label="$t('properties.country')">
+                <el-select
+                  v-model="hotelForm.countryId"
+                  :loading="loadingLocations"
+                  clearable
+                  filterable
+                  :placeholder="$t('properties.selectCountry')"
+                  class="w-full"
+                >
+                  <el-option
+                    v-for="country in countries"
+                    :key="country.id"
+                    :label="country.name"
+                    :value="country.id"
+                  />
+                </el-select>
+              </el-form-item>
+              <el-form-item :label="$t('properties.city')">
+                <el-select
+                  v-model="hotelForm.cityId"
+                  :loading="loadingLocations"
+                  clearable
+                  filterable
+                  :placeholder="$t('properties.selectCity')"
+                  class="w-full"
+                >
+                  <el-option
+                    v-for="city in cities"
+                    :key="city.id"
+                    :label="city.name"
+                    :value="city.id"
+                  />
+                </el-select>
               </el-form-item>
               <el-form-item :label="$t('properties.form.phone')">
                 <el-input v-model="hotelForm.phoneNumber" />

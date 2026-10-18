@@ -1,6 +1,7 @@
 const Joi = require('joi');
 
-const { POLICY_TYPES, IANA_TIMEZONES } = require('@constants/hotels');
+const { POLICY_TYPES, IANA_TIMEZONES, HOTEL_STATUSES } = require('@constants/hotels');
+const { ROOM_STATUSES } = require('@constants/rooms');
 
 /**
  * Catalog module validation schemas (admin / host property management).
@@ -8,8 +9,11 @@ const { POLICY_TYPES, IANA_TIMEZONES } = require('@constants/hotels');
  */
 
 const uuid = Joi.string().uuid({ version: ['uuidv4', 'uuidv5', 'uuidv7'] });
-const hotelStatus = Joi.string().valid('active', 'inactive', 'pending', 'suspended');
-const roomStatus = Joi.string().valid('active', 'inactive');
+// Derive the status allowlists from the constants (single source of truth) so
+// the admin API can never offer a value the model/DB enum rejects — and so
+// `maintenance` (rooms) and the real hotel lifecycle states are accepted.
+const hotelStatus = Joi.string().valid(...HOTEL_STATUSES);
+const roomStatus = Joi.string().valid(...ROOM_STATUSES);
 
 const listHotels = {
   query: Joi.object({
@@ -23,6 +27,24 @@ const listHotels = {
 
 const hotelParams = {
   params: Joi.object({ hotelId: uuid.required() }).required(),
+};
+
+// Global location lookups used by the property editor (city/country selects).
+const listCities = {
+  query: Joi.object({
+    search: Joi.string().max(150).allow(''),
+    countryId: uuid,
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(200).default(100),
+  }).unknown(false),
+};
+
+const listCountries = {
+  query: Joi.object({
+    search: Joi.string().max(150).allow(''),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(300).default(200),
+  }).unknown(false),
 };
 
 const roomParams = {
@@ -111,6 +133,8 @@ const updatePolicy = {
 
 module.exports = {
   listHotels,
+  listCities,
+  listCountries,
   hotelParams,
   roomParams,
   updateHotel,

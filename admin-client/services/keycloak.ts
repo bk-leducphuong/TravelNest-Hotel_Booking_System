@@ -140,3 +140,12 @@ export async function logout(): Promise<void> {
     redirectUri: `${window.location.origin}/login`,
   });
 }
+
+/**
+ * Keycloak account console URL (profile, password, sessions). Used by the admin
+ * Settings page because password changes are managed by Keycloak, not the API.
+ */
+export function accountManagementUrl(): string {
+  const { url, realm } = buildConfig();
+  return `${url.replace(/\/+$/, "")}/realms/${realm}/account`;
+}

@@ -5,6 +5,8 @@ const { locale, locales, setLocale } = useI18n();
 
 const navItems = computed(() => ADMIN_NAV.filter((item) => !item.permission || can(item.permission)));
 
+const mobileNavOpen = ref(false);
+
 const onHotelChange = (hotelId: string) => {
   auth.setActiveHotel(hotelId);
 };
@@ -52,11 +54,19 @@ const onLocaleChange = (value: string) => {
         <header class="sticky top-0 z-20 border-b bg-white/80 backdrop-blur">
           <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <div class="flex items-center gap-3">
+              <el-button
+                class="md:hidden"
+                size="small"
+                :aria-label="$t('shell.menu')"
+                @click="mobileNavOpen = true"
+              >
+                <span class="text-lg leading-none">☰</span>
+              </el-button>
               <span class="text-sm font-medium text-slate-500">{{ $t('shell.hotelLabel') }}</span>
               <el-select
                 v-if="auth.hasHotels"
                 :model-value="auth.activeHotelId ?? undefined"
-                class="w-64"
+                class="w-40 md:w-64"
                 :placeholder="$t('shell.selectHotel')"
                 @update:model-value="onHotelChange"
               >
@@ -98,5 +108,39 @@ const onLocaleChange = (value: string) => {
         </main>
       </div>
     </div>
+
+    <el-drawer
+      v-model="mobileNavOpen"
+      direction="ltr"
+      size="70%"
+      :with-header="false"
+      class="md:hidden"
+    >
+      <div class="flex items-center gap-2 px-1 py-2">
+        <span
+          class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 font-semibold text-white"
+        >
+          TN
+        </span>
+        <span class="text-lg font-semibold tracking-tight text-slate-900">TravelNest Admin</span>
+      </div>
+
+      <nav class="mt-4 space-y-1">
+        <NuxtLink
+          v-for="item in navItems"
+          :key="item.to"
+          :to="item.to"
+          class="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+          active-class="bg-emerald-600 text-white hover:bg-emerald-600"
+          @click="mobileNavOpen = false"
+        >
+          {{ $t(item.labelKey) }}
+        </NuxtLink>
+      </nav>
+
+      <div class="mt-6 px-1 text-xs text-slate-400">
+        {{ auth.user?.email }}
+      </div>
+    </el-drawer>
   </div>
 </template>

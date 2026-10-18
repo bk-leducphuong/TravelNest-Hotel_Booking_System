@@ -1,6 +1,8 @@
 const asyncHandler = require('@utils/asyncHandler');
 
 const { listHotels } = require('../application/admin/listHotels');
+const { listCities } = require('../application/admin/listCities');
+const { listCountries } = require('../application/admin/listCountries');
 const { getHotel } = require('../application/admin/getHotel');
 const { updateHotel } = require('../application/admin/updateHotel');
 const { listRooms } = require('../application/admin/listRooms');
@@ -22,6 +24,16 @@ const listHotelsHandler = asyncHandler(async (req, res) => {
     hotelIds: req.hotelScopeIds,
   });
   res.status(200).json({ data: hotels, meta: { page, limit, total } });
+});
+
+const listCitiesHandler = asyncHandler(async (req, res) => {
+  const { cities, page, limit, total } = await listCities(req.query);
+  res.status(200).json({ data: cities, meta: { page, limit, total } });
+});
+
+const listCountriesHandler = asyncHandler(async (req, res) => {
+  const { countries, page, limit, total } = await listCountries(req.query);
+  res.status(200).json({ data: countries, meta: { page, limit, total } });
 });
 
 const getHotelHandler = asyncHandler(async (req, res) => {
@@ -76,6 +88,8 @@ const deletePolicyHandler = asyncHandler(async (req, res) => {
 
 module.exports = {
   listHotelsHandler,
+  listCitiesHandler,
+  listCountriesHandler,
   getHotelHandler,
   updateHotelHandler,
   listRoomsHandler,

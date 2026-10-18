@@ -72,9 +72,9 @@ export const POLICY_TYPES = [
   "other",
 ] as const;
 
-export const HOTEL_STATUSES = ["active", "inactive", "pending", "suspended"] as const;
+export const HOTEL_STATUSES = ["active", "inactive", "suspended"] as const;
 
-export const ROOM_STATUSES = ["active", "inactive"] as const;
+export const ROOM_STATUSES = ["active", "inactive", "maintenance"] as const;
 
 export interface HotelDetailResult {
   hotel: HotelDetail;
@@ -92,6 +92,32 @@ export interface HotelListFilters {
   search?: string;
   status?: string;
   cityId?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface City {
+  id: string;
+  name: string;
+  slug?: string;
+  country_id?: string | null;
+}
+
+export interface Country {
+  id: string;
+  name: string;
+  iso_code?: string;
+}
+
+export interface CityFilters {
+  search?: string;
+  countryId?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface CountryFilters {
+  search?: string;
   page?: number;
   limit?: number;
 }
@@ -277,4 +303,24 @@ export async function setPrimaryHotelPhoto(hotelId: string, imageId: string): Pr
     `/images/hotel/${encodeURIComponent(hotelId)}/primary/${encodeURIComponent(imageId)}`,
     { method: "PUT" }
   );
+}
+
+// --- Location reference data (city/country selects) ---
+
+export async function fetchCities(
+  filters: CityFilters = {}
+): Promise<{ data: City[]; meta: HotelListMeta }> {
+  const response = await apiFetch<{ data: City[]; meta: HotelListMeta }>(
+    `/admin/locations/cities${toQuery(filters)}`
+  );
+  return { data: response.data, meta: response.meta };
+}
+
+export async function fetchCountries(
+  filters: CountryFilters = {}
+): Promise<{ data: Country[]; meta: HotelListMeta }> {
+  const response = await apiFetch<{ data: Country[]; meta: HotelListMeta }>(
+    `/admin/locations/countries${toQuery(filters)}`
+  );
+  return { data: response.data, meta: response.meta };
 }
