@@ -80,7 +80,9 @@ const createBooking = {
     quantity: Joi.number().integer().min(1).default(1),
     numberOfGuests: Joi.number().integer().min(1).default(1),
     buyerId: uuid,
-    guestEmail: Joi.string().email().max(255),
+    guestEmail: Joi.string()
+      .email({ tlds: { allow: false } })
+      .max(255),
     specialRequests: Joi.string().max(2000).allow('', null),
     guestDetails: Joi.object().unknown(true),
     totalPrice: Joi.number().min(0),

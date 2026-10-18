@@ -17,7 +17,10 @@ const hotelStaffMemberParams = {
 const addHotelStaff = {
   params: Joi.object({ hotelId: uuid.required() }).required(),
   body: Joi.object({
-    email: Joi.string().email().max(255).required(),
+    email: Joi.string()
+      .email({ tlds: { allow: false } })
+      .max(255)
+      .required(),
     role: Joi.string()
       .valid(...HOTEL_ROLE_NAMES)
       .required(),
