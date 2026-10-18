@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
 import {
   createBooking,
   fetchReservationBoard,
@@ -9,8 +8,8 @@ import {
 } from "~/services/api/bookings";
 import { fetchRooms, type Room } from "~/services/api/catalog";
 import {
-  MONTH_LABELS,
-  WEEKDAY_LABELS,
+  MONTH_KEYS,
+  WEEKDAY_KEYS,
   addMonths,
   monthBounds,
   monthMatrix,
@@ -51,7 +50,7 @@ const form = reactive({
   totalPrice: undefined as number | undefined,
 });
 
-const monthLabel = computed(() => `${MONTH_LABELS[month.value - 1]} ${year.value}`);
+const monthLabel = computed(() => `${t(MONTH_KEYS[month.value - 1])} ${year.value}`);
 const weekMatrix = computed(() => monthMatrix(year.value, month.value));
 
 const money = (value?: string | number | null, currency = "USD") =>
@@ -265,11 +264,11 @@ watch(activeTab, (tab) => {
                     {{ $t("reservations.room") }}
                   </th>
                   <th
-                    v-for="weekday in WEEKDAY_LABELS"
+                    v-for="weekday in WEEKDAY_KEYS"
                     :key="weekday"
                     class="border-b px-1 py-1 text-center font-medium text-slate-400"
                   >
-                    {{ weekday }}
+                    {{ $t(weekday) }}
                   </th>
                 </tr>
               </thead>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
 import {
   HOTEL_STATUSES,
   POLICY_TYPES,
@@ -38,7 +37,6 @@ import {
 const route = useRoute();
 const { t } = useI18n();
 const hotelId = computed(() => String(route.params.hotelId));
-const { t } = useI18n();
 
 const hotelStatusLabel = (status?: string) =>
   status ? t(`properties.hotelStatus.${status}`) : "";

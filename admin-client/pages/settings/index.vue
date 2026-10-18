@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
 import { fetchProfile, updateProfile, type AdminProfile } from "~/services/api/account";
 import { accountManagementUrl } from "~/services/keycloak";
 
