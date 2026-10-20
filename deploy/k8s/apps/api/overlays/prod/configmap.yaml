@@ -4,6 +4,10 @@ metadata:
   name: api-config
 data:
   NODE_ENV: production
+  # Swagger UI at /api-docs. Publicly routable, but Cloudflare Access guards
+  # /api-docs and /api-docs.json (self-hosted apps "TravelNest API Docs" and
+  # "TravelNest API Docs JSON"). Everything else on the API stays public.
+  ENABLE_API_DOCS: "true"
   PORT: "3000"
   CLIENT_HOST: https://deployserver.work
   ADMIN_CLIENT_HOST: https://admin.deployserver.work
