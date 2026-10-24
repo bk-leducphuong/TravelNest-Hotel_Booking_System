@@ -111,7 +111,7 @@ const occupancySegments = computed(() => {
   const booked = occupancy.value?.bookedRooms ?? 0;
   const total = occupancy.value?.totalRooms ?? 0;
   return [
-    { label: t("dashboard.chart.booked"), value: booked, color: "#059669" },
+    { label: t("dashboard.chart.booked"), value: booked, color: "#0071c2" },
     {
       label: t("dashboard.chart.available"),
       value: Math.max(total - booked, 0),
@@ -124,17 +124,17 @@ const revenueBars = computed(() => [
   {
     label: t("dashboard.chart.gross"),
     value: paymentSummary.value?.grossAmount ?? 0,
-    color: "#059669",
+    color: "#0071c2",
   },
   {
     label: t("dashboard.chart.net"),
     value: paymentSummary.value?.netAmount ?? 0,
-    color: "#0284c7",
+    color: "#003b95",
   },
   {
     label: t("dashboard.chart.refunded"),
     value: paymentSummary.value?.refundedAmount ?? 0,
-    color: "#e11d48",
+    color: "#b3261e",
   },
 ]);
 
@@ -192,10 +192,10 @@ watch(() => auth.activeHotelId, load, { immediate: true });
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <h2 class="text-2xl font-semibold tracking-tight text-slate-900">
-          {{ $t('dashboard.title') }}
+          {{ $t("dashboard.title") }}
         </h2>
         <p class="mt-1 text-sm text-slate-500">
-          {{ auth.activeHotel?.name || $t('dashboard.noHotelSelected') }}
+          {{ auth.activeHotel?.name || $t("dashboard.noHotelSelected") }}
           <span v-if="occupancy"
             >· {{ occupancy.startDate }} → {{ occupancy.endDate }}</span
           >
@@ -206,7 +206,7 @@ watch(() => auth.activeHotelId, load, { immediate: true });
         :disabled="!auth.activeHotelId"
         @click="load"
       >
-        {{ $t('common.refresh') }}
+        {{ $t("common.refresh") }}
       </el-button>
     </div>
 
@@ -235,7 +235,9 @@ watch(() => auth.activeHotelId, load, { immediate: true });
 
       <el-card v-if="can('booking.read')" v-loading="loading" class="shadow-sm">
         <template #header>
-          <span class="font-medium">{{ $t('dashboard.chart.bookingsLast14Days') }}</span>
+          <span class="font-medium">{{
+            $t("dashboard.chart.bookingsLast14Days")
+          }}</span>
         </template>
         <el-empty
           v-if="
@@ -251,7 +253,9 @@ watch(() => auth.activeHotelId, load, { immediate: true });
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <el-card v-if="can('room.read')" v-loading="loading" class="shadow-sm">
           <template #header>
-            <span class="font-medium">{{ $t('dashboard.chart.occupancy') }}</span>
+            <span class="font-medium">{{
+              $t("dashboard.chart.occupancy")
+            }}</span>
           </template>
           <el-empty
             v-if="!occupancy"
@@ -272,7 +276,7 @@ watch(() => auth.activeHotelId, load, { immediate: true });
           class="shadow-sm"
         >
           <template #header>
-            <span class="font-medium">{{ $t('dashboard.chart.revenue') }}</span>
+            <span class="font-medium">{{ $t("dashboard.chart.revenue") }}</span>
           </template>
           <el-empty
             v-if="!paymentSummary"
@@ -285,7 +289,9 @@ watch(() => auth.activeHotelId, load, { immediate: true });
 
       <el-card v-if="can('booking.read')" v-loading="loading" class="shadow-sm">
         <template #header>
-          <span class="font-medium">{{ $t('dashboard.chart.bookingsByStatus') }}</span>
+          <span class="font-medium">{{
+            $t("dashboard.chart.bookingsByStatus")
+          }}</span>
         </template>
         <el-empty
           v-if="bookingStatusRows.length === 0"

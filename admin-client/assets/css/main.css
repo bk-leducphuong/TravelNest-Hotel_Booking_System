@@ -1,0 +1,207 @@
+/* Guest palette: client/src/assets/styles/base/_variables.scss and toast-overrides.css.
+   Admin layout uses its own styles; never import the guest's global resets. */
+:root:root {
+  --tn-brand: #003b95;
+  --tn-action: #0071c2;
+  --tn-hover: #004779;
+  --tn-accent: #ffb700;
+  --tn-canvas: #f5f5f5;
+  --tn-soft: #f0f6fd;
+  --tn-ink: #333333;
+  --tn-muted: #666666;
+  --tn-border: #cccccc;
+  --el-color-primary: var(--tn-action);
+  --el-color-primary-rgb: 0, 113, 194;
+  --el-color-success-rgb: 19, 115, 51;
+  --el-color-warning-rgb: 178, 106, 0;
+  --el-color-danger-rgb: 179, 38, 30;
+  --el-color-primary-dark-2: var(--tn-hover);
+  --el-color-primary-light-3: #4d9cd4;
+  --el-color-primary-light-5: #80b8e1;
+  --el-color-primary-light-7: #b3d4ed;
+  --el-color-primary-light-8: #cce3f3;
+  --el-color-primary-light-9: var(--tn-soft);
+  --el-color-success: #137333;
+  --el-color-success-light-3: #5a9d70;
+  --el-color-success-light-5: #89b999;
+  --el-color-success-light-7: #b8d5c2;
+  --el-color-success-light-8: #d0e3d6;
+  --el-color-success-light-9: #e7f1eb;
+  --el-color-success-dark-2: #0f5c29;
+  --el-color-warning: #b26a00;
+  --el-color-warning-light-3: #c9954d;
+  --el-color-warning-light-5: #d9b580;
+  --el-color-warning-light-7: #e8d2b3;
+  --el-color-warning-light-8: #f0e1cc;
+  --el-color-warning-light-9: #fff4df;
+  --el-color-warning-dark-2: #8e5500;
+  --el-color-danger: #b3261e;
+  --el-color-danger-light-3: #ca6762;
+  --el-color-danger-light-5: #d9938f;
+  --el-color-danger-light-7: #e8bebc;
+  --el-color-danger-light-8: #f0d4d2;
+  --el-color-danger-light-9: #fbece9;
+  --el-color-danger-dark-2: #8f1e18;
+  --el-text-color-primary: var(--tn-ink);
+  --el-text-color-regular: var(--tn-ink);
+  --el-text-color-secondary: var(--tn-muted);
+  --el-border-radius-base: 10px;
+  --el-border-color: var(--tn-border);
+  --el-fill-color-light: #f8f8f8;
+  font-family: Poppins, system-ui, sans-serif;
+  color: var(--tn-ink);
+  background: var(--tn-canvas);
+}
+body {
+  margin: 0;
+  min-width: 320px;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+a {
+  color: var(--tn-action);
+}
+:focus-visible {
+  outline: 3px solid var(--tn-action);
+  outline-offset: 3px;
+}
+.el-card {
+  --el-card-border-radius: 20px;
+  border: none;
+  box-shadow: none !important;
+}
+.el-card__header {
+  border-bottom-color: #ededed;
+  padding: 22px 24px;
+  font-weight: 500;
+}
+.el-card__body {
+  padding: 24px;
+}
+.el-button {
+  font-weight: 500;
+  min-height: 36px;
+}
+.el-button--primary {
+  --el-button-hover-bg-color: var(--tn-hover);
+  --el-button-hover-border-color: var(--tn-hover);
+}
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper {
+  background: #f8f8f8;
+  border-radius: 10px;
+}
+.el-table {
+  --el-table-header-bg-color: var(--tn-soft);
+  --el-table-header-text-color: var(--tn-muted);
+  --el-table-row-hover-bg-color: #f7faff;
+  border-radius: 12px;
+}
+.el-table th.el-table__cell {
+  font-weight: 500;
+  padding: 14px 0;
+}
+.el-table td.el-table__cell {
+  padding: 16px 0;
+}
+.el-dialog {
+  border-radius: 20px;
+  max-width: calc(100vw - 24px);
+}
+.el-tabs--border-card {
+  border: none;
+  border-radius: 20px;
+  box-shadow: none;
+  overflow: hidden;
+}
+.el-tabs--border-card > .el-tabs__header {
+  background: var(--tn-soft);
+}
+.el-tag {
+  border-radius: 999px;
+}
+.el-pagination {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+.tn-section {
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  min-width: 0;
+}
+.tn-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.tn-status--success {
+  background: #e7f1eb;
+  color: #137333;
+}
+.tn-status--warning {
+  background: #fff4df;
+  color: #805000;
+}
+.tn-status--danger {
+  background: #fbece9;
+  color: #b3261e;
+}
+.tn-status--info {
+  background: var(--tn-soft);
+  color: var(--tn-brand);
+}
+.tn-status--neutral {
+  background: #f1f1f1;
+  color: var(--tn-muted);
+}
+.tn-page-title {
+  font-size: clamp(24px, 3vw, 30px);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+.tn-icon-button {
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  background: white;
+  color: var(--tn-brand);
+  cursor: pointer;
+}
+.tn-icon-button:hover {
+  background: var(--tn-soft);
+}
+.tn-icon-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+@media (max-width: 640px) {
+  .tn-section,
+  .el-card__body {
+    padding: 18px;
+  }
+  .el-card__header {
+    padding: 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

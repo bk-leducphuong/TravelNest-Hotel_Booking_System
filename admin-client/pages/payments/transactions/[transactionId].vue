@@ -142,7 +142,7 @@ watch(transactionId, load, { immediate: true });
           </el-descriptions-item>
           <el-descriptions-item :label="$t('payments.col.buyer')">{{ buyerLabel }}</el-descriptions-item>
           <el-descriptions-item :label="$t('payments.col.booking')">
-            <NuxtLink v-if="transaction.booking_id" :to="`/bookings/${transaction.booking_id}`" class="text-emerald-600">
+            <NuxtLink v-if="transaction.booking_id" :to="`/bookings/${transaction.booking_id}`" class="text-action">
               {{ transaction.booking?.booking_code || transaction.booking_id }}
             </NuxtLink>
             <span v-else>—</span>
