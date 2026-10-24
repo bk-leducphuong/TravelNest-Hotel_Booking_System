@@ -26,6 +26,21 @@ const selectedId = ref<string | null>(null);
 const photos = ref<HotelPhoto[]>([]);
 const photoError = ref(false);
 const photoLoading = ref(false);
+const previewVisible = ref(false);
+let previewQuery: MediaQueryList | undefined;
+const updatePreview = () => {
+  previewVisible.value = previewQuery?.matches ?? false;
+};
+onMounted(() => {
+  previewQuery = window.matchMedia("(min-width: 1280px)");
+  updatePreview();
+  previewQuery.addEventListener("change", updatePreview);
+});
+onBeforeUnmount(() => {
+  previewQuery?.removeEventListener("change", updatePreview);
+  loadVersion++;
+  photoVersion++;
+});
 const deleting = ref(false);
 useEditorGuard(
   "room-list",
@@ -86,33 +101,30 @@ watch(
   },
   { immediate: true }
 );
-watch(
-  () => selected.value?.id,
-  async (roomId) => {
-    const version = ++photoVersion;
-    photos.value = [];
-    photoError.value = false;
-    photoLoading.value = false;
-    if (!roomId || !auth.activeHotelId) return;
-    const key = `${auth.activeHotelId}:${roomId}`;
-    if (cache.has(key)) {
-      photos.value = cache.get(key)!;
-      return;
-    }
-    photoLoading.value = true;
-    try {
-      const result = await fetchRoomPhotos(roomId);
-      if (version === photoVersion) {
-        photos.value = result;
-        cache.set(key, result);
-      }
-    } catch {
-      if (version === photoVersion) photoError.value = true;
-    } finally {
-      if (version === photoVersion) photoLoading.value = false;
-    }
+watch([() => selected.value?.id, previewVisible], async ([roomId, visible]) => {
+  const version = ++photoVersion;
+  photos.value = [];
+  photoError.value = false;
+  photoLoading.value = false;
+  if (!visible || !roomId || !auth.activeHotelId) return;
+  const key = `${auth.activeHotelId}:${roomId}`;
+  if (cache.has(key)) {
+    photos.value = cache.get(key)!;
+    return;
   }
-);
+  photoLoading.value = true;
+  try {
+    const result = await fetchRoomPhotos(roomId);
+    if (version === photoVersion) {
+      photos.value = result;
+      cache.set(key, result);
+    }
+  } catch {
+    if (version === photoVersion) photoError.value = true;
+  } finally {
+    if (version === photoVersion) photoLoading.value = false;
+  }
+});
 const deactivate = async (room: Room) => {
   if (!auth.activeHotelId || !can("room.delete") || deleting.value) return;
   deleting.value = true;
@@ -263,14 +275,18 @@ const deactivate = async (room: Room) => {
                 </div>
               </div>
               <div class="mt-3 flex flex-wrap items-center justify-end gap-3">
-                <button
-                  v-if="can('room.delete')"
-                  type="button"
-                  class="text-xs text-red-800 underline"
+                <el-button
+                  v-if="can('room.delete') && room.status !== 'inactive'"
+                  type="danger"
+                  plain
+                  size="small"
+                  :aria-label="
+                    $t('rooms.deactivateNamed', { name: room.room_name })
+                  "
                   :disabled="deleting"
                   @click="deactivate(room)"
                 >
-                  {{ $t("common.deactivate") }}</button
+                  {{ $t("rooms.deactivateRoom") }}</el-button
                 ><NuxtLink
                   :to="`/rooms/${room.id}`"
                   class="inline-flex items-center gap-1 text-xs text-action"
@@ -284,8 +300,7 @@ const deactivate = async (room: Room) => {
             </article></div
         ></UiSectionCard>
         <UiSectionCard
-          v-if="selected"
-          class="hidden xl:block"
+          v-if="selected && previewVisible"
           :title="selected.room_name"
           :description="selected.room_type ?? undefined"
         >
@@ -296,7 +311,7 @@ const deactivate = async (room: Room) => {
           >
             {{ $t("common.loading") }}
           </p>
-          <img
+          <UiMediaImage
             v-else-if="photos[0]?.url"
             :src="photos[0].url"
             :alt="selected.room_name"
@@ -309,7 +324,7 @@ const deactivate = async (room: Room) => {
             {{ $t(photoError ? "rooms.photosFailed" : "rooms.noPhotos") }}
           </div>
           <div v-if="photos.length > 1" class="mt-3 grid grid-cols-4 gap-2">
-            <img
+            <UiMediaImage
               v-for="photo in photos.slice(1, 5)"
               :key="photo.id"
               :src="photo.url"

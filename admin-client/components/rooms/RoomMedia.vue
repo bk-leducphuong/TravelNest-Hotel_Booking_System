@@ -150,8 +150,7 @@ const remove = async (photo: HotelPhoto) => {
         :key="photo.id"
         class="overflow-hidden rounded-xl border border-gray-200"
       >
-        <img
-          v-if="photo.url"
+        <UiMediaImage
           :src="photo.url"
           :alt="photo.original_filename ?? $t('rooms.photos')"
           class="aspect-video w-full object-cover"

@@ -11,7 +11,7 @@ const props = withDefaults(
     color?: string;
     valueFormatter?: (value: number) => string;
   }>(),
-  { height: 180, color: "#0071c2" }
+  { height: 180, color: "#0071c2", valueFormatter: undefined }
 );
 
 const WIDTH = 600;
@@ -61,7 +61,7 @@ const lastLabel = computed(
 <template>
   <div>
     <div class="mb-2 flex items-baseline justify-between">
-      <span class="text-xs text-slate-400">{{
+      <span class="text-xs text-muted">{{
         $t("chart.peak", { value: format(maxValue) })
       }}</span>
       <span class="text-xs font-medium text-slate-500">{{
@@ -88,6 +88,14 @@ const lastLabel = computed(
         vector-effect="non-scaling-stroke"
       />
       <polygon :points="areaPoints" :fill="color" fill-opacity="0.12" />
+      <circle
+        v-for="point in coordinates"
+        :key="point.label"
+        :cx="point.x"
+        :cy="point.y"
+        r="3"
+        :fill="color"
+      />
       <polyline
         :points="linePoints"
         fill="none"
@@ -109,7 +117,7 @@ const lastLabel = computed(
         </tbody>
       </table>
     </details>
-    <div class="mt-1 flex justify-between text-xs text-slate-400">
+    <div class="mt-1 flex justify-between text-xs text-muted">
       <span>{{ firstLabel }}</span>
       <span>{{ lastLabel }}</span>
     </div>

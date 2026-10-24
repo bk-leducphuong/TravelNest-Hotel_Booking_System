@@ -3,6 +3,12 @@ defineProps<{ title?: string; description?: string }>();
 </script>
 <template>
   <section class="tn-section">
+    <header
+      v-if="$slots.header"
+      class="mb-5 flex flex-wrap items-center justify-between gap-3 text-lg font-medium"
+    >
+      <slot name="header" />
+    </header>
     <div
       v-if="title || $slots.actions"
       class="mb-5 flex flex-wrap items-start justify-between gap-3"

@@ -42,9 +42,13 @@
   --el-color-danger-light-8: #f0d4d2;
   --el-color-danger-light-9: #fbece9;
   --el-color-danger-dark-2: #8f1e18;
+  --el-color-error: var(--el-color-danger);
+  --el-color-error-light-9: var(--el-color-danger-light-9);
+  --el-color-info: #666666;
   --el-text-color-primary: var(--tn-ink);
   --el-text-color-regular: var(--tn-ink);
   --el-text-color-secondary: var(--tn-muted);
+  --el-text-color-placeholder: var(--tn-muted);
   --el-border-radius-base: 10px;
   --el-border-color: var(--tn-border);
   --el-fill-color-light: #f8f8f8;
@@ -203,5 +207,88 @@ a {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+.tn-table-region {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.tn-detail-grid {
+  display: grid;
+  align-items: start;
+  gap: 24px;
+}
+.tn-summary-banner {
+  border-radius: 20px;
+  background: var(--tn-brand);
+  color: white;
+  padding: 24px;
+}
+.tn-summary-banner p {
+  overflow-wrap: anywhere;
+}
+.tn-filter-bar > div {
+  width: 100%;
+}
+.tn-filter-bar .el-input,
+.tn-filter-bar .el-select,
+.tn-filter-bar .el-date-editor {
+  max-width: 100%;
+}
+.tn-section .el-descriptions__cell {
+  overflow-wrap: anywhere;
+}
+.el-descriptions a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (min-width: 1024px) {
+  .tn-detail-grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .tn-filter-bar .el-input,
+  .tn-filter-bar .el-select,
+  .tn-filter-bar .el-date-editor {
+    width: 100% !important;
+  }
+}
+
+/* Lazy-loaded Element Plus styles must not replace the admin surface tokens. */
+.tn-table-region .el-table {
+  --el-table-header-bg-color: var(--tn-soft);
+  --el-table-header-text-color: var(--tn-muted);
+  --el-table-row-hover-bg-color: #f7faff;
+  border-radius: 12px;
+}
+.el-tag.el-tag {
+  border-radius: 999px;
+}
+:root .el-tag--warning.el-tag {
+  --el-tag-text-color: #805000;
+}
+.el-tag--info.el-tag {
+  --el-tag-text-color: var(--tn-muted);
+}
+.el-alert.el-alert--warning.is-light,
+.el-message.el-message--warning {
+  --el-color-warning: #805000;
+}
+.el-input .el-input__wrapper,
+.el-select .el-select__wrapper {
+  background-color: #f8f8f8;
+}
+@media (min-width: 640px) {
+  .tn-filter-bar .el-select {
+    width: 208px;
+  }
+  .tn-filter-bar .el-input {
+    width: 224px;
+  }
+  .tn-filter-bar .el-date-editor.el-input {
+    width: 192px;
   }
 }

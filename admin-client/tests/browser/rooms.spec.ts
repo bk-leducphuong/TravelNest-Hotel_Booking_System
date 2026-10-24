@@ -73,7 +73,7 @@ test("permission-aware shell, quick jump and mobile context", async ({
   ).toBeVisible();
   await page.getByRole("button", { name: "Go to…", exact: true }).click();
   const search = page.getByRole("combobox", { name: "Search pages" });
-  await search.fill("new room");
+  await search.fill("add room");
   await search.press("Enter");
   await expect(page).toHaveURL(/\/rooms\/new$/);
   await page.goto("/rooms");
@@ -84,7 +84,7 @@ test("permission-aware shell, quick jump and mobile context", async ({
     page.getByRole("button", { name: "Garden Room", exact: true })
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "New room", exact: true })
+    page.getByRole("link", { name: "Add room", exact: true })
   ).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Add room", exact: true })
@@ -226,4 +226,48 @@ test("room layouts remain usable across target widths and Vietnamese", async ({
     path: testInfo.outputPath("rooms-vietnamese.png"),
     fullPage: true,
   });
+});
+
+test("pending room saves block navigation and hotel switching", async ({
+  page,
+}) => {
+  let release!: () => void;
+  let requested!: () => void;
+  const started = new Promise<void>((resolve) => {
+    requested = resolve;
+  });
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/admin/hotels/hotel-1/rooms/room-1", async (route) => {
+    if (route.request().method() !== "PATCH") return route.fallback();
+    requested();
+    await gate;
+    await route.fulfill({
+      json: { data: { room: { ...room, room_name: "Saved Suite" } } },
+    });
+  });
+  await page.goto("/rooms/room-1");
+  await page
+    .getByRole("textbox", { name: "Room name", exact: true })
+    .fill("Saved Suite");
+  await page
+    .getByRole("button", { name: "Save basic information", exact: true })
+    .click();
+  await started;
+  await page.getByRole("link", { name: "Availability", exact: true }).click();
+  await expect(page).toHaveURL(/\/rooms\/room-1$/);
+  await page.locator("#desktop-hotel").press("Enter");
+  await page.getByRole("option", { name: "TravelNest Garden" }).click();
+  await expect(
+    page.locator(".el-select").filter({ has: page.locator("#desktop-hotel") })
+  ).toContainText("TravelNest Riverside");
+  const response = page.waitForResponse(
+    (result) => result.request().method() === "PATCH"
+  );
+  release();
+  await (await response).finished();
+  await expect(
+    page.getByRole("heading", { name: "Saved Suite", exact: true })
+  ).toBeVisible();
 });

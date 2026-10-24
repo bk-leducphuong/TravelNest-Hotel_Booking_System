@@ -10,6 +10,11 @@ export default defineNuxtConfig({
   i18n: {
     restructureDir: fileURLToPath(new URL("../../../i18n", import.meta.url)),
   },
-  runtimeConfig: { public: { apiBase: "/api/v1" } },
+  runtimeConfig: {
+    public: {
+      apiBase: "/api/v1",
+      mediaBase: "https://media.travelnest.test/uploads",
+    },
+  },
   devtools: { enabled: false },
 });

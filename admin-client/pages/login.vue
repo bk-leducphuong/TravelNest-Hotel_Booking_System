@@ -103,7 +103,7 @@ const onSignOut = async () => {
         {{ $t("auth.signInWith") }}
       </el-button>
 
-      <p class="mt-4 text-center text-xs text-slate-400">
+      <p class="mt-4 text-center text-xs text-muted">
         {{ $t("auth.redirectNotice") }}
       </p>
     </div>

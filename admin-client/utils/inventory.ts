@@ -37,15 +37,15 @@ export function inventoryStatusTagType(
 export function inventoryStatusTextClass(status: string): string {
   switch (status) {
     case "open":
-      return "text-emerald-600";
+      return "text-[#137333]";
     case "close":
-      return "text-rose-600";
+      return "text-[#b3261e]";
     case "sold_out":
-      return "text-amber-600";
+      return "text-[#805000]";
     case "maintenance":
-      return "text-sky-600";
+      return "text-action";
     default:
-      return "text-slate-500";
+      return "text-muted";
   }
 }
 

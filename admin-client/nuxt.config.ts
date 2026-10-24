@@ -7,6 +7,8 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   runtimeConfig: {
     public: {
+      mediaBase:
+        process.env.NUXT_PUBLIC_MEDIA_BASE || "http://localhost:9000/uploads",
       apiBase:
         process.env.NUXT_PUBLIC_API_BASE || "http://localhost:3000/api/v1",
       keycloakUrl: process.env.NUXT_PUBLIC_KEYCLOAK_URL || "",

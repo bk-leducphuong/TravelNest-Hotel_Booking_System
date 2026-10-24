@@ -14,6 +14,16 @@ const initial = ref(roomDraft());
 const pending = ref(false);
 const createdId = ref<string | null>(null);
 const error = ref("");
+const openCreated = async () => {
+  if (!createdId.value) return;
+  try {
+    await navigateTo(`/rooms/${encodeURIComponent(createdId.value)}`, {
+      replace: true,
+    });
+  } catch {
+    error.value = t("rooms.openFailed", { id: createdId.value });
+  }
+};
 const dirty = computed(
   () => !createdId.value && !sameDraft(form.value, initial.value)
 );
@@ -28,6 +38,7 @@ watch(
   }
 );
 const submit = async () => {
+  if (createdId.value) return openCreated();
   if (
     !auth.activeHotelId ||
     !can("room.create") ||
@@ -53,17 +64,14 @@ const submit = async () => {
   } finally {
     pending.value = false;
   }
-  if (createdId.value)
-    await navigateTo(`/rooms/${encodeURIComponent(createdId.value)}`, {
-      replace: true,
-    });
+  if (createdId.value) await openCreated();
 };
 </script>
 <template>
   <section class="space-y-6">
-    <NuxtLink to="/rooms" class="text-sm text-action"
-      >← {{ $t("rooms.back") }}</NuxtLink
-    >
+    <NuxtLink to="/rooms" class="text-sm text-action">{{
+      $t("rooms.back")
+    }}</NuxtLink>
     <UiPageHeader
       :title="$t('nav.newRoom')"
       :subtitle="auth.activeHotel?.name ?? $t('common.noHotelSelected')"
@@ -86,27 +94,13 @@ const submit = async () => {
         class="mb-5"
         show-icon
       />
-      <el-alert
-        v-if="createdId"
-        :title="$t('rooms.alreadyCreated')"
-        type="success"
-        :closable="false"
-        class="mb-5"
-      />
       <RoomsRoomFields v-model="form" :disabled="pending || !!createdId" />
       <div
         class="flex flex-wrap items-center gap-3 border-t border-gray-100 pt-5"
       >
-        <el-button
-          v-if="!createdId"
-          type="primary"
-          :loading="pending"
-          @click="submit"
-          >{{ $t("rooms.addRoom") }}</el-button
-        >
-        <NuxtLink v-else :to="`/rooms/${createdId}`">{{
-          $t("rooms.manage")
-        }}</NuxtLink>
+        <el-button type="primary" :loading="pending" @click="submit">{{
+          $t(createdId ? "rooms.manage" : "rooms.addRoom")
+        }}</el-button>
         <NuxtLink to="/rooms" class="text-sm text-muted">{{
           $t("common.cancel")
         }}</NuxtLink>

@@ -12,7 +12,7 @@ const props = withDefaults(
     centerLabel?: string;
     centerValue?: string;
   }>(),
-  { size: 160 }
+  { size: 160, centerLabel: "", centerValue: "" }
 );
 
 const RADIUS = 42;
@@ -32,7 +32,7 @@ const arcs = computed(() => {
       ...segment,
       dasharray: `${length} ${CIRCUMFERENCE - length}`,
       dashoffset: -offset,
-      percent: Math.round(fraction * 100),
+      percent: Math.round(fraction * 1000) / 10,
     };
     offset += length;
     return arc;
@@ -78,7 +78,7 @@ const arcs = computed(() => {
         <span class="text-xl font-semibold text-slate-900">{{
           centerValue
         }}</span>
-        <span class="text-xs text-slate-400">{{ centerLabel }}</span>
+        <span class="text-xs text-muted">{{ centerLabel }}</span>
       </div>
     </div>
 

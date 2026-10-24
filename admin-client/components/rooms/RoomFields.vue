@@ -42,6 +42,7 @@ withDefaults(
         <el-form-item :label="$t('rooms.bedType')"
           ><el-select
             v-model="model.bedType"
+            :placeholder="$t('common.select')"
             :aria-label="$t('rooms.bedType')"
             class="w-full"
             ><el-option

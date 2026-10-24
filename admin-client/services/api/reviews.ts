@@ -83,7 +83,7 @@ export interface ReviewStatusResult {
   status: string;
 }
 
-function toQuery(filters: Record<string, unknown>): string {
+function toQuery<T extends object>(filters: T): string {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {

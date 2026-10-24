@@ -1,9 +1,10 @@
-export function formatMoney(value?: number | string | null, currency = "USD"): string {
+export function formatMoney(
+  value?: number | string | null,
+  currency = "USD"
+): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
   }).format(Number(value || 0));
 }
 

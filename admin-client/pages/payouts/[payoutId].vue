@@ -13,11 +13,15 @@ import {
 } from "~/utils/payouts";
 
 const route = useRoute();
+const auth = useAuthStore();
+const { can } = usePermissions();
 const router = useRouter();
 const { t } = useI18n();
 
 const payoutId = computed(() => String(route.params.payoutId));
 const loading = ref(false);
+const detailError = ref("");
+const detailRequests = useRequestVersion();
 const submitting = ref(false);
 const payout = ref<PayoutDetail | null>(null);
 
@@ -30,7 +34,8 @@ const statusDialog = reactive({
 
 const netAmount = computed(() =>
   payout.value
-    ? Number(payout.value.amount || 0) - Number(payout.value.platform_fee_amount || 0)
+    ? Number(payout.value.amount || 0) -
+      Number(payout.value.platform_fee_amount || 0)
     : 0
 );
 
@@ -38,15 +43,28 @@ const availableTransitions = computed(() =>
   payout.value ? payoutTransitions(payout.value.status) : []
 );
 
+useEditorGuard(
+  "payout-detail",
+  computed(() => statusDialog.visible),
+  submitting
+);
 const load = async () => {
+  const current = detailRequests.begin();
+  payout.value = null;
+  detailError.value = "";
+  loading.value = false;
+  if (!auth.activeHotelId || !can("payment.read")) return;
   loading.value = true;
   try {
-    payout.value = await fetchPayout(payoutId.value);
+    const result = await fetchPayout(payoutId.value);
+    if (!current()) return;
+    payout.value = result;
   } catch (error) {
-    ElMessage.error((error as Error).message);
+    if (!current()) return;
+    detailError.value = (error as Error).message;
     payout.value = null;
   } finally {
-    loading.value = false;
+    if (current()) loading.value = false;
   }
 };
 
@@ -92,50 +110,86 @@ const confirmStatus = async () => {
   }
 };
 
-watch(payoutId, load, { immediate: true });
+watch(
+  [payoutId, () => auth.activeHotelId, () => can("payment.read")],
+  () => {
+    statusDialog.visible = false;
+    load();
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
   <section v-loading="loading" class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <el-button link @click="router.push('/payouts')">← {{ $t("nav.payouts") }}</el-button>
-        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">
-          {{ $t("payouts.detail.title") }}
-        </h2>
-        <el-tag v-if="payout" :type="payoutStatusTagType(payout.status)" effect="light">
-          {{ $t(`payouts.status.${payout.status}`) }}
-        </el-tag>
-      </div>
-      <div v-if="payout" class="flex flex-wrap items-center gap-2">
-        <Can permission="payment.process">
-          <el-button
-            v-if="canProcessPayout(payout.status)"
-            type="primary"
-            :loading="submitting"
-            @click="onProcess"
+    <UiPageHeader
+      :title="$t('payouts.detail.title')"
+      :subtitle="auth.activeHotel?.name ?? undefined"
+      ><template #description
+        ><div class="flex items-center gap-3">
+          <el-button link @click="router.push('/payouts')"
+            >← {{ $t("nav.payouts") }}</el-button
           >
-            {{ $t("payouts.action.process") }}
-          </el-button>
-          <el-button
-            v-if="availableTransitions.length"
-            :loading="submitting"
-            @click="openStatus"
+
+          <el-tag
+            v-if="payout"
+            :type="payoutStatusTagType(payout.status)"
+            effect="light"
           >
-            {{ $t("payouts.action.setStatus") }}
-          </el-button>
-        </Can>
-      </div>
+            {{ $t(`payouts.status.${payout.status}`) }}
+          </el-tag>
+        </div></template
+      ><template #actions>
+        <div v-if="payout" class="flex flex-wrap items-center gap-2">
+          <Can permission="payment.process">
+            <el-button
+              v-if="canProcessPayout(payout.status)"
+              type="primary"
+              :loading="submitting"
+              @click="onProcess"
+            >
+              {{ $t("payouts.action.process") }}
+            </el-button>
+            <el-button
+              v-if="availableTransitions.length"
+              :loading="submitting"
+              @click="openStatus"
+            >
+              {{ $t("payouts.action.setStatus") }}
+            </el-button>
+          </Can>
+        </div>
+      </template></UiPageHeader
+    >
+
+    <el-alert
+      v-if="detailError"
+      :title="detailError"
+      type="error"
+      :closable="false"
+      show-icon
+    />
+    <el-button v-if="detailError" @click="load">{{
+      $t("common.refresh")
+    }}</el-button>
+    <el-empty
+      v-if="!loading && !payout && !detailError"
+      :description="$t('payouts.detail.notFound')"
+    />
+
+    <div v-if="payout" class="tn-summary-banner">
+      <p class="text-sm opacity-90">{{ $t("payments.col.amount") }}</p>
+      <p class="mt-2 text-3xl font-medium">
+        {{ formatMoney(payout.amount, payout.currency) }}
+      </p>
+      <p class="mt-2 text-sm opacity-90">{{ payout.id }}</p>
     </div>
-
-    <el-empty v-if="!loading && !payout" :description="$t('payouts.detail.notFound')" />
-
-    <template v-if="payout">
-      <el-card class="shadow-sm">
+    <div v-if="payout" class="tn-detail-grid">
+      <UiSectionCard>
         <template #header>
           <span class="font-medium">{{ $t("payouts.section.overview") }}</span>
         </template>
-        <el-descriptions :column="3" border>
+        <el-descriptions :column="1">
           <el-descriptions-item :label="$t('payouts.col.amount')">
             {{ formatMoney(payout.amount, payout.currency) }}
           </el-descriptions-item>
@@ -149,7 +203,8 @@ watch(payoutId, load, { immediate: true });
             {{ payout.owner?.email || payout.owner_id }}
           </el-descriptions-item>
           <el-descriptions-item :label="$t('payouts.col.period')">
-            {{ payout.period_start?.slice(0, 10) || "—" }} → {{ payout.period_end?.slice(0, 10) || "—" }}
+            {{ payout.period_start?.slice(0, 10) || "—" }} →
+            {{ payout.period_end?.slice(0, 10) || "—" }}
           </el-descriptions-item>
           <el-descriptions-item :label="$t('payouts.col.paidAt')">
             {{ formatDateTime(payout.paid_at) }}
@@ -163,13 +218,17 @@ watch(payoutId, load, { immediate: true });
           <el-descriptions-item :label="$t('payouts.col.created')">
             {{ formatDateTime(payout.created_at) }}
           </el-descriptions-item>
-          <el-descriptions-item v-if="payout.failure_message" :label="$t('payouts.col.failure')" :span="3">
+          <el-descriptions-item
+            v-if="payout.failure_message"
+            :label="$t('payouts.col.failure')"
+            :span="3"
+          >
             {{ payout.failure_code }} — {{ payout.failure_message }}
           </el-descriptions-item>
         </el-descriptions>
-      </el-card>
+      </UiSectionCard>
 
-      <el-card class="shadow-sm">
+      <UiSectionCard>
         <template #header>
           <span class="font-medium">{{ $t("payouts.section.items") }}</span>
         </template>
@@ -178,26 +237,46 @@ watch(payoutId, load, { immediate: true });
           :description="$t('payouts.detail.noItems')"
           :image-size="60"
         />
-        <el-table v-else :data="payout.items" row-key="id">
-          <el-table-column :label="$t('payouts.col.booking')" min-width="180">
-            <template #default="{ row }">
-              <NuxtLink :to="`/bookings/${row.booking_id}`" class="text-action">
-                {{ row.booking_id }}
-              </NuxtLink>
-            </template>
-          </el-table-column>
-          <el-table-column :label="$t('payouts.col.gross')" align="right">
-            <template #default="{ row }">{{ formatMoney(row.gross_amount, row.currency) }}</template>
-          </el-table-column>
-          <el-table-column :label="$t('payouts.col.platformFee')" align="right">
-            <template #default="{ row }">{{ formatMoney(row.platform_fee_amount, row.currency) }}</template>
-          </el-table-column>
-          <el-table-column :label="$t('payouts.col.net')" align="right">
-            <template #default="{ row }">{{ formatMoney(row.net_amount, row.currency) }}</template>
-          </el-table-column>
-        </el-table>
-      </el-card>
-    </template>
+        <div
+          v-else
+          class="tn-table-region"
+          role="region"
+          :aria-label="$t('common.details')"
+          tabindex="0"
+        >
+          <el-table :data="payout.items" row-key="id">
+            <el-table-column :label="$t('payouts.col.booking')" min-width="180">
+              <template #default="{ row }">
+                <NuxtLink
+                  :to="`/bookings/${row.booking_id}`"
+                  class="text-action"
+                >
+                  {{ row.booking_id }}
+                </NuxtLink>
+              </template>
+            </el-table-column>
+            <el-table-column :label="$t('payouts.col.gross')" align="right">
+              <template #default="{ row }">{{
+                formatMoney(row.gross_amount, row.currency)
+              }}</template>
+            </el-table-column>
+            <el-table-column
+              :label="$t('payouts.col.platformFee')"
+              align="right"
+            >
+              <template #default="{ row }">{{
+                formatMoney(row.platform_fee_amount, row.currency)
+              }}</template>
+            </el-table-column>
+            <el-table-column :label="$t('payouts.col.net')" align="right">
+              <template #default="{ row }">{{
+                formatMoney(row.net_amount, row.currency)
+              }}</template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </UiSectionCard>
+    </div>
 
     <el-dialog
       v-model="statusDialog.visible"
@@ -219,6 +298,7 @@ watch(payoutId, load, { immediate: true });
           <el-form-item :label="$t('payouts.dialog.failureCode')">
             <el-input
               v-model="statusDialog.failureCode"
+              :aria-label="$t('payouts.dialog.optional')"
               :placeholder="$t('payouts.dialog.optional')"
             />
           </el-form-item>
@@ -227,13 +307,16 @@ watch(payoutId, load, { immediate: true });
               v-model="statusDialog.failureMessage"
               type="textarea"
               :rows="2"
+              :aria-label="$t('payouts.dialog.optional')"
               :placeholder="$t('payouts.dialog.optional')"
             />
           </el-form-item>
         </template>
       </el-form>
       <template #footer>
-        <el-button @click="statusDialog.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button @click="statusDialog.visible = false">{{
+          $t("common.cancel")
+        }}</el-button>
         <el-button type="primary" :loading="submitting" @click="confirmStatus">
           {{ $t("common.save") }}
         </el-button>

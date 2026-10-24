@@ -18,6 +18,7 @@ const auth = useAuthStore();
 const route = useRoute();
 const { can } = usePermissions();
 const { t } = useI18n();
+const { categoryLabel, amenityLabel } = useAmenityLabels();
 const roomId = computed(() => String(route.params.roomId));
 const room = ref<Room | null>(null);
 const form = ref(roomDraft());
@@ -214,9 +215,9 @@ const saveAmenities = async () => {
 </script>
 <template>
   <section class="space-y-6">
-    <NuxtLink to="/rooms" class="text-sm text-action"
-      >← {{ $t("rooms.back") }}</NuxtLink
-    >
+    <NuxtLink to="/rooms" class="text-sm text-action">{{
+      $t("rooms.back")
+    }}</NuxtLink>
     <UiPageHeader
       :title="room?.room_name ?? $t('rooms.title')"
       :subtitle="auth.activeHotel?.name ?? $t('common.noHotelSelected')"
@@ -326,14 +327,14 @@ const saveAmenities = async () => {
           class="mb-5"
         >
           <h3 class="mb-2 text-sm font-medium text-muted">
-            {{ category.replace(/_/g, " ") }}
+            {{ categoryLabel(category) }}
           </h3>
           <el-checkbox-group v-model="selectedAmenityIds" :disabled="!editable"
             ><el-checkbox
               v-for="amenity in items"
               :key="amenity.id"
               :value="amenity.id"
-              >{{ amenity.name }}</el-checkbox
+              >{{ amenityLabel(amenity) }}</el-checkbox
             ></el-checkbox-group
           >
         </div>

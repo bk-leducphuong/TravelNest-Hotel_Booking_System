@@ -33,9 +33,10 @@
     "nuxt": "^4.3.1",
     "pinia": "^3.0.4",
     "vue": "^3.5.28",
-    "vue-router": "^4.6.4"
+    "vue-router": "^5.1.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@element-plus/icons-vue": "^2",
     "@element-plus/nuxt": "^1.1.5",
     "@nuxt/test-utils": "^4.0.0",
@@ -43,13 +44,13 @@
     "@vue/compiler-dom": "^3.5",
     "@vue/test-utils": "^2.4.6",
     "element-plus": "^2.13.2",
-    "eslint": "^9",
+    "eslint": "^10",
     "eslint-config-prettier": "^10.1.5",
     "happy-dom": "^20.7.0",
     "playwright-core": "^1.58.2",
     "prettier": "^3.5.3",
     "typescript": "^5",
     "vitest": "^4.0.18",
-    "vue-tsc": "^2.2.0"
+    "vue-tsc": "^3.1"
   }
 }

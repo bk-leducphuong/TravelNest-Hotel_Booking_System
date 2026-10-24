@@ -12,7 +12,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: "nuxt dev tests/fixtures/console --port 8015",
+    command: "nuxt build tests/fixtures/console && nuxt preview tests/fixtures/console --port 8015",
     url: "http://localhost:8015/rooms",
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

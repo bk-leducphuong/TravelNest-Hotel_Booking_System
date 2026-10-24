@@ -27,12 +27,12 @@ const { loginSpy, useAuthStoreMock } = vi.hoisted(() => {
 mockNuxtImport("useAuthStore", () => useAuthStoreMock);
 
 describe("login page (Nuxt runtime)", () => {
-  let component: VueWrapper<any>;
+  let component: VueWrapper;
 
   beforeEach(async () => {
     vi.clearAllMocks();
     const mod = await import("~/pages/login.vue");
-    component = await mountSuspended(mod.default as any);
+    component = await mountSuspended(mod.default);
   });
 
   it("renders the TravelNest sign-in call to action", () => {

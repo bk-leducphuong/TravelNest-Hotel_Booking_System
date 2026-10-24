@@ -15,12 +15,15 @@ import {
 } from "~/utils/payments";
 
 const route = useRoute();
+const auth = useAuthStore();
 const router = useRouter();
 const { can } = usePermissions();
 const { t } = useI18n();
 
 const transactionId = computed(() => String(route.params.transactionId));
 const loading = ref(false);
+const detailError = ref("");
+const detailRequests = useRequestVersion();
 const submitting = ref(false);
 const transaction = ref<TransactionDetail | null>(null);
 
@@ -60,15 +63,28 @@ const buyerLabel = computed(() => {
   return name || buyer.email || buyer.id;
 });
 
+useEditorGuard(
+  "transaction-detail",
+  computed(() => refundDialog.visible),
+  submitting
+);
 const load = async () => {
+  const current = detailRequests.begin();
+  transaction.value = null;
+  detailError.value = "";
+  loading.value = false;
+  if (!auth.activeHotelId || !can("payment.read")) return;
   loading.value = true;
   try {
-    transaction.value = await fetchTransaction(transactionId.value);
+    const result = await fetchTransaction(transactionId.value);
+    if (!current()) return;
+    transaction.value = result;
   } catch (error) {
-    ElMessage.error((error as Error).message);
+    if (!current()) return;
+    detailError.value = (error as Error).message;
     transaction.value = null;
   } finally {
-    loading.value = false;
+    if (current()) loading.value = false;
   }
 };
 
@@ -100,37 +116,70 @@ const confirmRefund = async () => {
   }
 };
 
-watch(transactionId, load, { immediate: true });
+watch(
+  [transactionId, () => auth.activeHotelId, () => can("payment.read")],
+  () => {
+    refundDialog.visible = false;
+    load();
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
   <section v-loading="loading" class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <el-button link @click="router.push('/payments')">← {{ $t("nav.payments") }}</el-button>
-        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">
-          {{ $t("payments.transaction.title") }}
-        </h2>
-        <el-tag v-if="transaction" :type="transactionStatusTagType(transaction.status)" effect="light">
-          {{ $t(`payments.transactionStatus.${transaction.status}`) }}
-        </el-tag>
-      </div>
-      <el-button v-if="canRefund" type="danger" plain @click="openRefund">
-        {{ $t("payments.action.issueRefund") }}
-      </el-button>
-    </div>
+    <UiPageHeader
+      :title="$t('payments.transaction.title')"
+      :subtitle="auth.activeHotel?.name ?? undefined"
+      ><template #description
+        ><div class="flex items-center gap-3">
+          <el-button link @click="router.push('/payments')"
+            >← {{ $t("nav.payments") }}</el-button
+          >
 
+          <el-tag
+            v-if="transaction"
+            :type="transactionStatusTagType(transaction.status)"
+            effect="light"
+          >
+            {{ $t(`payments.transactionStatus.${transaction.status}`) }}
+          </el-tag>
+        </div></template
+      ><template #actions>
+        <el-button v-if="canRefund" type="danger" plain @click="openRefund">
+          {{ $t("payments.action.issueRefund") }}
+        </el-button>
+      </template></UiPageHeader
+    >
+
+    <el-alert
+      v-if="detailError"
+      :title="detailError"
+      type="error"
+      :closable="false"
+      show-icon
+    />
+    <el-button v-if="detailError" @click="load">{{
+      $t("common.refresh")
+    }}</el-button>
     <el-empty
-      v-if="!loading && !transaction"
+      v-if="!loading && !transaction && !detailError"
       :description="$t('payments.transaction.notFound')"
     />
 
-    <template v-if="transaction">
-      <el-card class="shadow-sm">
+    <div v-if="transaction" class="tn-summary-banner">
+      <p class="text-sm opacity-90">{{ $t("payments.col.amount") }}</p>
+      <p class="mt-2 text-3xl font-medium">
+        {{ formatMoney(transaction.amount, transaction.currency) }}
+      </p>
+      <p class="mt-2 text-sm opacity-90">{{ transaction.id }}</p>
+    </div>
+    <div v-if="transaction" class="tn-detail-grid">
+      <UiSectionCard>
         <template #header>
           <span class="font-medium">{{ $t("payments.section.overview") }}</span>
         </template>
-        <el-descriptions :column="3" border>
+        <el-descriptions :column="1">
           <el-descriptions-item :label="$t('payments.col.amount')">
             {{ formatMoney(transaction.amount, transaction.currency) }}
           </el-descriptions-item>
@@ -140,9 +189,15 @@ watch(transactionId, load, { immediate: true });
           <el-descriptions-item :label="$t('payments.col.method')">
             {{ humanize(transaction.payment_method || "—") }}
           </el-descriptions-item>
-          <el-descriptions-item :label="$t('payments.col.buyer')">{{ buyerLabel }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('payments.col.buyer')">{{
+            buyerLabel
+          }}</el-descriptions-item>
           <el-descriptions-item :label="$t('payments.col.booking')">
-            <NuxtLink v-if="transaction.booking_id" :to="`/bookings/${transaction.booking_id}`" class="text-action">
+            <NuxtLink
+              v-if="transaction.booking_id"
+              :to="`/bookings/${transaction.booking_id}`"
+              class="text-action"
+            >
               {{ transaction.booking?.booking_code || transaction.booking_id }}
             </NuxtLink>
             <span v-else>—</span>
@@ -167,28 +222,43 @@ watch(transactionId, load, { immediate: true });
             {{ transaction.failure_code }} — {{ transaction.failure_message }}
           </el-descriptions-item>
         </el-descriptions>
-      </el-card>
+      </UiSectionCard>
 
-      <el-card v-if="transaction.payments?.length" class="shadow-sm">
+      <UiSectionCard v-if="transaction.payments?.length">
         <template #header>
           <span class="font-medium">{{ $t("payments.section.payments") }}</span>
         </template>
-        <el-table :data="transaction.payments" row-key="id">
-          <el-table-column :label="$t('common.status')">
-            <template #default="{ row }">{{ humanize(row.payment_status) }}</template>
-          </el-table-column>
-          <el-table-column :label="$t('payments.col.amount')" align="right">
-            <template #default="{ row }">{{ formatMoney(row.amount, row.currency) }}</template>
-          </el-table-column>
-          <el-table-column :label="$t('payments.col.card')" width="180">
-            <template #default="{ row }">
-              {{ row.card_brand ? `${row.card_brand} •••• ${row.card_last4}` : "—" }}
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-card>
+        <div
+          class="tn-table-region"
+          role="region"
+          :aria-label="$t('common.details')"
+          tabindex="0"
+        >
+          <el-table :data="transaction.payments" row-key="id">
+            <el-table-column :label="$t('common.status')">
+              <template #default="{ row }">{{
+                humanize(row.payment_status)
+              }}</template>
+            </el-table-column>
+            <el-table-column :label="$t('payments.col.amount')" align="right">
+              <template #default="{ row }">{{
+                formatMoney(row.amount, row.currency)
+              }}</template>
+            </el-table-column>
+            <el-table-column :label="$t('payments.col.card')" width="180">
+              <template #default="{ row }">
+                {{
+                  row.card_brand
+                    ? `${row.card_brand} •••• ${row.card_last4}`
+                    : "—"
+                }}
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </UiSectionCard>
 
-      <el-card class="shadow-sm">
+      <UiSectionCard>
         <template #header>
           <span class="font-medium">{{ $t("payments.section.refunds") }}</span>
         </template>
@@ -197,28 +267,40 @@ watch(transactionId, load, { immediate: true });
           :description="$t('payments.transaction.noRefunds')"
           :image-size="60"
         />
-        <el-table v-else :data="transaction.refunds" row-key="id">
-          <el-table-column :label="$t('common.status')" width="140">
-            <template #default="{ row }">
-              <el-tag :type="refundStatusTagType(row.status)" effect="light">
-                {{ $t(`payments.refundStatus.${row.status}`) }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column :label="$t('payments.col.amount')" align="right">
-            <template #default="{ row }">{{ formatMoney(row.amount, row.currency) }}</template>
-          </el-table-column>
-          <el-table-column :label="$t('payments.refunds.col.reason')">
-            <template #default="{ row }">
-              {{ $t(`payments.refundReason.${row.reason}`) }}
-            </template>
-          </el-table-column>
-          <el-table-column :label="$t('payments.col.processed')">
-            <template #default="{ row }">{{ formatDateTime(row.processed_at) }}</template>
-          </el-table-column>
-        </el-table>
-      </el-card>
-    </template>
+        <div
+          v-else
+          class="tn-table-region"
+          role="region"
+          :aria-label="$t('common.details')"
+          tabindex="0"
+        >
+          <el-table :data="transaction.refunds" row-key="id">
+            <el-table-column :label="$t('common.status')" width="140">
+              <template #default="{ row }">
+                <el-tag :type="refundStatusTagType(row.status)" effect="light">
+                  {{ $t(`payments.refundStatus.${row.status}`) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column :label="$t('payments.col.amount')" align="right">
+              <template #default="{ row }">{{
+                formatMoney(row.amount, row.currency)
+              }}</template>
+            </el-table-column>
+            <el-table-column :label="$t('payments.refunds.col.reason')">
+              <template #default="{ row }">
+                {{ $t(`payments.refundReason.${row.reason}`) }}
+              </template>
+            </el-table-column>
+            <el-table-column :label="$t('payments.col.processed')">
+              <template #default="{ row }">{{
+                formatDateTime(row.processed_at)
+              }}</template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </UiSectionCard>
+    </div>
 
     <el-dialog
       v-model="refundDialog.visible"
@@ -238,12 +320,19 @@ watch(transactionId, load, { immediate: true });
         </el-form-item>
         <el-form-item :label="$t('payments.dialog.reason')">
           <el-select v-model="refundDialog.reason" class="w-full">
-            <el-option v-for="option in reasonOptions" :key="option.value" :label="option.label" :value="option.value" />
+            <el-option
+              v-for="option in reasonOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="refundDialog.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button @click="refundDialog.visible = false">{{
+          $t("common.cancel")
+        }}</el-button>
         <el-button type="danger" :loading="submitting" @click="confirmRefund">
           {{ $t("payments.dialog.refund") }}
         </el-button>

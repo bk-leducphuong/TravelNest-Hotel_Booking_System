@@ -35,14 +35,19 @@ Nuxt will run a `postinstall` hook (`nuxt prepare`) as part of the install step.
 
 ### Environment Variables
 
-Create a `.env` file in the `admin-client` directory.
-Common variables (names may vary depending on your configuration):
+Copy `admin-client/.env.example` to `admin-client/.env` and set the public
+API, media and Keycloak URLs for your environment:
 
-- `NUXT_API_BASE_URL` – base URL of the TravelNest API
-- `NUXT_PUBLIC_API_BASE_URL` – public API base URL exposed to the client
-- Any additional `NUXT_PUBLIC_*` variables for analytics, feature flags, etc.
+- `NUXT_PUBLIC_API_BASE` — API base, including `/api/v1`.
+- `NUXT_PUBLIC_MEDIA_BASE` — public bucket URL, such as `http://localhost:9000/uploads/`.
+  Media APIs return object keys (`room/<id>/<file>.avif`); the UI resolves these
+  against this base. Absolute/CDN URLs are preserved. Failed images show a placeholder.
+- `NUXT_PUBLIC_KEYCLOAK_URL`, `NUXT_PUBLIC_KEYCLOAK_REALM`,
+  `NUXT_PUBLIC_KEYCLOAK_CLIENT_ID`, `NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI` — OIDC configuration.
 
-> All environment variables exposed to the browser must use the `NUXT_PUBLIC_` prefix.
+These values are public. Docker/CI forwards the same variables as build arguments;
+production media defaults to the same public bucket as the guest app. Rebuild the
+image when changing build-time values. Never use storage access keys here.
 
 ## Run the App
 
@@ -53,7 +58,7 @@ cd admin-client
 npm run dev
 ```
 
-By default Nuxt will start on `http://localhost:3000` (or the next available port).
+The admin dev server starts on `http://localhost:8000`.
 
 ### Production Build
 

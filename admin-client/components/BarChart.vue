@@ -11,7 +11,7 @@ const props = withDefaults(
     height?: number;
     valueFormatter?: (value: number) => string;
   }>(),
-  { height: 160 }
+  { height: 160, valueFormatter: undefined }
 );
 
 const maxValue = computed(() =>

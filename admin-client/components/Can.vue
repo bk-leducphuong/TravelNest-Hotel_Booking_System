@@ -1,4 +1,5 @@
 <script setup lang="ts">
+defineOptions({ name: "PermissionGate" });
 const props = defineProps<{
   permission?: string;
   any?: string[];
