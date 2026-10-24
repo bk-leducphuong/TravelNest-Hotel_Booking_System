@@ -181,7 +181,7 @@ watch(payoutId, load, { immediate: true });
         <el-table v-else :data="payout.items" row-key="id">
           <el-table-column :label="$t('payouts.col.booking')" min-width="180">
             <template #default="{ row }">
-              <NuxtLink :to="`/bookings/${row.booking_id}`" class="text-emerald-600">
+              <NuxtLink :to="`/bookings/${row.booking_id}`" class="text-action">
                 {{ row.booking_id }}
               </NuxtLink>
             </template>

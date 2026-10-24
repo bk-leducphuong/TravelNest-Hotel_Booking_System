@@ -201,7 +201,7 @@ watch(reviewId, load, { immediate: true });
             {{ review.helpful_count }}
           </el-descriptions-item>
           <el-descriptions-item :label="$t('reviews.col.booking')" :span="3">
-            <NuxtLink v-if="review.booking_id" :to="`/bookings/${review.booking_id}`" class="text-emerald-600">
+            <NuxtLink v-if="review.booking_id" :to="`/bookings/${review.booking_id}`" class="text-action">
               {{ review.booking_id }}
             </NuxtLink>
             <span v-else>—</span>

@@ -1,280 +1,332 @@
 <script setup lang="ts">
 import {
+  BedDouble,
+  Users,
+  Maximize,
+  Layers,
+  Plus,
+  ArrowUpRight,
+} from "lucide-vue-next";
+import {
   ROOM_STATUSES,
   deleteRoom,
-  createRoom,
   fetchRooms,
-  updateRoom,
+  fetchRoomPhotos,
+  type HotelPhoto,
   type Room,
 } from "~/services/api/catalog";
-
 const auth = useAuthStore();
+const { can } = usePermissions();
 const { t } = useI18n();
-
-const loading = ref(false);
-const saving = ref(false);
 const rooms = ref<Room[]>([]);
-
-const filters = reactive({
-  search: "",
-  status: "",
-});
-
-const dialog = ref(false);
-const editingRoomId = ref<string | null>(null);
-const form = reactive({
-  roomName: "",
-  roomType: "",
-  maxGuests: undefined as number | undefined,
-  quantity: undefined as number | undefined,
-  roomSize: undefined as number | undefined,
-  status: "active" as string,
-});
-
-const toNumberOrUndefined = (value: unknown): number | undefined => {
-  if (value === null || value === undefined || value === "") {
-    return undefined;
-  }
-  const parsed = Number(value);
-  return Number.isNaN(parsed) ? undefined : parsed;
-};
-
-const filteredRooms = computed(() => {
-  const term = filters.search.trim().toLowerCase();
-  return rooms.value.filter((room) => {
-    if (filters.status && room.status !== filters.status) {
-      return false;
-    }
-    if (!term) {
-      return true;
-    }
-    return [room.room_name, room.room_type].some((value) =>
-      String(value ?? "").toLowerCase().includes(term)
-    );
-  });
-});
-
-const statusTagType = (status?: string | null) => {
-  if (status === "active") return "success";
-  if (status === "maintenance") return "warning";
-  return "info";
-};
-
+const loading = ref(false);
+const error = ref("");
+const filters = reactive({ search: "", status: "" });
+const selectedId = ref<string | null>(null);
+const photos = ref<HotelPhoto[]>([]);
+const photoError = ref(false);
+const photoLoading = ref(false);
+const deleting = ref(false);
+useEditorGuard(
+  "room-list",
+  computed(() => false),
+  deleting
+);
+const cache = new Map<string, HotelPhoto[]>();
+let loadVersion = 0;
+let photoVersion = 0;
+const filtered = computed(() =>
+  rooms.value.filter(
+    (room) =>
+      (!filters.status || room.status === filters.status) &&
+      `${room.room_name} ${room.room_type ?? ""}`
+        .toLocaleLowerCase()
+        .includes(filters.search.trim().toLocaleLowerCase())
+  )
+);
+const selected = computed(
+  () =>
+    filtered.value.find((room) => room.id === selectedId.value) ??
+    filtered.value[0]
+);
+const tone = (status?: string | null) =>
+  status === "active"
+    ? "success"
+    : status === "maintenance"
+      ? "warning"
+      : "neutral";
 const load = async () => {
-  if (!auth.activeHotelId) {
-    rooms.value = [];
+  const version = ++loadVersion;
+  const hotelId = auth.activeHotelId;
+  rooms.value = [];
+  selectedId.value = null;
+  photos.value = [];
+  error.value = "";
+  cache.clear();
+  if (!hotelId || !can("room.read")) {
+    loading.value = false;
     return;
   }
   loading.value = true;
   try {
-    rooms.value = await fetchRooms(auth.activeHotelId);
-  } catch (error) {
-    ElMessage.error((error as Error).message);
+    const result = await fetchRooms(hotelId);
+    if (version === loadVersion) rooms.value = result;
+  } catch (failure) {
+    if (version === loadVersion) error.value = (failure as Error).message;
   } finally {
-    loading.value = false;
+    if (version === loadVersion) loading.value = false;
   }
 };
-
-const openCreate = () => {
-  editingRoomId.value = null;
-  Object.assign(form, {
-    roomName: "",
-    roomType: "",
-    maxGuests: undefined,
-    quantity: undefined,
-    roomSize: undefined,
-    status: "active",
-  });
-  dialog.value = true;
-};
-
-const openEdit = (room: Room) => {
-  editingRoomId.value = room.id;
-  Object.assign(form, {
-    roomName: room.room_name ?? "",
-    roomType: room.room_type ?? "",
-    maxGuests: toNumberOrUndefined(room.max_guests),
-    quantity: toNumberOrUndefined(room.quantity),
-    roomSize: toNumberOrUndefined(room.room_size),
-    status: room.status ?? "active",
-  });
-  dialog.value = true;
-};
-
-const submit = async () => {
-  if (!auth.activeHotelId) {
-    return;
-  }
-  if (!form.roomName.trim()) {
-    ElMessage.warning(t("rooms.nameRequired"));
-    return;
-  }
-  saving.value = true;
-  try {
-    const payload = {
-      roomName: form.roomName,
-      roomType: form.roomType,
-      maxGuests: form.maxGuests,
-      quantity: form.quantity,
-      roomSize: form.roomSize,
-      status: form.status,
-    };
-    if (editingRoomId.value) {
-      await updateRoom(auth.activeHotelId, editingRoomId.value, payload);
-      ElMessage.success(t("rooms.updated"));
-    } else {
-      await createRoom(auth.activeHotelId, payload);
-      ElMessage.success(t("rooms.created"));
+watch(
+  [() => auth.activeHotelId, () => can("room.read")],
+  () => {
+    filters.search = "";
+    filters.status = "";
+    load();
+  },
+  { immediate: true }
+);
+watch(
+  () => selected.value?.id,
+  async (roomId) => {
+    const version = ++photoVersion;
+    photos.value = [];
+    photoError.value = false;
+    photoLoading.value = false;
+    if (!roomId || !auth.activeHotelId) return;
+    const key = `${auth.activeHotelId}:${roomId}`;
+    if (cache.has(key)) {
+      photos.value = cache.get(key)!;
+      return;
     }
-    dialog.value = false;
-    await load();
-  } catch (error) {
-    ElMessage.error((error as Error).message);
-  } finally {
-    saving.value = false;
+    photoLoading.value = true;
+    try {
+      const result = await fetchRoomPhotos(roomId);
+      if (version === photoVersion) {
+        photos.value = result;
+        cache.set(key, result);
+      }
+    } catch {
+      if (version === photoVersion) photoError.value = true;
+    } finally {
+      if (version === photoVersion) photoLoading.value = false;
+    }
   }
-};
-
+);
 const deactivate = async (room: Room) => {
-  if (!auth.activeHotelId) {
-    return;
-  }
+  if (!auth.activeHotelId || !can("room.delete") || deleting.value) return;
+  deleting.value = true;
+  const hotelId = auth.activeHotelId;
   try {
     await ElMessageBox.confirm(
       t("rooms.confirmDeactivate", { name: room.room_name }),
       t("rooms.deactivateTitle"),
       { type: "warning", confirmButtonText: t("common.deactivate") }
     );
-  } catch {
-    return;
-  }
-  try {
-    await deleteRoom(auth.activeHotelId, room.id);
+    await deleteRoom(hotelId, room.id);
     ElMessage.success(t("rooms.deactivated"));
     await load();
-  } catch (error) {
-    ElMessage.error((error as Error).message);
+  } catch (failure) {
+    if (failure instanceof Error) ElMessage.error(failure.message);
+  } finally {
+    deleting.value = false;
   }
 };
-
-watch(() => auth.activeHotelId, load, { immediate: true });
 </script>
-
 <template>
   <section class="space-y-6">
-    <div class="flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">{{ $t("rooms.title") }}</h2>
-        <p class="mt-1 text-sm text-slate-500">
-          {{ auth.activeHotel?.name || $t("common.noHotelSelected") }}
-        </p>
-      </div>
-      <div class="flex items-center gap-2">
-        <el-button :loading="loading" :disabled="!auth.activeHotelId" @click="load">
-          {{ $t("common.refresh") }}
-        </el-button>
-        <Can permission="room.create">
-          <el-button type="primary" :disabled="!auth.activeHotelId" @click="openCreate">
-            {{ $t("rooms.addRoom") }}
-          </el-button>
-        </Can>
-      </div>
-    </div>
-
-    <el-empty v-if="!auth.activeHotelId" :description="$t('rooms.noHotel')" />
-
-    <template v-else>
-      <el-card class="shadow-sm">
-        <div class="flex flex-wrap items-end gap-3">
-          <el-input
-            v-model="filters.search"
-            :placeholder="$t('rooms.searchPlaceholder')"
-            clearable
-            class="w-56"
-          />
-          <el-select v-model="filters.status" :placeholder="$t('rooms.statusFilter')" clearable class="w-44">
-            <el-option
-              v-for="status in ROOM_STATUSES"
-              :key="status"
-              :label="status"
-              :value="status"
-            />
-          </el-select>
-        </div>
-      </el-card>
-
-      <el-card class="shadow-sm">
-        <el-table v-loading="loading" :data="filteredRooms" row-key="id" style="width: 100%">
-          <el-table-column prop="room_name" :label="$t('rooms.roomName')" min-width="180" />
-          <el-table-column prop="room_type" :label="$t('rooms.roomType')" min-width="120" />
-          <el-table-column prop="max_guests" :label="$t('rooms.maxGuests')" width="100" />
-          <el-table-column prop="quantity" :label="$t('common.allotment')" width="110" />
-          <el-table-column :label="$t('common.status')" width="130">
-            <template #default="{ row }">
-              <el-tag :type="statusTagType(row.status)" size="small">{{ row.status }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column :label="$t('common.actions')" width="260" fixed="right">
-            <template #default="{ row }">
-              <NuxtLink :to="`/rooms/${row.id}`">
-                <el-button size="small" type="primary" plain>{{ $t("rooms.manage") }}</el-button>
-              </NuxtLink>
-              <Can permission="room.update">
-                <el-button size="small" @click="openEdit(row)">{{ $t("common.edit") }}</el-button>
-              </Can>
-              <Can permission="room.delete">
-                <el-button
-                  v-if="row.status === 'active'"
-                  size="small"
-                  type="danger"
-                  plain
-                  @click="deactivate(row)"
-                >
-                  {{ $t("common.deactivate") }}
-                </el-button>
-              </Can>
-            </template>
-          </el-table-column>
-          <template #empty>
-            <el-empty :description="$t('rooms.empty')" :image-size="60" />
-          </template>
-        </el-table>
-      </el-card>
-    </template>
-
-    <el-dialog
-      v-model="dialog"
-      :title="editingRoomId ? $t('rooms.editRoom') : $t('rooms.addRoom')"
-      width="480px"
+    <UiPageHeader
+      :title="$t('rooms.title')"
+      :subtitle="auth.activeHotel?.name ?? $t('common.noHotelSelected')"
     >
-      <el-form label-position="top">
-        <el-form-item :label="$t('rooms.roomName')">
-          <el-input v-model="form.roomName" />
-        </el-form-item>
-        <el-form-item :label="$t('rooms.roomType')">
-          <el-input v-model="form.roomType" placeholder="e.g. Deluxe" />
-        </el-form-item>
-        <div class="grid grid-cols-2 gap-3">
-          <el-form-item :label="$t('rooms.maxGuests')">
-            <el-input-number v-model="form.maxGuests" :min="1" class="w-full" />
-          </el-form-item>
-          <el-form-item :label="$t('common.allotment')">
-            <el-input-number v-model="form.quantity" :min="0" class="w-full" />
-          </el-form-item>
-          <el-form-item :label="$t('rooms.roomSize')">
-            <el-input-number v-model="form.roomSize" :min="0" class="w-full" />
-          </el-form-item>
-          <el-form-item :label="$t('common.status')">
-            <el-select v-model="form.status" class="w-full">
-              <el-option v-for="status in ROOM_STATUSES" :key="status" :label="status" :value="status" />
-            </el-select>
-          </el-form-item>
-        </div>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialog = false">{{ $t("common.cancel") }}</el-button>
-        <el-button type="primary" :loading="saving" @click="submit">{{ $t("common.save") }}</el-button>
-      </template>
-    </el-dialog>
+      <template #actions
+        ><el-button
+          :loading="loading"
+          :disabled="!auth.activeHotelId || !can('room.read')"
+          @click="load"
+          >{{ $t("common.refresh") }}</el-button
+        ><NuxtLink
+          v-if="can('room.create') && auth.activeHotelId"
+          to="/rooms/new"
+          ><el-button type="primary"
+            ><Plus :size="16" class="mr-2" aria-hidden="true" />{{
+              $t("rooms.addRoom")
+            }}</el-button
+          ></NuxtLink
+        ></template
+      >
+    </UiPageHeader>
+    <UiEmptyState v-if="!can('room.read')" :title="$t('editor.forbidden')" />
+    <UiEmptyState
+      v-else-if="!auth.activeHotelId"
+      :title="$t('rooms.noHotel')"
+    />
+    <template v-else>
+      <UiFilterBar
+        ><el-input
+          v-model="filters.search"
+          :aria-label="$t('rooms.searchPlaceholder')"
+          :placeholder="$t('rooms.searchPlaceholder')"
+          clearable
+          class="sm:!w-64"
+        /><el-select
+          v-model="filters.status"
+          :aria-label="$t('rooms.statusFilter')"
+          :placeholder="$t('rooms.statusFilter')"
+          clearable
+          class="sm:!w-48"
+          ><el-option
+            v-for="status in ROOM_STATUSES"
+            :key="status"
+            :label="$t(`rooms.status.${status}`)"
+            :value="status" /></el-select
+        ><span class="ml-auto text-xs text-muted">{{
+          $t("rooms.roomCount", { count: filtered.length })
+        }}</span></UiFilterBar
+      >
+      <el-alert
+        v-if="error"
+        :title="error"
+        type="error"
+        :closable="false"
+        show-icon
+      />
+      <p v-else-if="loading" role="status" class="py-12 text-center text-muted">
+        {{ $t("common.loading") }}
+      </p>
+      <UiEmptyState v-else-if="!filtered.length" :title="$t('rooms.empty')" />
+      <div
+        v-else
+        class="grid items-start gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]"
+      >
+        <UiSectionCard :title="$t('rooms.categories')"
+          ><div class="space-y-3">
+            <article
+              v-for="room in filtered"
+              :key="room.id"
+              class="rounded-2xl border p-4"
+              :class="
+                selected?.id === room.id
+                  ? 'border-action bg-soft'
+                  : 'border-gray-200'
+              "
+            >
+              <div class="flex gap-4">
+                <div
+                  class="hidden h-24 w-24 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-soft to-gray-100 sm:flex"
+                  aria-hidden="true"
+                >
+                  <BedDouble :size="32" class="text-action" />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-start justify-between gap-2">
+                    <h2>
+                      <NuxtLink
+                        :to="`/rooms/${room.id}`"
+                        class="text-lg font-medium text-ink xl:hidden"
+                        >{{ room.room_name }}</NuxtLink
+                      ><button
+                        type="button"
+                        class="hidden text-left text-lg font-medium text-ink xl:block"
+                        :aria-pressed="selected?.id === room.id"
+                        @click="selectedId = room.id"
+                      >
+                        {{ room.room_name }}
+                      </button>
+                    </h2>
+                    <UiStatusPill :tone="tone(room.status)">{{
+                      $t(`rooms.status.${room.status ?? "inactive"}`)
+                    }}</UiStatusPill>
+                  </div>
+                  <p class="mt-1 text-sm text-muted">
+                    {{ room.room_type || $t("common.notAvailable") }}
+                  </p>
+                  <dl
+                    class="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-gray-200 pt-3 text-xs text-muted"
+                  >
+                    <div class="flex items-center gap-1">
+                      <Maximize :size="14" aria-hidden="true" />
+                      <dt class="sr-only">{{ $t("rooms.roomSize") }}</dt>
+                      <dd>{{ room.room_size ?? "—" }} m²</dd>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <Users :size="14" aria-hidden="true" />
+                      <dt class="sr-only">{{ $t("rooms.maxGuests") }}</dt>
+                      <dd>{{ room.max_guests ?? "—" }}</dd>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <Layers :size="14" aria-hidden="true" />
+                      <dt>{{ $t("common.allotment") }}</dt>
+                      <dd>{{ room.quantity ?? "—" }}</dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+              <div class="mt-3 flex flex-wrap items-center justify-end gap-3">
+                <button
+                  v-if="can('room.delete')"
+                  type="button"
+                  class="text-xs text-red-800 underline"
+                  :disabled="deleting"
+                  @click="deactivate(room)"
+                >
+                  {{ $t("common.deactivate") }}</button
+                ><NuxtLink
+                  :to="`/rooms/${room.id}`"
+                  class="inline-flex items-center gap-1 text-xs text-action"
+                  :aria-label="
+                    $t('rooms.manageNamed', { name: room.room_name })
+                  "
+                  >{{ $t("rooms.manage")
+                  }}<ArrowUpRight :size="14" aria-hidden="true"
+                /></NuxtLink>
+              </div>
+            </article></div
+        ></UiSectionCard>
+        <UiSectionCard
+          v-if="selected"
+          class="hidden xl:block"
+          :title="selected.room_name"
+          :description="selected.room_type ?? undefined"
+        >
+          <p
+            v-if="photoLoading"
+            role="status"
+            class="py-12 text-center text-muted"
+          >
+            {{ $t("common.loading") }}
+          </p>
+          <img
+            v-else-if="photos[0]?.url"
+            :src="photos[0].url"
+            :alt="selected.room_name"
+            class="aspect-video w-full rounded-xl object-cover"
+          />
+          <div
+            v-else
+            class="flex aspect-video items-center justify-center rounded-xl bg-soft text-sm text-muted"
+          >
+            {{ $t(photoError ? "rooms.photosFailed" : "rooms.noPhotos") }}
+          </div>
+          <div v-if="photos.length > 1" class="mt-3 grid grid-cols-4 gap-2">
+            <img
+              v-for="photo in photos.slice(1, 5)"
+              :key="photo.id"
+              :src="photo.url"
+              alt=""
+              class="aspect-square rounded-lg object-cover"
+            />
+          </div>
+          <p class="my-5 text-sm text-muted">
+            {{ $t("rooms.availabilityHint") }}
+          </p>
+          <NuxtLink :to="`/rooms/${selected.id}`"
+            ><el-button type="primary">{{
+              $t("rooms.manage")
+            }}</el-button></NuxtLink
+          >
+        </UiSectionCard>
+      </div>
+    </template>
   </section>
 </template>

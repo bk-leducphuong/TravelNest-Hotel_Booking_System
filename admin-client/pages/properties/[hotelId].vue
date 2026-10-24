@@ -584,7 +584,7 @@ watch(hotelId, loadDetail, { immediate: true });
   <section v-loading="loading" class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <NuxtLink to="/properties" class="text-sm text-emerald-600 hover:underline">
+        <NuxtLink to="/properties" class="text-sm text-action hover:underline">
           ← {{ $t("properties.title") }}
         </NuxtLink>
         <h2 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">

@@ -11,7 +11,7 @@ const props = withDefaults(
     color?: string;
     valueFormatter?: (value: number) => string;
   }>(),
-  { height: 180, color: "#059669" }
+  { height: 180, color: "#0071c2" }
 );
 
 const WIDTH = 600;
@@ -44,8 +44,8 @@ const areaPoints = computed(() => {
   const c = coordinates.value;
   if (c.length === 0) return "";
   const base = props.height - PAD;
-  const first = `${c[0].x.toFixed(1)},${base}`;
-  const last = `${c[c.length - 1].x.toFixed(1)},${base}`;
+  const first = `${c[0]!.x.toFixed(1)},${base}`;
+  const last = `${c[c.length - 1]!.x.toFixed(1)},${base}`;
   return `${first} ${linePoints.value} ${last}`;
 });
 
@@ -61,13 +61,16 @@ const lastLabel = computed(
 <template>
   <div>
     <div class="mb-2 flex items-baseline justify-between">
-      <span class="text-xs text-slate-400">peak {{ format(maxValue) }}</span>
-      <span class="text-xs font-medium text-slate-500"
-        >total {{ format(total) }}</span
-      >
+      <span class="text-xs text-slate-400">{{
+        $t("chart.peak", { value: format(maxValue) })
+      }}</span>
+      <span class="text-xs font-medium text-slate-500">{{
+        $t("chart.total", { value: format(total) })
+      }}</span>
     </div>
 
     <svg
+      aria-hidden="true"
       :viewBox="`0 0 ${WIDTH} ${height}`"
       preserveAspectRatio="none"
       class="w-full"
@@ -95,6 +98,17 @@ const lastLabel = computed(
       />
     </svg>
 
+    <details class="mt-3 text-xs text-muted">
+      <summary class="cursor-pointer">{{ $t("chart.values") }}</summary>
+      <table class="mt-2 w-full">
+        <tbody>
+          <tr v-for="point in points" :key="point.label">
+            <th class="text-left font-normal">{{ point.label }}</th>
+            <td class="text-right">{{ format(point.value) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </details>
     <div class="mt-1 flex justify-between text-xs text-slate-400">
       <span>{{ firstLabel }}</span>
       <span>{{ lastLabel }}</span>

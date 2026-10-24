@@ -43,7 +43,7 @@ const barHeight = (value: number) =>
           class="w-10 rounded-t-md transition-all"
           :style="{
             height: barHeight(bar.value),
-            backgroundColor: bar.color || '#059669',
+            backgroundColor: bar.color || '#0071c2',
           }"
         />
       </div>
