@@ -25,7 +25,7 @@
 
 <template>
   <TheHeader :is-search-open="true" />
-  <main id="guest-main" tabindex="-1" class="home-container">
+  <main id="guest-main" tabindex="-1" class="guest-page home-container">
     <RecentSearchs @update:recentSearches="handleRecentSearchesUpdate" />
     <ViewedHotels />
     <TrendingHotels />
@@ -34,20 +34,9 @@
   <TheFooter />
 </template>
 
-<style lang="scss" scoped>
-  @import '@/assets/styles/index.scss';
-
+<style scoped>
   .home-container {
-    position: relative;
-    clear: both;
-    vertical-align: top;
-    width: 100%;
-    max-width: 1100px;
-    margin: auto;
-  }
-
-  img {
-    display: inline-block;
-    border-radius: 12px;
+    padding-top: 32px;
+    padding-bottom: 48px;
   }
 </style>

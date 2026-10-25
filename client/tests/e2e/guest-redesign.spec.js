@@ -46,6 +46,7 @@ const details = {
   images: [{ url: '/fixture-hotel.svg' }],
 };
 const booking = {
+  id: 4,
   booking_code: 'TN123',
   status: 'confirmed',
   check_in_date: '2026-11-10',
@@ -91,6 +92,48 @@ async function fixtures(page, { authenticated = false, locale = 'en' } = {}) {
           { text: 'Da Nang', payload: { id: 'dn', type: 'city', country_name: 'Vietnam' } },
         ],
       };
+    else if (path.endsWith('/user'))
+      data = {
+        id: 1,
+        full_name: 'Test Guest',
+        email: 'guest@example.test',
+        phone_number: '+84912345678',
+      };
+    else if (path.endsWith('/user/favorite-hotels'))
+      data = [
+        {
+          hotel_id: '12',
+          hotelInformation: {
+            name: hotel.hotel_name,
+            address: 'Hanoi',
+            image_urls: ['/fixture-hotel.svg'],
+            overall_rating: 9.2,
+          },
+        },
+      ];
+    else if (path.endsWith('/hotels/trending') || path.endsWith('/hotels/recently-viewed'))
+      data = [
+        {
+          id: '12',
+          name: hotel.hotel_name,
+          address: 'Hanoi',
+          primaryImageUrl: '/fixture-hotel.svg',
+          ratingSummary: { overallRating: 9.2, totalReviews: 24 },
+        },
+      ];
+    else if (path.endsWith('/search/destinations/trending'))
+      data = {
+        destinations: [
+          {
+            id: 'dn',
+            displayName: 'Da Nang',
+            images: { primary: { objectKey: '/fixture-hotel.svg' } },
+          },
+        ],
+      };
+    else if (path.endsWith('/reviews/validate')) data = { isValid: true };
+    else if (path.endsWith('/reviews/check')) data = { exists: false };
+    else if (path.endsWith('/bookings')) data = [booking];
     else if (path.endsWith('/hotels/12')) data = details;
     else if (path.endsWith('/hotels/12/rooms')) data = [room];
     else if (path.endsWith('/bookings/code/TN123')) data = booking;
@@ -274,4 +317,135 @@ test('all photos remains available with a full gallery on a phone', async ({ pag
   );
   await page.goto('/hotels/12');
   await expect(page.getByRole('button', { name: 'View all photos', exact: true })).toBeVisible();
+});
+
+test('checkout edits reach payment and cancellation does not invent a fee', async ({ page }) => {
+  await fixtures(page, { authenticated: true });
+  await page.goto(searchURL);
+  await page.locator('.result-info a').click();
+  await page.locator('.room-card select').selectOption('1');
+  await page.locator('.property-booking .guest-button').click();
+  await page.locator('#checkout-name').fill('Edited Guest');
+  await page.locator('#checkout-email').fill('edited@example.test');
+  await page.locator('#checkout-phone').fill('invalid');
+  expect(await page.locator('#checkout-phone').evaluate(input=>input.checkValidity())).toBe(false);
+  await page.locator('#checkout-phone').fill('+84987654321');
+  expect(await page.locator('#checkout-phone').evaluate(input=>input.checkValidity())).toBe(true);
+  await page.locator('.guest-form button[type=submit]').click();
+  await expect(page.locator('.checkout-contact')).toContainText('Edited Guest');
+  await page.goto('/bookings/TN123/cancel');
+  await expect(page.locator('.cancel-grid')).toBeVisible();
+  await expect(page.locator('main')).not.toContainText(/USD 0|\$0\.00/);
+  await page.route('**/api/v1/bookings/4?*', (route) =>
+    route.fulfill({
+      json: { data: { refundProcessed: false, cancellationPolicy: { refundAmount: 0 } } },
+    })
+  );
+  await page.locator('input[type=checkbox]').nth(1).check();
+  const request = page.waitForRequest(
+    (r) => r.method() === 'DELETE' && r.url().includes('/bookings/4')
+  );
+  await page.locator('.cancel-danger').click();
+  expect((await request).url()).toContain('processRefund=true');
+  await expect(page.locator('[role=status]')).toContainText(
+    'No refund was processed automatically'
+  );
+});
+for (const width of [375, 1440])
+  for (const locale of ['en', 'vi']) {
+    test(`remaining guest pages fit ${width}px and pass accessibility in ${locale}`, async ({
+      page,
+    }) => {
+      test.setTimeout(120000);
+      await page.setViewportSize({ width, height: 1000 });
+      await fixtures(page, { authenticated: true, locale });
+      const errors = [];
+      page.on('pageerror', (error) => errors.push(error.message));
+      for (const [name, url] of [
+        ['home', '/'],
+        ['saved', '/saved-hotels'],
+        ['trips', '/bookings'],
+        ['account', '/account-settings'],
+        ['profile', '/account-settings/personal-information'],
+        ['security', '/account-settings/security-settings'],
+        ['payment-settings', '/account-settings/payment-settings'],
+        ['general', '/account-settings/general-settings'],
+        ['privacy', '/account-settings/privacy-settings'],
+        ['email', '/account-settings/email-settings'],
+        ['reviews', '/reviews'],
+        ['write-review', '/reviews/review-details?bc=TN123&hid=12&hn=Lake'],
+        ['cancellation', '/bookings/TN123/cancel'],
+        ['partner', '/join'],
+        ['onboarding', '/join/become-a-host'],
+        ['login', '/login'],
+        ['not-found', '/missing-property'],
+      ]) {
+        await page.goto(url);
+        await expect(page.locator('main').first()).toBeVisible();
+        await page.evaluate(() => document.fonts.ready);
+        await page.addStyleTag({ content: '#__vue-devtools-container__{display:none!important}' });
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+          name
+        ).toBe(true);
+        const result = await new AxeBuilder({ page })
+          .exclude('#__vue-devtools-container__')
+          .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+          .analyze();
+        expect(
+          result.violations.map((v) => ({
+            id: v.id,
+            nodes: v.nodes.map((n) => ({ target: n.target, reason: n.failureSummary })),
+          })),
+          name
+        ).toEqual([]);
+        if (process.env.GUEST_CAPTURE_DIR)
+          await page.screenshot({
+            path: `${process.env.GUEST_CAPTURE_DIR}/${name}-${locale}-${width}.png`,
+            fullPage: true,
+          });
+      }
+      expect(errors).toEqual([]);
+    });
+  }
+
+test('checkout expiry and payment initialization failure have recovery paths', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 1000 });
+  await fixtures(page, { authenticated: true });
+  await page.goto(searchURL);
+  await page.locator('.result-info a').click();
+  await page.locator('.room-card select').selectOption('1');
+  await page.locator('.property-booking .guest-button').click();
+  await expect(page.locator('#checkout-name')).toHaveValue('Test Guest');
+  await page.addStyleTag({content:'#__vue-devtools-container__{display:none!important}'});
+  await page.evaluate(() => document.fonts.ready);
+  if (process.env.GUEST_CAPTURE_DIR)
+    await page.screenshot({
+      path: `${process.env.GUEST_CAPTURE_DIR}/checkout-en-375.png`,
+      fullPage: true,
+    });
+  await page.locator('.guest-form button[type=submit]').click();
+  await expect(page.locator('.payment-form [role=alert]')).toContainText('unavailable');
+  await page.addStyleTag({ content: '#__vue-devtools-container__{display:none!important}' });
+  const result = await new AxeBuilder({ page })
+    .exclude('#__vue-devtools-container__')
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+    .analyze();
+  expect(result.violations).toEqual([]);
+  await page.clock.setFixedTime(new Date('2026-11-10T08:00:00Z'));
+  await expect(page.locator('.checkout-expired')).toBeVisible();
+  if(process.env.GUEST_CAPTURE_DIR){await page.setViewportSize({width:1440,height:1000});await page.goto('/account-settings');await expect(page.locator('.account-section-grid')).toBeVisible();await page.evaluate(()=>document.fonts.ready);await page.addStyleTag({content:'#__vue-devtools-container__{display:none!important}'});await page.screenshot({path:`${process.env.GUEST_CAPTURE_DIR}/account-en-1440.png`,fullPage:true});}
+});
+test('profile and card dialogs support keyboard dismissal', async ({ page }) => {
+  await fixtures(page, { authenticated: true });
+  await page.goto('/account-settings/personal-information');
+  await page.getByRole('button', { name: 'Change', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await page.goto('/account-settings/payment-settings');
+  await page.getByRole('button', { name: /Add.*card/i }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).not.toBeVisible();
 });

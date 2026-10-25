@@ -1,155 +1,91 @@
-<template>
-  <LoadingPopup
-    :isLoading="isLoading"
-    :startTitle="startTitle"
-    :endTitle="endTitle"
-    :isLoaded="isLoaded"
-    :redirectUrl="redirectUrl"
-    :fail="fail"
-    :reloadOnFail="false"
-  />
-  <div class="payment-form">
-    <div v-if="savedMethods.length" class="saved-methods">
-      <h3>{{ $t('bookingFlow.paymentMethod') }}</h3>
-
-      <label class="method-option">
-        <input v-model="selectedMethodId" type="radio" value="new" />
-        <span class="method-option-label">{{ $t('bookingFlow.useNewCard') }}</span>
-      </label>
-
-      <label v-for="method in savedMethods" :key="method.id" class="method-option">
-        <input v-model="selectedMethodId" type="radio" :value="method.id" />
-        <span class="method-option-label">
-          {{ cardBrandLabel(method.brand) }} •••• {{ method.last4 }}
-          <em v-if="method.isDefault"> {{ $t('bookingFlow.defaultCard') }}</em>
-        </span>
-        <span class="method-option-expiry">
-          {{ formatCardExpiry(method.expMonth, method.expYear) }}
-        </span>
-      </label>
-    </div>
-
-    <form @submit.prevent="handleSubmit">
-      <div v-show="selectedMethodId === 'new'" id="card-element"></div>
-      <div id="card-errors" role="alert"></div>
-
-      <!-- Payment Status Message -->
-      <div v-if="paymentStatus" :class="['status-message', paymentStatus.type]">
-        {{ paymentStatus.message }}
-      </div>
-
-      <button type="submit" :disabled="processing">
-        {{ processing ? $t('bookingFlow.processing') : $t('bookingFlow.pay') }}
-      </button>
-    </form>
-  </div>
-</template>
-
 <script>
   import { loadStripe } from '@stripe/stripe-js';
   import { v4 as uuidv4 } from 'uuid';
-  import { mapGetters } from 'vuex';
-  import LoadingPopup from '../LoadingPopup.vue';
   import { BookingService } from '@/services/booking.service';
   import { PaymentService } from '@/services/payment.service';
   import { cardBrandLabel, formatCardExpiry } from '../user/account-settings/payment/cardFormat';
-
   export default {
-    components: {
-      LoadingPopup,
-    },
-    emits: ['booking-created'],
     props: {
-      bookingInfor: {
-        type: Object,
-        required: true,
-      },
-      searchData: {
-        type: Object,
-        required: true,
-      },
-      userInfor: {
-        type: Object,
-        required: true,
-      },
+      bookingInfor: { type: Object, required: true },
+      searchData: { type: Object, required: true },
+      userInfor: { type: Object, required: true },
     },
+    emits: ['booking-created', 'busy'],
     data() {
       return {
         stripe: null,
         card: null,
         processing: false,
+        initializing: false,
+        initError: '',
         paymentStatus: null,
-        isLoading: false,
-        isLoaded: false,
-        redirectUrl: '',
-        fail: false,
-        idempotencyKey: uuidv4(),
-        createdBooking: null,
         savedMethods: [],
         selectedMethodId: 'new',
+        idempotencyKey: this.bookingInfor.checkoutIdempotencyKey || uuidv4(),
+        createdBooking: this.bookingInfor.checkoutBooking || null,
+        disposed: false,
       };
     },
-    computed: {
-      ...mapGetters('book', ['getBookingInfor']),
-      startTitle() {
-        return this.$t('bookingFlow.paymentProcessing');
-      },
-      endTitle() {
-        return this.$t('bookingFlow.paymentSuccess');
-      },
+    mounted() {
+      this.persistProgress();
+      this.initialize();
     },
-    async mounted() {
-      // Initialize Stripe with your publishable key
-      this.stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
-      const elements = this.stripe.elements();
-
-      // Create card element (used only when paying with a new card)
-      this.card = elements.create('card');
-      this.card.mount('#card-element');
-
-      // Handle real-time validation errors
-      this.card.addEventListener('change', (event) => {
-        const displayError = document.getElementById('card-errors');
-        if (event.error) {
-          displayError.textContent = event.error.message;
-        } else {
-          displayError.textContent = '';
-        }
-      });
-
-      await this.loadSavedMethods();
+    beforeUnmount() {
+      this.disposed = true;
+      this.card?.destroy();
     },
     methods: {
       cardBrandLabel,
       formatCardExpiry,
-      async loadSavedMethods() {
+      persistProgress() {
+        this.$store.dispatch('book/booking', {
+          ...this.bookingInfor,
+          checkoutIdempotencyKey: this.idempotencyKey,
+          checkoutBooking: this.createdBooking,
+          checkoutGuestDetails: { ...this.userInfor },
+        });
+      },
+      async initialize() {
+        if (this.initializing) return;
+        this.initializing = true;
+        this.initError = '';
         try {
-          const response = await PaymentService.listPaymentMethods();
-          this.savedMethods = response.data || [];
-
-          const defaultMethod = this.savedMethods.find((method) => method.isDefault);
-          if (defaultMethod) {
-            this.selectedMethodId = defaultMethod.id;
+          const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+          if (this.disposed) return;
+          if (!stripe) throw new Error('Stripe unavailable');
+          this.stripe = stripe;
+          this.card?.destroy();
+          this.card = stripe.elements().create('card');
+          await this.$nextTick();
+          this.card.mount(this.$refs.cardElement);
+          this.card.on('change', (event) => {
+            this.paymentStatus = event.error
+              ? { type: 'error', message: event.error.message }
+              : null;
+          });
+          try {
+            const response = await PaymentService.listPaymentMethods();
+            if (this.disposed) return;
+            this.savedMethods = response.data || [];
+            this.selectedMethodId =
+              this.savedMethods.find((method) => method.isDefault)?.id || 'new';
+          } catch {
+            this.savedMethods = [];
           }
-        } catch (error) {
-          // Saved cards are optional; fall back to the inline card form.
-          this.savedMethods = [];
-          this.selectedMethodId = 'new';
+        } catch {
+          if (!this.disposed) this.initError = this.$t('guest.checkout.paymentUnavailable');
+        } finally {
+          if (!this.disposed) this.initializing = false;
         }
       },
       async handleSubmit() {
+        if (this.processing || !this.stripe || this.initError) return;
+        this.processing = true;
+        this.$emit('busy', true);
+        this.paymentStatus = null;
         try {
-          this.isLoading = true;
-          this.processing = true;
-          this.fail = false;
-          this.isLoaded = false;
-          this.paymentStatus = null;
-
-          if (!this.bookingInfor.holdId) {
-            throw new Error(this.$t('bookingFlow.holdMissing'));
-          }
-
-          const bookingResponse =
+          if (!this.bookingInfor.holdId) throw new Error(this.$t('bookingFlow.holdMissing'));
+          const response =
             this.createdBooking ||
             (await BookingService.createBooking(
               {
@@ -162,194 +98,144 @@
               },
               this.idempotencyKey
             ));
-
-          this.createdBooking = bookingResponse;
-          this.$emit('booking-created', bookingResponse.data);
-          const booking = bookingResponse.data;
-
-          const usingSavedCard = this.selectedMethodId && this.selectedMethodId !== 'new';
-
-          const intentResponse = await BookingService.createBookingPaymentIntent(
+          this.createdBooking = response;
+          this.persistProgress();
+          this.$emit('booking-created', response.data);
+          const booking = response.data;
+          const saved = this.selectedMethodId !== 'new';
+          const intent = await BookingService.createBookingPaymentIntent(
             booking.bookingId,
-            usingSavedCard ? { paymentMethodId: this.selectedMethodId } : {}
+            saved ? { paymentMethodId: this.selectedMethodId } : {}
           );
-          const result = intentResponse.data;
-
-          if (result.error) {
-            this.fail = true;
-            throw new Error(result.error);
-          }
-
-          if (usingSavedCard) {
-            // The server already confirmed the intent with the saved card; only
-            // prompt for 3DS when Stripe asks for authentication.
-            let confirmError = null;
-
-            if (result.requiresAction && result.clientSecret) {
-              const confirmation = await this.stripe.confirmCardPayment(result.clientSecret);
-              confirmError = confirmation.error;
-            }
-
-            if (confirmError) {
-              this.fail = true;
-              throw new Error(confirmError.message);
-            }
-
-            this.completePayment(booking, result);
-            return;
-          }
-
-          // Handle the result
-          if (result.clientSecret) {
-            // Confirm the payment with Stripe.js
-            const { error: confirmError } = await this.stripe.confirmCardPayment(
+          const result = intent.data;
+          if (result.error) throw new Error(result.error);
+          // Even reused intents/saved cards may still need authentication. Let
+          // Stripe resume the same intent instead of assuming payment succeeded.
+          if (!['succeeded', 'processing', 'paid'].includes(result.status)) {
+            if (!result.clientSecret) throw new Error(this.$t('guest.checkout.paymentUnavailable'));
+            const confirmation = await this.stripe.confirmCardPayment(
               result.clientSecret,
-              {
-                payment_method: {
-                  card: this.card,
-                  billing_details: {
-                    email: this.userInfor.email,
-                    name: this.userInfor.fullName,
-                    phone: this.userInfor.phoneNumber,
-                  },
-                },
-              }
+              saved
+                ? undefined
+                : {
+                    payment_method: {
+                      card: this.card,
+                      billing_details: {
+                        name: this.userInfor.fullName,
+                        email: this.userInfor.email,
+                        phone: this.userInfor.phoneNumber,
+                      },
+                    },
+                  }
             );
-
-            if (confirmError) {
-              this.fail = true;
-              throw new Error(confirmError.message);
-            }
-
-            this.completePayment(booking, result);
+            if (confirmation.error) throw new Error(confirmation.error.message);
+            if (!['succeeded', 'processing'].includes(confirmation.paymentIntent?.status))
+              throw new Error(this.$t('guest.checkout.paymentIncomplete'));
           }
-        } catch (err) {
+          const code = result.bookingCode || booking.bookingCode;
+          if (!code) throw new Error(this.$t('guest.checkout.paymentIncomplete'));
+          this.processing = false;
+          this.$emit('busy', false);
+          await this.$router.replace({ path: '/book/complete', query: { bookingCode: code } });
+        } catch (error) {
           this.paymentStatus = {
             type: 'error',
             message:
-              err.response?.data?.message || err.response?.data?.error?.message || err.message,
+              error.response?.data?.error?.message || error.message || this.$t('guest.loadFailed'),
           };
-          this.fail = true;
-          this.isLoading = false;
         } finally {
           this.processing = false;
+          this.$emit('busy', false);
         }
       },
-      completePayment(booking, result) {
-        this.isLoaded = true;
-        this.isLoading = false;
-
-        setTimeout(() => {
-          this.$router.replace({
-            path: '/book/complete',
-            query: { bookingCode: result.bookingCode || booking.bookingCode },
-          });
-        }, 1000);
-
-        // Reset form
-        this.email = '';
-        if (this.card) {
-          this.card.clear();
-        }
-      },
-    },
-    beforeDestroy() {
-      if (this.card) {
-        this.card.destroy();
-      }
     },
   };
 </script>
-
+<template>
+  <div class="payment-form" :aria-busy="processing || initializing">
+    <p v-if="initializing" role="status">{{ $t('guest.loading') }}</p>
+    <div v-if="initError" role="alert">
+      <p>{{ initError }}</p>
+      <button type="button" class="guest-button guest-button-secondary" @click="initialize">
+        {{ $t('guest.retry') }}
+      </button>
+    </div>
+    <form class="guest-form" @submit.prevent="handleSubmit">
+      <fieldset v-if="savedMethods.length" :disabled="processing || initializing">
+        <legend>{{ $t('bookingFlow.paymentMethod') }}</legend>
+        <label class="method-option"
+          ><input v-model="selectedMethodId" type="radio" value="new" />{{
+            $t('bookingFlow.useNewCard')
+          }}</label
+        ><label v-for="method in savedMethods" :key="method.id" class="method-option"
+          ><input v-model="selectedMethodId" type="radio" :value="method.id" /><span
+            >{{ cardBrandLabel(method.brand) }} •••• {{ method.last4
+            }}<small
+              >{{ formatCardExpiry(method.expMonth, method.expYear) }} ·
+              {{ method.isDefault ? $t('bookingFlow.defaultCard') : '' }}</small
+            ></span
+          ></label
+        >
+      </fieldset>
+      <div v-show="selectedMethodId === 'new' && !initError">
+        <p id="payment-card-label">{{ $t('bookingFlow.paymentMethod') }}</p>
+        <div
+          ref="cardElement"
+          class="payment-card"
+          role="group"
+          aria-labelledby="payment-card-label"
+        ></div>
+      </div>
+      <p v-if="paymentStatus" role="alert" class="payment-error">{{ paymentStatus.message }}</p>
+      <p class="guest-subtitle">{{ $t('guest.checkout.paymentNote') }}</p>
+      <button
+        class="guest-button"
+        type="submit"
+        :disabled="processing || initializing || !stripe || !!initError"
+      >
+        {{ processing ? $t('bookingFlow.processing') : $t('bookingFlow.pay') }}
+      </button>
+    </form>
+  </div>
+</template>
 <style scoped>
   .payment-form {
-    max-width: 500px;
-    margin: 0 auto;
-    padding: 20px;
+    margin-top: 24px;
   }
-
-  .saved-methods {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-
-  .saved-methods h3 {
-    margin: 0;
-    font-size: 16px;
-    color: #0f172a;
-  }
-
   .method-option {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-
-  .method-option-label {
-    flex: 1;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--tn-border);
+    border-radius: 10px;
     font-size: 14px;
-    color: #0f172a;
+    margin-top: 10px;
   }
-
-  .method-option-label em {
-    color: #1d4ed8;
-    font-style: normal;
-    font-weight: 600;
+  .method-option input {
+    width: 18px;
+    min-height: 18px;
   }
-
-  .method-option-expiry {
-    color: #64748b;
-    font-size: 13px;
+  .method-option small {
+    display: block;
+    color: var(--tn-muted);
   }
-
-  #card-element {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    margin-bottom: 20px;
+  fieldset {
+    border: 0;
+    padding: 0;
+    min-width: 0;
   }
-
-  #card-errors {
-    color: #dc3545;
-    margin-bottom: 10px;
+  .payment-card {
+    padding: 16px;
+    border: 1px solid var(--tn-border);
+    border-radius: 10px;
+    background: #f8f8f8;
   }
-
-  .status-message {
-    padding: 10px;
-    margin-bottom: 15px;
-    border-radius: 4px;
-  }
-
-  .status-message.success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-  }
-
-  .status-message.error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-  }
-
-  button {
-    width: 100%;
-    padding: 10px;
-    background: #5469d4;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  button:disabled {
-    background: #7a8be0;
-    cursor: not-allowed;
+  .payment-error {
+    color: #b3261e;
+    border-radius: 10px;
+    background: #fbece9;
+    padding: 16px;
+    overflow-wrap: anywhere;
   }
 </style>

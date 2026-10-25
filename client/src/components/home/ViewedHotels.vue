@@ -1,105 +1,30 @@
-<template>
-  <div class="hotel-container container" v-if="isLoading || viewedHotels.length > 0">
-    <h2 class="h2">{{ $t('userHome.viewedHotels') }}</h2>
-    <SkeletonGrid v-if="isLoading" :count="itemsPerSlide" image-height="220px" />
-    <div v-else class="slider-container">
-      <ElCarousel
-        :interval="0"
-        :arrow="groupedHotels.length > 1 ? 'hover' : 'never'"
-        indicator-position="none"
-        height="360px"
-        class="hotel-carousel"
-      >
-        <ElCarouselItem v-for="(group, groupIndex) in groupedHotels" :key="groupIndex">
-          <div class="hotel-group">
-            <div
-              class="hotel-card"
-              v-for="(hotel, index) in group"
-              :key="hotel.id || index"
-              @click="redirectToHotelDetails(hotel)"
-            >
-              <div class="hotel-image">
-                <img
-                  v-if="hotel.primaryImageUrl"
-                  :src="getImageUrl(hotel.primaryImageUrl)"
-                  :alt="hotel.name"
-                />
-                <SavedHotelIcon :hotel-id="hotel.id" />
-              </div>
-              <div class="hotel-content">
-                <h2 class="hotel-name">{{ hotel.name }}</h2>
-                <p class="hotel-location">{{ displayAddress(hotel.address) }}</p>
-                <div class="hotel-rating" v-if="hotel.ratingSummary">
-                  <span class="rating-badge">{{ hotel.ratingSummary.overallRating }}</span>
-                  <span class="review-count">{{ $t('userHome.reviewCount', { count: hotel.ratingSummary.totalReviews }) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </ElCarouselItem>
-      </ElCarousel>
-    </div>
-  </div>
-</template>
-
 <script>
   import { mapActions, mapGetters } from 'vuex';
-  import SavedHotelIcon from '@/components/SavedHotelIcon.vue';
+  import GuestHotelCard from './GuestHotelCard.vue';
   import SkeletonGrid from '@/components/common/SkeletonGrid.vue';
   import { HotelService } from '@/services/hotel.service';
   import errorHandler from '@/request/errorHandler.js';
-  import { getImageUrl } from '@/utils/images';
 
   export default {
     name: 'ViewedHotels',
     components: {
-      SavedHotelIcon,
+      GuestHotelCard,
       SkeletonGrid,
     },
     data() {
       return {
         viewedHotels: [],
         isLoading: false,
-        windowWidth: typeof window !== 'undefined' ? window.innerWidth : 1200,
+        loadError: false,
       };
     },
     computed: {
       ...mapGetters('auth', ['isUserAuthenticated']),
-      itemsPerSlide() {
-        if (this.windowWidth >= 1400) return 5;
-        if (this.windowWidth >= 1200) return 4;
-        if (this.windowWidth >= 768) return 3;
-        return 2;
-      },
-      groupedHotels() {
-        const groups = [];
-        for (let i = 0; i < this.viewedHotels.length; i += this.itemsPerSlide) {
-          groups.push(this.viewedHotels.slice(i, i + this.itemsPerSlide));
-        }
-        return groups;
-      },
     },
     mounted() {
-      if (typeof window !== 'undefined') {
-        window.addEventListener('resize', this.handleResize);
-        this.handleResize();
-      }
       this.loadViewedHotels();
     },
-    beforeUnmount() {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('resize', this.handleResize);
-      }
-    },
     methods: {
-      getImageUrl,
-      handleResize() {
-        this.windowWidth = window.innerWidth;
-      },
-      displayAddress(address) {
-        if (!address) return '';
-        return address.length > 35 ? `${address.slice(0, 35)} ...` : address;
-      },
       ...mapActions('search', ['updateLocation']),
       redirectToHotelDetails(hotel) {
         const hotelId = hotel.id;
@@ -120,6 +45,7 @@
       async loadViewedHotels() {
         try {
           this.isLoading = true;
+          this.loadError = false;
 
           if (!this.isUserAuthenticated) {
             const raw = localStorage.getItem('viewedHotels');
@@ -140,6 +66,7 @@
           this.viewedHotels = Array.isArray(list) ? list : [];
         } catch (error) {
           errorHandler(error);
+          this.loadError = true;
           this.viewedHotels = [];
         } finally {
           this.isLoading = false;
@@ -148,130 +75,23 @@
     },
   };
 </script>
-
-<style lang="scss" scoped>
-  @import '@/assets/styles/index.scss';
-
-  .hotel-container {
-    margin-bottom: 30px;
-    margin-top: 30px;
-    position: relative;
-  }
-
-  .h2 {
-    font-weight: bolder;
-    display: block;
-    font-size: 28px;
-  }
-
-  .slider-container {
-    position: relative;
-  }
-
-  .hotel-carousel {
-    :deep(.el-carousel__container) {
-      height: 360px;
-    }
-
-    :deep(.el-carousel__item) {
-      padding: 0 $spacing-sm;
-    }
-  }
-
-  .hotel-group {
-    display: flex;
-    gap: $spacing-lg;
-    justify-content: center;
-    height: 100%;
-    align-items: flex-start;
-  }
-
-  .hotel-card {
-    height: 360px;
-    flex: 0 0 280px;
-    background: $white;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    position: relative;
-    transition: transform 0.3s;
-    cursor: pointer;
-
-    &:hover {
-      transform: translateY(-5px);
-    }
-
-    @media (max-width: 1400px) {
-      flex: 0 0 calc((100% - 60px) / 4);
-      max-width: 280px;
-    }
-
-    @media (max-width: 1200px) {
-      flex: 0 0 calc((100% - 40px) / 3);
-      max-width: 280px;
-    }
-
-    @media (max-width: 768px) {
-      flex: 0 0 calc((100% - 20px) / 2);
-      max-width: 280px;
-    }
-  }
-
-  .hotel-image {
-    position: relative;
-    height: 60%;
-    overflow: hidden;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 0;
-    }
-  }
-
-  .hotel-content {
-    height: 40%;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-
-  .hotel-name {
-    font-size: $font-size-base;
-    font-weight: 600;
-    margin: 0 0 5px 0;
-    color: $text-primary;
-  }
-
-  .hotel-location {
-    font-size: $font-size-sm;
-    color: $text-secondary;
-    margin: 0 0 10px 0;
-  }
-
-  .hotel-rating {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-  }
-
-  .rating-badge {
-    background: $primary-color;
-    color: $white;
-    padding: 4px 8px;
-    border-radius: $border-radius-sm;
-    font-weight: bold;
-  }
-
-  .rating-text {
-    font-size: $font-size-sm;
-    color: $text-primary;
-  }
-
-  .review-count {
-    color: $text-secondary;
-    font-size: $font-size-sm;
-  }
-</style>
+<template>
+  <section v-if="isLoading || loadError || viewedHotels.length" class="discovery-section">
+    <h2>{{ $t('userHome.viewedHotels') }}</h2>
+    <SkeletonGrid v-if="isLoading" :count="3" image-height="200px" />
+    <div v-else-if="loadError" class="guest-section" role="alert">
+      <p>{{ $t('guest.loadFailed') }}</p>
+      <button type="button" class="guest-button guest-button-secondary" @click="loadViewedHotels">
+        {{ $t('guest.retry') }}
+      </button>
+    </div>
+    <div v-else class="guest-property-grid">
+      <GuestHotelCard
+        v-for="hotel in viewedHotels"
+        :key="hotel.id"
+        :hotel="hotel"
+        @open="redirectToHotelDetails"
+      />
+    </div>
+  </section>
+</template>

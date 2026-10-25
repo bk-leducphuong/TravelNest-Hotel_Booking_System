@@ -22,6 +22,13 @@
           SavedHotels: 'saved',
           AccountSettings: 'account',
           Login: 'login',
+          BookingCancellation: 'cancel',
+          Reviews: 'reviews',
+          ReviewDetails: 'writeReview',
+          SettingDetails: 'settings',
+          Join: 'partner',
+          JoinForm: 'onboarding',
+          NotFound: 'notFound',
         };
         const key = names[this.$route.name];
         return key ? `${this.$t(`guest.page.${key}`)} · TravelNest` : 'TravelNest';

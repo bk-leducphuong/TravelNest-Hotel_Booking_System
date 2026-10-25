@@ -13,7 +13,7 @@ export const accountSettingsSections = [
     summaryKey: 'account.sections.generalSettings.summary',
     ctaKey: 'account.sections.generalSettings.cta',
     component: 'GeneralSettings',
-    available: false,
+    available: true,
   },
   {
     slug: 'security-settings',

@@ -1,6 +1,15 @@
 <template>
-  <div class="modal-overlay" @click.self="handleClose">
-    <div class="modal-card">
+  <el-dialog
+    :model-value="true"
+    :title="$t('account.payment.addCardModal.title')"
+    width="560px"
+    :close-on-click-modal="!saving"
+    :close-on-press-escape="!saving"
+    :show-close="!saving"
+    @close="handleClose"
+    @opened="initialize"
+  >
+    <div class="card-dialog-content">
       <div class="modal-header">
         <h2>{{ $t('account.payment.addCardModal.title') }}</h2>
         <button type="button" class="ghost-button" :disabled="saving" @click="handleClose">
@@ -22,7 +31,7 @@
         </div>
       </form>
     </div>
-  </div>
+  </el-dialog>
 </template>
 
 <script>
@@ -42,32 +51,37 @@
     data() {
       return {
         stripe: null,
+        disposed: false,
         card: null,
         stripeReady: false,
         saving: false,
         errorMessage: '',
       };
     },
-    async mounted() {
-      try {
-        this.stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
-        const elements = this.stripe.elements();
-        this.card = elements.create('card');
-        this.card.mount('#add-card-element');
-        this.card.addEventListener('change', (event) => {
-          this.errorMessage = event.error ? event.error.message : '';
-        });
-        this.stripeReady = true;
-      } catch (error) {
-        this.errorMessage = this.$t('account.payment.addCardModal.loadError');
-      }
-    },
     beforeUnmount() {
+      this.disposed = true;
       if (this.card) {
         this.card.destroy();
       }
     },
     methods: {
+      async initialize() {
+        try {
+          const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+          if (this.disposed) return;
+          this.stripe = stripe;
+          const elements = this.stripe.elements();
+          this.card = elements.create('card');
+          this.card.mount('#add-card-element');
+          this.card.addEventListener('change', (event) => {
+            this.errorMessage = event.error ? event.error.message : '';
+          });
+          this.stripeReady = true;
+        } catch (error) {
+          this.errorMessage = this.$t('account.payment.addCardModal.loadError');
+        }
+      },
+
       handleClose() {
         if (this.saving) {
           return;

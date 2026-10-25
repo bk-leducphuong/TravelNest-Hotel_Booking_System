@@ -114,7 +114,7 @@ describe('PaymentSettings', () => {
     await flushPromises();
 
     await wrapper.find('.saved-card:nth-child(1) .link-button.danger').trigger('click');
-    await wrapper.find('.secondary-button').trigger('click');
+    await wrapper.find('.guest-button-secondary').trigger('click');
 
     expect(wrapper.findComponent({ name: 'ConfirmDialog' }).exists()).toBe(false);
     expect(PaymentService.removePaymentMethod).not.toHaveBeenCalled();

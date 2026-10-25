@@ -105,7 +105,9 @@
           this.toast.success(this.$t('account.payment.toasts.defaultUpdated'));
           await this.loadPaymentMethods();
         } catch (error) {
-          this.toast.error(this.getErrorMessage(error, this.$t('account.payment.errors.setDefault')));
+          this.toast.error(
+            this.getErrorMessage(error, this.$t('account.payment.errors.setDefault'))
+          );
         } finally {
           this.settingDefaultId = '';
         }
@@ -175,60 +177,60 @@
     justify-content: space-between;
     gap: 16px;
     padding: 28px;
-    border: 1px solid #dbe3f0;
-    border-radius: 8px;
+    border: 1px solid var(--tn-border);
+    border-radius: 20px;
     background: #fff;
   }
 
   .panel-header h1 {
     margin: 0 0 8px;
     font-size: 30px;
-    color: #0f172a;
+    color: var(--tn-ink);
   }
 
   .panel-header p {
     margin: 0;
-    color: #475569;
+    color: var(--tn-muted);
     line-height: 1.6;
   }
 
   .detail-card {
     padding: 24px 28px;
-    border: 1px solid #dbe3f0;
-    border-radius: 8px;
+    border: 1px solid var(--tn-border);
+    border-radius: 20px;
     background: #fff;
   }
 
   .detail-card h2 {
     margin: 0 0 8px;
     font-size: 20px;
-    color: #0f172a;
+    color: var(--tn-ink);
   }
 
   .detail-card p {
     margin: 0;
-    color: #475569;
+    color: var(--tn-muted);
     line-height: 1.5;
   }
 
   .muted-card {
-    background: #f8fafc;
+    background: var(--tn-canvas);
   }
 
   .empty-state {
     padding: 28px;
-    border: 1px solid #dbe3f0;
-    border-radius: 8px;
+    border: 1px solid var(--tn-border);
+    border-radius: 20px;
     background: #fff;
-    color: #64748b;
+    color: var(--tn-muted);
   }
 
   .primary-button {
     flex-shrink: 0;
     padding: 11px 16px;
     border: none;
-    border-radius: 8px;
-    background: #2563eb;
+    border-radius: 20px;
+    background: var(--tn-action);
     color: #fff;
     font-size: 14px;
     font-weight: 600;

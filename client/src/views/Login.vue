@@ -1,49 +1,56 @@
 <template>
   <LoginHeader :isAdminLogin="false" />
-  <div class="container">
-    <h1>{{ heading }}</h1>
-    <p>{{ description }}</p>
+  <main id="guest-main" tabindex="-1" class="guest-page">
+    <section class="guest-section auth-card">
+      <h1>{{ heading }}</h1>
+      <p>{{ description }}</p>
 
-    <div v-if="isVerificationRequired" class="verification-card">
-      <h2>{{ $t('authPage.verifyEmailTitle') }}</h2>
-      <p>
-        {{ $t('authPage.verifyEmailMessage') }}
-      </p>
-      <div class="actions">
-        <button type="button" class="btn" @click="retryBootstrap">
-          {{ $t('authPage.verifiedEmailButton') }}
-        </button>
-        <button type="button" class="btn btn-secondary" @click="startAuthFlow">
+      <div v-if="isVerificationRequired" class="verification-card">
+        <h2>{{ $t('authPage.verifyEmailTitle') }}</h2>
+        <p>
+          {{ $t('authPage.verifyEmailMessage') }}
+        </p>
+        <div class="actions">
+          <button type="button" class="guest-button" @click="retryBootstrap">
+            {{ $t('authPage.verifiedEmailButton') }}
+          </button>
+          <button type="button" class="guest-button guest-button-secondary" @click="startAuthFlow">
+            {{ $t('authPage.continueWithKeycloak') }}
+          </button>
+        </div>
+      </div>
+
+      <div v-else-if="sessionRejected" class="verification-card">
+        <h2>{{ $t('authPage.accountUnavailableTitle') }}</h2>
+        <p>
+          {{ $t('authPage.accountUnavailableMessage') }}
+        </p>
+        <div class="actions">
+          <button type="button" class="guest-button" @click="signOut">
+            {{ $t('authPage.signOutAndSwitch') }}
+          </button>
+        </div>
+      </div>
+
+      <div v-else class="actions">
+        <button type="button" class="guest-button" @click="startAuthFlow">
           {{ $t('authPage.continueWithKeycloak') }}
         </button>
-      </div>
-    </div>
-
-    <div v-else-if="sessionRejected" class="verification-card">
-      <h2>{{ $t('authPage.accountUnavailableTitle') }}</h2>
-      <p>
-        {{ $t('authPage.accountUnavailableMessage') }}
-      </p>
-      <div class="actions">
-        <button type="button" class="btn" @click="signOut">
-          {{ $t('authPage.signOutAndSwitch') }}
+        <button
+          type="button"
+          class="guest-button guest-button-secondary"
+          @click="startResetPassword"
+        >
+          {{ $t('authPage.forgotPassword') }}
         </button>
       </div>
-    </div>
 
-    <div v-else class="actions">
-      <button type="button" class="btn" @click="startAuthFlow">
-        {{ $t('authPage.continueWithKeycloak') }}
-      </button>
-      <button type="button" class="btn btn-secondary" @click="startResetPassword">
-        {{ $t('authPage.forgotPassword') }}
-      </button>
-    </div>
-
-    <p class="hint">
-      {{ $t('authPage.browserRedirectHint') }}
-    </p>
-  </div>
+      <p class="hint">
+        {{ $t('authPage.browserRedirectHint') }}
+      </p>
+    </section>
+  </main>
+  <TheFooter />
 </template>
 
 <script>
@@ -53,12 +60,14 @@
     isAuthenticated as isKeycloakAuthenticated,
     logout as keycloakLogout,
   } from '@/services/keycloak.service';
+  import TheFooter from '@/components/Footer.vue';
   import LoginHeader from '@/components/LoginHeader.vue';
   import { adminAppUrl } from '@/utils/adminApp';
 
   export default {
     components: {
       LoginHeader,
+      TheFooter,
     },
     setup() {
       const toast = useToast();
@@ -173,60 +182,36 @@
   };
 </script>
 
-<style lang="scss" scoped>
-  @import '@/assets/styles/index.scss';
-
-  .container {
-    max-width: 560px;
-    margin: $spacing-xxl auto;
-    padding: $spacing-xl;
-    background-color: $white;
-    border-radius: $border-radius-sm;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+<style scoped>
+  .auth-card {
+    max-width: 640px;
+    margin: 24px auto;
   }
-
-  h1 {
-    color: $text-primary;
-    margin-bottom: $spacing-md;
+  .auth-card h1 {
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--tn-brand);
   }
-
-  p {
-    color: $text-secondary;
-    line-height: 1.5;
+  .auth-card p {
+    color: var(--tn-muted);
+    font-size: 14px;
   }
-
   .actions {
     display: flex;
-    flex-direction: column;
-    gap: $spacing-md;
-    margin: $spacing-lg 0;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 24px 0;
   }
-
-  .btn {
-    @include button-primary;
-  }
-
-  .btn-secondary {
-    color: $text-primary;
-    background-color: transparent;
-    border: 1px solid $border-color;
-  }
-
   .verification-card {
-    margin: $spacing-lg 0;
-    padding: $spacing-lg;
-    background: rgba($primary-color, 0.06);
-    border: 1px solid rgba($primary-color, 0.2);
-    border-radius: $border-radius-sm;
+    background: var(--tn-soft);
+    border-radius: 14px;
+    padding: 20px;
+    margin-top: 24px;
   }
-
   .verification-card h2 {
-    margin-bottom: $spacing-sm;
-    color: $text-primary;
     font-size: 20px;
   }
-
   .hint {
-    font-size: 14px;
+    margin-top: 24px;
   }
 </style>

@@ -1,11 +1,11 @@
 <script>
-import { mapGetters } from 'vuex'
+  import { mapGetters } from 'vuex';
 
-export default {
-  computed: {
-    ...mapGetters('user', ['getUserInformation']),
-  },
-}
+  export default {
+    computed: {
+      ...mapGetters('user', ['getUserInformation']),
+    },
+  };
 </script>
 
 <template>
@@ -34,63 +34,63 @@ export default {
 </template>
 
 <style scoped>
-.settings-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+  .settings-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
 
-.panel-header,
-.detail-card {
-  padding: 24px 28px;
-  border: 1px solid #dbe3f0;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.panel-header h1,
-.detail-card h2 {
-  margin: 0 0 8px;
-  color: #0f172a;
-}
-
-.panel-header h1 {
-  font-size: 30px;
-}
-
-.panel-header p,
-.detail-card p {
-  margin: 0;
-  color: #475569;
-  line-height: 1.6;
-}
-
-.detail-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.disabled-button {
-  padding: 11px 16px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: #f8fafc;
-  color: #94a3b8;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-@media (max-width: 768px) {
   .panel-header,
   .detail-card {
-    padding: 20px;
+    padding: 24px 28px;
+    border: 1px solid var(--tn-border);
+    border-radius: 20px;
+    background: #fff;
+  }
+
+  .panel-header h1,
+  .detail-card h2 {
+    margin: 0 0 8px;
+    color: var(--tn-ink);
+  }
+
+  .panel-header h1 {
+    font-size: 30px;
+  }
+
+  .panel-header p,
+  .detail-card p {
+    margin: 0;
+    color: var(--tn-muted);
+    line-height: 1.6;
   }
 
   .detail-row {
-    flex-direction: column;
-    align-items: stretch;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
   }
-}
+
+  .disabled-button {
+    padding: 11px 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 20px;
+    background: var(--tn-canvas);
+    color: #94a3b8;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  @media (max-width: 768px) {
+    .panel-header,
+    .detail-card {
+      padding: 20px;
+    }
+
+    .detail-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
 </style>

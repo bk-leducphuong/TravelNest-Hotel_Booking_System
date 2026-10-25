@@ -1,268 +1,268 @@
 <script>
-import { mapActions } from 'vuex'
-import { useToast } from 'vue-toastification'
-import { UserService } from '@/services/user.service'
-import { getImageUrl } from '@/utils/images'
-import { COUNTRIES, DEFAULT_DIAL_CODE, splitPhoneNumber } from '@/constants/countries'
+  import { mapActions } from 'vuex';
+  import { useToast } from 'vue-toastification';
+  import { UserService } from '@/services/user.service';
+  import { getImageUrl } from '@/utils/images';
+  import { COUNTRIES, DEFAULT_DIAL_CODE, splitPhoneNumber } from '@/constants/countries';
 
-const emptyProfile = () => ({
-  name: '',
-  firstName: '',
-  lastName: '',
-  email: '',
-  phoneNumber: '',
-  phoneDial: DEFAULT_DIAL_CODE,
-  phoneNational: '',
-  dateOfBirth: '',
-  address: '',
-  country: '',
-  nationality: '',
-  gender: '',
-  avatar: '',
-})
+  const emptyProfile = () => ({
+    name: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    phoneDial: DEFAULT_DIAL_CODE,
+    phoneNational: '',
+    dateOfBirth: '',
+    address: '',
+    country: '',
+    nationality: '',
+    gender: '',
+    avatar: '',
+  });
 
-export default {
-  setup() {
-    const toast = useToast()
-    return { toast }
-  },
-  data() {
-    return {
-      isLoading: false,
-      activeEditor: '',
-      savingSection: '',
-      profile: emptyProfile(),
-      draft: emptyProfile(),
-      countries: COUNTRIES,
-      genderOptions: [
-        { value: 'male', labelKey: 'account.personal.genderOptions.male' },
-        { value: 'female', labelKey: 'account.personal.genderOptions.female' },
-        { value: 'other', labelKey: 'account.personal.genderOptions.other' },
-        {
-          value: 'prefer_not_to_say',
-          labelKey: 'account.personal.genderOptions.preferNotToSay',
-        },
-      ],
-      isAvatarModalOpen: false,
-      avatarFile: null,
-      avatarPreview: '',
-      isAvatarSaving: false,
-    }
-  },
-  computed: {
-    avatarUrl() {
-      return getImageUrl(this.avatarPreview || this.profile.avatar)
+  export default {
+    setup() {
+      const toast = useToast();
+      return { toast };
     },
-    // E.164-ish; matches the server's phoneNumber schema.
-    isPhoneValid() {
-      const national = (this.draft.phoneNational || '').replace(/\D/g, '')
-      if (!national) return false
-      const composed = `${this.draft.phoneDial || DEFAULT_DIAL_CODE}${national}`
-      return /^\+?[1-9]\d{1,14}$/.test(composed)
-    },
-    formattedDateOfBirth() {
-      if (!this.profile.dateOfBirth) {
-        return this.$t('account.personal.addDateOfBirth')
-      }
-
-      const date = new Date(this.profile.dateOfBirth)
-      if (Number.isNaN(date.getTime())) {
-        return this.$t('account.personal.addDateOfBirth')
-      }
-
-      return date.toLocaleDateString('vi-VN')
-    },
-  },
-  methods: {
-    ...mapActions('user', ['retrieveUserInformation']),
-    splitName(value) {
-      const trimmedValue = String(value || '').trim()
-      if (!trimmedValue) {
-        return { firstName: '', lastName: '' }
-      }
-
-      const [firstName, ...lastNameParts] = trimmedValue.split(/\s+/)
+    data() {
       return {
-        firstName,
-        lastName: lastNameParts.join(' '),
-      }
+        isLoading: false,
+        activeEditor: '',
+        savingSection: '',
+        profile: emptyProfile(),
+        draft: emptyProfile(),
+        countries: COUNTRIES,
+        genderOptions: [
+          { value: 'male', labelKey: 'account.personal.genderOptions.male' },
+          { value: 'female', labelKey: 'account.personal.genderOptions.female' },
+          { value: 'other', labelKey: 'account.personal.genderOptions.other' },
+          {
+            value: 'prefer_not_to_say',
+            labelKey: 'account.personal.genderOptions.preferNotToSay',
+          },
+        ],
+        isAvatarModalOpen: false,
+        avatarFile: null,
+        avatarPreview: '',
+        isAvatarSaving: false,
+      };
     },
-    normalizeProfile(user) {
-      const { firstName, lastName } = this.splitName(user.full_name)
-      return {
-        name: user.full_name || '',
-        firstName,
-        lastName,
-        email: user.email || '',
-        phoneNumber: user.phone_number || '',
-        dateOfBirth: user.date_of_birth || '',
-        address: user.address || '',
-        country: user.country || '',
-        nationality: user.nationality || '',
-        gender: user.gender || '',
-        avatar: user.profile_picture_url || '',
-      }
+    computed: {
+      avatarUrl() {
+        return getImageUrl(this.avatarPreview || this.profile.avatar);
+      },
+      // E.164-ish; matches the server's phoneNumber schema.
+      isPhoneValid() {
+        const national = (this.draft.phoneNational || '').replace(/\D/g, '');
+        if (!national) return false;
+        const composed = `${this.draft.phoneDial || DEFAULT_DIAL_CODE}${national}`;
+        return /^\+?[1-9]\d{1,14}$/.test(composed);
+      },
+      formattedDateOfBirth() {
+        if (!this.profile.dateOfBirth) {
+          return this.$t('account.personal.addDateOfBirth');
+        }
+
+        const date = new Date(this.profile.dateOfBirth);
+        if (Number.isNaN(date.getTime())) {
+          return this.$t('account.personal.addDateOfBirth');
+        }
+
+        return date.toLocaleDateString(this.$i18n.locale);
+      },
     },
-    resetDraft() {
-      this.draft = {
-        ...this.profile,
-      }
+    methods: {
+      ...mapActions('user', ['retrieveUserInformation']),
+      splitName(value) {
+        const trimmedValue = String(value || '').trim();
+        if (!trimmedValue) {
+          return { firstName: '', lastName: '' };
+        }
+
+        const [firstName, ...lastNameParts] = trimmedValue.split(/\s+/);
+        return {
+          firstName,
+          lastName: lastNameParts.join(' '),
+        };
+      },
+      normalizeProfile(user) {
+        const { firstName, lastName } = this.splitName(user.full_name);
+        return {
+          name: user.full_name || '',
+          firstName,
+          lastName,
+          email: user.email || '',
+          phoneNumber: user.phone_number || '',
+          dateOfBirth: user.date_of_birth || '',
+          address: user.address || '',
+          country: user.country || '',
+          nationality: user.nationality || '',
+          gender: user.gender || '',
+          avatar: user.profile_picture_url || '',
+        };
+      },
+      resetDraft() {
+        this.draft = {
+          ...this.profile,
+        };
+      },
+      openEditor(section) {
+        this.resetDraft();
+        if (section === 'phoneNumber') {
+          const { dial, national } = splitPhoneNumber(this.draft.phoneNumber);
+          this.draft.phoneDial = dial;
+          this.draft.phoneNational = national;
+        }
+        this.activeEditor = section;
+      },
+      cancelEditor() {
+        this.activeEditor = '';
+        this.resetDraft();
+      },
+      getErrorMessage(error, fallbackMessage) {
+        const apiError = error?.response?.data?.error;
+        const fieldMessages = apiError?.fields ? Object.values(apiError.fields) : [];
+        return fieldMessages[0] || apiError?.message || fallbackMessage;
+      },
+      async loadUserInfo() {
+        this.isLoading = true;
+        try {
+          const response = await UserService.getCurrentUser();
+          this.profile = this.normalizeProfile(response.data);
+          this.resetDraft();
+        } catch (error) {
+          this.toast.error(this.getErrorMessage(error, this.$t('account.personal.errors.load')));
+        } finally {
+          this.isLoading = false;
+        }
+      },
+      async saveProfile(payload, section, successMessage) {
+        this.savingSection = section;
+        try {
+          await UserService.updateCurrentUser(payload);
+          await this.loadUserInfo();
+          await this.retrieveUserInformation();
+          this.activeEditor = '';
+          this.toast.success(successMessage);
+        } catch (error) {
+          this.toast.error(this.getErrorMessage(error, this.$t('account.personal.errors.save')));
+        } finally {
+          this.savingSection = '';
+        }
+      },
+      saveName() {
+        const fullName = `${this.draft.firstName} ${this.draft.lastName}`.trim();
+        return this.saveProfile(
+          { name: fullName },
+          'name',
+          this.$t('account.personal.toasts.nameUpdated')
+        );
+      },
+      saveEmail() {
+        return this.saveProfile(
+          { email: this.draft.email },
+          'email',
+          this.$t('account.personal.toasts.emailUpdated')
+        );
+      },
+      savePhoneNumber() {
+        const national = (this.draft.phoneNational || '').replace(/\D/g, '');
+        const phoneNumber = national ? `${this.draft.phoneDial}${national}` : '';
+        return this.saveProfile(
+          { phoneNumber },
+          'phoneNumber',
+          this.$t('account.personal.toasts.phoneUpdated')
+        );
+      },
+      saveDateOfBirth() {
+        return this.saveProfile(
+          { dateOfBirth: this.draft.dateOfBirth },
+          'dateOfBirth',
+          this.$t('account.personal.toasts.dobUpdated')
+        );
+      },
+      saveAddress() {
+        return this.saveProfile(
+          {
+            address: this.draft.address,
+            country: this.draft.country,
+          },
+          'address',
+          this.$t('account.personal.toasts.addressUpdated')
+        );
+      },
+      saveNationality() {
+        return this.saveProfile(
+          { nationality: this.draft.nationality },
+          'nationality',
+          this.$t('account.personal.toasts.nationalityUpdated')
+        );
+      },
+      saveGender() {
+        return this.saveProfile(
+          { gender: this.draft.gender },
+          'gender',
+          this.$t('account.personal.toasts.genderUpdated')
+        );
+      },
+      openAvatarModal() {
+        this.isAvatarModalOpen = true;
+        this.avatarFile = null;
+        this.avatarPreview = '';
+      },
+      closeAvatarModal() {
+        if (this.avatarPreview?.startsWith('blob:')) {
+          URL.revokeObjectURL(this.avatarPreview);
+        }
+        this.isAvatarModalOpen = false;
+        this.avatarFile = null;
+        this.avatarPreview = '';
+      },
+      handleAvatarSelection(event) {
+        const [file] = event.target.files || [];
+        if (!file) {
+          return;
+        }
+
+        if (this.avatarPreview?.startsWith('blob:')) {
+          URL.revokeObjectURL(this.avatarPreview);
+        }
+        this.avatarFile = file;
+        this.avatarPreview = URL.createObjectURL(file);
+      },
+      async saveAvatar() {
+        if (!this.avatarFile) {
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('avatar', this.avatarFile);
+
+        this.isAvatarSaving = true;
+        try {
+          await UserService.updateAvatar(formData);
+          await this.loadUserInfo();
+          await this.retrieveUserInformation();
+          this.closeAvatarModal();
+          this.toast.success(this.$t('account.personal.toasts.avatarUpdated'));
+        } catch (error) {
+          this.toast.error(this.getErrorMessage(error, this.$t('account.personal.errors.avatar')));
+        } finally {
+          this.isAvatarSaving = false;
+        }
+      },
     },
-    openEditor(section) {
-      this.resetDraft()
-      if (section === 'phoneNumber') {
-        const { dial, national } = splitPhoneNumber(this.draft.phoneNumber)
-        this.draft.phoneDial = dial
-        this.draft.phoneNational = national
-      }
-      this.activeEditor = section
+    async mounted() {
+      await this.loadUserInfo();
     },
-    cancelEditor() {
-      this.activeEditor = ''
-      this.resetDraft()
-    },
-    getErrorMessage(error, fallbackMessage) {
-      const apiError = error?.response?.data?.error
-      const fieldMessages = apiError?.fields ? Object.values(apiError.fields) : []
-      return fieldMessages[0] || apiError?.message || fallbackMessage
-    },
-    async loadUserInfo() {
-      this.isLoading = true
-      try {
-        const response = await UserService.getCurrentUser()
-        this.profile = this.normalizeProfile(response.data)
-        this.resetDraft()
-      } catch (error) {
-        this.toast.error(this.getErrorMessage(error, this.$t('account.personal.errors.load')))
-      } finally {
-        this.isLoading = false
-      }
-    },
-    async saveProfile(payload, section, successMessage) {
-      this.savingSection = section
-      try {
-        await UserService.updateCurrentUser(payload)
-        await this.loadUserInfo()
-        await this.retrieveUserInformation()
-        this.activeEditor = ''
-        this.toast.success(successMessage)
-      } catch (error) {
-        this.toast.error(this.getErrorMessage(error, this.$t('account.personal.errors.save')))
-      } finally {
-        this.savingSection = ''
-      }
-    },
-    saveName() {
-      const fullName = `${this.draft.firstName} ${this.draft.lastName}`.trim()
-      return this.saveProfile(
-        { name: fullName },
-        'name',
-        this.$t('account.personal.toasts.nameUpdated')
-      )
-    },
-    saveEmail() {
-      return this.saveProfile(
-        { email: this.draft.email },
-        'email',
-        this.$t('account.personal.toasts.emailUpdated')
-      )
-    },
-    savePhoneNumber() {
-      const national = (this.draft.phoneNational || '').replace(/\D/g, '')
-      const phoneNumber = national ? `${this.draft.phoneDial}${national}` : ''
-      return this.saveProfile(
-        { phoneNumber },
-        'phoneNumber',
-        this.$t('account.personal.toasts.phoneUpdated')
-      )
-    },
-    saveDateOfBirth() {
-      return this.saveProfile(
-        { dateOfBirth: this.draft.dateOfBirth },
-        'dateOfBirth',
-        this.$t('account.personal.toasts.dobUpdated')
-      )
-    },
-    saveAddress() {
-      return this.saveProfile(
-        {
-          address: this.draft.address,
-          country: this.draft.country,
-        },
-        'address',
-        this.$t('account.personal.toasts.addressUpdated')
-      )
-    },
-    saveNationality() {
-      return this.saveProfile(
-        { nationality: this.draft.nationality },
-        'nationality',
-        this.$t('account.personal.toasts.nationalityUpdated')
-      )
-    },
-    saveGender() {
-      return this.saveProfile(
-        { gender: this.draft.gender },
-        'gender',
-        this.$t('account.personal.toasts.genderUpdated')
-      )
-    },
-    openAvatarModal() {
-      this.isAvatarModalOpen = true
-      this.avatarFile = null
-      this.avatarPreview = ''
-    },
-    closeAvatarModal() {
+    beforeUnmount() {
       if (this.avatarPreview?.startsWith('blob:')) {
-        URL.revokeObjectURL(this.avatarPreview)
-      }
-      this.isAvatarModalOpen = false
-      this.avatarFile = null
-      this.avatarPreview = ''
-    },
-    handleAvatarSelection(event) {
-      const [file] = event.target.files || []
-      if (!file) {
-        return
-      }
-
-      if (this.avatarPreview?.startsWith('blob:')) {
-        URL.revokeObjectURL(this.avatarPreview)
-      }
-      this.avatarFile = file
-      this.avatarPreview = URL.createObjectURL(file)
-    },
-    async saveAvatar() {
-      if (!this.avatarFile) {
-        return
-      }
-
-      const formData = new FormData()
-      formData.append('avatar', this.avatarFile)
-
-      this.isAvatarSaving = true
-      try {
-        await UserService.updateAvatar(formData)
-        await this.loadUserInfo()
-        await this.retrieveUserInformation()
-        this.closeAvatarModal()
-        this.toast.success(this.$t('account.personal.toasts.avatarUpdated'))
-      } catch (error) {
-        this.toast.error(this.getErrorMessage(error, this.$t('account.personal.errors.avatar')))
-      } finally {
-        this.isAvatarSaving = false
+        URL.revokeObjectURL(this.avatarPreview);
       }
     },
-  },
-  async mounted() {
-    await this.loadUserInfo()
-  },
-  beforeUnmount() {
-    if (this.avatarPreview?.startsWith('blob:')) {
-      URL.revokeObjectURL(this.avatarPreview)
-    }
-  },
-}
+  };
 </script>
 
 <template>
@@ -279,8 +279,13 @@ export default {
     </div>
 
     <template v-else>
-      <div v-if="isAvatarModalOpen" class="modal-overlay" @click.self="closeAvatarModal">
-        <div class="modal-card">
+      <el-dialog
+        v-model="isAvatarModalOpen"
+        :title="$t('account.personal.avatarModal.title')"
+        width="560px"
+        @close="closeAvatarModal"
+      >
+        <div class="avatar-dialog-content">
           <div class="modal-header">
             <h2>{{ $t('account.personal.avatarModal.title') }}</h2>
             <button type="button" class="ghost-button" @click="closeAvatarModal">
@@ -308,11 +313,15 @@ export default {
               :disabled="!avatarFile || isAvatarSaving"
               @click="saveAvatar"
             >
-              {{ isAvatarSaving ? $t('account.common.saving') : $t('account.personal.avatarModal.save') }}
+              {{
+                isAvatarSaving
+                  ? $t('account.common.saving')
+                  : $t('account.personal.avatarModal.save')
+              }}
             </button>
           </div>
         </div>
-      </div>
+      </el-dialog>
 
       <article class="detail-card detail-card-avatar">
         <div>
@@ -365,7 +374,9 @@ export default {
               :disabled="savingSection === 'name' || !draft.firstName || !draft.lastName"
               @click="saveName"
             >
-              {{ savingSection === 'name' ? $t('account.common.saving') : $t('account.common.save') }}
+              {{
+                savingSection === 'name' ? $t('account.common.saving') : $t('account.common.save')
+              }}
             </button>
           </div>
         </div>
@@ -404,7 +415,9 @@ export default {
               :disabled="savingSection === 'email' || !draft.email"
               @click="saveEmail"
             >
-              {{ savingSection === 'email' ? $t('account.common.saving') : $t('account.common.save') }}
+              {{
+                savingSection === 'email' ? $t('account.common.saving') : $t('account.common.save')
+              }}
             </button>
           </div>
         </div>
@@ -554,7 +567,11 @@ export default {
               :disabled="savingSection === 'address' || !draft.address || !draft.country"
               @click="saveAddress"
             >
-              {{ savingSection === 'address' ? $t('account.common.saving') : $t('account.common.save') }}
+              {{
+                savingSection === 'address'
+                  ? $t('account.common.saving')
+                  : $t('account.common.save')
+              }}
             </button>
           </div>
         </div>
@@ -649,7 +666,9 @@ export default {
               :disabled="savingSection === 'gender' || !draft.gender"
               @click="saveGender"
             >
-              {{ savingSection === 'gender' ? $t('account.common.saving') : $t('account.common.save') }}
+              {{
+                savingSection === 'gender' ? $t('account.common.saving') : $t('account.common.save')
+              }}
             </button>
           </div>
         </div>
@@ -662,280 +681,280 @@ export default {
 </template>
 
 <style scoped>
-.settings-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.panel-header {
-  padding: 28px;
-  border: 1px solid #dbe3f0;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.panel-header h1 {
-  margin: 0 0 8px;
-  font-size: 30px;
-  color: #0f172a;
-}
-
-.panel-header p {
-  margin: 0;
-  color: #475569;
-  line-height: 1.6;
-}
-
-.detail-card {
-  padding: 24px 28px;
-  border: 1px solid #dbe3f0;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.detail-card-avatar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-}
-
-.detail-card h2 {
-  margin: 0 0 8px;
-  font-size: 20px;
-  color: #0f172a;
-}
-
-.detail-card p {
-  margin: 0;
-  color: #475569;
-  line-height: 1.55;
-}
-
-.detail-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.value-row {
-  color: #0f172a;
-  font-size: 15px;
-}
-
-.value-row.stacked {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.muted-value {
-  color: #64748b;
-}
-
-.avatar-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.avatar-frame,
-.avatar-preview {
-  width: 104px;
-  height: 104px;
-  border-radius: 999px;
-  overflow: hidden;
-  border: 3px solid #dbeafe;
-  background: #eff6ff;
-}
-
-.avatar-frame img,
-.avatar-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.avatar-fallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.editor-grid {
-  display: grid;
-  gap: 16px;
-}
-
-.editor-grid-two {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.field {
-  display: grid;
-  gap: 8px;
-}
-
-.field span {
-  color: #334155;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.field input,
-.field textarea,
-.field select {
-  width: 100%;
-  padding: 11px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #0f172a;
-  background: #fff;
-}
-
-.field textarea {
-  resize: vertical;
-}
-
-.field-error {
-  margin: 0;
-  color: #b3261e;
-  font-size: 13px;
-}
-
-.editor-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.primary-button,
-.secondary-button,
-.ghost-button {
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.primary-button {
-  padding: 11px 16px;
-  border: none;
-  background: #2563eb;
-  color: #fff;
-}
-
-.primary-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.secondary-button {
-  padding: 11px 16px;
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  color: #0f172a;
-}
-
-.ghost-button {
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: #2563eb;
-}
-
-.empty-state {
-  padding: 28px;
-  border: 1px solid #dbe3f0;
-  border-radius: 8px;
-  background: #fff;
-  color: #64748b;
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(15, 23, 42, 0.56);
-  z-index: 1000;
-}
-
-.modal-card {
-  width: min(100%, 420px);
-  padding: 24px;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 22px;
-  color: #0f172a;
-}
-
-.upload-field {
-  display: grid;
-  gap: 10px;
-  margin-top: 20px;
-  color: #334155;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.upload-field input {
-  font-size: 14px;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-code {
-  padding: 2px 6px;
-  border-radius: 6px;
-  background: #eff6ff;
-  color: #1d4ed8;
-}
-
-@media (max-width: 768px) {
-  .panel-header,
-  .detail-card {
-    padding: 20px;
+  .settings-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
 
-  .detail-card-avatar,
-  .detail-header,
-  .avatar-row,
-  .editor-actions {
+  .panel-header {
+    padding: 28px;
+    border: 1px solid var(--tn-border);
+    border-radius: 20px;
+    background: #fff;
+  }
+
+  .panel-header h1 {
+    margin: 0 0 8px;
+    font-size: 30px;
+    color: var(--tn-ink);
+  }
+
+  .panel-header p {
+    margin: 0;
+    color: var(--tn-muted);
+    line-height: 1.6;
+  }
+
+  .detail-card {
+    padding: 24px 28px;
+    border: 1px solid var(--tn-border);
+    border-radius: 20px;
+    background: #fff;
+  }
+
+  .detail-card-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .detail-card h2 {
+    margin: 0 0 8px;
+    font-size: 20px;
+    color: var(--tn-ink);
+  }
+
+  .detail-card p {
+    margin: 0;
+    color: var(--tn-muted);
+    line-height: 1.55;
+  }
+
+  .detail-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .value-row {
+    color: var(--tn-ink);
+    font-size: 15px;
+  }
+
+  .value-row.stacked {
+    display: flex;
     flex-direction: column;
-    align-items: stretch;
+    gap: 6px;
+  }
+
+  .muted-value {
+    color: var(--tn-muted);
+  }
+
+  .avatar-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .avatar-frame,
+  .avatar-preview {
+    width: 104px;
+    height: 104px;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 3px solid #dbeafe;
+    background: var(--tn-soft);
+  }
+
+  .avatar-frame img,
+  .avatar-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: var(--tn-muted);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .editor-grid {
+    display: grid;
+    gap: 16px;
   }
 
   .editor-grid-two {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-}
+
+  .field {
+    display: grid;
+    gap: 8px;
+  }
+
+  .field span {
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .field input,
+  .field textarea,
+  .field select {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 20px;
+    font-size: 14px;
+    color: var(--tn-ink);
+    background: #fff;
+  }
+
+  .field textarea {
+    resize: vertical;
+  }
+
+  .field-error {
+    margin: 0;
+    color: #b3261e;
+    font-size: 13px;
+  }
+
+  .editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .primary-button,
+  .secondary-button,
+  .ghost-button {
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .primary-button {
+    padding: 11px 16px;
+    border: none;
+    background: var(--tn-action);
+    color: #fff;
+  }
+
+  .primary-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .secondary-button {
+    padding: 11px 16px;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    color: var(--tn-ink);
+  }
+
+  .ghost-button {
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--tn-action);
+  }
+
+  .empty-state {
+    padding: 28px;
+    border: 1px solid var(--tn-border);
+    border-radius: 20px;
+    background: #fff;
+    color: var(--tn-muted);
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.56);
+    z-index: 1000;
+  }
+
+  .modal-card {
+    width: min(100%, 420px);
+    padding: 24px;
+    border-radius: 20px;
+    background: #fff;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .modal-header h2 {
+    margin: 0;
+    font-size: 22px;
+    color: var(--tn-ink);
+  }
+
+  .upload-field {
+    display: grid;
+    gap: 10px;
+    margin-top: 20px;
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .upload-field input {
+    font-size: 14px;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  code {
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: var(--tn-soft);
+    color: var(--tn-hover);
+  }
+
+  @media (max-width: 768px) {
+    .panel-header,
+    .detail-card {
+      padding: 20px;
+    }
+
+    .detail-card-avatar,
+    .detail-header,
+    .avatar-row,
+    .editor-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .editor-grid-two {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
