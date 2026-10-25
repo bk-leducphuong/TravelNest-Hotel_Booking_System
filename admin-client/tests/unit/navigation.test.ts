@@ -70,4 +70,22 @@ describe("grouped destination permissions", () => {
     );
     expect(activeDestination("/rooms-other", ADMIN_NAV)).toBeUndefined();
   });
+
+  it("keeps Reviews in its own section whatever the hotel permissions allow", () => {
+    const owner = groupDestinations(visibleDestinations(() => true));
+    const reviews = owner.find((group) => group.key === "reviews");
+    expect(reviews?.labelKey).toBe("nav.group.reviews");
+    expect(reviews?.items.map((item) => item.to)).toEqual(["/reviews"]);
+
+    // Without finance access Reviews must not fall back into another section.
+    const withoutFinance = groupDestinations(
+      visibleDestinations((permission) => permission !== "payment.read")
+    );
+    expect(
+      withoutFinance.find((group) => group.key === "finance")
+    ).toBeUndefined();
+    expect(
+      withoutFinance.find((group) => group.key === "reviews")?.items
+    ).toEqual([ADMIN_NAV.find((item) => item.to === "/reviews")]);
+  });
 });

@@ -329,6 +329,7 @@ const deactivate = async (room: Room) => {
               :key="photo.id"
               :src="photo.url"
               alt=""
+              compact
               class="aspect-square rounded-lg object-cover"
             />
           </div>

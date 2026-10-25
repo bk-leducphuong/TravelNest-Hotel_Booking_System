@@ -59,6 +59,17 @@ for (const [label, path] of [
           )
         )
         .toBe(true);
+      if (width === 375) {
+        // Long localized page titles must not push the shell actions onto a
+        // second row.
+        expect(
+          await page.evaluate(() =>
+            Math.round(
+              document.querySelector("header")!.getBoundingClientRect().height
+            )
+          )
+        ).toBeLessThanOrEqual(76);
+      }
       if (width === 1440 || width === 375)
         await page.screenshot({
           path: testInfo.outputPath(`${label}-${width}.png`),
@@ -247,4 +258,20 @@ test("quick search restores focus after keyboard dismissal", async ({
   ).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(trigger).toBeFocused();
+});
+
+test("team shows localized roles and protects the last owner", async ({
+  page,
+}) => {
+  await page.goto("/settings/team");
+  const rows = page.locator(".el-table__body tr");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(0)).toContainText("Owner");
+  await expect(rows.nth(0)).toContainText("Primary owner");
+  await expect(rows.nth(0).locator("input")).toBeDisabled();
+  await expect(
+    rows.nth(0).getByRole("button", { name: "Delete", exact: true })
+  ).toBeDisabled();
+  await expect(rows.nth(1)).toContainText("Manager");
+  await expect(rows.nth(1).locator("input")).toBeEnabled();
 });

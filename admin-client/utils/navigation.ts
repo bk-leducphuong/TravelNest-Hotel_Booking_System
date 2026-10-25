@@ -1,4 +1,9 @@
-export type NavGroup = "reservations" | "rooms" | "finance" | "settings";
+export type NavGroup =
+  | "reservations"
+  | "rooms"
+  | "finance"
+  | "reviews"
+  | "settings";
 export interface AdminNavItem {
   labelKey: string;
   to: string;
@@ -83,6 +88,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
     labelKey: "nav.reviews",
     to: "/reviews",
     permission: "review.read",
+    group: "reviews",
     icon: "reviews",
   },
   {

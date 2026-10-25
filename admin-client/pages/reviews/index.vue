@@ -232,6 +232,7 @@ watch(
                   v-if="review.user?.profile_picture_url"
                   :src="review.user.profile_picture_url"
                   alt=""
+                  compact
                   class="h-10 w-10 rounded-full object-cover"
                 /><span
                   v-else

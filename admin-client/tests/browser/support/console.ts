@@ -309,8 +309,32 @@ export async function stubConsole(page: Page) {
         };
         data = { hotel };
       } else data = { hotel, rooms: [sampleRoom], policies: [] };
-    } else if (path.endsWith("/staff")) data = { staff: [] };
-    else if (path.endsWith("/rooms")) data = { rooms: [sampleRoom] };
+    } else if (path.endsWith("/staff")) {
+      data = {
+        staff: [
+          {
+            id: "staff-1",
+            userId: "user-1",
+            hotelId: "hotel-1",
+            role: "owner",
+            isPrimaryOwner: true,
+            email: "owner@example.test",
+            firstName: "Olivia",
+            lastName: "Owner",
+          },
+          {
+            id: "staff-2",
+            userId: "user-2",
+            hotelId: "hotel-1",
+            role: "manager",
+            isPrimaryOwner: false,
+            email: "manager@example.test",
+            firstName: "Mia",
+            lastName: "Manager",
+          },
+        ],
+      };
+    } else if (path.endsWith("/rooms")) data = { rooms: [sampleRoom] };
     else if (path.includes("/images/")) data = { images: [] };
     else if (path.endsWith("/cancellation-rules")) data = { rules: [] };
     else if (path.endsWith("/amenities") && path.includes("/hotels/"))

@@ -235,7 +235,11 @@ watch(
                 ><BookingStatusTag :status="row.status"
               /></template>
             </el-table-column>
-            <el-table-column label="" width="90" align="right">
+            <el-table-column
+              :label="$t('common.actions')"
+              width="90"
+              align="right"
+            >
               <template #default="{ row }">
                 <NuxtLink
                   :to="`/bookings/${row.id}`"

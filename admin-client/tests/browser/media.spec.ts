@@ -79,9 +79,13 @@ test("mobile rooms do not fetch an invisible preview; desktop selection uses pub
     page.getByRole("img", { name: "Deluxe Suite", exact: true })
   ).toHaveAttribute("src", /media\.travelnest\.test\/uploads\/room\//);
   expect(reads).toBe(1);
-  await expect(
-    page.getByText("Photos could not be loaded", { exact: true })
-  ).toBeVisible();
+  // The broken thumbnail still announces the failure, but compact placeholders
+  // keep the visible label out of the small tile.
+  const failedThumb = page.getByRole("img", {
+    name: /Photos could not be loaded/,
+  });
+  await expect(failedThumb).toBeVisible();
+  await expect(failedThumb).toHaveText("");
 });
 
 test("Vietnamese navigation, empty bed selection, amenity categories and labels are localized", async ({

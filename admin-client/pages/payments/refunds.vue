@@ -253,7 +253,11 @@ watch(
                 buyerLabel(row as RefundListItem)
               }}</template>
             </el-table-column>
-            <el-table-column label="" width="190" align="right">
+            <el-table-column
+              :label="$t('common.actions')"
+              width="190"
+              align="right"
+            >
               <template #default="{ row }">
                 <el-button
                   link

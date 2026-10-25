@@ -18,7 +18,6 @@ import {
 
 const route = useRoute();
 const auth = useAuthStore();
-const router = useRouter();
 const { can } = usePermissions();
 const { t } = useI18n();
 const config = useRuntimeConfig();
@@ -175,23 +174,20 @@ watch(
 
 <template>
   <section v-loading="loading" class="space-y-6">
+    <NuxtLink to="/reviews" class="text-sm text-action">{{
+      $t("reviews.back")
+    }}</NuxtLink>
     <UiPageHeader
-      :title="$t('reviews.detail.title')"
+      :title="review ? reviewerLabel : $t('reviews.detail.title')"
       :subtitle="auth.activeHotel?.name ?? undefined"
       ><template #description
-        ><div class="flex items-center gap-3">
-          <el-button link @click="router.push('/reviews')"
-            >← {{ $t("nav.reviews") }}</el-button
-          >
-
-          <el-tag
-            v-if="review"
-            :type="reviewStatusTagType(review.status)"
-            effect="light"
-          >
-            {{ statusLabel(review.status) }}
-          </el-tag>
-        </div></template
+        ><el-tag
+          v-if="review"
+          :type="reviewStatusTagType(review.status)"
+          effect="light"
+        >
+          {{ statusLabel(review.status) }}
+        </el-tag></template
       ><template #actions>
         <div v-if="review" class="flex flex-wrap items-center gap-2">
           <Can permission="review.moderate">
@@ -320,7 +316,7 @@ watch(
 
       <UiSectionCard>
         <template #header>
-          <div class="flex items-center justify-between">
+          <div class="flex w-full flex-wrap items-center justify-between gap-2">
             <span class="font-medium">{{ $t("reviews.reply.title") }}</span>
             <Can permission="review.reply">
               <div v-if="review.reply && !editingReply" class="flex gap-2">

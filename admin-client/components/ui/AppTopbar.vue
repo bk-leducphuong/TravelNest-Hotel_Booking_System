@@ -16,20 +16,20 @@ const command = async (value: string) => {
 </script>
 <template>
   <header
-    class="flex min-h-[72px] flex-wrap items-center justify-between gap-3 bg-white px-4 py-3 md:px-8"
+    class="flex min-h-[72px] items-center justify-between gap-3 bg-white px-4 py-3 md:px-8"
   >
-    <div class="flex min-w-0 items-center gap-3">
+    <div class="flex min-w-0 flex-1 items-center gap-3">
       <UiIconButton
         class="md:hidden"
         :label="$t('shell.menu')"
         @click="$emit('menu')"
         ><Menu :size="20"
       /></UiIconButton>
-      <p class="truncate text-lg font-medium text-ink">
+      <p class="min-w-0 truncate text-lg font-medium text-ink">
         {{ $t(active?.labelKey ?? "dashboard.title") }}
       </p>
     </div>
-    <div class="flex items-center gap-3 md:gap-5">
+    <div class="flex shrink-0 items-center gap-3 md:gap-5">
       <UiQuickSearch />
       <el-dropdown trigger="click" @command="command">
         <button

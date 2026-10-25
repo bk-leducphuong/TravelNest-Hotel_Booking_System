@@ -285,7 +285,11 @@ watch(
               }}</template>
             </el-table-column>
             <Can permission="payment.process">
-              <el-table-column label="" width="180" align="right">
+              <el-table-column
+                :label="$t('common.actions')"
+                width="180"
+                align="right"
+              >
                 <template #default="{ row }">
                   <el-button
                     link

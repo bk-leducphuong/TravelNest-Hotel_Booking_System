@@ -10,7 +10,7 @@ import {
 
 const auth = useAuthStore();
 const { can } = usePermissions();
-const { t } = useI18n();
+const { t, te } = useI18n();
 
 const loading = ref(false);
 const listError = ref("");
@@ -28,6 +28,19 @@ const memberName = (member: HotelStaffMember) =>
   [member.firstName, member.lastName].filter(Boolean).join(" ") ||
   member.email ||
   member.userId;
+
+const roleLabel = (role: string | null) => {
+  if (!role) return t("common.unknown");
+  const key = `team.roleName.${role}`;
+  return te(key) ? t(key) : role;
+};
+
+const ownerCount = computed(
+  () => staff.value.filter((member) => member.role === "owner").length
+);
+/** The API rejects removing or demoting the last owner (409 LAST_OWNER). */
+const isLastOwner = (member: HotelStaffMember) =>
+  member.role === "owner" && ownerCount.value <= 1;
 
 const load = async () => {
   const current = listRequests.begin();
@@ -90,7 +103,8 @@ const changeRole = async (member: HotelStaffMember, role: string) => {
     !auth.activeHotelId ||
     saving.value ||
     !can("hotel.manage_staff") ||
-    role === member.role
+    role === member.role ||
+    isLastOwner(member)
   ) {
     return;
   }
@@ -110,7 +124,12 @@ const changeRole = async (member: HotelStaffMember, role: string) => {
 };
 
 const remove = async (member: HotelStaffMember) => {
-  if (!auth.activeHotelId || saving.value || !can("hotel.manage_staff")) {
+  if (
+    !auth.activeHotelId ||
+    saving.value ||
+    !can("hotel.manage_staff") ||
+    isLastOwner(member)
+  ) {
     return;
   }
   saving.value = true;
@@ -212,7 +231,13 @@ watch([() => auth.activeHotelId, () => can("hotel.manage_staff")], load, {
                 :model-value="row.role"
                 size="small"
                 class="w-full"
-                :disabled="saving"
+                :aria-label="$t('team.role')"
+                :disabled="saving || isLastOwner(row as HotelStaffMember)"
+                :title="
+                  isLastOwner(row as HotelStaffMember)
+                    ? $t('team.lastOwnerHint')
+                    : undefined
+                "
                 @update:model-value="
                   (value: string) => changeRole(row as HotelStaffMember, value)
                 "
@@ -220,11 +245,11 @@ watch([() => auth.activeHotelId, () => can("hotel.manage_staff")], load, {
                 <el-option
                   v-for="role in HOTEL_ROLE_NAMES"
                   :key="role"
-                  :label="role"
+                  :label="roleLabel(role)"
                   :value="role"
                 />
               </el-select>
-              <span v-else>{{ row.role }}</span>
+              <span v-else>{{ roleLabel(row.role) }}</span>
             </template>
           </el-table-column>
           <el-table-column
@@ -238,6 +263,12 @@ watch([() => auth.activeHotelId, () => can("hotel.manage_staff")], load, {
                   size="small"
                   type="danger"
                   plain
+                  :disabled="saving || isLastOwner(row as HotelStaffMember)"
+                  :title="
+                    isLastOwner(row as HotelStaffMember)
+                      ? $t('team.lastOwnerHint')
+                      : undefined
+                  "
                   @click="remove(row as HotelStaffMember)"
                 >
                   {{ $t("common.delete") }}
@@ -262,11 +293,15 @@ watch([() => auth.activeHotelId, () => can("hotel.manage_staff")], load, {
           />
         </el-form-item>
         <el-form-item :label="$t('team.role')">
-          <el-select v-model="form.role" class="w-full">
+          <el-select
+            v-model="form.role"
+            class="w-full"
+            :aria-label="$t('team.role')"
+          >
             <el-option
               v-for="role in HOTEL_ROLE_NAMES"
               :key="role"
-              :label="role"
+              :label="roleLabel(role)"
               :value="role"
             />
           </el-select>
