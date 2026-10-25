@@ -90,7 +90,10 @@ function makeStore() {
 async function mountView(query = {}) {
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/', name: 'SearchResults', component: { template: '<div />' } }],
+    routes: [
+      { path: '/', name: 'SearchResults', component: { template: '<div />' } },
+      { path: '/hotels/:hotel_id', name: 'HotelDetails', component: { template: '<div />' } },
+    ],
   });
   await router.push({ path: '/', query: { ...VALID_QUERY, ...query } });
   await router.isReady();
@@ -98,7 +101,7 @@ async function mountView(query = {}) {
   const wrapper = mount(SearchResults, {
     global: {
       plugins: [router, makeStore()],
-      mocks: { $t: (key) => key },
+      mocks: { $i18n: { locale: 'en' }, $t: (key) => key },
     },
   });
   await flushPromises();

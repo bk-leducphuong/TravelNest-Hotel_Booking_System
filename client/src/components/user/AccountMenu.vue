@@ -2,7 +2,6 @@
 import {
   ArrowDown,
   ChatDotRound,
-  CreditCard,
   Document,
   House,
   Star,
@@ -21,16 +20,6 @@ const menuItems = [
     labelKey: 'account.menu.bookings',
     route: '/bookings',
     icon: Document,
-  },
-  {
-    labelKey: 'account.menu.genius',
-    disabled: true,
-    icon: Star,
-  },
-  {
-    labelKey: 'account.menu.rewards',
-    disabled: true,
-    icon: CreditCard,
   },
   {
     labelKey: 'account.menu.reviews',
@@ -88,7 +77,7 @@ export default {
 
 <template>
   <el-dropdown trigger="click" @command="handleCommand">
-    <button type="button" class="account-trigger">
+    <button type="button" class="account-trigger" :aria-label="$t('account.menu.manageAccount')">
       <span class="avatar-frame">
         <img v-if="displayAvatar" :src="displayAvatar" alt="User avatar" />
         <img v-else src="../../assets/avatar/default_avatar.png" alt="Default avatar" />
@@ -96,7 +85,7 @@ export default {
 
       <span class="identity">
         <span class="name">{{ displayName }}</span>
-        <span class="tier">{{ $t('account.menu.geniusLevel') }}</span>
+
       </span>
 
       <el-icon class="trigger-icon"><ArrowDown /></el-icon>
@@ -132,7 +121,7 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  width: 170px;
+  max-width: 170px;
   min-height: 36px;
   padding: 0;
   border: none;
@@ -165,7 +154,7 @@ export default {
 .name {
   max-width: 105px;
   overflow: hidden;
-  color: #fff;
+  color: var(--tn-ink);
   font-size: 14px;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -179,7 +168,7 @@ export default {
 }
 
 .trigger-icon {
-  color: #fff;
+  color: var(--tn-ink);
   font-size: 12px;
 }
 
@@ -197,4 +186,8 @@ export default {
 .menu-icon {
   font-size: 16px;
 }
+</style>
+
+<style scoped>
+@media (max-width:767px) { .identity,.trigger-icon { display:none; } .account-trigger { width:36px; } }
 </style>

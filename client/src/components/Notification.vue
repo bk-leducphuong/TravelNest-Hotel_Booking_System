@@ -7,12 +7,16 @@
     popper-class="notification-popover"
   >
     <template #reference>
-      <li style="position: relative; cursor: pointer">
-        <ElBadge :value="numberOfNewNotifications" :hidden="numberOfNewNotifications === 0">
-          <ElIcon :size="20">
-            <Bell />
-          </ElIcon>
-        </ElBadge>
+      <li style="position: relative">
+        <button
+          type="button"
+          class="guest-notification-trigger"
+          :aria-label="$t('misc.notifications.title')"
+        >
+          <ElBadge :value="numberOfNewNotifications" :hidden="numberOfNewNotifications === 0">
+            <ElIcon :size="20"><Bell /></ElIcon>
+          </ElBadge>
+        </button>
       </li>
     </template>
 
@@ -23,7 +27,7 @@
           <div class="notification-title">
             <span>{{ $t('misc.notifications.title') }}</span>
           </div>
-          <div class="mark-all-read-btn" @click="markAllRead()" v-if="numberOfNewNotifications > 0">
+          <div v-if="numberOfNewNotifications > 0" class="mark-all-read-btn" @click="markAllRead()">
             <span>{{ $t('misc.notifications.markAllRead') }}</span>
           </div>
         </div>
@@ -39,9 +43,9 @@
 
           <!-- Notification items -->
           <div
-            class="notification-item"
             v-for="notification in notifications"
             :key="notification.id"
+            class="notification-item"
             @click="viewDetails(notification)"
           >
             <div class="notification-icon">
@@ -100,6 +104,12 @@
         },
         deep: true,
       },
+    },
+    async mounted() {
+      if (this.isUserAuthenticated) {
+        await this.getNotifiactions();
+        await this.connectNotificationSocket();
+      }
     },
     methods: {
       async connectNotificationSocket() {
@@ -199,12 +209,6 @@
         // Close popover
         this.isNotificationPopupVisible = false;
       },
-    },
-    async mounted() {
-      if (this.isUserAuthenticated) {
-        await this.getNotifiactions();
-        await this.connectNotificationSocket();
-      }
     },
     beforeUnmount() {
       if (this.userSocket) {
@@ -352,5 +356,20 @@
     .el-popover__title {
       display: none;
     }
+  }
+</style>
+
+<style scoped>
+  .guest-notification-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    background: transparent;
+    color: var(--tn-muted);
+    border: 0;
+    border-radius: 10px;
+    cursor: pointer;
   }
 </style>

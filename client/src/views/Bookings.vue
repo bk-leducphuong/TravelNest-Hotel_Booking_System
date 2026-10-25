@@ -3,6 +3,8 @@ import Header from '@/components/Header.vue'
 import Footer from '@/components/Footer.vue'
 import SkeletonGrid from '@/components/common/SkeletonGrid.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import ErrorState from '@/components/common/ErrorState.vue'
+import { guestMoney } from '@/utils/guestPresentation'
 import PaginationControls from '@/components/common/PaginationControls.vue'
 import { mapActions } from 'vuex'
 import router from '@/router/index.js'
@@ -16,12 +18,14 @@ export default {
     Footer,
     SkeletonGrid,
     EmptyState,
+    ErrorState,
     PaginationControls
   },
   data() {
     return {
       bookings: [],
       isLoading: false,
+      loadError: false,
       filter: 'all',
       pagination: { page: 1, limit: 10, total: 0, totalPages: 0 }
     }
@@ -49,6 +53,7 @@ export default {
   },
   methods: {
     ...mapActions('booking', ['setBookingInformation']),
+    guestMoney,
     parsePage(value) {
       const raw = Array.isArray(value) ? value[0] : value
       const page = parseInt(raw, 10)
@@ -84,6 +89,7 @@ export default {
     },
     async getAllBookings(page = this.pagination.page) {
       this.isLoading = true
+      this.loadError = false
       try {
         const options = { page, limit: this.pagination.limit }
         const bookedAfter = this.bookedAfterForFilter(this.filter)
@@ -103,7 +109,7 @@ export default {
         }
       } catch (error) {
         console.error(error)
-        this.bookings = []
+        this.loadError = true
       } finally {
         this.isLoading = false
       }
@@ -128,6 +134,7 @@ export default {
             hotel: booking.hotel,
             status: booking.status,
             totalPrice: booking.total_price,
+            currency: booking.currency || 'USD',
             numberOfGuests: booking.number_of_guests
           })
         } else {
@@ -192,12 +199,12 @@ export default {
 }
 </script>
 <template>
-  <Header :isSearchOpen="false" />
+  <Header :is-search-open="false" />
   <div class="header-container">
     <div class="header-title">{{ $t('bookingFlow.bookingsAndTrips') }}</div>
     <div class="header">
       <div class="header-left">
-        <select class="dropdown" id="trip-list" :aria-label="$t('bookingFlow.filterTripsAria')" @change="arrangeBookings($event.target.value)">
+        <select id="trip-list" class="dropdown" :aria-label="$t('bookingFlow.filterTripsAria')" @change="arrangeBookings($event.target.value)">
           <option value="all">{{ $t('bookingFlow.filterAll') }}</option>
           <option value="today">{{ $t('bookingFlow.filterToday') }}</option>
           <option value="last-week">{{ $t('bookingFlow.filterLastWeek') }}</option>
@@ -207,8 +214,9 @@ export default {
       </div>
     </div>
   </div>
-  <div class="account-settings" ref="listTop">
+  <div ref="listTop" class="account-settings">
     <SkeletonGrid v-if="isLoading" :count="3" image-height="110px" />
+    <ErrorState v-else-if="loadError" :title="$t('guest.loadFailed')" :message="$t('guest.retryHint')" :retry-label="$t('guest.retry')" @retry="getAllBookings()" />
     <EmptyState
       v-else-if="bookings.length === 0"
       :title="$t('bookingFlow.noBookingsTitle')"
@@ -216,7 +224,7 @@ export default {
       icon="fa-solid fa-suitcase-rolling"
     />
     <template v-else>
-      <div class="booking-container" v-for="booking in bookings" :key="booking.booking_code">
+      <div v-for="booking in bookings" :key="booking.booking_code" class="booking-container">
       <h3 style="margin-bottom: 5px; font-weight: 700">{{ booking.hotel.name }}</h3>
       <p>
         {{ $t('bookingFlow.bookedOn', { date: formatDate(booking.bookedOn) }) }}
@@ -233,7 +241,7 @@ export default {
                 {{ formatDate(booking.checkInDate) }} -
                 {{ formatDate(booking.checkOutDate) }}
               </p>
-              <p>{{ $t('bookingFlow.freeCancellation') }}</p>
+
               <p
                 :class="{
                   active: booking.status === 'confirmed',
@@ -244,15 +252,15 @@ export default {
               </p>
             </div>
             <div class="content price-container">
-              <h2>USD {{ parseInt(booking.totalPrice).toLocaleString('en-US') }}</h2>
-              <i class="fa-solid fa-ellipsis-vertical fa-lg"></i>
+              <h2>{{ guestMoney(booking.totalPrice,booking.currency,$i18n.locale) }}</h2>
+
             </div>
           </div>
         </div>
         <div class="line"></div>
-        <div class="see-more-section" @click="seeDetails(booking.booking_code)">
-          <i class="fa-solid fa-angle-right fa-xl"></i>
-        </div>
+        <button type="button" class="see-more-section" :aria-label="$t('guest.viewBooking', {code:booking.booking_code})" @click="seeDetails(booking.booking_code)">
+          <i class="fa-solid fa-angle-right fa-xl" aria-hidden="true"></i>
+        </button>
       </div>
     </div>
 

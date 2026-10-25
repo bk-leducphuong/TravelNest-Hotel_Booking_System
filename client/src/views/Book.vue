@@ -6,6 +6,7 @@
   import { useToast } from 'vue-toastification';
   import { getImageUrl } from '@/utils/images';
   import { getUserSocket } from '@/services/userSocket';
+  import { stayNights } from '@/utils/stay';
 
   export default {
     components: {
@@ -33,6 +34,7 @@
       ...mapGetters('search', ['getSearchData']),
       ...mapGetters('user', ['getUserInformation']),
 
+      nights() { return stayNights(this.getSearchData.checkInDate, this.getSearchData.checkOutDate); },
       progress() {
         return ((this.currentStep - 1) / (this.steps.length - 1)) * 100;
       },
@@ -72,6 +74,9 @@
           }
         },
       },
+    },
+    async mounted() {
+      await this.connectHoldExpirySocket();
     },
     methods: {
       checkFormFulfillment() {
@@ -137,9 +142,6 @@
         this.userSocket.on('hold:expired', this.handleHoldExpired);
       },
     },
-    async mounted() {
-      await this.connectHoldExpirySocket();
-    },
     beforeUnmount() {
       if (this.userSocket) {
         this.userSocket.off('hold:expired', this.handleHoldExpired);
@@ -156,7 +158,8 @@
   };
 </script>
 <template>
-  <TheHeader :isSearchOpen="false" />
+  <TheHeader :is-search-open="false" />
+  <main v-if="getBookingInfor" id="guest-main" tabindex="-1">
   <!-- progress bar -->
   <div class="stepper-wrapper">
     <div class="stepper">
@@ -200,7 +203,7 @@
             <div>{{ $t('bookingFlow.toTime', { time: getBookingInfor.hotel.check_out_time }) }}</div>
           </div>
         </div>
-        <div>{{ $t('bookingFlow.totalStay', { nights: 2 }) }}</div>
+        <div>{{ $t('bookingFlow.totalStay', { nights: nights }) }}</div>
         <hr style="border: 1px solid #e7e7e7; margin-top: 16px" />
         <div class="room-details">
           {{ $t('bookingFlow.youSelected') }}
@@ -213,7 +216,7 @@
           </div>
         </div>
         <div style="margin-top: 20px">
-          <span class="back-button" @click="this.$router.go(-1)">{{ $t('bookingFlow.changeSelection') }}</span>
+          <span class="back-button" @click="$router.go(-1)">{{ $t('bookingFlow.changeSelection') }}</span>
         </div>
       </div>
 
@@ -248,11 +251,11 @@
     </div>
 
     <!-- right container -->
-    <div class="sub_container2" v-if="currentStep == 2">
+    <div v-if="currentStep == 2" class="sub_container2">
       <!--account loged in-->
       <div class="hotel-info">
         <div style="display: flex; flex-direction: row">
-          <div class="signin-content" v-if="getUserInformation">
+          <div v-if="getUserInformation" class="signin-content">
             <div class="profile-image">
               <img :src="getImageUrl(getUserInformation.profile_picture_url)" alt="Profile" />
             </div>
@@ -287,7 +290,7 @@
                 type="text"
                 required
               />
-              <input type="text" v-else :placeholder="$t('bookingFlow.fullNamePlaceholder')" />
+              <input v-else type="text" :placeholder="$t('bookingFlow.fullNamePlaceholder')" />
             </div>
           </div>
 
@@ -299,14 +302,14 @@
               :placeholder="getUserInformation.email"
               type="email"
             />
-            <input type="email" :placeholder="$t('bookingFlow.emailPlaceholder')" v-else />
+            <input v-else type="email" :placeholder="$t('bookingFlow.emailPlaceholder')" />
             <div class="helper-text">{{ $t('bookingFlow.confirmationEmailNote') }}</div>
           </div>
 
           <div class="form-group">
             <label>{{ $t('bookingFlow.phoneNumber') }} <span class="required">*</span></label>
             <div class="phone-input">
-              <select class="phone-code">
+              <select class="phone-code" :aria-label="$t('guest.phoneCode')">
                 <option selected>VN +84</option>
               </select>
               <input
@@ -331,10 +334,10 @@
           {{ $t('bookingFlow.specialRequestsHint') }}
           <span class="optional">{{ $t('bookingFlow.optional') }}</span>
         </label>
-        <textarea></textarea>
+        <textarea :aria-label="$t('guest.specialRequests')"></textarea>
 
         <div class="checkbox-item">
-          <input type="checkbox" id="parking" />
+          <input id="parking" type="checkbox" />
           <label for="parking" class="checkbox-label"
             >{{ $t('bookingFlow.freeParking') }}</label
           >
@@ -357,7 +360,7 @@
             {{ $t('bookingFlow.addArrivalTime') }}
             <span class="optional">{{ $t('bookingFlow.optional') }}</span>
           </label>
-          <select>
+          <select :aria-label="$t('guest.arrivalTime')">
             <option selected disabled>{{ $t('bookingFlow.pleaseSelect') }}</option>
             <option v-for="option in arrivalOptions" :key="option.value" :value="option.value">
               {{ option.label }}
@@ -375,13 +378,13 @@
       </div>
     </div>
 
-    <div class="sub_container2" v-if="currentStep == 3">
+    <div v-if="currentStep == 3" class="sub_container2">
       <div class="hotel-info">
         <h1>{{ $t('bookingFlow.howToPay') }}</h1>
         <CheckOut
-          :bookingInfor="getBookingInfor"
-          :searchData="getSearchData"
-          :userInfor="{
+          :booking-infor="getBookingInfor"
+          :search-data="getSearchData"
+          :user-infor="{
             fullName: bookingUser.full_name,
             email: bookingUser.email,
             phoneNumber: phoneNumber || bookingUser.phone_number,
@@ -391,6 +394,8 @@
       </div>
     </div>
   </div>
+  </main>
+  <main v-else id="guest-main" tabindex="-1" class="guest-page"><section class="guest-section"><h1 class="guest-page-title">{{ $t('guest.chooseStay') }}</h1><RouterLink class="guest-button" to="/">{{ $t('guest.page.search') }}</RouterLink></section></main>
 </template>
 <style scoped>
   /* step and process bar */

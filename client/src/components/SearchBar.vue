@@ -1,114 +1,112 @@
 <template>
-  <div>
-    <div class="slide" v-if="isSearchOpen">
-      <div class="container">
-        <div class="inner-wrap" v-if="this.$route.name === 'Home'">
-          <strong>{{ $t('userHeader.titleHeader') }}</strong>
-          <br />
-          <p>{{ $t('userHeader.subtitleHeader') }}</p>
-        </div>
+  <section
+    v-if="isSearchOpen"
+    class="guest-search-area"
+    :class="{ 'guest-search-home': $route.name === 'Home' }"
+    :aria-label="$t('guest.staySearch')"
+  >
+    <div class="guest-search-container">
+      <div v-if="$route.name === 'Home'" class="guest-hero">
+        <p class="guest-eyebrow">{{ $t('guest.heroEyebrow') }}</p>
+        <h1>{{ $t('userHeader.titleHeader') }}</h1>
+        <p>{{ $t('userHeader.subtitleHeader') }}</p>
       </div>
-    </div>
-
-    <!-- Search bar -->
-    <div class="search" v-if="isSearchOpen">
-      <div class="container">
-        <div class="search-bar">
-          <!-- Location input with autocomplete -->
-          <div class="location-autocomplete">
-            <ElAutocomplete
-              v-model="selectedLocation"
-              :fetch-suggestions="querySearch"
-              :placeholder="$t('userHeader.locationInputPlaceholder')"
-              :aria-label="$t('userHeader.locationInputPlaceholder')"
-              :prefix-icon="LocationIcon"
-              clearable
-              @select="handleSelect"
-              class="search-input"
+      <form class="search-bar" @submit.prevent="submitSearch">
+        <div v-valid-active-descendant class="location-autocomplete">
+          <label for="guest-destination">{{ $t('guest.destination') }}</label
+          ><ElAutocomplete
+            id="guest-destination"
+            v-model="selectedLocation"
+            :fetch-suggestions="querySearch"
+            :placeholder="$t('userHeader.locationInputPlaceholder')"
+            :aria-label="$t('guest.destination')"
+            :prefix-icon="LocationIcon"
+            clearable
+            @select="handleSelect"
+          >
+            <template #default="{ item }"
+              ><div class="location-item-suggestion">
+                <span>{{ item.name }}</span
+                ><small>{{ item.country }}</small>
+              </div></template
             >
-              <template #default="{ item }">
-                <div class="location-item-suggestion">
-                  <div class="location-name">{{ item.name }}</div>
-                  <div class="location-country">{{ item.country }}</div>
-                </div>
-              </template>
-            </ElAutocomplete>
-          </div>
-
-          <!-- Date picker input -->
-          <div class="date-picker">
-            <ElDatePicker
-              v-model="dateRange"
-              type="daterange"
-              :range-separator="$t('userHeader.dateRangeSeparator')"
-              :start-placeholder="$t('userHeader.checkInPlaceholder')"
-              :end-placeholder="$t('userHeader.checkOutPlaceholder')"
-              :aria-label="$t('userHeader.checkInPlaceholder')"
-              :prefix-icon="CalendarIcon"
-              :disabled-date="disabledDate"
-              format="DD/MM/YYYY"
-              value-format="YYYY-MM-DD"
-              class="search-input"
-            />
-          </div>
-
-          <!-- Guest room input -->
-          <div class="guest-room-wrapper" v-click-outside="hideGuestSelector">
-            <input
-              type="text"
-              v-model="guestDetails"
-              class="search-input"
-              :aria-label="$t('userHeader.guestInputLabel')"
-              @click="toggleGuestSelector"
-              readonly
-            />
-
-            <!-- Guest room selector -->
-            <div v-if="showGuestSelector" class="guest-room-selector" id="guest-room-selector">
-              <div class="selector-item">
-                <span>{{ $t('userHeader.guestInputPlaceholder_1') }}</span>
-                <ElInputNumber
-                  v-model="adults"
-                  :min="1"
-                  :max="30"
-                  controls-position="right"
-                  size="small"
-                />
-              </div>
-              <div class="selector-item">
-                <span
-                  >{{ $t('userHeader.guestInputPlaceholder_2') }}
-                  <small>{{ $t('userHeader.childAgeSuffix') }}</small></span
-                >
-                <ElInputNumber
-                  v-model="children"
-                  :min="0"
-                  :max="10"
-                  controls-position="right"
-                  size="small"
-                />
-              </div>
-              <div class="selector-item">
-                <span>{{ $t('userHeader.guestInputPlaceholder_3') }}</span>
-                <ElInputNumber
-                  v-model="rooms"
-                  :min="1"
-                  :max="30"
-                  controls-position="right"
-                  size="small"
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- Search button -->
-          <button class="search-button" @click="submitSearch">
-            {{ $t('userHeader.searchButton') }}
+          </ElAutocomplete>
+        </div>
+        <div class="date-picker">
+          <span class="search-field-label">{{ $t('guest.dates') }}</span
+          ><ElDatePicker
+            v-model="dateRange"
+            type="daterange"
+            :range-separator="$t('userHeader.dateRangeSeparator')"
+            :start-placeholder="$t('userHeader.checkInPlaceholder')"
+            :end-placeholder="$t('userHeader.checkOutPlaceholder')"
+            :aria-label="$t('guest.dates')"
+            :prefix-icon="CalendarIcon"
+            :disabled-date="disabledDate"
+            format="DD/MM/YYYY"
+            value-format="YYYY-MM-DD"
+          />
+        </div>
+        <div class="guest-room-wrapper">
+          <span class="search-field-label">{{ $t('guest.guestsRooms') }}</span
+          ><button
+            ref="guestTrigger"
+            type="button"
+            class="guest-picker-trigger"
+            :aria-label="$t('userHeader.guestInputLabel')"
+            aria-haspopup="dialog"
+            :aria-expanded="showGuestSelector"
+            @click="toggleGuestSelector"
+          >
+            {{ guestDetails }}
           </button>
         </div>
-      </div>
+        <button class="search-button guest-button" type="submit">
+          {{ $t('userHeader.searchButton') }}
+        </button>
+      </form>
     </div>
-  </div>
+    <ElDialog
+      v-model="showGuestSelector"
+      :title="$t('guest.guestsRooms')"
+      width="420px"
+      append-to-body
+      @closed="$refs.guestTrigger?.focus()"
+    >
+      <div class="selector-item">
+        <span>{{ $t('userHeader.guestInputPlaceholder_1') }}</span
+        ><ElInputNumber
+          v-model="adults"
+          :min="1"
+          :max="30"
+          :aria-label="$t('userHeader.guestInputPlaceholder_1')"
+        />
+      </div>
+      <div class="selector-item">
+        <span>{{ $t('userHeader.guestInputPlaceholder_2') }}</span
+        ><ElInputNumber
+          v-model="children"
+          :min="0"
+          :max="10"
+          :aria-label="$t('userHeader.guestInputPlaceholder_2')"
+        />
+      </div>
+      <div class="selector-item">
+        <span>{{ $t('userHeader.guestInputPlaceholder_3') }}</span
+        ><ElInputNumber
+          v-model="rooms"
+          :min="1"
+          :max="30"
+          :aria-label="$t('userHeader.guestInputPlaceholder_3')"
+        />
+      </div>
+      <template #footer
+        ><button type="button" class="guest-button" @click="hideGuestSelector">
+          {{ $t('guest.done') }}
+        </button></template
+      >
+    </ElDialog>
+  </section>
 </template>
 
 <script>
@@ -117,13 +115,39 @@
   import { Location, Calendar } from '@element-plus/icons-vue';
   import { shallowRef } from 'vue';
   import { SearchService } from '@/services/search.service';
+  import { stayNights } from '@/utils/stay';
 
   export default {
+    directives: {
+      validActiveDescendant: {
+        mounted(el) {
+          // Element Plus writes an item -1 reference before any option exists.
+          // Observe just this input wrapper and preserve real keyboard references.
+          const clean = () => {
+            const input = el.querySelector('input');
+            const id = input?.getAttribute('aria-activedescendant');
+            if (id && !document.getElementById(id)) input.removeAttribute('aria-activedescendant');
+          };
+          const observer = new MutationObserver(clean);
+          observer.observe(el, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ['aria-activedescendant'],
+          });
+          el.activeDescendantObserver = observer;
+          clean();
+        },
+        unmounted(el) {
+          el.activeDescendantObserver?.disconnect();
+        },
+      },
+    },
     setup() {
       const toast = useToast();
       const LocationIcon = shallowRef(Location);
       const CalendarIcon = shallowRef(Calendar);
-      
+
       return {
         toast,
         LocationIcon,
@@ -233,10 +257,7 @@
           return;
         }
         try {
-          const response = await SearchService.getDestinationAutocomplete(
-            queryString.trim(),
-            10
-          );
+          const response = await SearchService.getDestinationAutocomplete(queryString.trim(), 10);
           const suggestions = response?.data?.suggestions ?? response?.suggestions ?? [];
           const results = suggestions.map((s) => ({
             id: s.payload?.id ?? null,
@@ -261,10 +282,7 @@
         return time.getTime() < Date.now() - 8.64e7;
       },
       daysBetween(checkInDateString, checkOutDateString) {
-        const checkInDate = new Date(checkInDateString);
-        const checkOutDate = new Date(checkOutDateString);
-        const timeDifference = checkOutDate - checkInDate;
-        return timeDifference / (1000 * 60 * 60 * 24) + 1;
+        return stayNights(checkInDateString, checkOutDateString);
       },
       toggleGuestSelector() {
         this.showGuestSelector = !this.showGuestSelector;
@@ -273,7 +291,12 @@
         this.showGuestSelector = false;
       },
       async submitSearch() {
-        if (!this.selectedLocation || !this.checkInDate || !this.checkOutDate) {
+        if (
+          !this.selectedLocation ||
+          !this.checkInDate ||
+          !this.checkOutDate ||
+          !stayNights(this.checkInDate, this.checkOutDate)
+        ) {
           this.toast.error(this.$t('userHeader.searchValidationError'));
           return;
         }
@@ -283,7 +306,7 @@
           location: this.selectedLocation,
           checkInDate: this.checkInDate,
           checkOutDate: this.checkOutDate,
-          numberOfDays: this.numberOfDays,
+          numberOfDays: stayNights(this.checkInDate, this.checkOutDate),
           adults: this.adults,
           children: this.children,
           rooms: this.rooms,
@@ -301,229 +324,131 @@
         });
       },
     },
-    async mounted() {
-      // Normalise dates that are already in the past so the shared search
-      // state is valid for every bar that reads it.
-      const { checkInDate, checkOutDate } = this.getSearchData;
-      if (!checkInDate || !checkOutDate) return;
-
-      let nextCheckInDate = checkInDate;
-      let nextCheckOutDate = checkOutDate;
-
-      if (new Date(checkInDate).getTime() < new Date().getTime()) {
-        nextCheckInDate = new Date().toISOString().split('T')[0];
-      }
-      if (new Date(checkOutDate).getTime() < new Date().getTime()) {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        nextCheckOutDate = tomorrow.toISOString().split('T')[0];
-      }
-
-      if (nextCheckInDate !== checkInDate) {
-        this.updateCheckInDate(nextCheckInDate);
-      }
-      if (nextCheckOutDate !== checkOutDate) {
-        this.updateCheckOutDate(nextCheckOutDate);
-      }
-      this.updateNumberOfDays(this.daysBetween(nextCheckInDate, nextCheckOutDate));
+    mounted() {
+      if (this.checkInDate && this.checkOutDate)
+        this.updateNumberOfDays(stayNights(this.checkInDate, this.checkOutDate));
     },
   };
 </script>
 
-<style lang="scss" scoped>
-  @import '@/assets/styles/index.scss';
-
-  // Slide section
-  .slide {
-    position: relative;
-    background-color: $primary-color;
-    padding-bottom: 30px;
-
-    .img {
-      width: 100%;
-      height: 350px;
-      background-repeat: no-repeat;
-      background-position: center center;
-      background-size: cover;
-      @include flex-center;
-      position: relative;
-      color: $white;
-      z-index: 1;
-    }
-
-    .inner-wrap {
-      position: relative;
-      top: -30px;
-      color: $white;
-
-      strong {
-        font-size: 50px;
-      }
-
-      p {
-        margin-left: 8px;
-        font-size: $font-size-lg;
-      }
-    }
+<style scoped>
+  .guest-search-container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 24px;
   }
-
-  // Search section
+  .guest-search-home {
+    background: var(--tn-soft);
+  }
+  .guest-hero {
+    padding: 24px 0 28px;
+    max-width: 760px;
+  }
+  .guest-hero h1 {
+    color: var(--tn-brand);
+    font-size: clamp(30px, 4vw, 46px);
+    font-weight: 500;
+    letter-spacing: -0.045em;
+    line-height: 1.2;
+    margin: 8px 0 16px;
+  }
+  .guest-hero p {
+    color: var(--tn-muted);
+    font-size: 16px;
+    margin: 0;
+  }
+  .guest-hero .guest-eyebrow {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--tn-brand);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
   .search-bar {
-    background-color: #ffb700;
-    width: 1100px;
-    height: 60px;
-    @include flex-between;
-    padding: 0 4px;
-    box-sizing: border-box;
-    border-radius: $border-radius-sm;
-    position: relative;
-    left: 50%;
-    top: -30px;
-    transform: translateX(-50%);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    z-index: 9;
-    gap: 4px;
+    background: white;
+    border: 1px solid #ededed;
+    border-radius: 20px;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: end;
+    box-shadow: 0 8px 30px #003b9507;
   }
-
-  // Location autocomplete
-  .location-autocomplete {
-    width: 30%;
-    
-    :deep(.el-autocomplete) {
-      width: 100%;
-    }
-
-    :deep(.el-input__wrapper) {
-      height: 50px;
-      border-radius: $border-radius-sm;
-      box-shadow: none;
-    }
-
-    :deep(.el-input__inner) {
-      font-size: $font-size-base;
-    }
+  .search-bar > div {
+    min-width: 0;
   }
-
+  .search-bar label,
+  .search-field-label {
+    display: block;
+    font-size: 12px;
+    color: var(--tn-muted);
+    margin: 0 0 6px;
+  }
+  .search-bar :deep(.el-autocomplete),
+  .search-bar :deep(.el-date-editor) {
+    width: 100%;
+    min-width: 0;
+  }
+  .search-bar :deep(.el-input__wrapper),
+  .search-bar :deep(.el-range-editor) {
+    min-height: 44px;
+    background: #f8f8f8;
+    border-radius: 10px;
+  }
+  .search-bar :deep(.el-range-input) {
+    min-width: 0;
+    width: 42%;
+    font-size: 12px;
+    background: transparent;
+  }
+  .guest-picker-trigger {
+    width: 100%;
+    min-height: 44px;
+    background: #f8f8f8;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    color: var(--tn-ink);
+    font-size: 12px;
+    padding: 8px;
+    cursor: pointer;
+    text-align: left;
+  }
   .location-item-suggestion {
     display: flex;
     flex-direction: column;
-    padding: 4px 0;
-
-    .location-name {
-      font-weight: 600;
-      color: $text-primary;
-    }
-
-    .location-country {
-      font-size: $font-size-sm;
-      color: $text-secondary;
-    }
+    line-height: 1.6;
+    padding: 5px 0;
   }
-
-  // Date picker
-  .date-picker {
-    width: 30%;
-
-    :deep(.el-date-editor) {
+  .location-item-suggestion small {
+    color: var(--tn-muted);
+  }
+  .selector-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 0 0 20px;
+  }
+  @media (max-width: 1023px) {
+    .search-bar {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .search-button {
       width: 100%;
-      height: 50px;
-      border-radius: $border-radius-sm;
-      box-shadow: none;
-    }
-
-    :deep(.el-input__wrapper) {
-      border-radius: $border-radius-sm;
-      box-shadow: none;
-    }
-
-    :deep(.el-input__inner) {
-      font-size: $font-size-base;
-    }
-
-    :deep(.el-range-separator) {
-      font-size: $font-size-sm;
     }
   }
-
-  // Guest room wrapper
-  .guest-room-wrapper {
-    position: relative;
-    display: inline-block;
-    width: 30%;
-
-    input {
-      width: 100%;
-      height: 50px;
-      padding: 0 $spacing-sm 0 $spacing-xxl;
-      border: none;
-      border-radius: $border-radius-sm;
-      font-size: $font-size-base;
-      background-repeat: no-repeat;
-      background-position: $spacing-sm center;
-      background-size: 16px;
-      background-color: $white;
-      cursor: pointer;
-      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>');
+  @media (max-width: 600px) {
+    .guest-search-container {
+      padding: 16px;
     }
-
-    .selector-item {
-      @include flex-between;
-      margin-bottom: $spacing-md;
-      padding: 0 $spacing-sm;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      span {
-        font-size: $font-size-base;
-        color: $text-primary;
-      }
+    .guest-hero {
+      padding: 20px 0 24px;
     }
-  }
-
-  #guest-room-selector {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    background-color: $white;
-    border: 1px solid $border-color;
-    border-radius: 8px;
-    padding: $spacing-md;
-    z-index: 100;
-    width: 100%;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-
-    :deep(.el-input-number) {
-      width: 120px;
-    }
-
-    :deep(.el-input-number__increase),
-    :deep(.el-input-number__decrease) {
-      background-color: transparent;
-    }
-  }
-
-  .search-button {
-    background-color: $secondary-color;
-    color: $white;
-    border: none;
-    padding: 8px $spacing-lg;
-    cursor: pointer;
-    font-weight: bold;
-    border-radius: $border-radius-sm;
-    font-size: 18px;
-    width: 8%;
-    height: 50px;
-    transition: all 0.3s ease;
-
-    &:hover {
-      opacity: 0.9;
-      transform: translateY(-1px);
-    }
-
-    &:active {
-      transform: translateY(0);
+    .search-bar {
+      grid-template-columns: minmax(0, 1fr);
+      padding: 20px;
+      gap: 14px;
     }
   }
 </style>

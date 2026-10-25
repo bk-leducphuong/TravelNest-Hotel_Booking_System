@@ -1,4 +1,8 @@
 import './assets/main.css';
+import '@fontsource/poppins/400.css';
+import '@fontsource/poppins/500.css';
+import '@fontsource/poppins/600.css';
+import './assets/guest-theme.css';
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';

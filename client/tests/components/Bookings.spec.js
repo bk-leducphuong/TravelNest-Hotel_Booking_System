@@ -59,7 +59,7 @@ const mountView = ({ routeQuery = {}, response = emptyResponse } = {}) => {
   const wrapper = mount(Bookings, {
     global: {
       plugins: [store],
-      mocks: {
+      mocks: { $i18n: { locale: 'en' },
         $route: { query: routeQuery },
         $router: { push },
         $t: translate,

@@ -1,10 +1,6 @@
 <template>
-  <div class="popup-overlay" @click.self="closeMapPopup">
+  <el-dialog :model-value="true" :title="$t('map.title')" width="1200px" @close="closeMapPopup">
     <div class="popup-container">
-      <button class="close-button" type="button" :aria-label="$t('map.close')" @click="closeMapPopup">
-        ✕
-      </button>
-
       <aside class="hotel-list">
         <div class="hotel-list-header">
           <h2>{{ $t('map.title') }}</h2>
@@ -13,12 +9,11 @@
         <p v-if="hotels.length === 0" class="hotel-list-empty">{{ $t('map.empty') }}</p>
 
         <div
-          class="hotel-card"
           v-for="hotel in hotels"
           :key="hotel.hotel_id"
+          class="hotel-card"
           @mouseover="hoveredHotelId = hotel.hotel_id"
           @mouseleave="hoveredHotelId = null"
-          @click="openHotel(hotel)"
         >
           <div class="hotel-image">
             <img v-if="getHotelImage(hotel)" :src="getHotelImage(hotel)" :alt="hotelName(hotel)" />
@@ -32,7 +27,7 @@
             />
           </div>
           <div class="hotel-content">
-            <div class="rating-row" v-if="starCount(hotel) > 0">
+            <div v-if="starCount(hotel) > 0" class="rating-row">
               <div class="rating-stars" :aria-label="$t('map.stars', { count: starCount(hotel) })">
                 <span
                   v-for="n in 5"
@@ -44,18 +39,18 @@
               </div>
             </div>
 
-            <h3 class="hotel-name">{{ hotelName(hotel) }}</h3>
+            <h3 class="hotel-name"><button type="button" class="map-hotel-link" @click="openHotel(hotel)">{{ hotelName(hotel) }}</button></h3>
 
-            <div class="rating-score" v-if="hotel.avg_rating != null || hotel.review_count">
-              <span class="score" v-if="hotel.avg_rating != null">{{ hotel.avg_rating }}</span>
-              <span class="review-count" v-if="hotel.review_count">{{
+            <div v-if="hotel.avg_rating != null || hotel.review_count" class="rating-score">
+              <span v-if="hotel.avg_rating != null" class="score">{{ hotel.avg_rating }}</span>
+              <span v-if="hotel.review_count" class="review-count">{{
                 $t('map.reviewCount', { count: hotel.review_count })
               }}</span>
             </div>
 
-            <div class="price-section" v-if="priceOf(hotel) != null">
+            <div v-if="priceOf(hotel) != null" class="price-section">
               <span class="current-price">USD {{ priceOf(hotel).toLocaleString('en-US') }}</span>
-              <span class="price-info">{{ $t('map.priceIncludes') }}</span>
+              <span class="price-info">{{ $t('guest.finalQuote') }}</span>
             </div>
           </div>
         </div>
@@ -81,14 +76,13 @@
             :key="hotel.hotel_id"
             :lat-lng="latLng(hotel)"
             :icon="hotel.hotel_id === hoveredHotelId ? redIcon : blueIcon"
-            @click="openHotel(hotel)"
-          >
+            >
             <LPopup>{{ hotelName(hotel) }}</LPopup>
           </LMarker>
         </LMap>
       </div>
     </div>
-  </div>
+  </el-dialog>
 </template>
 
 <script>
@@ -129,6 +123,12 @@ export default {
     LPopup,
     SavedHotelIcon,
   },
+  props: {
+    hotels: {
+      type: Array,
+      required: true,
+    },
+  },
   data() {
     return {
       center: [15.9030623, 105.8066925],
@@ -137,12 +137,6 @@ export default {
       blueIcon,
       redIcon,
     }
-  },
-  props: {
-    hotels: {
-      type: Array,
-      required: true,
-    },
   },
   computed: {
     // Only hotels with real coordinates can be placed on the map.
@@ -155,11 +149,15 @@ export default {
       this.$nextTick(() => this.fitMapToHotels())
     },
   },
+  mounted() {
+    this.$nextTick(() => this.fitMapToHotels())
+  },
   methods: {
     hotelName(hotel) {
       return hotel.hotel_name || hotel.name || ''
     },
     hasCoords(hotel) {
+      if (hotel.latitude == null || hotel.longitude == null) return false
       const lat = Number(hotel.latitude)
       const lng = Number(hotel.longitude)
       return Number.isFinite(lat) && Number.isFinite(lng)
@@ -198,9 +196,6 @@ export default {
 
       map.fitBounds(L.latLngBounds(points), { padding: [30, 30] })
     },
-  },
-  mounted() {
-    this.$nextTick(() => this.fitMapToHotels())
   },
 }
 </script>
@@ -410,4 +405,10 @@ export default {
     height: 55%;
   }
 }
+</style>
+
+<style scoped>
+.popup-container { position:relative; width:100%; height:65vh; max-height:700px; border-radius:0; box-shadow:none; }
+.map-hotel-link { background:none; border:0; padding:0; text-align:left; font:inherit; color:var(--tn-brand); cursor:pointer; }
+@media(max-width:767px) { .popup-container { display:flex; flex-direction:column-reverse; height:70vh; } .hotel-list { width:100%; max-height:45%; flex-shrink:0; } .map-container { width:100%; min-height:220px; flex:1; } }
 </style>

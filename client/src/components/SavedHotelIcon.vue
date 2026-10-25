@@ -37,6 +37,11 @@
         }
       },
     },
+    mounted() {
+      if (!this.useInitialFavoriteStatus) {
+        this.checkFavoriteHotel();
+      }
+    },
     methods: {
       async saveFavoriteHotel() {
         try {
@@ -77,23 +82,18 @@
         }
       },
     },
-    mounted() {
-      if (!this.useInitialFavoriteStatus) {
-        this.checkFavoriteHotel();
-      }
-    },
   };
 </script>
 <template>
   <button
     class="favorite-button"
     type="button"
-    :aria-label="isFavorite ? 'Remove from saved hotels' : 'Save to saved hotels'"
+    :aria-label="$t(isFavorite ? 'savedHotel.remove' : 'savedHotel.save')"
     :aria-pressed="isFavorite"
     @click.stop="saveFavoriteHotel()"
   >
-    <i class="fa-solid fa-heart" style="color: #e70d0d" v-if="isFavorite" aria-hidden="true"></i>
-    <i class="fa-regular fa-heart" v-else aria-hidden="true"></i>
+    <i v-if="isFavorite" class="fa-solid fa-heart" style="color: #e70d0d" aria-hidden="true"></i>
+    <i v-else class="fa-regular fa-heart" aria-hidden="true"></i>
   </button>
 </template>
 <style scoped>
