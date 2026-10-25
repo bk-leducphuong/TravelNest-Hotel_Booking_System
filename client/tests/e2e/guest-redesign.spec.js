@@ -328,9 +328,13 @@ test('checkout edits reach payment and cancellation does not invent a fee', asyn
   await page.locator('#checkout-name').fill('Edited Guest');
   await page.locator('#checkout-email').fill('edited@example.test');
   await page.locator('#checkout-phone').fill('invalid');
-  expect(await page.locator('#checkout-phone').evaluate(input=>input.checkValidity())).toBe(false);
+  expect(await page.locator('#checkout-phone').evaluate((input) => input.checkValidity())).toBe(
+    false
+  );
   await page.locator('#checkout-phone').fill('+84987654321');
-  expect(await page.locator('#checkout-phone').evaluate(input=>input.checkValidity())).toBe(true);
+  expect(await page.locator('#checkout-phone').evaluate((input) => input.checkValidity())).toBe(
+    true
+  );
   await page.locator('.guest-form button[type=submit]').click();
   await expect(page.locator('.checkout-contact')).toContainText('Edited Guest');
   await page.goto('/bookings/TN123/cancel');
@@ -412,12 +416,15 @@ for (const width of [375, 1440])
 test('checkout expiry and payment initialization failure have recovery paths', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 1000 });
   await fixtures(page, { authenticated: true });
+  // Force the provider bootstrap failure deterministically: a valid test key
+  // would otherwise load Stripe successfully on machines with network access.
+  await page.route('https://js.stripe.com/**', (route) => route.abort());
   await page.goto(searchURL);
   await page.locator('.result-info a').click();
   await page.locator('.room-card select').selectOption('1');
   await page.locator('.property-booking .guest-button').click();
   await expect(page.locator('#checkout-name')).toHaveValue('Test Guest');
-  await page.addStyleTag({content:'#__vue-devtools-container__{display:none!important}'});
+  await page.addStyleTag({ content: '#__vue-devtools-container__{display:none!important}' });
   await page.evaluate(() => document.fonts.ready);
   if (process.env.GUEST_CAPTURE_DIR)
     await page.screenshot({
@@ -434,7 +441,17 @@ test('checkout expiry and payment initialization failure have recovery paths', a
   expect(result.violations).toEqual([]);
   await page.clock.setFixedTime(new Date('2026-11-10T08:00:00Z'));
   await expect(page.locator('.checkout-expired')).toBeVisible();
-  if(process.env.GUEST_CAPTURE_DIR){await page.setViewportSize({width:1440,height:1000});await page.goto('/account-settings');await expect(page.locator('.account-section-grid')).toBeVisible();await page.evaluate(()=>document.fonts.ready);await page.addStyleTag({content:'#__vue-devtools-container__{display:none!important}'});await page.screenshot({path:`${process.env.GUEST_CAPTURE_DIR}/account-en-1440.png`,fullPage:true});}
+  if (process.env.GUEST_CAPTURE_DIR) {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto('/account-settings');
+    await expect(page.locator('.account-section-grid')).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    await page.addStyleTag({ content: '#__vue-devtools-container__{display:none!important}' });
+    await page.screenshot({
+      path: `${process.env.GUEST_CAPTURE_DIR}/account-en-1440.png`,
+      fullPage: true,
+    });
+  }
 });
 test('profile and card dialogs support keyboard dismissal', async ({ page }) => {
   await fixtures(page, { authenticated: true });

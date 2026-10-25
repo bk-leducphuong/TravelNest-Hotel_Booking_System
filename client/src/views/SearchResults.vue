@@ -465,7 +465,9 @@
     <div class="search-page-heading inner-content">
       <div>
         <h1 class="guest-page-title">
-          <strong
+          <strong v-if="isLoading"
+            >{{ locationLabel() }} · {{ $t('searchResults.searching') }}</strong
+          ><strong v-else
             >{{ locationLabel() }} · {{ $t('searchResults.foundTitle_1') }} {{ totalResults }}
             {{ $t('searchResults.foundTitle_2') }}</strong
           >
@@ -794,6 +796,8 @@
       flex-direction: column;
       align-items: stretch;
       gap: 8px;
+      /* Keep the fixed AI chat launcher clear of the search field. */
+      padding-right: 80px;
     }
     .room-infor {
       grid-template-columns: minmax(0, 1fr);

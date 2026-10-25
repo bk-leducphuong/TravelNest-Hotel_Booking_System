@@ -6,10 +6,10 @@ function buildFilterOptions(hotels) {
   const amenityCounts = {};
   const hotelClassCounts = {};
   const reviewScores = {
-    4.5: 0,
-    4: 0,
-    3.5: 0,
-    3: 0,
+    9: 0,
+    8: 0,
+    7: 0,
+    6: 0,
   };
   const popular = {
     freeCancellation: 0,

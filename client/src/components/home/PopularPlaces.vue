@@ -14,7 +14,13 @@
       return {
         isPopularPlacesLoading: false,
         popularPlaces: [],
+        gridExpanded: false,
       };
+    },
+    computed: {
+      hasMoreItems() {
+        return this.popularPlaces.length > 4;
+      },
     },
     mounted() {
       this.loadPopularPlaces();
@@ -69,7 +75,7 @@
 <template>
   <section v-if="isPopularPlacesLoading || popularPlaces.length" class="discovery-section">
     <h2>{{ $t('userHome.popularPlaces') }}</h2>
-    <div class="guest-property-grid">
+    <div class="guest-property-grid" :class="{ 'is-expanded': gridExpanded }">
       <button
         v-for="(place, index) in popularPlaces"
         :key="place.id || index"
@@ -82,9 +88,30 @@
         }}</strong>
       </button>
     </div>
+    <button
+      v-if="!isPopularPlacesLoading && hasMoreItems"
+      type="button"
+      class="guest-button guest-button-secondary see-all"
+      @click="gridExpanded = !gridExpanded"
+    >
+      {{ gridExpanded ? $t('guest.showLess') : $t('guest.seeAll') }}
+    </button>
   </section>
 </template>
 <style scoped>
+  .see-all {
+    display: none;
+    width: max-content;
+    margin: 20px auto 0;
+  }
+  @media (max-width: 767px) {
+    .see-all {
+      display: block;
+    }
+    .guest-property-grid:not(.is-expanded) > :nth-child(n + 5) {
+      display: none;
+    }
+  }
   .destination-card {
     background: white;
     border: 0;

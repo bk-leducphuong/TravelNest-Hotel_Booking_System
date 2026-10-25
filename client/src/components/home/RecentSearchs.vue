@@ -3,6 +3,7 @@
   import { SearchService } from '@/services/search.service';
   import errorHandler from '@/request/errorHandler.js';
   import { getImageUrl } from '@/utils/images';
+  import { dedupeRecentSearches } from '@/utils/recentSearches';
 
   export default {
     name: 'RecentSearchs',
@@ -22,9 +23,13 @@
       async loadRecentSearches() {
         if (!this.isUserAuthenticated) {
           try {
-            this.recentSearches = localStorage.getItem('recentSearches')
-              ? JSON.parse(localStorage.getItem('recentSearches'))
-              : [];
+            const raw = localStorage.getItem('recentSearches');
+            const parsed = raw ? JSON.parse(raw) : [];
+            const list = dedupeRecentSearches(parsed);
+            if (list.length !== (Array.isArray(parsed) ? parsed.length : 0)) {
+              localStorage.setItem('recentSearches', JSON.stringify(list));
+            }
+            this.recentSearches = list;
           } catch {
             this.recentSearches = [];
           }

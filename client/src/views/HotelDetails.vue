@@ -845,11 +845,12 @@
             </section>
             <section id="price" class="guest-section room-section">
               <h2>{{ $t('guest.chooseRoom') }}</h2>
-              <p class="guest-subtitle">{{ $t('guest.roomDateHint') }}</p>
+              <p v-if="!nights" class="guest-subtitle">{{ $t('guest.roomDateHint') }}</p>
               <div class="room-criteria">
                 <el-date-picker
                   v-model="dateRange"
                   type="daterange"
+                  format="DD/MM/YYYY"
                   value-format="YYYY-MM-DD"
                   :start-placeholder="$t('userHeader.checkInPlaceholder')"
                   :end-placeholder="$t('userHeader.checkOutPlaceholder')"
@@ -1045,7 +1046,9 @@
           <option value="marMay">{{ $t('hotelDetails.reviews.filters.seasons.marMay') }}</option>
           <option value="junAug">{{ $t('hotelDetails.reviews.filters.seasons.junAug') }}</option>
           <option value="sepNov">{{ $t('hotelDetails.reviews.filters.seasons.sepNov') }}</option>
-          <option value="decFeb">{{ $t('hotelDetails.reviews.filters.seasons.decFeb') }}</option></select
+          <option value="decFeb">
+            {{ $t('hotelDetails.reviews.filters.seasons.decFeb') }}
+          </option></select
         ><select
           v-model="reviewFilters.country"
           :aria-label="$t('hotelDetails.reviews.filters.country')"

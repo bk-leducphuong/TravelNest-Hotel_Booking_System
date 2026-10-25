@@ -16,10 +16,14 @@
         viewedHotels: [],
         isLoading: false,
         loadError: false,
+        gridExpanded: false,
       };
     },
     computed: {
       ...mapGetters('auth', ['isUserAuthenticated']),
+      hasMoreItems() {
+        return this.viewedHotels.length > 4;
+      },
     },
     mounted() {
       this.loadViewedHotels();
@@ -85,7 +89,7 @@
         {{ $t('guest.retry') }}
       </button>
     </div>
-    <div v-else class="guest-property-grid">
+    <div v-else class="guest-property-grid" :class="{ 'is-expanded': gridExpanded }">
       <GuestHotelCard
         v-for="hotel in viewedHotels"
         :key="hotel.id"
@@ -93,5 +97,28 @@
         @open="redirectToHotelDetails"
       />
     </div>
+    <button
+      v-if="!isLoading && !loadError && hasMoreItems"
+      type="button"
+      class="guest-button guest-button-secondary see-all"
+      @click="gridExpanded = !gridExpanded"
+    >
+      {{ gridExpanded ? $t('guest.showLess') : $t('guest.seeAll') }}
+    </button>
   </section>
 </template>
+<style scoped>
+  .see-all {
+    display: none;
+    width: max-content;
+    margin: 20px auto 0;
+  }
+  @media (max-width: 767px) {
+    .see-all {
+      display: block;
+    }
+    .guest-property-grid:not(.is-expanded) > :nth-child(n + 5) {
+      display: none;
+    }
+  }
+</style>
