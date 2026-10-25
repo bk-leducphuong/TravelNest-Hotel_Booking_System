@@ -1,5 +1,11 @@
 <script setup lang="ts">
+import { Building2 } from "lucide-vue-next";
 import { fetchHotels, type HotelSummary } from "~/services/api/catalog";
+
+const { can } = usePermissions();
+const auth = useAuthStore();
+const requests = useRequestVersion();
+const error = ref("");
 
 const loading = ref(false);
 const hotels = ref<HotelSummary[]>([]);
@@ -12,6 +18,12 @@ const filters = reactive({
 });
 
 const load = async () => {
+  const current = requests.begin();
+  hotels.value = [];
+  total.value = 0;
+  error.value = "";
+  loading.value = false;
+  if (!can("hotel.read")) return;
   loading.value = true;
   try {
     // The admin catalog list is already scoped server-side: platform staff see
@@ -21,12 +33,13 @@ const load = async () => {
       page: filters.page,
       limit: filters.limit,
     });
+    if (!current()) return;
     hotels.value = result.data;
     total.value = result.meta.total;
-  } catch (error) {
-    ElMessage.error((error as Error).message);
+  } catch (failure) {
+    if (current()) error.value = (failure as Error).message;
   } finally {
-    loading.value = false;
+    if (current()) loading.value = false;
   }
 };
 
@@ -40,52 +53,68 @@ const onPageChange = (page: number) => {
   load();
 };
 
-onMounted(load);
+watch([() => auth.activeHotelId, () => can("hotel.read")], load, {
+  immediate: true,
+});
 </script>
 
 <template>
   <section class="space-y-6">
-    <div>
-      <h2 class="text-2xl font-semibold tracking-tight text-slate-900">{{ $t('properties.title') }}</h2>
-      <p class="mt-1 text-sm text-slate-500">
-        {{ $t('properties.subtitle') }}
-      </p>
-    </div>
+    <UiPageHeader
+      :title="$t('properties.title')"
+      :subtitle="$t('properties.subtitle')"
+    />
+    <UiEmptyState v-if="!can('hotel.read')" :title="$t('editor.forbidden')" />
+    <el-alert
+      v-if="error"
+      :title="error"
+      type="error"
+      :closable="false"
+      show-icon
+    />
 
-    <el-card class="shadow-sm">
+    <UiFilterBar>
       <div class="flex flex-wrap items-end gap-3">
         <el-input
           v-model="filters.search"
+          :aria-label="$t('properties.searchPlaceholder')"
           :placeholder="$t('properties.searchPlaceholder')"
           clearable
           class="w-72"
           @keyup.enter="applySearch"
           @clear="applySearch"
         />
-        <el-button type="primary" @click="applySearch">{{ $t('common.search') }}</el-button>
+        <el-button type="primary" @click="applySearch">{{
+          $t("common.search")
+        }}</el-button>
       </div>
-    </el-card>
+    </UiFilterBar>
 
-    <el-card v-loading="loading" class="shadow-sm">
+    <UiSectionCard v-loading="loading">
       <el-empty
         v-if="!loading && hotels.length === 0"
         :description="$t('properties.emptyManage')"
       />
 
-      <ul v-else class="divide-y divide-slate-100">
+      <ul v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <li
           v-for="hotel in hotels"
           :key="hotel.id"
-          class="flex items-center justify-between gap-4 py-3"
+          class="flex flex-col items-start gap-4 rounded-2xl border border-gray-200 p-5"
         >
-          <div class="min-w-0">
-            <p class="truncate font-medium text-slate-900">
-              {{ hotel.name || $t('properties.untitled') }}
+          <Building2 :size="28" class="text-brand" aria-hidden="true" />
+          <div class="min-w-0 max-w-full">
+            <p class="truncate font-medium text-ink">
+              {{ hotel.name || $t("properties.untitled") }}
             </p>
-            <p class="truncate text-xs text-slate-500">{{ hotel.address || hotel.id }}</p>
+            <p class="truncate text-xs text-muted">
+              {{ hotel.address || hotel.id }}
+            </p>
           </div>
           <NuxtLink :to="`/properties/${hotel.id}`">
-            <el-button type="primary" plain size="small">{{ $t('properties.manage') }}</el-button>
+            <el-button type="primary" plain size="small">{{
+              $t("properties.manage")
+            }}</el-button>
           </NuxtLink>
         </li>
       </ul>
@@ -99,6 +128,6 @@ onMounted(load);
           @current-change="onPageChange"
         />
       </div>
-    </el-card>
+    </UiSectionCard>
   </section>
 </template>

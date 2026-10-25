@@ -17,7 +17,9 @@ export function usePermissions() {
   );
 
   const effectivePermissions = computed<string[]>(() =>
-    isPlatformStaff.value ? auth.permissions : (auth.activeHotel?.permissions ?? [])
+    isPlatformStaff.value
+      ? auth.permissions
+      : (auth.activeHotel?.permissions ?? [])
   );
 
   const can = (permission: string): boolean =>

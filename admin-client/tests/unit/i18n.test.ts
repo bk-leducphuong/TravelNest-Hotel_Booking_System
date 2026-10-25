@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 function loadLocale(file: string): Record<string, string> {
   return JSON.parse(
@@ -23,6 +24,23 @@ describe("i18n locale files", () => {
     for (const [locale, messages] of Object.entries({ en, vi })) {
       for (const [key, value] of Object.entries(messages)) {
         expect(String(value).trim(), `${locale}:${key}`).not.toBe("");
+      }
+    }
+  });
+
+  it("resolve literal translation keys used by console screens and shared controls", () => {
+    const root = fileURLToPath(new URL("../../", import.meta.url));
+    for (const folder of ["pages", "components", "layouts", "composables"]) {
+      for (const entry of readdirSync(`${root}${folder}`, { recursive: true })) {
+        if (!/\.(vue|ts)$/.test(String(entry))) continue;
+        const path = `${root}${folder}/${entry}`;
+        const source = readFileSync(path, "utf8");
+        for (const match of source.matchAll(/(?:\$t|\bt)\(\s*["']([^"'`]+)["']/g)) {
+          const key = match[1]!;
+          // Concatenated enum-key prefixes are checked by their data-specific tests.
+          if (key.endsWith(".")) continue;
+          expect(en[key], `${folder}/${entry}: ${key}`).toBeDefined();
+        }
       }
     }
   });

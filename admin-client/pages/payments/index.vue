@@ -1,13 +1,26 @@
 <script setup lang="ts">
-import { fetchTransactions, type TransactionListItem } from "~/services/api/payments";
+import { Eye } from "lucide-vue-next";
+import {
+  fetchTransactions,
+  type TransactionListItem,
+} from "~/services/api/payments";
 import { formatDateTime, formatMoney } from "~/utils/format";
-import { TRANSACTION_STATUSES, TRANSACTION_TYPES, transactionStatusTagType } from "~/utils/payments";
+import {
+  TRANSACTION_STATUSES,
+  TRANSACTION_TYPES,
+  transactionStatusTagType,
+} from "~/utils/payments";
 
 const auth = useAuthStore();
+const { can } = usePermissions();
 const router = useRouter();
 const { t } = useI18n();
 
+const overview = ref<{ reload: () => Promise<void> } | null>(null);
+const refreshAll = () => Promise.all([load(), overview.value?.reload()]);
 const loading = ref(false);
+const listError = ref("");
+const listRequests = useRequestVersion();
 const transactions = ref<TransactionListItem[]>([]);
 const total = ref(0);
 
@@ -34,18 +47,24 @@ const typeOptions = computed(() =>
 );
 
 const load = async () => {
-  if (!auth.activeHotelId) {
+  const current = listRequests.begin();
+  listError.value = "";
+  transactions.value = [];
+  total.value = 0;
+  loading.value = false;
+  if (!auth.activeHotelId || !can("payment.read")) {
     return;
   }
   loading.value = true;
   try {
     const result = await fetchTransactions({ ...filters });
+    if (!current()) return;
     transactions.value = result.data;
     total.value = result.meta.total;
   } catch (error) {
-    ElMessage.error((error as Error).message);
+    if (current()) listError.value = (error as Error).message;
   } finally {
-    loading.value = false;
+    if (current()) loading.value = false;
   }
 };
 
@@ -73,7 +92,7 @@ const openTransaction = (row: TransactionListItem) => {
 };
 
 watch(
-  () => auth.activeHotelId,
+  [() => auth.activeHotelId, () => can("payment.read")],
   () => {
     filters.page = 1;
     load();
@@ -84,102 +103,163 @@ watch(
 
 <template>
   <section class="space-y-6">
-    <div class="flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">
-          {{ $t("nav.payments") }}
-        </h2>
-        <p class="mt-1 text-sm text-slate-500">
-          {{ auth.activeHotel?.name || $t("dashboard.noHotelSelected") }}
-        </p>
-      </div>
-      <div class="flex items-center gap-2">
-        <NuxtLink to="/payments/refunds">
-          <el-button>{{ $t("payments.action.refunds") }}</el-button>
-        </NuxtLink>
-        <el-button :loading="loading" :disabled="!auth.activeHotelId" @click="load">
-          {{ $t("common.refresh") }}
-        </el-button>
-      </div>
-    </div>
+    <UiPageHeader
+      :title="$t('nav.payments')"
+      :subtitle="auth.activeHotel?.name || $t('dashboard.noHotelSelected')"
+      ><template #actions
+        ><div class="flex flex-wrap items-center gap-2">
+          <NuxtLink to="/payments/refunds">
+            <el-button>{{ $t("payments.action.refunds") }}</el-button>
+          </NuxtLink>
+          <el-button
+            :loading="loading"
+            :disabled="!auth.activeHotelId"
+            @click="refreshAll"
+          >
+            {{ $t("common.refresh") }}
+          </el-button>
+        </div></template
+      ></UiPageHeader
+    >
 
+    <UiEmptyState v-if="!can('payment.read')" :title="$t('editor.forbidden')" />
     <el-empty
-      v-if="!auth.activeHotelId"
+      v-else-if="!auth.activeHotelId"
       :description="$t('payments.empty.selectHotel')"
     />
 
     <template v-else>
-      <el-card class="shadow-sm">
+      <MetricsOverview ref="overview" kind="payments" distribution />
+      <el-alert
+        v-if="listError"
+        :title="listError"
+        type="error"
+        :closable="false"
+        show-icon
+      />
+
+      <UiFilterBar>
         <div class="flex flex-wrap items-end gap-3">
           <el-select
             v-model="filters.status"
+            :aria-label="$t('payments.filter.allStatuses')"
             :placeholder="$t('payments.filter.allStatuses')"
             clearable
             class="w-52"
           >
-            <el-option v-for="option in statusOptions" :key="option.value" :label="option.label" :value="option.value" />
+            <el-option
+              v-for="option in statusOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
           </el-select>
           <el-select
             v-model="filters.transactionType"
+            :aria-label="$t('payments.filter.allTypes')"
             :placeholder="$t('payments.filter.allTypes')"
             clearable
             class="w-40"
           >
-            <el-option v-for="option in typeOptions" :key="option.value" :label="option.label" :value="option.value" />
+            <el-option
+              v-for="option in typeOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
           </el-select>
           <el-date-picker
             v-model="filters.dateFrom"
             type="date"
+            :aria-label="$t('payments.filter.from')"
             :placeholder="$t('payments.filter.from')"
             value-format="YYYY-MM-DD"
           />
           <el-date-picker
             v-model="filters.dateTo"
             type="date"
+            :aria-label="$t('payments.filter.to')"
             :placeholder="$t('payments.filter.to')"
             value-format="YYYY-MM-DD"
           />
           <el-button type="primary" @click="applyFilters">
             {{ $t("payments.filter.apply") }}
           </el-button>
-          <el-button @click="resetFilters">{{ $t("payments.filter.reset") }}</el-button>
+          <el-button @click="resetFilters">{{
+            $t("payments.filter.reset")
+          }}</el-button>
         </div>
-      </el-card>
+      </UiFilterBar>
 
-      <el-card class="shadow-sm">
-        <el-table v-loading="loading" :data="transactions" row-key="id" @row-click="openTransaction">
-          <el-table-column :label="$t('payments.col.date')" width="180">
-            <template #default="{ row }">{{ formatDateTime(row.created_at) }}</template>
-          </el-table-column>
-          <el-table-column :label="$t('payments.col.booking')" width="150">
-            <template #default="{ row }">{{ row.booking?.booking_code || "—" }}</template>
-          </el-table-column>
-          <el-table-column :label="$t('payments.col.type')" width="110">
-            <template #default="{ row }">
-              {{ $t(`payments.transactionType.${row.transaction_type}`) }}
+      <UiSectionCard>
+        <div
+          class="tn-table-region"
+          role="region"
+          :aria-label="$t('common.details')"
+          tabindex="0"
+        >
+          <el-table
+            v-loading="loading"
+            :data="transactions"
+            row-key="id"
+            @row-click="openTransaction"
+          >
+            <el-table-column :label="$t('payments.col.date')" width="180">
+              <template #default="{ row }">{{
+                formatDateTime(row.created_at)
+              }}</template>
+            </el-table-column>
+            <el-table-column :label="$t('payments.col.booking')" width="150">
+              <template #default="{ row }">{{
+                row.booking?.booking_code || "—"
+              }}</template>
+            </el-table-column>
+            <el-table-column :label="$t('payments.col.type')" width="110">
+              <template #default="{ row }">
+                {{ $t(`payments.transactionType.${row.transaction_type}`) }}
+              </template>
+            </el-table-column>
+            <el-table-column
+              :label="$t('payments.col.amount')"
+              width="140"
+              align="right"
+            >
+              <template #default="{ row }">{{
+                formatMoney(row.amount, row.currency)
+              }}</template>
+            </el-table-column>
+            <el-table-column :label="$t('common.status')" width="170">
+              <template #default="{ row }">
+                <el-tag
+                  :type="transactionStatusTagType(row.status)"
+                  effect="light"
+                >
+                  {{ $t(`payments.transactionStatus.${row.status}`) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column
+              :label="$t('common.actions')"
+              width="90"
+              align="right"
+            >
+              <template #default="{ row }">
+                <NuxtLink
+                  :to="`/payments/transactions/${row.id}`"
+                  :aria-label="$t('common.viewRecord', { id: row.id })"
+                  @click.stop
+                  ><Eye :size="18" aria-hidden="true"
+                /></NuxtLink>
+              </template>
+            </el-table-column>
+            <template #empty>
+              <el-empty
+                :description="$t('payments.empty.transactions')"
+                :image-size="60"
+              />
             </template>
-          </el-table-column>
-          <el-table-column :label="$t('payments.col.amount')" width="140" align="right">
-            <template #default="{ row }">{{ formatMoney(row.amount, row.currency) }}</template>
-          </el-table-column>
-          <el-table-column :label="$t('common.status')" width="170">
-            <template #default="{ row }">
-              <el-tag :type="transactionStatusTagType(row.status)" effect="light">
-                {{ $t(`payments.transactionStatus.${row.status}`) }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="" width="90" align="right">
-            <template #default="{ row }">
-              <el-button link type="primary" @click.stop="openTransaction(row)">
-                {{ $t("common.view") }}
-              </el-button>
-            </template>
-          </el-table-column>
-          <template #empty>
-            <el-empty :description="$t('payments.empty.transactions')" :image-size="60" />
-          </template>
-        </el-table>
+          </el-table>
+        </div>
 
         <div class="mt-4 flex justify-end">
           <el-pagination
@@ -190,7 +270,7 @@ watch(
             @current-change="onPageChange"
           />
         </div>
-      </el-card>
+      </UiSectionCard>
     </template>
   </section>
 </template>

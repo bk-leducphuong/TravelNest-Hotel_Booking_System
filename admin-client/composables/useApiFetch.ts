@@ -6,25 +6,24 @@ export function useApiFetch<T>(url: string, options: UseFetchOptions<T> = {}) {
 
   const baseURL = config.public.apiBase;
 
-  return useFetch<T>(url, {
+  return useFetch(url, {
     baseURL,
     credentials: "include",
     ...options,
     onResponseError(ctx) {
       const status = ctx?.response?.status;
       const message =
-        (ctx?.response?._data as any)?.message ||
+        (ctx?.response?._data as { message?: string } | undefined)?.message ||
         "Your session has expired. Please sign in again.";
 
       if (status === 401) {
-        auth.clearSession();
+        auth.reset();
         ElMessage?.warning?.(message);
         navigateTo("/login");
         return;
       }
 
       if (typeof options.onResponseError === "function") {
-        // @ts-expect-error - allow user override even if types mismatch a bit
         options.onResponseError(ctx);
       }
     },

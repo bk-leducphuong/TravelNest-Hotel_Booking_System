@@ -1,8 +1,15 @@
 <script setup lang="ts">
-import { fetchProfile, updateProfile, type AdminProfile } from "~/services/api/account";
+import {
+  fetchProfile,
+  updateProfile,
+  type AdminProfile,
+} from "~/services/api/account";
 import { accountManagementUrl } from "~/services/keycloak";
 
 const { t } = useI18n();
+const auth = useAuthStore();
+const error = ref("");
+const saved = ref({ name: "", email: "", phoneNumber: "" });
 const loading = ref(false);
 const saving = ref(false);
 const profile = ref<AdminProfile | null>(null);
@@ -14,27 +21,43 @@ const form = reactive({
 });
 
 const displayName = (data: AdminProfile) =>
-  data.full_name || [data.first_name, data.last_name].filter(Boolean).join(" ") || "";
+  data.full_name ||
+  [data.first_name, data.last_name].filter(Boolean).join(" ") ||
+  "";
 
 const applyProfile = (data: AdminProfile) => {
   profile.value = data;
   form.name = displayName(data);
   form.email = data.email ?? "";
   form.phoneNumber = data.phone_number ?? "";
+  saved.value = { ...form };
 };
 
+useEditorGuard(
+  "profile",
+  computed(() => JSON.stringify(form) !== JSON.stringify(saved.value)),
+  saving
+);
+watch(
+  () => auth.activeHotelId,
+  () => {
+    if (profile.value && !saving.value) applyProfile(profile.value);
+  }
+);
 const load = async () => {
+  error.value = "";
   loading.value = true;
   try {
     applyProfile(await fetchProfile());
-  } catch (error) {
-    ElMessage.error((error as Error).message);
+  } catch (failure) {
+    error.value = (failure as Error).message;
   } finally {
     loading.value = false;
   }
 };
 
 const save = async () => {
+  if (saving.value || loading.value || !profile.value) return;
   saving.value = true;
   try {
     await updateProfile({
@@ -60,18 +83,24 @@ onMounted(load);
 
 <template>
   <section v-loading="loading" class="space-y-6">
-    <div>
-      <h2 class="text-2xl font-semibold tracking-tight text-slate-900">
-        {{ $t("settings.title") }}
-      </h2>
-      <p class="mt-1 text-sm text-slate-500">{{ $t("settings.subtitle") }}</p>
-    </div>
+    <UiPageHeader
+      :title="$t('settings.title')"
+      :subtitle="$t('settings.subtitle')"
+    />
+    <el-alert
+      v-if="error"
+      :title="error"
+      type="error"
+      :closable="false"
+      show-icon
+    />
 
-    <el-card class="shadow-sm">
+    <el-button v-if="error" @click="load">{{ $t("common.refresh") }}</el-button>
+    <UiSectionCard>
       <template #header>
         <span class="font-medium">{{ $t("settings.profile") }}</span>
       </template>
-      <el-form label-position="top">
+      <el-form label-position="top" :disabled="saving || loading || !profile">
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <el-form-item :label="$t('settings.displayName')">
             <el-input v-model="form.name" />
@@ -87,16 +116,16 @@ onMounted(load);
           {{ $t("common.save") }}
         </el-button>
       </el-form>
-    </el-card>
+    </UiSectionCard>
 
-    <el-card class="shadow-sm">
+    <UiSectionCard>
       <template #header>
         <span class="font-medium">{{ $t("settings.security") }}</span>
       </template>
-      <p class="text-sm text-slate-500">{{ $t("settings.passwordManaged") }}</p>
+      <p class="text-sm text-muted">{{ $t("settings.passwordManaged") }}</p>
       <el-button class="mt-3" @click="openAccountConsole">
         {{ $t("settings.manageAccount") }}
       </el-button>
-    </el-card>
+    </UiSectionCard>
   </section>
 </template>

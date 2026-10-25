@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { mediaImageUrl } from "~/utils/images";
 import {
   deleteReviewReply,
   fetchReview,
@@ -16,12 +17,15 @@ import {
 } from "~/utils/reviews";
 
 const route = useRoute();
-const router = useRouter();
+const auth = useAuthStore();
 const { can } = usePermissions();
 const { t } = useI18n();
+const config = useRuntimeConfig();
 
 const reviewId = computed(() => String(route.params.reviewId));
 const loading = ref(false);
+const detailError = ref("");
+const detailRequests = useRequestVersion();
 const busy = ref(false);
 const review = ref<Review | null>(null);
 
@@ -51,7 +55,10 @@ const criteria = computed(() => {
     return [];
   }
   return [
-    { labelKey: "reviews.criteria.cleanliness", score: value.rating_cleanliness },
+    {
+      labelKey: "reviews.criteria.cleanliness",
+      score: value.rating_cleanliness,
+    },
     { labelKey: "reviews.criteria.location", score: value.rating_location },
     { labelKey: "reviews.criteria.service", score: value.rating_service },
     { labelKey: "reviews.criteria.value", score: value.rating_value },
@@ -62,18 +69,34 @@ const availableTransitions = computed(() =>
   review.value ? reviewTransitions(review.value.status) : []
 );
 
+useEditorGuard(
+  "review-detail",
+  computed(
+    () =>
+      !!review.value &&
+      replyDraft.value !== (review.value.reply?.reply_text ?? "")
+  ),
+  busy
+);
 const load = async () => {
+  const current = detailRequests.begin();
+  review.value = null;
+  detailError.value = "";
+  loading.value = false;
+  if (!auth.activeHotelId || !can("review.read")) return;
   loading.value = true;
   try {
     const result = await fetchReview(reviewId.value);
+    if (!current()) return;
     review.value = result;
     replyDraft.value = result.reply?.reply_text ?? "";
     editingReply.value = false;
   } catch (error) {
-    ElMessage.error((error as Error).message);
+    if (!current()) return;
+    detailError.value = (error as Error).message;
     review.value = null;
   } finally {
-    loading.value = false;
+    if (current()) loading.value = false;
   }
 };
 
@@ -91,7 +114,9 @@ const confirmModeration = async () => {
       reason: moderationDialog.reason || undefined,
     });
     ElMessage.success(
-      t("reviews.toast.statusSet", { status: statusLabel(moderationDialog.target) })
+      t("reviews.toast.statusSet", {
+        status: statusLabel(moderationDialog.target),
+      })
     );
     moderationDialog.visible = false;
     await load();
@@ -137,54 +162,88 @@ const removeReply = async () => {
   }
 };
 
-watch(reviewId, load, { immediate: true });
+watch(
+  [reviewId, () => auth.activeHotelId, () => can("review.read")],
+  () => {
+    moderationDialog.visible = false;
+    load();
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
   <section v-loading="loading" class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <el-button link @click="router.push('/reviews')">← {{ $t("nav.reviews") }}</el-button>
-        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">
-          {{ $t("reviews.detail.title") }}
-        </h2>
-        <el-tag v-if="review" :type="reviewStatusTagType(review.status)" effect="light">
+    <NuxtLink to="/reviews" class="text-sm text-action">{{
+      $t("reviews.back")
+    }}</NuxtLink>
+    <UiPageHeader
+      :title="review ? reviewerLabel : $t('reviews.detail.title')"
+      :subtitle="auth.activeHotel?.name ?? undefined"
+      ><template #description
+        ><el-tag
+          v-if="review"
+          :type="reviewStatusTagType(review.status)"
+          effect="light"
+        >
           {{ statusLabel(review.status) }}
-        </el-tag>
-      </div>
-      <div v-if="review" class="flex flex-wrap items-center gap-2">
-        <Can permission="review.moderate">
-          <el-button
-            v-for="target in availableTransitions"
-            :key="target"
-            :type="target === 'published' ? 'primary' : target === 'deleted' ? 'danger' : 'default'"
-            :plain="target === 'deleted'"
-            :disabled="busy"
-            @click="openModeration(target)"
-          >
-            {{
-              $t(
-                target === "published"
-                  ? "reviews.action.publish"
-                  : target === "hidden"
-                    ? "reviews.action.hide"
-                    : "reviews.action.delete"
-              )
-            }}
-          </el-button>
-        </Can>
-      </div>
-    </div>
+        </el-tag></template
+      ><template #actions>
+        <div v-if="review" class="flex flex-wrap items-center gap-2">
+          <Can permission="review.moderate">
+            <el-button
+              v-for="target in availableTransitions"
+              :key="target"
+              :type="
+                target === 'published'
+                  ? 'primary'
+                  : target === 'deleted'
+                    ? 'danger'
+                    : 'default'
+              "
+              :plain="target === 'deleted'"
+              :disabled="busy"
+              @click="openModeration(target)"
+            >
+              {{
+                $t(
+                  target === "published"
+                    ? "reviews.action.publish"
+                    : target === "hidden"
+                      ? "reviews.action.hide"
+                      : "reviews.action.delete"
+                )
+              }}
+            </el-button>
+          </Can>
+        </div>
+      </template></UiPageHeader
+    >
 
-    <el-empty v-if="!loading && !review" :description="$t('reviews.detail.notFound')" />
+    <el-alert
+      v-if="detailError"
+      :title="detailError"
+      type="error"
+      :closable="false"
+      show-icon
+    />
+    <el-button v-if="detailError" @click="load">{{
+      $t("common.refresh")
+    }}</el-button>
+    <el-empty
+      v-if="!loading && !review && !detailError"
+      :description="$t('reviews.detail.notFound')"
+    />
 
-    <template v-if="review">
-      <el-card class="shadow-sm">
+    <div v-if="review" class="tn-detail-grid">
+      <UiSectionCard>
         <template #header>
           <span class="font-medium">{{ $t("reviews.section.review") }}</span>
         </template>
-        <el-descriptions :column="3" border class="mb-4">
-          <el-descriptions-item :label="$t('reviews.col.reviewer')">{{ reviewerLabel }}</el-descriptions-item>
+        <el-descriptions :column="1" class="mb-4">
+          <el-descriptions-item :label="$t('reviews.col.reviewer')">{{
+            reviewerLabel
+          }}</el-descriptions-item>
           <el-descriptions-item :label="$t('reviews.col.hotel')">
             {{ review.hotel?.name || "—" }}
           </el-descriptions-item>
@@ -192,7 +251,9 @@ watch(reviewId, load, { immediate: true });
             {{ formatDateTime(review.created_at) }}
           </el-descriptions-item>
           <el-descriptions-item :label="$t('reviews.col.overallRating')">
-            <span class="text-lg font-semibold">{{ formatRating(review.rating_overall) }}</span> / 10
+            <span class="text-lg font-semibold"
+              >{{ formatRating(review.rating_overall) }}/10</span
+            >
           </el-descriptions-item>
           <el-descriptions-item :label="$t('reviews.col.verified')">
             {{ review.is_verified ? $t("reviews.yes") : $t("reviews.no") }}
@@ -201,7 +262,11 @@ watch(reviewId, load, { immediate: true });
             {{ review.helpful_count }}
           </el-descriptions-item>
           <el-descriptions-item :label="$t('reviews.col.booking')" :span="3">
-            <NuxtLink v-if="review.booking_id" :to="`/bookings/${review.booking_id}`" class="text-emerald-600">
+            <NuxtLink
+              v-if="review.booking_id"
+              :to="`/bookings/${review.booking_id}`"
+              class="text-action"
+            >
               {{ review.booking_id }}
             </NuxtLink>
             <span v-else>—</span>
@@ -209,38 +274,62 @@ watch(reviewId, load, { immediate: true });
         </el-descriptions>
 
         <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div v-for="item in criteria" :key="item.labelKey" class="rounded-lg border border-slate-200 p-3">
-            <p class="text-xs text-slate-500">{{ $t(item.labelKey) }}</p>
-            <p class="text-lg font-semibold text-slate-900">{{ formatRating(item.score) }}</p>
+          <div
+            v-for="item in criteria"
+            :key="item.labelKey"
+            class="rounded-lg border border-slate-200 p-3"
+          >
+            <p class="text-xs text-muted">{{ $t(item.labelKey) }}</p>
+            <p class="text-lg font-semibold text-ink">
+              {{ formatRating(item.score)
+              }}<span v-if="item.score != null">/10</span>
+            </p>
           </div>
         </div>
 
-        <h3 v-if="review.title" class="text-base font-semibold text-slate-900">{{ review.title }}</h3>
-        <p class="mt-1 whitespace-pre-line text-sm text-slate-700">{{ review.comment || "—" }}</p>
+        <h3 v-if="review.title" class="text-base font-semibold text-ink">
+          {{ review.title }}
+        </h3>
+        <p class="mt-1 whitespace-pre-line text-sm text-ink">
+          {{ review.comment || "—" }}
+        </p>
 
         <div v-if="review.media?.length" class="mt-4 flex flex-wrap gap-2">
           <el-image
             v-for="media in review.media"
             :key="media.id"
-            :src="media.thumbnail_url || media.url"
-            :preview-src-list="[media.url]"
+            :src="
+              mediaImageUrl(
+                media.thumbnail_url || media.url,
+                config.public.mediaBase
+              )
+            "
+            :preview-src-list="[
+              mediaImageUrl(media.url, config.public.mediaBase),
+            ]"
             fit="cover"
             class="h-24 w-24 rounded-lg"
             preview-teleported
           />
         </div>
-      </el-card>
+      </UiSectionCard>
 
-      <el-card class="shadow-sm">
+      <UiSectionCard>
         <template #header>
-          <div class="flex items-center justify-between">
+          <div class="flex w-full flex-wrap items-center justify-between gap-2">
             <span class="font-medium">{{ $t("reviews.reply.title") }}</span>
             <Can permission="review.reply">
               <div v-if="review.reply && !editingReply" class="flex gap-2">
                 <el-button size="small" @click="editingReply = true">
                   {{ $t("reviews.action.edit") }}
                 </el-button>
-                <el-button size="small" type="danger" plain :loading="busy" @click="removeReply">
+                <el-button
+                  size="small"
+                  type="danger"
+                  plain
+                  :loading="busy"
+                  @click="removeReply"
+                >
                   {{ $t("reviews.action.delete") }}
                 </el-button>
               </div>
@@ -249,9 +338,15 @@ watch(reviewId, load, { immediate: true });
         </template>
 
         <template v-if="review.reply && !editingReply">
-          <p class="whitespace-pre-line text-sm text-slate-700">{{ review.reply.reply_text }}</p>
-          <p class="mt-2 text-xs text-slate-400">
-            {{ review.reply.user ? `${review.reply.user.first_name ?? ""} ${review.reply.user.last_name ?? ""}`.trim() : $t("reviews.reply.staff") }}
+          <p class="whitespace-pre-line text-sm text-ink">
+            {{ review.reply.reply_text }}
+          </p>
+          <p class="mt-2 text-xs text-muted">
+            {{
+              review.reply.user
+                ? `${review.reply.user.first_name ?? ""} ${review.reply.user.last_name ?? ""}`.trim()
+                : $t("reviews.reply.staff")
+            }}
             · {{ formatDateTime(review.reply.created_at) }}
           </p>
         </template>
@@ -260,6 +355,7 @@ watch(reviewId, load, { immediate: true });
           <div v-if="can('review.reply')">
             <el-input
               v-model="replyDraft"
+              :aria-label="$t('reviews.reply.title')"
               type="textarea"
               :rows="4"
               :placeholder="
@@ -276,17 +372,23 @@ watch(reviewId, load, { immediate: true });
                 :disabled="!canReplyToReview(review.status)"
                 @click="submitReply"
               >
-                {{ review.reply ? $t("reviews.reply.save") : $t("reviews.reply.post") }}
+                {{
+                  review.reply
+                    ? $t("reviews.reply.save")
+                    : $t("reviews.reply.post")
+                }}
               </el-button>
               <el-button v-if="review.reply" @click="editingReply = false">
                 {{ $t("common.cancel") }}
               </el-button>
             </div>
           </div>
-          <p v-else class="text-sm text-slate-500">{{ $t("reviews.reply.noPermission") }}</p>
+          <p v-else class="text-sm text-muted">
+            {{ $t("reviews.reply.noPermission") }}
+          </p>
         </template>
-      </el-card>
-    </template>
+      </UiSectionCard>
+    </div>
 
     <el-dialog
       v-model="moderationDialog.visible"
@@ -295,16 +397,20 @@ watch(reviewId, load, { immediate: true });
     >
       <p class="mb-3 text-sm text-slate-600">
         {{ $t("reviews.dialog.setToPrefix") }}
-        <strong>{{ statusLabel(moderationDialog.target) }}</strong>{{ $t("reviews.dialog.setToSuffix") }}
+        <strong>{{ statusLabel(moderationDialog.target) }}</strong
+        >{{ $t("reviews.dialog.setToSuffix") }}
       </p>
       <el-input
         v-model="moderationDialog.reason"
         type="textarea"
         :rows="3"
+        :aria-label="$t('reviews.dialog.reason')"
         :placeholder="$t('reviews.dialog.reason')"
       />
       <template #footer>
-        <el-button @click="moderationDialog.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button @click="moderationDialog.visible = false">{{
+          $t("common.cancel")
+        }}</el-button>
         <el-button type="primary" :loading="busy" @click="confirmModeration">
           {{ $t("reviews.dialog.confirm") }}
         </el-button>

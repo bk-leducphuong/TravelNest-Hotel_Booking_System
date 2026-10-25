@@ -53,14 +53,14 @@ const onSignOut = async () => {
 
 <template>
   <div
-    class="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-50 to-sky-50"
+    class="flex min-h-screen items-center justify-center bg-gradient-to-br from-soft to-canvas"
   >
     <div
-      class="w-full max-w-md rounded-2xl bg-white/90 p-8 shadow-xl shadow-emerald-100 ring-1 ring-emerald-50"
+      class="w-full max-w-md rounded-2xl bg-white/90 p-8 shadow-sm ring-1 ring-gray-200"
     >
       <div class="mb-6 flex items-center justify-center gap-3">
         <span
-          class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-xl font-semibold text-white"
+          class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand text-xl font-semibold text-white"
         >
           TN
         </span>
@@ -69,7 +69,7 @@ const onSignOut = async () => {
             TravelNest Admin
           </h1>
           <p class="text-sm text-slate-500">
-            {{ $t('auth.signInSubtitle') }}
+            {{ $t("auth.signInSubtitle") }}
           </p>
         </div>
       </div>
@@ -91,7 +91,7 @@ const onSignOut = async () => {
         :loading="loading"
         @click="onSignOut"
       >
-        {{ $t('auth.signOutDifferent') }}
+        {{ $t("auth.signOutDifferent") }}
       </el-button>
       <el-button
         v-else
@@ -100,11 +100,11 @@ const onSignOut = async () => {
         :loading="loading"
         @click="onSignIn"
       >
-        {{ $t('auth.signInWith') }}
+        {{ $t("auth.signInWith") }}
       </el-button>
 
-      <p class="mt-4 text-center text-xs text-slate-400">
-        {{ $t('auth.redirectNotice') }}
+      <p class="mt-4 text-center text-xs text-muted">
+        {{ $t("auth.redirectNotice") }}
       </p>
     </div>
   </div>

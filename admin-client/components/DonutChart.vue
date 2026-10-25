@@ -12,7 +12,7 @@ const props = withDefaults(
     centerLabel?: string;
     centerValue?: string;
   }>(),
-  { size: 160 }
+  { size: 160, centerLabel: "", centerValue: "" }
 );
 
 const RADIUS = 42;
@@ -32,7 +32,7 @@ const arcs = computed(() => {
       ...segment,
       dasharray: `${length} ${CIRCUMFERENCE - length}`,
       dashoffset: -offset,
-      percent: Math.round(fraction * 100),
+      percent: Math.round(fraction * 1000) / 10,
     };
     offset += length;
     return arc;
@@ -41,12 +41,17 @@ const arcs = computed(() => {
 </script>
 
 <template>
-  <div class="flex items-center gap-6">
+  <div class="flex flex-wrap items-center gap-6">
     <div
       class="relative flex-shrink-0"
       :style="{ width: `${size}px`, height: `${size}px` }"
     >
-      <svg viewBox="0 0 100 100" :width="size" :height="size">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 100 100"
+        :width="size"
+        :height="size"
+      >
         <circle
           cx="50"
           cy="50"
@@ -73,7 +78,7 @@ const arcs = computed(() => {
         <span class="text-xl font-semibold text-slate-900">{{
           centerValue
         }}</span>
-        <span class="text-xs text-slate-400">{{ centerLabel }}</span>
+        <span class="text-xs text-muted">{{ centerLabel }}</span>
       </div>
     </div>
 
@@ -84,7 +89,9 @@ const arcs = computed(() => {
           :style="{ backgroundColor: arc.color }"
         />
         <span class="text-slate-600">{{ arc.label }}</span>
-        <span class="font-medium text-slate-900">{{ arc.percent }}%</span>
+        <span class="font-medium text-slate-900"
+          >{{ arc.value }} · {{ arc.percent }}%</span
+        >
       </li>
     </ul>
   </div>

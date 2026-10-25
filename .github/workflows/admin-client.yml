@@ -63,19 +63,21 @@ jobs:
       - name: Run unit and Nuxt tests
         run: yarn workspace @travelnest/admin-client run test:ci
 
-      # TODO(quality-debt): pre-existing lint/format failures; advisory so
-      # deploys are not blocked. Remove `continue-on-error` once cleared.
       - name: Run ESLint
-        continue-on-error: true
         run: yarn workspace @travelnest/admin-client run lint
 
-      # TODO(quality-debt): `vue-tsc` cannot run because admin-client does not
-      # declare `typescript` as a devDependency. Add it, fix the type errors,
-      # then remove `continue-on-error`.
       - name: Type check
-        continue-on-error: true
         run: yarn workspace @travelnest/admin-client run typecheck
 
+      - name: Install browser test dependencies
+        if: matrix.node-version == '22.x'
+        run: yarn workspace @travelnest/admin-client exec playwright install --with-deps chromium
+
+      - name: Verify console workflows and accessibility
+        if: matrix.node-version == '22.x'
+        run: yarn workspace @travelnest/admin-client run test:browser
+
+      # Formatting debt outside this redesign remains advisory.
       - name: Check formatting
         continue-on-error: true
         run: yarn workspace @travelnest/admin-client exec prettier --check .
@@ -107,6 +109,7 @@ jobs:
       # values are resolved by the caller and cannot read its `env`.
       build_args: |
         NUXT_PUBLIC_API_BASE=${{ vars.NUXT_PUBLIC_API_BASE || 'https://api.deployserver.work/api/v1' }}
+        NUXT_PUBLIC_MEDIA_BASE=${{ vars.NUXT_PUBLIC_MEDIA_BASE || vars.VITE_MINIO_URL || 'https://storage.deployserver.work/uploads/' }}
         NUXT_PUBLIC_KEYCLOAK_URL=${{ vars.NUXT_PUBLIC_KEYCLOAK_URL || 'https://keycloak.deployserver.work' }}
         NUXT_PUBLIC_KEYCLOAK_REALM=${{ vars.NUXT_PUBLIC_KEYCLOAK_REALM || 'travelnest' }}
         NUXT_PUBLIC_KEYCLOAK_CLIENT_ID=${{ vars.NUXT_PUBLIC_KEYCLOAK_CLIENT_ID || 'travelnest-admin' }}

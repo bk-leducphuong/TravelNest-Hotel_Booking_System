@@ -32,8 +32,8 @@ describe("inventory helpers", () => {
       weeks.forEach((week) => expect(week).toHaveLength(7));
 
       // 2026-09-01 is a Tuesday -> one leading blank (Monday).
-      expect(weeks[0][0]).toBeNull();
-      expect(weeks[0][1]).toBe("2026-09-01");
+      expect(weeks[0]![0]).toBeNull();
+      expect(weeks[0]![1]).toBe("2026-09-01");
 
       const allDates = weeks.flat().filter(Boolean);
       expect(allDates).toContain("2026-09-30");

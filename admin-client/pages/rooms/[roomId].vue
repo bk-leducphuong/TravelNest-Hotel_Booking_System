@@ -1,317 +1,344 @@
 <script setup lang="ts">
 import {
-  BED_TYPES,
-  ROOM_STATUSES,
-  deleteHotelPhoto,
+  fetchRooms,
   fetchAmenities,
   fetchRoomAmenities,
-  fetchRoomPhotos,
-  fetchRooms,
-  setPrimaryRoomPhoto,
   setRoomAmenities,
   updateRoom,
-  uploadRoomPhoto,
-  type Amenity,
-  type HotelPhoto,
   type Room,
+  type Amenity,
 } from "~/services/api/catalog";
-
-const route = useRoute();
+import {
+  basicRoomPayload,
+  configurationPayload,
+  roomDraft,
+  sameDraft,
+} from "~/utils/rooms";
 const auth = useAuthStore();
+const route = useRoute();
+const { can } = usePermissions();
 const { t } = useI18n();
-
+const { categoryLabel, amenityLabel } = useAmenityLabels();
 const roomId = computed(() => String(route.params.roomId));
-
-const loading = ref(false);
-const saving = ref(false);
 const room = ref<Room | null>(null);
-
-const form = reactive({
-  roomName: "",
-  roomType: "",
-  bedType: "",
-  maxGuests: undefined as number | undefined,
-  quantity: undefined as number | undefined,
-  roomSize: undefined as number | undefined,
-  status: "active" as string,
-});
-
-const photos = ref<HotelPhoto[]>([]);
-const uploadingPhotos = ref(false);
-const fileInput = ref<HTMLInputElement | null>(null);
-
-const activeTab = ref("details");
-
+const form = ref(roomDraft());
+const saved = ref(roomDraft());
+const loading = ref(false);
+const error = ref("");
+const saving = ref<"basic" | "configuration" | "">("");
+const mediaPending = ref(false);
+const mediaDirty = ref(false);
+const savingAmenities = ref(false);
 const amenities = ref<Amenity[]>([]);
 const selectedAmenityIds = ref<string[]>([]);
-const savingAmenities = ref(false);
-
-const toNumberOrUndefined = (value: unknown): number | undefined => {
-  if (value === null || value === undefined || value === "") {
-    return undefined;
-  }
-  const parsed = Number(value);
-  return Number.isNaN(parsed) ? undefined : parsed;
-};
-
-const amenitiesByCategory = computed(() => {
-  const groups = new Map<string, Amenity[]>();
-  amenities.value.forEach((amenity) => {
-    const list = groups.get(amenity.category) ?? [];
-    list.push(amenity);
-    groups.set(amenity.category, list);
-  });
-  return Array.from(groups.entries()).map(([category, items]) => ({ category, items }));
+const savedAmenityIds = ref<string[]>([]);
+const amenityError = ref("");
+const amenitiesLoading = ref(false);
+const basicDirty = computed(
+  () => !sameDraft(basicRoomPayload(form.value), basicRoomPayload(saved.value))
+);
+const configDirty = computed(
+  () =>
+    !sameDraft(
+      configurationPayload(form.value),
+      configurationPayload(saved.value)
+    )
+);
+const amenitiesDirty = computed(
+  () =>
+    !sameDraft(
+      [...selectedAmenityIds.value].sort(),
+      [...savedAmenityIds.value].sort()
+    )
+);
+const dirty = computed(
+  () =>
+    basicDirty.value ||
+    configDirty.value ||
+    amenitiesDirty.value ||
+    mediaDirty.value
+);
+const pending = computed(
+  () => !!saving.value || mediaPending.value || savingAmenities.value
+);
+useEditorGuard("room-detail", dirty, pending);
+const editable = computed(
+  () => can("room.update") && !pending.value && !loading.value
+);
+const groups = computed(() => {
+  const result = new Map<string, Amenity[]>();
+  for (const amenity of amenities.value)
+    result.set(amenity.category, [
+      ...(result.get(amenity.category) ?? []),
+      amenity,
+    ]);
+  return [...result.entries()];
 });
-
-const applyRoom = (data: Room) => {
-  room.value = data;
-  form.roomName = data.room_name ?? "";
-  form.roomType = data.room_type ?? "";
-  form.bedType = data.bed_type ?? "";
-  form.maxGuests = toNumberOrUndefined(data.max_guests);
-  form.quantity = toNumberOrUndefined(data.quantity);
-  form.roomSize = toNumberOrUndefined(data.room_size);
-  form.status = data.status ?? "active";
-};
-
-const load = async () => {
+let version = 0;
+const loadAmenities = async () => {
+  const request = version;
   const hotelId = auth.activeHotelId;
-  if (!hotelId) {
+  if (!hotelId || !can("room.read")) return;
+  amenitiesLoading.value = true;
+  amenityError.value = "";
+  try {
+    const [catalog, assigned] = await Promise.all([
+      fetchAmenities({ applicableTo: "room", limit: 200 }),
+      fetchRoomAmenities(hotelId, roomId.value),
+    ]);
+    if (request !== version) return;
+    amenities.value = catalog.data;
+    selectedAmenityIds.value = [...assigned];
+    savedAmenityIds.value = [...assigned];
+  } catch (failure) {
+    if (request === version) amenityError.value = (failure as Error).message;
+  } finally {
+    if (request === version) amenitiesLoading.value = false;
+  }
+};
+const load = async () => {
+  const request = ++version;
+  const hotelId = auth.activeHotelId;
+  room.value = null;
+  form.value = roomDraft();
+  saved.value = roomDraft();
+  error.value = "";
+  selectedAmenityIds.value = [];
+  savedAmenityIds.value = [];
+  amenities.value = [];
+  mediaDirty.value = false;
+  mediaPending.value = false;
+  if (!hotelId || !can("room.read")) {
+    loading.value = false;
     return;
   }
   loading.value = true;
   try {
-    const rooms = await fetchRooms(hotelId);
-    const found = rooms.find((item) => item.id === roomId.value) ?? null;
-    if (!found) {
-      room.value = null;
-      return;
+    const data = await fetchRooms(hotelId);
+    if (request !== version) return;
+    const found = data.find((item) => item.id === roomId.value);
+    if (found) {
+      room.value = found;
+      form.value = roomDraft(found);
+      saved.value = roomDraft(found);
+      await loadAmenities();
     }
-    applyRoom(found);
-
-    const [roomPhotos, catalog, assigned] = await Promise.all([
-      fetchRoomPhotos(roomId.value).catch(() => []),
-      fetchAmenities({ applicableTo: "room", limit: 200 }).catch(() => ({ data: [] as Amenity[] })),
-      fetchRoomAmenities(hotelId, roomId.value).catch(() => [] as string[]),
-    ]);
-    photos.value = roomPhotos;
-    amenities.value = catalog.data;
-    selectedAmenityIds.value = assigned;
-  } catch (error) {
-    ElMessage.error((error as Error).message);
+  } catch (failure) {
+    if (request === version) error.value = (failure as Error).message;
   } finally {
-    loading.value = false;
+    if (request === version) loading.value = false;
   }
 };
-
-const save = async () => {
+watch([roomId, () => auth.activeHotelId, () => can("room.read")], load, {
+  immediate: true,
+});
+onBeforeUnmount(() => {
+  version++;
+});
+const save = async (section: "basic" | "configuration") => {
   const hotelId = auth.activeHotelId;
-  if (!hotelId) {
-    return;
-  }
-  if (!form.roomName.trim()) {
+  if (!hotelId || !room.value || !editable.value) return;
+  if (section === "basic" && !form.value.roomName.trim()) {
     ElMessage.warning(t("rooms.nameRequired"));
     return;
   }
-  saving.value = true;
-  try {
-    const updated = await updateRoom(hotelId, roomId.value, {
-      roomName: form.roomName,
-      roomType: form.roomType,
-      bedType: form.bedType || undefined,
-      maxGuests: form.maxGuests,
-      quantity: form.quantity,
-      roomSize: form.roomSize,
-      status: form.status,
-    });
-    applyRoom(updated);
-    ElMessage.success(t("rooms.updated"));
-  } catch (error) {
-    ElMessage.error((error as Error).message);
-  } finally {
-    saving.value = false;
-  }
-};
-
-const saveAmenities = async () => {
-  const hotelId = auth.activeHotelId;
-  if (!hotelId) {
+  const clearingType =
+    section === "basic" && saved.value.roomType && !form.value.roomType.trim();
+  const clearingConfiguration =
+    section === "configuration" &&
+    (["maxGuests", "quantity", "roomSize"] as const).some(
+      (key) => saved.value[key] !== undefined && form.value[key] === undefined
+    );
+  if (clearingType || clearingConfiguration) {
+    ElMessage.warning(t("rooms.cannotClear"));
     return;
   }
-  savingAmenities.value = true;
+  saving.value = section;
+  const request = version;
+  const payload =
+    section === "basic"
+      ? basicRoomPayload(form.value)
+      : configurationPayload(form.value);
   try {
-    await setRoomAmenities(hotelId, roomId.value, selectedAmenityIds.value);
-    ElMessage.success(t("rooms.amenitiesUpdated"));
-  } catch (error) {
-    ElMessage.error((error as Error).message);
+    const updated = await updateRoom(hotelId, roomId.value, payload);
+    if (request !== version) return;
+    room.value = updated;
+    const snapshot = roomDraft(updated);
+    // Deliberately merge only this section. Other drafts must survive the response.
+    if (section === "basic") {
+      for (const key of ["roomName", "roomType", "status"] as const) {
+        form.value[key] = snapshot[key];
+        saved.value[key] = snapshot[key];
+      }
+    } else {
+      form.value.bedType = saved.value.bedType = snapshot.bedType;
+      for (const key of ["maxGuests", "quantity", "roomSize"] as const) {
+        form.value[key] = snapshot[key];
+        saved.value[key] = snapshot[key];
+      }
+    }
+    ElMessage.success(t("rooms.updated"));
+  } catch (failure) {
+    if (request === version) ElMessage.error((failure as Error).message);
+  } finally {
+    saving.value = "";
+  }
+};
+const saveAmenities = async () => {
+  if (
+    !auth.activeHotelId ||
+    !editable.value ||
+    amenityError.value ||
+    amenitiesLoading.value
+  )
+    return;
+  savingAmenities.value = true;
+  const request = version;
+  const ids = [...selectedAmenityIds.value];
+  try {
+    const assigned = await setRoomAmenities(
+      auth.activeHotelId,
+      roomId.value,
+      ids
+    );
+    if (request === version) {
+      selectedAmenityIds.value = [...assigned];
+      savedAmenityIds.value = [...assigned];
+      ElMessage.success(t("rooms.amenitiesUpdated"));
+    }
+  } catch (failure) {
+    if (request === version) ElMessage.error((failure as Error).message);
   } finally {
     savingAmenities.value = false;
   }
 };
-
-const triggerPhotoPicker = () => fileInput.value?.click();
-
-const onPhotosSelected = async (event: Event) => {
-  const input = event.target as HTMLInputElement;
-  const files = Array.from(input.files ?? []);
-  if (files.length === 0) {
-    return;
-  }
-  uploadingPhotos.value = true;
-  try {
-    for (const file of files) {
-      await uploadRoomPhoto(roomId.value, file, photos.value.length === 0);
-    }
-    ElMessage.success(`${files.length} photo(s) uploaded.`);
-    photos.value = await fetchRoomPhotos(roomId.value);
-  } catch (error) {
-    ElMessage.error((error as Error).message);
-  } finally {
-    uploadingPhotos.value = false;
-    input.value = "";
-  }
-};
-
-const makePrimary = async (photo: HotelPhoto) => {
-  try {
-    await setPrimaryRoomPhoto(roomId.value, photo.id);
-    photos.value = await fetchRoomPhotos(roomId.value);
-  } catch (error) {
-    ElMessage.error((error as Error).message);
-  }
-};
-
-const removePhoto = async (photo: HotelPhoto) => {
-  try {
-    await ElMessageBox.confirm("Delete this photo?", "Delete photo", {
-      type: "warning",
-      confirmButtonText: t("common.delete"),
-    });
-  } catch {
-    return;
-  }
-  try {
-    await deleteHotelPhoto(photo.id);
-    photos.value = await fetchRoomPhotos(roomId.value);
-  } catch (error) {
-    ElMessage.error((error as Error).message);
-  }
-};
-
-watch([roomId, () => auth.activeHotelId], load, { immediate: true });
 </script>
-
 <template>
-  <section v-loading="loading" class="space-y-6">
-    <div class="flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <NuxtLink to="/rooms" class="text-sm text-emerald-600 hover:underline">
-          {{ $t("rooms.back") }}
-        </NuxtLink>
-        <h2 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
-          {{ room?.room_name || $t("rooms.title") }}
-        </h2>
+  <section class="space-y-6">
+    <NuxtLink to="/rooms" class="text-sm text-action">{{
+      $t("rooms.back")
+    }}</NuxtLink>
+    <UiPageHeader
+      :title="room?.room_name ?? $t('rooms.title')"
+      :subtitle="auth.activeHotel?.name ?? $t('common.noHotelSelected')"
+      ><template #actions
+        ><UiStatusPill
+          v-if="room"
+          :tone="
+            room.status === 'active'
+              ? 'success'
+              : room.status === 'maintenance'
+                ? 'warning'
+                : 'neutral'
+          "
+          >{{ $t(`rooms.status.${room.status ?? "inactive"}`) }}</UiStatusPill
+        ></template
+      ></UiPageHeader
+    >
+    <UiEmptyState v-if="!can('room.read')" :title="$t('editor.forbidden')" />
+    <UiEmptyState
+      v-else-if="!auth.activeHotelId"
+      :title="$t('rooms.noHotel')"
+    />
+    <el-alert
+      v-else-if="error"
+      :title="error"
+      type="error"
+      :closable="false"
+      show-icon
+    />
+    <p v-else-if="loading" role="status" class="py-12 text-center text-muted">
+      {{ $t("common.loading") }}
+    </p>
+    <UiEmptyState v-else-if="!room" :title="$t('rooms.notFound')" />
+    <template v-else>
+      <div class="grid items-start gap-6 xl:grid-cols-2">
+        <UiSectionCard :title="$t('rooms.basicInformation')"
+          ><template #actions
+            ><el-button
+              v-if="can('room.update')"
+              type="primary"
+              :loading="saving === 'basic'"
+              :disabled="!basicDirty || pending"
+              @click="save('basic')"
+              >{{ $t("rooms.saveBasic") }}</el-button
+            ></template
+          ><RoomsRoomFields
+            v-model="form"
+            section="basic"
+            :disabled="!editable"
+        /></UiSectionCard>
+        <UiSectionCard :title="$t('rooms.configuration')"
+          ><template #actions
+            ><el-button
+              v-if="can('room.update')"
+              type="primary"
+              :loading="saving === 'configuration'"
+              :disabled="!configDirty || pending"
+              @click="save('configuration')"
+              >{{ $t("rooms.saveConfiguration") }}</el-button
+            ></template
+          ><RoomsRoomFields
+            v-model="form"
+            section="configuration"
+            :disabled="!editable"
+        /></UiSectionCard>
       </div>
-      <el-tag v-if="room" :type="room.status === 'active' ? 'success' : 'info'">
-        {{ room.status }}
-      </el-tag>
-    </div>
-
-    <el-empty v-if="!loading && !room" :description="$t('rooms.notFound')" />
-
-    <el-tabs v-else v-model="activeTab" type="border-card">
-      <el-tab-pane :label="$t('rooms.details')">
-        <el-form label-position="top">
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <el-form-item :label="$t('rooms.roomName')">
-              <el-input v-model="form.roomName" />
-            </el-form-item>
-            <el-form-item :label="$t('rooms.roomType')">
-              <el-input v-model="form.roomType" placeholder="e.g. Deluxe" />
-            </el-form-item>
-            <el-form-item :label="$t('rooms.bedType')">
-              <el-select v-model="form.bedType" clearable class="w-full">
-                <el-option v-for="bed in BED_TYPES" :key="bed" :label="bed" :value="bed" />
-              </el-select>
-            </el-form-item>
-            <el-form-item :label="$t('common.status')">
-              <el-select v-model="form.status" class="w-full">
-                <el-option v-for="status in ROOM_STATUSES" :key="status" :label="status" :value="status" />
-              </el-select>
-            </el-form-item>
-            <el-form-item :label="$t('rooms.maxGuests')">
-              <el-input-number v-model="form.maxGuests" :min="1" class="w-full" />
-            </el-form-item>
-            <el-form-item :label="$t('common.allotment')">
-              <el-input-number v-model="form.quantity" :min="0" class="w-full" />
-            </el-form-item>
-            <el-form-item :label="$t('rooms.roomSize')">
-              <el-input-number v-model="form.roomSize" :min="0" class="w-full" />
-            </el-form-item>
-          </div>
-          <Can permission="room.update">
-            <el-button type="primary" :loading="saving" @click="save">
-              {{ $t("common.save") }}
-            </el-button>
-          </Can>
-        </el-form>
-      </el-tab-pane>
-
-      <el-tab-pane :label="`${$t('rooms.photos')} (${photos.length})`">
-        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <p class="text-sm text-slate-500">{{ $t("rooms.photosHint") }}</p>
-          <Can permission="room.update">
-            <el-button type="primary" size="small" :loading="uploadingPhotos" @click="triggerPhotoPicker">
-              {{ $t("rooms.uploadPhotos") }}
-            </el-button>
-          </Can>
+      <RoomsRoomMedia
+        :key="`${auth.activeHotelId}:${roomId}`"
+        :room-id="roomId"
+        :editable="can('room.update') && !saving && !savingAmenities"
+        @pending="mediaPending = $event"
+        @dirty="mediaDirty = $event"
+      />
+      <UiSectionCard :title="$t('rooms.amenities')"
+        ><template #actions
+          ><el-button
+            v-if="can('room.update')"
+            type="primary"
+            :loading="savingAmenities"
+            :disabled="
+              !amenitiesDirty || pending || !!amenityError || amenitiesLoading
+            "
+            @click="saveAmenities"
+            >{{ $t("rooms.saveAmenities") }}</el-button
+          ></template
+        >
+        <div v-if="amenityError" role="alert">
+          <el-alert
+            :title="amenityError"
+            type="error"
+            :closable="false"
+          /><el-button class="mt-3" @click="loadAmenities">{{
+            $t("common.refresh")
+          }}</el-button>
         </div>
-
-        <input ref="fileInput" type="file" accept="image/*" multiple class="hidden" @change="onPhotosSelected" />
-
-        <el-empty v-if="photos.length === 0" :description="$t('rooms.noPhotos')" />
-        <div v-else class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          <div v-for="photo in photos" :key="photo.id" class="overflow-hidden rounded-lg border border-slate-200">
-            <img :src="photo.url" alt="" class="h-32 w-full object-cover" />
-            <div class="flex items-center justify-between gap-2 p-2">
-              <el-tag v-if="photo.is_primary" type="success" size="small">{{ $t("rooms.primary") }}</el-tag>
-              <span v-else />
-              <div class="flex gap-1">
-                <Can permission="room.update">
-                  <el-button v-if="!photo.is_primary" size="small" text @click="makePrimary(photo)">
-                    {{ $t("rooms.setPrimary") }}
-                  </el-button>
-                  <el-button size="small" text type="danger" @click="removePhoto(photo)">
-                    {{ $t("common.delete") }}
-                  </el-button>
-                </Can>
-              </div>
-            </div>
-          </div>
+        <p v-else-if="amenitiesLoading" role="status">
+          {{ $t("common.loading") }}
+        </p>
+        <UiEmptyState
+          v-else-if="!amenities.length"
+          :title="$t('rooms.amenitiesHint')"
+        />
+        <div
+          v-for="[category, items] in groups"
+          v-else
+          :key="category"
+          class="mb-5"
+        >
+          <h3 class="mb-2 text-sm font-medium text-muted">
+            {{ categoryLabel(category) }}
+          </h3>
+          <el-checkbox-group v-model="selectedAmenityIds" :disabled="!editable"
+            ><el-checkbox
+              v-for="amenity in items"
+              :key="amenity.id"
+              :value="amenity.id"
+              >{{ amenityLabel(amenity) }}</el-checkbox
+            ></el-checkbox-group
+          >
         </div>
-      </el-tab-pane>
-
-      <el-tab-pane :label="$t('rooms.amenities')">
-        <el-empty v-if="amenities.length === 0" :description="$t('rooms.amenitiesHint')" />
-        <template v-else>
-          <div v-for="group in amenitiesByCategory" :key="group.category" class="mb-5">
-            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              {{ group.category.replace(/_/g, " ") }}
-            </p>
-            <el-checkbox-group v-model="selectedAmenityIds">
-              <el-checkbox v-for="amenity in group.items" :key="amenity.id" :value="amenity.id">
-                {{ amenity.name }}
-              </el-checkbox>
-            </el-checkbox-group>
-          </div>
-          <Can permission="room.update">
-            <el-button type="primary" :loading="savingAmenities" @click="saveAmenities">
-              {{ $t("rooms.saveAmenities") }}
-            </el-button>
-          </Can>
-        </template>
-      </el-tab-pane>
-    </el-tabs>
+      </UiSectionCard>
+    </template>
   </section>
 </template>

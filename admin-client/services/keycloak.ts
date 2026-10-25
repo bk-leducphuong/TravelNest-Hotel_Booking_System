@@ -52,7 +52,7 @@ function absoluteRedirectUri(path?: string): string {
   // Never carry a URL fragment into the OIDC redirect URI. On the auth callback
   // the current URL contains `#state=…&code=…`; reusing it as the redirect
   // target makes the fragment grow on every attempt (redirect loop).
-  const stripFragment = (value: string) => value.split("#")[0];
+  const stripFragment = (value: string) => value.split("#")[0] ?? "";
 
   if (!path) {
     return `${window.location.origin}/`;

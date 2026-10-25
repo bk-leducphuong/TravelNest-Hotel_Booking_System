@@ -11,7 +11,7 @@ const props = withDefaults(
     height?: number;
     valueFormatter?: (value: number) => string;
   }>(),
-  { height: 160 }
+  { height: 160, valueFormatter: undefined }
 );
 
 const maxValue = computed(() =>
@@ -43,7 +43,7 @@ const barHeight = (value: number) =>
           class="w-10 rounded-t-md transition-all"
           :style="{
             height: barHeight(bar.value),
-            backgroundColor: bar.color || '#059669',
+            backgroundColor: bar.color || '#0071c2',
           }"
         />
       </div>
