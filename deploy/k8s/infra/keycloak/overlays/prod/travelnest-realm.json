@@ -36,23 +36,13 @@
     "clientRole": false,
     "containerId": "travelnest",
     "composites": {
-      "realm": [
-        "offline_access",
-        "uma_authorization",
-        "user"
-      ],
+      "realm": ["offline_access", "uma_authorization", "user"],
       "client": {
-        "account": [
-          "manage-account",
-          "manage-account-links",
-          "view-profile"
-        ]
+        "account": ["manage-account", "manage-account-links", "view-profile"]
       }
     }
   },
-  "requiredCredentials": [
-    "password"
-  ],
+  "requiredCredentials": ["password"],
   "users": [],
   "groups": [],
   "defaultGroups": [],
@@ -71,10 +61,7 @@
         "https://deployserver.work/*",
         "http://localhost:5173/*"
       ],
-      "webOrigins": [
-        "https://deployserver.work",
-        "http://localhost:5173"
-      ],
+      "webOrigins": ["https://deployserver.work", "http://localhost:5173"],
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,
@@ -87,6 +74,7 @@
       "protocol": "openid-connect",
       "attributes": {
         "pkce.code.challenge.method": "S256",
+        "login_theme": "travelnest-guest",
         "post.logout.redirect.uris": "https://deployserver.work/*##http://localhost:5173/*"
       },
       "fullScopeAllowed": true,
@@ -149,6 +137,7 @@
       "protocol": "openid-connect",
       "attributes": {
         "pkce.code.challenge.method": "S256",
+        "login_theme": "travelnest-admin",
         "post.logout.redirect.uris": "https://admin.deployserver.work/*##http://localhost:8000/*"
       },
       "fullScopeAllowed": true,
@@ -191,12 +180,8 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "redirectUris": [
-        "https://superadmin.deployserver.work/*"
-      ],
-      "webOrigins": [
-        "https://superadmin.deployserver.work"
-      ],
+      "redirectUris": ["https://superadmin.deployserver.work/*"],
+      "webOrigins": ["https://superadmin.deployserver.work"],
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,
@@ -209,6 +194,7 @@
       "protocol": "openid-connect",
       "attributes": {
         "pkce.code.challenge.method": "S256",
+        "login_theme": "travelnest-platform",
         "post.logout.redirect.uris": "https://superadmin.deployserver.work/*"
       },
       "fullScopeAllowed": true,

@@ -19,6 +19,8 @@ Application image pipelines:
 - `.github/workflows/analytics-service.yml` → `travelnest-analytics`
 - `.github/workflows/media-service.yml` → `travelnest-media`
 - `.github/workflows/notification-service.yml` → `travelnest-notification`
+- `.github/workflows/keycloak.yml` → `travelnest-keycloak` (upstream Keycloak
+  26.0 plus the login themes in `server/infra/keycloak/themes`)
 
 Plus `.github/workflows/deploy-validate.yml` (**Validate Deploy Manifests**),
 which renders every Kustomize target under `deploy/**` and schema-checks it with
@@ -77,6 +79,7 @@ Expected image repositories:
 - `travelnest-analytics`
 - `travelnest-media`
 - `travelnest-notification`
+- `travelnest-keycloak` (public — the cluster has no image pull secrets)
 
 Each workflow pushes a `sha-<short-commit>` tag for every build and `latest` on
 the default branch.

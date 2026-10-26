@@ -35,26 +35,35 @@ the development import.
 
 ## Kubernetes / packaged image
 
-Build from the repository root:
+The production deployment builds this directory into an image tag; there is no
+theme volume mount in the cluster. `.github/workflows/keycloak.yml` builds the
+image on every master change under `server/infra/keycloak/**`, pushes
+`docker.io/<DOCKERHUB_USERNAME>/travelnest-keycloak:sha-<commit>`, and promotes
+that immutable tag into
+`deploy/k8s/infra/keycloak/overlays/prod/kustomization.yaml`. Argo CD then rolls
+the Keycloak pod, which is what makes the themes appear under
+Realm settings → Themes.
+
+Local build (context is this directory, not the repo root):
 
 ```sh
-docker build -f server/infra/keycloak/Dockerfile -t travelnest-keycloak:26.0 .
+docker build -f server/infra/keycloak/Dockerfile -t travelnest-keycloak:26.0 \
+  server/infra/keycloak
 ```
 
-This image adds the theme directories to the same Keycloak 26.0 base used by the
-existing deployment. Publish to your registry with an immutable version tag and
-update the Keycloak image through GitOps / Argo CD. No production manifests or
-live realm settings are changed by this work. The local k3d deployment also needs
-this image before selecting any custom theme.
+The `travelnest-*` image repository must exist on Docker Hub and be **public** —
+the cluster has no image pull secrets — otherwise the rollout fails with
+`ImagePullBackOff`.
 
-After the image is available, set `attributes.login_theme` on each client to the
-value above. For production's reconciled client configuration, add that attribute
-to the corresponding client in the production realm JSON and deploy through
-Argo CD. Client attributes are imported by the existing PostSync reconcile job.
-Keep these settings in Git so a later reconciliation does not undo a console edit.
+Client theme selection is declared in the realm JSON that each overlay deploys
+(`overlays/prod/travelnest-realm.json`, `overlays/local/travelnest-realm.json`):
+`travelnest-web` → `travelnest-guest`, `travelnest-admin` → `travelnest-admin`,
+`travelnest-superadmin` → `travelnest-platform`. The PostSync reconcile job
+applies client attributes on every sync, so a console edit is reverted; keep
+these values in Git.
 
-Themes are cached. After updating CSS, roll the local container or deploy a new
-versioned image. Keep theme caching enabled in production.
+Themes are cached. After changing CSS, merge the change: the new image tag rolls
+the pod. Keep theme caching enabled in production.
 
 ## Registration and permissions
 

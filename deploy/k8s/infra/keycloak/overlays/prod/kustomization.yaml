@@ -7,6 +7,18 @@ resources:
   - db-init-job.yaml
   - realm-reconcile-job.yaml
 
+# The stock quay.io image has no TravelNest themes; .github/workflows/keycloak.yml
+# bakes server/infra/keycloak/themes into this image. Without this override the
+# realm's `login_theme` values fall back to the built-in themes and the custom
+# ones never appear under Realm settings -> Themes.
+#
+# `latest` is only the seed tag: the first master run of that workflow rewrites
+# this to an immutable `sha-<commit>` tag (do not hand-edit it after that).
+images:
+  - name: quay.io/keycloak/keycloak
+    newName: docker.io/leducphuong/travelnest-keycloak
+    newTag: latest
+
 generators:
   - secret-generator.yaml
 
@@ -53,4 +65,3 @@ patches:
         value:
           - name: KC_HOSTNAME
             value: https://keycloak.deployserver.work
-
