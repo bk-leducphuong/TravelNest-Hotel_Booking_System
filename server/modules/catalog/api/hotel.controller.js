@@ -129,6 +129,7 @@ const getRecentlyViewedHotels = asyncHandler(async (req, res) => {
     limit ? parseInt(limit, 10) : 10
   );
 
+  res.set('Cache-Control', 'private, no-store');
   res.status(200).json({ data: hotels });
 });
 
@@ -142,8 +143,10 @@ const getTrendingHotels = asyncHandler(async (req, res) => {
   const hotels = await hotelUseCases.getTrendingHotels({
     limit: limit ? parseInt(limit, 10) : 10,
     days: days ? parseInt(days, 10) : 2,
+    userId: req.user?.id,
   });
 
+  res.set('Cache-Control', 'private, no-store');
   res.status(200).json({ data: hotels });
 });
 
@@ -158,7 +161,8 @@ const getHotelsByIds = asyncHandler(async (req, res) => {
     return res.status(200).json({ data: [] });
   }
 
-  const hotels = await hotelUseCases.getHotelsByIds(ids.slice(0, 50));
+  const hotels = await hotelUseCases.getHotelsByIds(ids.slice(0, 50), req.user?.id);
+  res.set('Cache-Control', 'private, no-store');
   res.status(200).json({ data: hotels });
 });
 

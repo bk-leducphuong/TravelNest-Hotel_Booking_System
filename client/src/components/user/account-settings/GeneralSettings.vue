@@ -38,9 +38,14 @@
     display: grid;
     gap: 16px;
   }
+  .guest-page-title {
+    font-size: 24px;
+    line-height: 1.3;
+  }
   h2 {
-    font-size: 21px;
-    font-weight: 500;
+    font-size: 16px;
+    line-height: 1.4;
+    font-weight: 600;
   }
   label {
     display: block;

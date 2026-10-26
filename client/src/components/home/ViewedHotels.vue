@@ -1,13 +1,16 @@
 <script>
+  import DiscoverySection from './DiscoverySection.vue';
   import { mapActions, mapGetters } from 'vuex';
   import GuestHotelCard from './GuestHotelCard.vue';
   import SkeletonGrid from '@/components/common/SkeletonGrid.vue';
   import { HotelService } from '@/services/hotel.service';
-  import errorHandler from '@/request/errorHandler.js';
+  import ErrorState from '@/components/common/ErrorState.vue';
 
   export default {
     name: 'ViewedHotels',
     components: {
+      DiscoverySection,
+      ErrorState,
       GuestHotelCard,
       SkeletonGrid,
     },
@@ -16,14 +19,10 @@
         viewedHotels: [],
         isLoading: false,
         loadError: false,
-        gridExpanded: false,
       };
     },
     computed: {
       ...mapGetters('auth', ['isUserAuthenticated']),
-      hasMoreItems() {
-        return this.viewedHotels.length > 4;
-      },
     },
     mounted() {
       this.loadViewedHotels();
@@ -59,7 +58,7 @@
               return;
             }
 
-            const response = await HotelService.getHotelsByIds(ids);
+            const response = await HotelService.getHotelsByIds(ids.slice(-10).reverse());
             const list = response?.data ?? response ?? [];
             this.viewedHotels = Array.isArray(list) ? list : [];
             return;
@@ -69,7 +68,6 @@
           const list = response?.data ?? response ?? [];
           this.viewedHotels = Array.isArray(list) ? list : [];
         } catch (error) {
-          errorHandler(error);
           this.loadError = true;
           this.viewedHotels = [];
         } finally {
@@ -80,45 +78,24 @@
   };
 </script>
 <template>
-  <section v-if="isLoading || loadError || viewedHotels.length" class="discovery-section">
-    <h2>{{ $t('userHome.viewedHotels') }}</h2>
-    <SkeletonGrid v-if="isLoading" :count="3" image-height="200px" />
-    <div v-else-if="loadError" class="guest-section" role="alert">
-      <p>{{ $t('guest.loadFailed') }}</p>
-      <button type="button" class="guest-button guest-button-secondary" @click="loadViewedHotels">
-        {{ $t('guest.retry') }}
-      </button>
-    </div>
-    <div v-else class="guest-property-grid" :class="{ 'is-expanded': gridExpanded }">
+  <DiscoverySection
+    v-if="isLoading || loadError || viewedHotels.length"
+    :title="$t('userHome.viewedHotels')"
+    section-key="viewed-hotels"
+    :items="viewedHotels"
+    :busy="isLoading"
+  >
+    <template #status>
+      <SkeletonGrid v-if="isLoading" :count="3" image-height="200px" />
+      <ErrorState v-else-if="loadError" @retry="loadViewedHotels" />
+    </template>
+    <template #default="{ items: visibleItems }">
       <GuestHotelCard
-        v-for="hotel in viewedHotels"
+        v-for="hotel in visibleItems"
         :key="hotel.id"
         :hotel="hotel"
         @open="redirectToHotelDetails"
       />
-    </div>
-    <button
-      v-if="!isLoading && !loadError && hasMoreItems"
-      type="button"
-      class="guest-button guest-button-secondary see-all"
-      @click="gridExpanded = !gridExpanded"
-    >
-      {{ gridExpanded ? $t('guest.showLess') : $t('guest.seeAll') }}
-    </button>
-  </section>
+    </template>
+  </DiscoverySection>
 </template>
-<style scoped>
-  .see-all {
-    display: none;
-    width: max-content;
-    margin: 20px auto 0;
-  }
-  @media (max-width: 767px) {
-    .see-all {
-      display: block;
-    }
-    .guest-property-grid:not(.is-expanded) > :nth-child(n + 5) {
-      display: none;
-    }
-  }
-</style>

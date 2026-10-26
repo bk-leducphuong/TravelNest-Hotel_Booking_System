@@ -1,26 +1,24 @@
 <script>
+  import DiscoverySection from './DiscoverySection.vue';
   import MediaImage from '@/components/ui/MediaImage.vue';
   import 'vue-loading-overlay/dist/css/index.css';
   import { SearchService } from '@/services/search.service';
-  import errorHandler from '@/request/errorHandler.js';
+  import ErrorState from '@/components/common/ErrorState.vue';
   import { getImageUrl } from '@/utils/images';
 
   export default {
     name: 'PopularPlaces',
     components: {
+      DiscoverySection,
+      ErrorState,
       MediaImage,
     },
     data() {
       return {
         isPopularPlacesLoading: false,
+        loadError: false,
         popularPlaces: [],
-        gridExpanded: false,
       };
-    },
-    computed: {
-      hasMoreItems() {
-        return this.popularPlaces.length > 4;
-      },
     },
     mounted() {
       this.loadPopularPlaces();
@@ -56,6 +54,7 @@
         });
       },
       async loadPopularPlaces() {
+        this.loadError = false;
         try {
           this.isPopularPlacesLoading = true;
           // GET /api/v1/search/destinations/trending
@@ -63,7 +62,7 @@
           const list = response?.data?.destinations ?? response?.destinations ?? [];
           this.popularPlaces = Array.isArray(list) ? list : [];
         } catch (error) {
-          errorHandler(error);
+          this.loadError = true;
           this.popularPlaces = [];
         } finally {
           this.isPopularPlacesLoading = false;
@@ -73,11 +72,19 @@
   };
 </script>
 <template>
-  <section v-if="isPopularPlacesLoading || popularPlaces.length" class="discovery-section">
-    <h2>{{ $t('userHome.popularPlaces') }}</h2>
-    <div class="guest-property-grid" :class="{ 'is-expanded': gridExpanded }">
+  <DiscoverySection
+    v-if="isPopularPlacesLoading || loadError || popularPlaces.length"
+    :title="$t('userHome.popularPlaces')"
+    section-key="popular-places"
+    :items="popularPlaces"
+    :busy="isPopularPlacesLoading"
+  >
+    <template #status>
+      <ErrorState v-if="loadError" @retry="loadPopularPlaces" />
+    </template>
+    <template #default="{ items: visibleItems }">
       <button
-        v-for="(place, index) in popularPlaces"
+        v-for="(place, index) in visibleItems"
         :key="place.id || index"
         type="button"
         class="destination-card"
@@ -87,31 +94,10 @@
           displayName(place)
         }}</strong>
       </button>
-    </div>
-    <button
-      v-if="!isPopularPlacesLoading && hasMoreItems"
-      type="button"
-      class="guest-button guest-button-secondary see-all"
-      @click="gridExpanded = !gridExpanded"
-    >
-      {{ gridExpanded ? $t('guest.showLess') : $t('guest.seeAll') }}
-    </button>
-  </section>
+    </template>
+  </DiscoverySection>
 </template>
 <style scoped>
-  .see-all {
-    display: none;
-    width: max-content;
-    margin: 20px auto 0;
-  }
-  @media (max-width: 767px) {
-    .see-all {
-      display: block;
-    }
-    .guest-property-grid:not(.is-expanded) > :nth-child(n + 5) {
-      display: none;
-    }
-  }
   .destination-card {
     background: white;
     border: 0;

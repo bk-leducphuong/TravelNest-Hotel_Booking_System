@@ -1,0 +1,15 @@
+/* Hotel admin: the same blue palette and rounded panels as assets/css/main.css. */
+:root {
+  --tn-radius: 20px;
+  --tn-canvas: #f5f7fa;
+}
+body.login-pf {
+  background: var(--tn-canvas);
+}
+#kc-header {
+  color: var(--tn-brand);
+}
+.login-pf-page .card-pf {
+  max-width: 520px;
+  box-shadow: 0 8px 32px rgb(0 59 149 / 7%);
+}

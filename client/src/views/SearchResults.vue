@@ -4,21 +4,25 @@
   import TheFooter from '@/components/Footer.vue';
   import HotelFilterSidebar from '@/components/search/HotelFilterSidebar.vue';
   import { mapActions, mapGetters } from 'vuex';
-  import { useToast } from 'vue-toastification';
   import SavedHotelIcon from '@/components/SavedHotelIcon.vue';
   import { SearchService } from '@/services/search.service';
   import SkeletonGrid from '@/components/common/SkeletonGrid.vue';
   import EmptyState from '@/components/common/EmptyState.vue';
   import PaginationControls from '@/components/common/PaginationControls.vue';
-  import errorHandler from '@/request/errorHandler';
   import { getImageUrl } from '@/utils/images';
   import { resultRange } from '@/utils/pagination';
   import { stayNights } from '@/utils/stay';
   import { guestMoney, ratingLabelKey } from '@/utils/guestPresentation';
   import MediaImage from '@/components/ui/MediaImage.vue';
+  import { CircleAlert, SearchX, Star, LayoutGrid, List } from 'lucide-vue-next';
 
   export default {
     components: {
+      LayoutGrid,
+      List,
+      CircleAlert,
+      SearchX,
+      Star,
       MediaImage,
       TheHeader,
       MapComponent,
@@ -28,12 +32,6 @@
       SkeletonGrid,
       EmptyState,
       PaginationControls,
-    },
-    setup() {
-      // Get toast interface
-      const toast = useToast();
-      // Make it available inside methods
-      return { toast };
     },
     data() {
       return {
@@ -45,6 +43,7 @@
         hotels: [],
         displayHotels: [],
         sortCriteria: '',
+        displayMode: 'list',
         searchQuery: '',
         filteredHotels: [],
         isLoading: false,
@@ -136,6 +135,14 @@
       },
     },
     methods: {
+      setDisplayMode(mode) {
+        this.displayMode = mode;
+        try {
+          localStorage.setItem('travelnest:search-results:display', mode);
+        } catch {
+          // The layout can still change when browser storage is unavailable.
+        }
+      },
       getImageUrl,
       guestMoney,
       ratingLabelKey,
@@ -305,10 +312,16 @@
           query: this.serializeFiltersToQuery(this.getDefaultFilters()),
         });
       },
+      resetSearchFilters() {
+        this.searchQuery = '';
+        this.filterHotels();
+        this.clearFilters();
+      },
       async searchHotels() {
         if (!this.isSearchUrlValid()) return;
         const version = ++this.searchVersion;
         this.isLoading = true;
+        this.searchError = null;
         try {
           const data = this.getSearchData;
           const params = {
@@ -351,13 +364,14 @@
           this.noResultsFound = list.length === 0;
         } catch (error) {
           if (version !== this.searchVersion) return;
-          errorHandler(error);
-          // Surface the failure instead of showing a misleading "0 hotels".
-          this.searchError =
-            error?.response?.data?.error?.message ||
-            error?.response?.data?.message ||
-            this.$t('searchResults.loadError');
+          const status = error?.response?.status;
+          this.searchError = this.$t(
+            status === 400 || status === 422
+              ? 'searchResults.invalidSearch'
+              : 'searchResults.loadError'
+          );
           this.hotels = [];
+          this.pagination = { ...this.pagination, total: 0, totalPages: 0 };
           this.noResultsFound = false;
         } finally {
           if (version === this.searchVersion) this.isLoading = false;
@@ -454,6 +468,13 @@
       },
     },
     mounted() {
+      try {
+        if (localStorage.getItem('travelnest:search-results:display') === 'grid') {
+          this.displayMode = 'grid';
+        }
+      } catch {
+        // Keep the default list layout when browser storage is unavailable.
+      }
       this.displayHotels = this.hotels;
     },
   };
@@ -496,6 +517,26 @@
           <option value="ratingHighToLow">{{ $t('searchResults.sortRating') }}</option>
         </select></label
       >
+      <div
+        class="results-display-toggle"
+        role="group"
+        :aria-label="$t('searchResults.displayType')"
+      >
+        <button
+          type="button"
+          :aria-pressed="displayMode === 'list'"
+          @click="setDisplayMode('list')"
+        >
+          <List :size="16" aria-hidden="true" />{{ $t('searchResults.listView') }}
+        </button>
+        <button
+          type="button"
+          :aria-pressed="displayMode === 'grid'"
+          @click="setDisplayMode('grid')"
+        >
+          <LayoutGrid :size="16" aria-hidden="true" />{{ $t('searchResults.gridView') }}
+        </button>
+      </div>
       <button
         type="button"
         class="guest-button guest-button-secondary"
@@ -524,19 +565,25 @@
             :placeholder="$t('searchResults.searchPlaceholder')"
             @input="filterHotels"
         /></label>
-        <div v-if="searchError" role="alert" class="guest-section">
-          <p>{{ searchError }}</p>
-          <button
-            type="button"
-            v-if="isSearchUrlValid()"
-            class="guest-button"
-            @click="searchHotels"
-          >
-            {{ $t('guest.retry') }}
-          </button>
+        <SkeletonGrid v-if="isLoading" :count="4" image-height="200px" />
+        <div v-else-if="searchError" role="alert" class="guest-section search-feedback">
+          <CircleAlert :size="40" class="search-feedback-icon" aria-hidden="true" />
+          <EmptyState :title="$t('searchResults.errorTitle')" :message="searchError">
+            <button
+              v-if="isSearchUrlValid()"
+              type="button"
+              class="guest-button"
+              @click="searchHotels"
+            >
+              {{ $t('searchResults.retrySearch') }}
+            </button>
+          </EmptyState>
         </div>
-        <SkeletonGrid v-else-if="isLoading" :count="4" image-height="200px" />
-        <template v-else-if="displayHotels.length">
+        <div
+          v-else-if="displayHotels.length"
+          class="hotel-results"
+          :class="`hotel-results--${displayMode}`"
+        >
           <article
             v-for="hotel in displayHotels"
             :key="hotel.hotel_id"
@@ -563,8 +610,19 @@
               <p class="result-location">
                 {{ [hotel.city, hotel.country].filter(Boolean).join(', ') }}
               </p>
-              <p v-if="hotel.hotel_class" class="result-class">
-                {{ $t('guest.hotelClass', { count: hotel.hotel_class }) }}
+              <p
+                v-if="hotel.hotel_class"
+                class="result-class"
+                role="img"
+                :aria-label="$t('guest.hotelClass', { count: hotel.hotel_class })"
+              >
+                <Star
+                  v-for="star in Number(hotel.hotel_class)"
+                  :key="star"
+                  :size="14"
+                  fill="currentColor"
+                  aria-hidden="true"
+                />
               </p>
               <p v-if="hotel.has_free_cancellation" class="result-policy">
                 {{ $t('guest.cancellationAvailable') }}
@@ -593,12 +651,22 @@
               ><small>{{ $t('guest.finalQuote') }}</small>
             </div>
           </article>
-        </template>
-        <EmptyState
-          v-else
-          :title="$t('searchResults.noHotelsTitle')"
-          :message="$t('searchResults.noHotelsMessage')"
-        />
+        </div>
+        <div v-else class="guest-section search-feedback" role="status">
+          <SearchX :size="40" class="search-feedback-icon" aria-hidden="true" />
+          <EmptyState
+            :title="$t('searchResults.noHotelsTitle')"
+            :message="$t('searchResults.noHotelsMessage')"
+          >
+            <button
+              type="button"
+              class="guest-button guest-button-secondary"
+              @click="resetSearchFilters"
+            >
+              {{ $t('searchResults.resetFilters') }}
+            </button>
+          </EmptyState>
+        </div>
         <PaginationControls
           v-if="showPagination && !searchError"
           :page="pagination.page"
@@ -635,6 +703,26 @@
   <TheFooter />
 </template>
 <style scoped>
+  .search-feedback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 36px 20px;
+    text-align: center;
+  }
+  .search-feedback-icon {
+    color: var(--tn-muted);
+  }
+  .search-feedback :deep(.tn-empty) {
+    padding: 16px 0 0;
+    max-width: 440px;
+  }
+  .search-feedback :deep(.tn-empty-message) {
+    line-height: 1.7;
+  }
+  .search-feedback .guest-button {
+    margin-top: 20px;
+  }
   .search-page-heading {
     margin: 0 0 24px;
   }
@@ -643,10 +731,47 @@
   }
   .search-toolbar {
     display: flex;
+    flex-wrap: wrap;
     gap: 16px;
     justify-content: flex-end;
     align-items: center;
     margin-bottom: 24px;
+  }
+  .results-display-toggle {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--tn-border);
+    border-radius: 12px;
+    background: white;
+  }
+  .results-display-toggle button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--tn-brand);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .results-display-toggle button[aria-pressed='true'] {
+    color: white;
+    background: var(--tn-brand);
+  }
+  .results-display-toggle button:focus-visible {
+    outline: 2px solid var(--tn-brand);
+    outline-offset: 3px;
+  }
+  .hotel-results {
+    display: grid;
+    gap: 20px;
+    min-width: 0;
   }
   .search-sort {
     display: flex;
@@ -714,9 +839,14 @@
     font-size: 12px;
     margin: 8px 0;
   }
-  .result-location,
-  .result-class {
+  .result-location {
     color: var(--tn-muted);
+  }
+  .result-class {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    color: #f5a623;
   }
   .result-policy {
     color: #137333;
@@ -783,6 +913,11 @@
       grid-template-columns: 1fr 1fr;
       gap: 10px;
     }
+    .results-display-toggle {
+      grid-column: 1 / -1;
+      grid-row: 3;
+      justify-self: end;
+    }
     .search-sort {
       grid-column: 1 / -1;
       grid-row: 2;
@@ -817,5 +952,40 @@
     .result-price strong {
       font-size: 24px;
     }
+  }
+  .hotel-results--grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+    align-items: stretch;
+  }
+  .hotel-results--grid .room-infor {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr auto;
+    gap: 16px;
+    min-width: 0;
+    padding: 16px;
+  }
+  .hotel-results--grid .result-photo {
+    grid-row: auto;
+  }
+  .hotel-results--grid .result-photo .guest-media {
+    height: 180px;
+    min-height: 180px;
+  }
+  .hotel-results--grid .result-info h2 {
+    font-size: 19px;
+  }
+  .hotel-results--grid .result-location {
+    overflow-wrap: anywhere;
+  }
+  .hotel-results--grid .result-price {
+    grid-column: auto;
+    align-items: stretch;
+    text-align: left;
+    border-top: 1px solid var(--tn-border);
+    padding-top: 16px;
+    gap: 8px;
+  }
+  .hotel-results--grid .result-price .guest-button {
+    width: 100%;
   }
 </style>

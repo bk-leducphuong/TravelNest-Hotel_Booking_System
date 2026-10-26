@@ -1,8 +1,7 @@
 <script>
   import TheFooter from '@/components/Footer.vue';
   import TheHeader from '@/components/Header.vue';
-  import errorHandler from '@/request/errorHandler';
-  import { useToast } from 'vue-toastification';
+  import sectionFeedback from '@/mixins/sectionFeedback';
   import { ReviewService } from '@/services/review.service';
 
   // Map the UI criteria names to the API's rating fields (1-10).
@@ -14,13 +13,10 @@
   };
 
   export default {
+    mixins: [sectionFeedback],
     components: {
       TheHeader,
       TheFooter,
-    },
-    setup() {
-      const toast = useToast();
-      return { toast };
     },
     data() {
       return {
@@ -45,6 +41,11 @@
       },
     },
     methods: {
+      async validateAndCheck() {
+        this.clearFeedback();
+        await this.validateReview();
+        if (this.isEligible) await this.checkAlreadyReviewed();
+      },
       async validateReview() {
         try {
           const response = await ReviewService.validateReview({
@@ -53,12 +54,12 @@
           });
           this.isEligible = Boolean(response?.data?.isValid);
           if (!this.isEligible) {
-            this.toast.error(this.$t('reviewsPage.notEligible'));
-            this.$router.push('/reviews');
+            this.showError(this.$t('reviewsPage.notEligible'));
           }
         } catch (error) {
-          errorHandler(error);
-          this.$router.push('/reviews');
+          this.isEligible = false;
+          this.showError();
+          this.feedback.retryable = true;
         }
       },
       async checkAlreadyReviewed() {
@@ -69,11 +70,12 @@
           });
           if (response?.data?.exists) {
             this.isEligible = false;
-            this.toast.info(this.$t('reviewsPage.alreadyReviewed'));
-            this.$router.push('/reviews');
+            this.showInfo(this.$t('reviewsPage.alreadyReviewed'));
           }
         } catch (error) {
-          errorHandler(error);
+          this.isEligible = false;
+          this.showError();
+          this.feedback.retryable = true;
         }
       },
       // The UI uses a 1-5 emoji scale; the API expects 1-10.
@@ -96,7 +98,7 @@
       async postReview() {
         if (this.isSubmitting || !this.isEligible) return;
         if (!this.checkValidReview()) {
-          this.toast.error(this.$t('reviewsPage.fillRequired'));
+          this.showError(this.$t('reviewsPage.fillRequired'));
           return;
         }
 
@@ -109,30 +111,35 @@
             comment: this.comment,
           });
 
-          this.toast.success(this.$t('reviewsPage.postSuccess'));
+          await this.confirmSuccess(this.$t('reviewsPage.postSuccess'));
           this.$router.push('/reviews');
         } catch (error) {
-          errorHandler(error);
+          this.showError();
         } finally {
           this.isSubmitting = false;
         }
       },
     },
     async mounted() {
-      await this.validateReview();
-      await this.checkAlreadyReviewed();
+      await this.validateAndCheck();
     },
   };
 </script>
 <template>
   <TheHeader :is-search-open="false" />
   <main id="guest-main" tabindex="-1" class="guest-page review-form-page">
+    <FeedbackMessage
+      v-if="feedback"
+      v-bind="feedback"
+      @dismiss="clearFeedback"
+      @retry="validateAndCheck"
+    />
     <RouterLink to="/reviews">← {{ $t('account.menu.reviews') }}</RouterLink>
     <h1 class="guest-page-title">
       {{ $t('reviewsPage.reviewTitle', { hotel: $route.query.hn }) }}
     </h1>
     <p class="guest-subtitle">{{ $t('reviewsPage.reviewSubtitle') }}</p>
-    <form class="guest-section guest-form" @submit.prevent="postReview">
+    <form v-if="isEligible" class="guest-section guest-form" @submit.prevent="postReview">
       <fieldset v-for="criteria in reviewCriteria" :key="criteria.name">
         <legend>{{ $t(criteria.labelKey) }}</legend>
         <div class="rating-choices">

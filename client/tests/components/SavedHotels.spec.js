@@ -38,7 +38,10 @@ const makeHotels = (count) =>
   }));
 
 const mountView = (hotels) => {
-  UserService.getFavoriteHotels.mockResolvedValue({ data: hotels });
+  UserService.getFavoriteHotels.mockImplementation(async ({ page = 1, limit = 12 } = {}) => ({
+    data: hotels.slice((page - 1) * limit, page * limit),
+    meta: { page, limit, total: hotels.length },
+  }));
   const push = vi.fn();
   const wrapper = mount(SavedHotels, {
     global: {
@@ -60,14 +63,94 @@ const mountView = (hotels) => {
 
 describe('SavedHotels', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
+    localStorage.clear();
   });
 
-  it('renders one card per saved hotel', async () => {
+  it('renders a bounded first page and the total saved count', async () => {
     const { wrapper } = mountView(makeHotels(13));
     await flushPromises();
 
-    expect(wrapper.findAll('.hotel-card')).toHaveLength(13);
+    expect(wrapper.findAll('.hotel-card')).toHaveLength(12);
+    expect(wrapper.vm.pagination.total).toBe(13);
+    expect(UserService.getFavoriteHotels).toHaveBeenCalledWith({ page: 1, limit: 12 });
+    expect(wrapper.find('.pagination').exists()).toBe(true);
+  });
+
+  it('requests the next server page and keeps the selected layout', async () => {
+    const { wrapper } = mountView(makeHotels(13));
+    await flushPromises();
+    await wrapper.findAll('.saved-display-toggle button')[0].trigger('click');
+    await wrapper.findAll('.pagination button').at(-1).trigger('click');
+    await flushPromises();
+    expect(UserService.getFavoriteHotels).toHaveBeenLastCalledWith({ page: 2, limit: 12 });
+    expect(wrapper.findAll('.hotel-card')).toHaveLength(1);
+    expect(wrapper.find('.hotel-card').text()).toContain('Hotel 13');
+    expect(wrapper.find('.saved-hotels--list').exists()).toBe(true);
+    expect(wrapper.vm.pagination.total).toBe(13);
+    wrapper.unmount();
+  });
+
+  it('saves layout preferences without fetching the saved hotels again', async () => {
+    const { wrapper } = mountView(makeHotels(3));
+    await flushPromises();
+    expect(wrapper.find('.saved-hotels--grid').exists()).toBe(true);
+    await wrapper.findAll('.saved-display-toggle button')[0].trigger('click');
+    expect(localStorage.getItem('travelnest:saved-hotels:display')).toBe('list');
+    expect(UserService.getFavoriteHotels).toHaveBeenCalledTimes(1);
+    expect(wrapper.findAll('.hotel-card')).toHaveLength(3);
+    wrapper.unmount();
+    const { wrapper: restored } = mountView(makeHotels(3));
+    await flushPromises();
+    expect(restored.find('.saved-hotels--list').exists()).toBe(true);
+    restored.unmount();
+  });
+
+  it('keeps layout selection working when storage is blocked', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('Blocked');
+    });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('Blocked');
+    });
+    const { wrapper } = mountView(makeHotels(1));
+    await flushPromises();
+    await wrapper.findAll('.saved-display-toggle button')[0].trigger('click');
+    expect(wrapper.find('.saved-hotels--list').exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it('returns to the previous page after removing the last hotel on the final page', async () => {
+    const { wrapper } = mountView(makeHotels(13));
+    await flushPromises();
+    await wrapper.findAll('.pagination button').at(-1).trigger('click');
+    await flushPromises();
+    UserService.removeFavoriteHotel.mockResolvedValue();
+    UserService.getFavoriteHotels.mockResolvedValueOnce({
+      data: makeHotels(12),
+      meta: { page: 1, limit: 12, total: 12 },
+    });
+    await wrapper.find('.close-button').trigger('click');
+    await flushPromises();
+    expect(UserService.removeFavoriteHotel).toHaveBeenCalledWith(13);
+    expect(UserService.getFavoriteHotels).toHaveBeenLastCalledWith({ page: 1, limit: 12 });
+    expect(wrapper.findAll('.hotel-card')).toHaveLength(12);
+    expect(wrapper.find('.pagination').exists()).toBe(false);
+    expect(wrapper.vm.pagination.total).toBe(12);
+    wrapper.unmount();
+  });
+
+  it('keeps a saved card when removing it fails', async () => {
+    const { wrapper } = mountView(makeHotels(1));
+    await flushPromises();
+    UserService.removeFavoriteHotel.mockRejectedValueOnce(new Error('offline'));
+    await wrapper.find('.close-button').trigger('click');
+    await flushPromises();
+    expect(wrapper.findAll('.hotel-card')).toHaveLength(1);
+    expect(wrapper.vm.pagination.total).toBe(1);
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+    wrapper.unmount();
   });
 
   it('shows a load failure separately and retries without losing the page', async () => {
@@ -107,6 +190,7 @@ describe('SavedHotels', () => {
     expect(UserService.removeFavoriteHotel).toHaveBeenCalledWith(1);
     expect(wrapper.findAll('.hotel-card')).toHaveLength(2);
     expect(push).not.toHaveBeenCalled(); // the × must not open the card
-    expect(toastSuccess).toHaveBeenCalled();
+    expect(wrapper.find('[role="status"]').text()).toContain('savedHotel.page.removed');
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 });

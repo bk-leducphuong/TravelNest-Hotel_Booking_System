@@ -1,6 +1,6 @@
 <script>
   import { mapGetters } from 'vuex';
-  import { useToast } from 'vue-toastification';
+  import sectionFeedback from '@/mixins/sectionFeedback';
 
   import { PaymentService } from '@/services/payment.service';
   import AddCardModal from './payment/AddCardModal.vue';
@@ -8,18 +8,16 @@
   import SavedCardList from './payment/SavedCardList.vue';
 
   export default {
+    mixins: [sectionFeedback],
     name: 'PaymentSettings',
     components: {
       AddCardModal,
       ConfirmDialog,
       SavedCardList,
     },
-    setup() {
-      const toast = useToast();
-      return { toast };
-    },
     data() {
       return {
+        loadError: false,
         isLoading: true,
         methods: [],
         isAddModalOpen: false,
@@ -46,17 +44,14 @@
       await this.loadPaymentMethods();
     },
     methods: {
-      getErrorMessage(error, fallbackMessage) {
-        const apiError = error?.response?.data?.error;
-        return apiError?.message || fallbackMessage;
-      },
       async loadPaymentMethods() {
+        this.loadError = false;
         this.isLoading = true;
         try {
           const response = await PaymentService.listPaymentMethods();
           this.methods = response.data || [];
         } catch (error) {
-          this.toast.error(this.getErrorMessage(error, this.$t('account.payment.errors.load')));
+          this.loadError = true;
         } finally {
           this.isLoading = false;
         }
@@ -69,7 +64,7 @@
       },
       async handleCardSaved() {
         this.isAddModalOpen = false;
-        this.toast.success(this.$t('account.payment.toasts.cardSaved'));
+        this.showSuccess(this.$t('account.payment.toasts.cardSaved'));
         await this.loadPaymentMethods();
       },
       requestRemoval(method) {
@@ -79,6 +74,7 @@
         this.pendingRemoval = null;
       },
       async confirmRemoval() {
+        this.clearFeedback();
         if (!this.pendingRemoval) {
           return;
         }
@@ -89,25 +85,25 @@
         try {
           await PaymentService.removePaymentMethod(id);
           this.pendingRemoval = null;
-          this.toast.success(this.$t('account.payment.toasts.cardRemoved'));
+          this.showSuccess(this.$t('account.payment.toasts.cardRemoved'));
           await this.loadPaymentMethods();
         } catch (error) {
-          this.toast.error(this.getErrorMessage(error, this.$t('account.payment.errors.remove')));
+          this.pendingRemoval = null;
+          this.showError(this.$t('account.payment.errors.remove'));
         } finally {
           this.removingId = '';
         }
       },
       async setDefault(paymentMethodId) {
+        this.clearFeedback();
         this.settingDefaultId = paymentMethodId;
 
         try {
           await PaymentService.setDefaultPaymentMethod(paymentMethodId);
-          this.toast.success(this.$t('account.payment.toasts.defaultUpdated'));
+          this.showSuccess(this.$t('account.payment.toasts.defaultUpdated'));
           await this.loadPaymentMethods();
         } catch (error) {
-          this.toast.error(
-            this.getErrorMessage(error, this.$t('account.payment.errors.setDefault'))
-          );
+          this.showError(this.$t('account.payment.errors.setDefault'));
         } finally {
           this.settingDefaultId = '';
         }
@@ -118,6 +114,7 @@
 
 <template>
   <section class="settings-panel">
+    <FeedbackMessage v-if="feedback" v-bind="feedback" @dismiss="clearFeedback" />
     <header class="panel-header">
       <div>
         <h1>{{ $t('account.payment.title') }}</h1>
@@ -129,6 +126,13 @@
     </header>
 
     <div v-if="isLoading" class="empty-state">{{ $t('account.payment.loading') }}</div>
+
+    <FeedbackMessage
+      v-else-if="loadError"
+      :message="$t('account.payment.errors.load')"
+      retryable
+      @retry="loadPaymentMethods"
+    />
 
     <article v-else-if="methods.length === 0" class="detail-card muted-card">
       <h2>{{ $t('account.payment.savedTitle') }}</h2>
@@ -184,7 +188,8 @@
 
   .panel-header h1 {
     margin: 0 0 8px;
-    font-size: 30px;
+    font-size: 24px;
+    line-height: 1.3;
     color: var(--tn-ink);
   }
 
@@ -203,7 +208,8 @@
 
   .detail-card h2 {
     margin: 0 0 8px;
-    font-size: 20px;
+    font-size: 16px;
+    line-height: 1.4;
     color: var(--tn-ink);
   }
 

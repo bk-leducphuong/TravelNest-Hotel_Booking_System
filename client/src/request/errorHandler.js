@@ -1,15 +1,4 @@
-import { useToast } from "vue-toastification";
-const toast = useToast();
-
-const errorHandler = (error) => {
-    if (error.response) {
-        toast.error(error.response.data.message);
-    }else {
-        const defaultErrorMessage = error.message || 'Something went wrong';
-        toast.error(defaultErrorMessage);
-    }
-
-    console.error(error);
+// Present request failures in the owning section, never in a global notification.
+export default function errorHandler(error) {
+  console.error(error);
 }
-
-export default errorHandler;

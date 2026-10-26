@@ -1,4 +1,5 @@
 <script>
+  import { LayoutGrid, List } from 'lucide-vue-next';
   import TheFooter from '@/components/Footer.vue';
   import TheHeader from '../components/Header.vue';
   import SkeletonGrid from '@/components/common/SkeletonGrid.vue';
@@ -6,8 +7,6 @@
   import EmptyState from '@/components/common/EmptyState.vue';
   import PaginationControls from '@/components/common/PaginationControls.vue';
   import { mapGetters, mapActions } from 'vuex';
-  import { useToast } from 'vue-toastification';
-  import errorHandler from '@/request/errorHandler';
   import { ReviewService } from '@/services/review.service';
   import { BookingService } from '@/services/booking.service';
   import { getFirstImageUrl, getImageUrl } from '@/utils/images';
@@ -15,16 +14,14 @@
 
   export default {
     components: {
+      LayoutGrid,
+      List,
       TheHeader,
       TheFooter,
       SkeletonGrid,
       EmptyState,
       ErrorState,
       PaginationControls,
-    },
-    setup() {
-      const toast = useToast();
-      return { toast };
     },
     data() {
       return {
@@ -33,6 +30,7 @@
         isLoading: false,
         isPageLoading: false,
         viewMode: 'all',
+        displayMode: 'list',
         reviewsError: false,
         bookingsError: false,
         expandedReviewId: null,
@@ -104,6 +102,14 @@
       },
     },
     methods: {
+      setDisplayMode(mode) {
+        this.displayMode = mode;
+        try {
+          localStorage.setItem('travelnest:reviews:display', mode);
+        } catch {
+          // Keep layout selection available when storage is blocked.
+        }
+      },
       ...mapActions('user', ['retrieveUserInformation']),
       parsePage(value) {
         const raw = Array.isArray(value) ? value[0] : value;
@@ -130,7 +136,6 @@
             hidden: meta.hidden ?? this.pagination.hidden,
           };
         } catch (error) {
-          errorHandler(error);
           this.reviewsError = true;
         }
       },
@@ -140,7 +145,6 @@
           const response = await BookingService.getBookings(true, { reviewed: false });
           this.bookings = response?.data ?? [];
         } catch (error) {
-          errorHandler(error);
           this.bookingsError = true;
         }
       },
@@ -197,6 +201,12 @@
       getImageUrl,
     },
     async mounted() {
+      try {
+        if (localStorage.getItem('travelnest:reviews:display') === 'grid')
+          this.displayMode = 'grid';
+      } catch {
+        // Use the default list layout when browser storage is unavailable.
+      }
       this.pagination.page = this.parsePage(this.$route.query.page);
       await Promise.all([this.load(), this.retrieveUserInformation().catch(() => {})]);
     },
@@ -256,6 +266,28 @@
       </div>
     </div>
     <div class="right-container" ref="rightContainer">
+      <div class="reviews-toolbar">
+        <div
+          class="reviews-display-toggle"
+          role="group"
+          :aria-label="$t('reviewsPage.displayType')"
+        >
+          <button
+            type="button"
+            :aria-pressed="displayMode === 'list'"
+            @click="setDisplayMode('list')"
+          >
+            <List :size="16" aria-hidden="true" />{{ $t('reviewsPage.listView') }}
+          </button>
+          <button
+            type="button"
+            :aria-pressed="displayMode === 'grid'"
+            @click="setDisplayMode('grid')"
+          >
+            <LayoutGrid :size="16" aria-hidden="true" />{{ $t('reviewsPage.gridView') }}
+          </button>
+        </div>
+      </div>
       <SkeletonGrid v-if="isLoading" :count="2" image-height="125px" />
       <div v-else-if="reviewsError || bookingsError" role="alert">
         <ErrorState
@@ -272,10 +304,10 @@
         icon="fa-regular fa-star"
       />
       <template v-else>
-        <div class="review-list">
+        <div class="review-list" :class="`review-list--${displayMode}`">
           <!-- Stays awaiting a review -->
           <div class="review-card" v-for="booking in displayedBookings" :key="booking.id">
-            <div style="display: flex; gap: 16px; align-items: start">
+            <div class="review-card-body">
               <img
                 v-if="getFirstImageUrl(booking.hotel?.image_urls)"
                 :src="getFirstImageUrl(booking.hotel?.image_urls)"
@@ -302,6 +334,7 @@
           <!-- Written reviews -->
           <div
             class="review-card clickable"
+            :class="{ 'is-expanded': isReviewExpanded(review.id) }"
             v-for="review in displayedReviews"
             :key="review.id"
             role="button"
@@ -311,7 +344,7 @@
             @keydown.enter.prevent="toggleReview(review.id)"
             @keydown.space.prevent="toggleReview(review.id)"
           >
-            <div style="display: flex; gap: 16px; align-items: start">
+            <div class="review-card-body">
               <img
                 v-if="getFirstImageUrl(review.hotel?.image_urls)"
                 :src="getFirstImageUrl(review.hotel?.image_urls)"
@@ -338,7 +371,7 @@
                 <p v-if="review.title">
                   <strong>{{ review.title }}</strong>
                 </p>
-                <p v-if="review.comment">{{ review.comment }}</p>
+                <p v-if="review.comment" class="review-comment">{{ review.comment }}</p>
 
                 <div v-if="isReviewExpanded(review.id)" class="review-details">
                   <div v-if="review.rating_overall" class="review-rating">
@@ -363,18 +396,17 @@
               </div>
             </div>
           </div>
-
-          <PaginationControls
-            v-if="showPagination"
-            :page="pagination.page"
-            :total-pages="pagination.totalPages"
-            :total="pagination.total"
-            :limit="pagination.limit"
-            :is-loading="isLoading || isPageLoading"
-            :summary="paginationSummary"
-            @change="changePage"
-          />
         </div>
+        <PaginationControls
+          v-if="showPagination"
+          :page="pagination.page"
+          :total-pages="pagination.totalPages"
+          :total="pagination.total"
+          :limit="pagination.limit"
+          :is-loading="isLoading || isPageLoading"
+          :summary="paginationSummary"
+          @change="changePage"
+        />
       </template>
     </div>
   </main>
@@ -702,5 +734,89 @@
     min-height: 44px;
     padding: 8px 0;
     cursor: pointer;
+  }
+</style>
+
+<style scoped>
+  .reviews-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+  }
+  .reviews-display-toggle {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--tn-border);
+    border-radius: 12px;
+    background: white;
+  }
+  .reviews-display-toggle button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--tn-brand);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .reviews-display-toggle button[aria-pressed='true'] {
+    color: white;
+    background: var(--tn-brand);
+  }
+  .reviews-display-toggle button:focus-visible {
+    outline: 2px solid var(--tn-brand);
+    outline-offset: 3px;
+  }
+  .review-card-body {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    height: 100%;
+  }
+  .review-card {
+    min-width: 0;
+    margin-bottom: 0;
+  }
+  .review-content {
+    min-width: 0;
+    height: auto;
+    overflow-wrap: anywhere;
+  }
+  .property-image {
+    flex-shrink: 0;
+  }
+  .review-list--grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+    align-items: start;
+  }
+  .review-list--grid .review-card-body {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+  .review-list--grid .property-image {
+    width: 100%;
+    height: 180px;
+    border-radius: 12px;
+  }
+  .review-list--grid .review-comment {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    overflow: hidden;
+  }
+  .review-list--grid .is-expanded .review-comment {
+    display: block;
+    overflow: visible;
+  }
+  .review-button {
+    min-height: 44px;
   }
 </style>

@@ -43,7 +43,14 @@
   }
 
   .panel-header h1 {
-    font-size: 30px;
+    font-size: 24px;
+    line-height: 1.3;
+  }
+
+  .detail-card h2 {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
   }
 
   .panel-header p,

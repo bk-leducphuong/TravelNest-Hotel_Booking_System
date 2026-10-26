@@ -82,6 +82,7 @@
       "frontchannelLogout": true,
       "protocol": "openid-connect",
       "attributes": {
+        "login_theme": "travelnest-guest",
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "http://localhost:5173/*"
       },
@@ -133,6 +134,7 @@
       "frontchannelLogout": true,
       "protocol": "openid-connect",
       "attributes": {
+        "login_theme": "travelnest-admin",
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "http://localhost:8000/* http://admin.travelnest.local/*"
       },
@@ -184,6 +186,7 @@
       "frontchannelLogout": true,
       "protocol": "openid-connect",
       "attributes": {
+        "login_theme": "travelnest-admin",
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "http://localhost:8000/* http://admin.travelnest.local/*"
       },

@@ -65,6 +65,7 @@
           {{ $t('userHeader.searchButton') }}
         </button>
       </form>
+      <FeedbackMessage v-if="feedback" v-bind="feedback" @dismiss="clearFeedback" />
     </div>
     <ElDialog
       v-model="showGuestSelector"
@@ -111,13 +112,14 @@
 
 <script>
   import { mapGetters, mapActions } from 'vuex';
-  import { useToast } from 'vue-toastification';
+  import sectionFeedback from '@/mixins/sectionFeedback';
   import { Location, Calendar } from '@element-plus/icons-vue';
   import { shallowRef } from 'vue';
   import { SearchService } from '@/services/search.service';
   import { stayNights } from '@/utils/stay';
 
   export default {
+    mixins: [sectionFeedback],
     directives: {
       validActiveDescendant: {
         mounted(el) {
@@ -144,12 +146,10 @@
       },
     },
     setup() {
-      const toast = useToast();
       const LocationIcon = shallowRef(Location);
       const CalendarIcon = shallowRef(Calendar);
 
       return {
-        toast,
         LocationIcon,
         CalendarIcon,
       };
@@ -257,6 +257,7 @@
           return;
         }
         try {
+          this.clearFeedback();
           const response = await SearchService.getDestinationAutocomplete(queryString.trim(), 10);
           const suggestions = response?.data?.suggestions ?? response?.suggestions ?? [];
           const results = suggestions.map((s) => ({
@@ -268,7 +269,7 @@
           }));
           cb(results);
         } catch (error) {
-          console.error('Destination autocomplete error:', error);
+          this.showError(this.$t('feedback.autocomplete'));
           cb([]);
         }
       },
@@ -291,13 +292,15 @@
         this.showGuestSelector = false;
       },
       async submitSearch() {
+        this.clearFeedback();
         if (
           !this.selectedLocation ||
           !this.checkInDate ||
           !this.checkOutDate ||
           !stayNights(this.checkInDate, this.checkOutDate)
         ) {
-          this.toast.error(this.$t('userHeader.searchValidationError'));
+          this.showError(this.$t('searchResults.invalidSearch'));
+          this.feedback.title = this.$t('searchResults.errorTitle');
           return;
         }
 

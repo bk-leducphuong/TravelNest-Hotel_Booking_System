@@ -1,11 +1,12 @@
 <script>
+  import FeedbackMessage from '@/components/common/FeedbackMessage.vue';
   import Header from '@/components/Header.vue';
   import Footer from '@/components/Footer.vue';
   import { BookingService } from '@/services/booking.service';
   import { normalizeBooking, guestMoney } from '@/utils/guestPresentation';
   import { formatStayDate } from '@/utils/stay';
   export default {
-    components: { Header, Footer },
+    components: { Header, Footer, FeedbackMessage },
     data() {
       return {
         booking: null,
@@ -72,8 +73,7 @@
           this.result = response.data;
           this.booking.status = 'cancelled';
         } catch (error) {
-          if (version === this.version)
-            this.error = error.response?.data?.error?.message || this.$t('guest.cancel.failed');
+          if (version === this.version) this.error = this.$t('guest.cancel.failed');
         } finally {
           if (version === this.version) this.processing = false;
         }
@@ -89,12 +89,12 @@
     >
     <h1 class="guest-page-title cancel-title">{{ $t('bookingFlow.cancelYourBooking') }}</h1>
     <p v-if="loading" role="status" class="guest-section">{{ $t('guest.loading') }}</p>
-    <section v-else-if="!booking" class="guest-section" role="alert">
-      <p>{{ error || $t('guest.bookingNotFound') }}</p>
-      <button class="guest-button" type="button" @click="loadBooking">
-        {{ $t('guest.retry') }}
-      </button>
-    </section>
+    <FeedbackMessage
+      v-else-if="!booking"
+      :message="error || $t('guest.bookingNotFound')"
+      retryable
+      @retry="loadBooking"
+    />
     <div v-else class="cancel-grid">
       <section class="guest-section">
         <template v-if="result"
@@ -130,7 +130,7 @@
                 $t('guest.cancel.acknowledge')
               }}</label
             >
-            <p v-if="error" role="alert">{{ error }}</p>
+            <FeedbackMessage v-if="error" :message="error" />
             <button
               type="submit"
               class="guest-button cancel-danger"

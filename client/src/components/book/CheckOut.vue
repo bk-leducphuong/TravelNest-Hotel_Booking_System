@@ -1,10 +1,12 @@
 <script>
+  import FeedbackMessage from '@/components/common/FeedbackMessage.vue';
   import { loadStripe } from '@stripe/stripe-js';
   import { v4 as uuidv4 } from 'uuid';
   import { BookingService } from '@/services/booking.service';
   import { PaymentService } from '@/services/payment.service';
   import { cardBrandLabel, formatCardExpiry } from '../user/account-settings/payment/cardFormat';
   export default {
+    components: { FeedbackMessage },
     props: {
       bookingInfor: { type: Object, required: true },
       searchData: { type: Object, required: true },
@@ -19,6 +21,7 @@
         initializing: false,
         initError: '',
         paymentStatus: null,
+        savedMethodsError: false,
         savedMethods: [],
         selectedMethodId: 'new',
         idempotencyKey: this.bookingInfor.checkoutIdempotencyKey || uuidv4(),
@@ -49,6 +52,7 @@
         if (this.initializing) return;
         this.initializing = true;
         this.initError = '';
+        this.savedMethodsError = false;
         try {
           const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
           if (this.disposed) return;
@@ -70,6 +74,7 @@
             this.selectedMethodId =
               this.savedMethods.find((method) => method.isDefault)?.id || 'new';
           } catch {
+            this.savedMethodsError = true;
             this.savedMethods = [];
           }
         } catch {
@@ -154,12 +159,13 @@
 <template>
   <div class="payment-form" :aria-busy="processing || initializing">
     <p v-if="initializing" role="status">{{ $t('guest.loading') }}</p>
-    <div v-if="initError" role="alert">
-      <p>{{ initError }}</p>
-      <button type="button" class="guest-button guest-button-secondary" @click="initialize">
-        {{ $t('guest.retry') }}
-      </button>
-    </div>
+    <FeedbackMessage v-if="initError" :message="initError" retryable @retry="initialize" />
+    <FeedbackMessage
+      v-if="savedMethodsError"
+      :message="$t('account.payment.errors.load')"
+      retryable
+      @retry="initialize"
+    />
     <form class="guest-form" @submit.prevent="handleSubmit">
       <fieldset v-if="savedMethods.length" :disabled="processing || initializing">
         <legend>{{ $t('bookingFlow.paymentMethod') }}</legend>
@@ -186,7 +192,7 @@
           aria-labelledby="payment-card-label"
         ></div>
       </div>
-      <p v-if="paymentStatus" role="alert" class="payment-error">{{ paymentStatus.message }}</p>
+      <FeedbackMessage v-if="paymentStatus" :message="paymentStatus.message" />
       <p class="guest-subtitle">{{ $t('guest.checkout.paymentNote') }}</p>
       <button
         class="guest-button"

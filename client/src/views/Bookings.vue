@@ -1,4 +1,5 @@
 <script>
+  import { LayoutGrid, List } from 'lucide-vue-next';
   import Header from '@/components/Header.vue';
   import Footer from '@/components/Footer.vue';
   import SkeletonGrid from '@/components/common/SkeletonGrid.vue';
@@ -15,6 +16,8 @@
 
   export default {
     components: {
+      LayoutGrid,
+      List,
       Header,
       MediaImage,
       Footer,
@@ -30,6 +33,7 @@
         loadError: false,
         requestVersion: 0,
         filter: 'all',
+        displayMode: 'list',
         pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
       };
     },
@@ -55,6 +59,14 @@
       },
     },
     methods: {
+      setDisplayMode(mode) {
+        this.displayMode = mode;
+        try {
+          localStorage.setItem('travelnest:bookings:display', mode);
+        } catch {
+          // Keep layout selection available when storage is blocked.
+        }
+      },
       ...mapActions('booking', ['setBookingInformation']),
       guestMoney,
       parsePage(value) {
@@ -198,6 +210,12 @@
       getFirstImageUrl,
     },
     async mounted() {
+      try {
+        if (localStorage.getItem('travelnest:bookings:display') === 'grid')
+          this.displayMode = 'grid';
+      } catch {
+        // Keep the default list layout when storage is unavailable.
+      }
       this.pagination.page = this.parsePage(this.$route.query.page);
       await this.getAllBookings(this.pagination.page);
     },
@@ -208,32 +226,49 @@
   <main id="guest-main" tabindex="-1" class="guest-page" ref="listTop">
     <div class="trips-heading">
       <h1 class="guest-page-title">{{ $t('bookingFlow.bookingsAndTrips') }}</h1>
-      <label
-        >{{ $t('bookingFlow.filterTripsAria')
-        }}<select
-          class="guest-select"
-          :value="filter"
-          @change="arrangeBookings($event.target.value)"
-        >
-          <option
-            v-for="value in ['all', 'today', 'last-week', 'last-month', 'last-year']"
-            :key="value"
-            :value="value"
+      <div class="trips-controls">
+        <label
+          ><select
+            class="guest-select"
+            :value="filter"
+            @change="arrangeBookings($event.target.value)"
           >
-            {{
-              $t(
-                {
-                  all: 'bookingFlow.filterAll',
-                  today: 'bookingFlow.filterToday',
-                  'last-week': 'bookingFlow.filterLastWeek',
-                  'last-month': 'bookingFlow.filterLastMonth',
-                  'last-year': 'bookingFlow.filterLastYear',
-                }[value]
-              )
-            }}
-          </option>
-        </select></label
-      >
+            <option
+              v-for="value in ['all', 'today', 'last-week', 'last-month', 'last-year']"
+              :key="value"
+              :value="value"
+            >
+              {{
+                $t(
+                  {
+                    all: 'bookingFlow.filterAll',
+                    today: 'bookingFlow.filterToday',
+                    'last-week': 'bookingFlow.filterLastWeek',
+                    'last-month': 'bookingFlow.filterLastMonth',
+                    'last-year': 'bookingFlow.filterLastYear',
+                  }[value]
+                )
+              }}
+            </option>
+          </select></label
+        >
+        <div class="trips-display-toggle" role="group" :aria-label="$t('bookingFlow.displayType')">
+          <button
+            type="button"
+            :aria-pressed="displayMode === 'list'"
+            @click="setDisplayMode('list')"
+          >
+            <List :size="16" aria-hidden="true" />{{ $t('bookingFlow.listView') }}
+          </button>
+          <button
+            type="button"
+            :aria-pressed="displayMode === 'grid'"
+            @click="setDisplayMode('grid')"
+          >
+            <LayoutGrid :size="16" aria-hidden="true" />{{ $t('bookingFlow.gridView') }}
+          </button>
+        </div>
+      </div>
     </div>
     <SkeletonGrid v-if="isLoading" :count="3" image-height="110px" /><ErrorState
       v-else-if="loadError"
@@ -246,7 +281,7 @@
       :title="$t('bookingFlow.noBookingsTitle')"
       :message="$t('bookingFlow.noBookingsMessage')"
     />
-    <div v-else class="trips-list">
+    <div v-else class="trips-list" :class="`trips-list--${displayMode}`">
       <article
         v-for="booking in bookings"
         :key="booking.booking_code"
@@ -289,7 +324,46 @@
     justify-content: space-between;
     align-items: center;
     gap: 24px;
+    flex-wrap: wrap;
     margin-bottom: 24px;
+  }
+  .trips-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .trips-display-toggle {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--tn-border);
+    border-radius: 12px;
+    background: white;
+  }
+  .trips-display-toggle button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--tn-brand);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .trips-display-toggle button[aria-pressed='true'] {
+    color: white;
+    background: var(--tn-brand);
+  }
+  .trips-display-toggle button:focus-visible {
+    outline: 2px solid var(--tn-brand);
+    outline-offset: 3px;
   }
   .trips-heading label {
     font-size: 12px;
@@ -316,6 +390,7 @@
   .trip-content h2 {
     margin: 12px 0 8px;
     font-size: 20px;
+    overflow-wrap: anywhere;
   }
   .trip-content p {
     margin: 4px 0;
@@ -348,5 +423,27 @@
       width: 100%;
       height: 180px;
     }
+  }
+  .trips-list--grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  }
+  .trips-list--grid .trip-card {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 20px;
+    min-width: 0;
+  }
+  .trips-list--grid .trip-card > .guest-media {
+    width: 100%;
+    height: 180px;
+  }
+  .trips-list--grid .trip-action {
+    display: grid;
+    text-align: left;
+    justify-content: stretch;
+    border-top: 1px solid var(--tn-border);
+    padding-top: 16px;
   }
 </style>

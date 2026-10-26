@@ -1,3 +1,5 @@
+const identity = require('@modules/identity');
+
 const hotelRepository = require('../../infrastructure/hotel.repository');
 
 /**
@@ -9,7 +11,7 @@ function parseNullableNumber(value) {
   return value !== null && value !== undefined ? parseFloat(value) : null;
 }
 
-async function enrichHotelCardsByIds(hotelIds = []) {
+async function enrichHotelCardsByIds(hotelIds = [], userId = null) {
   if (!Array.isArray(hotelIds) || hotelIds.length === 0) return [];
 
   const rows = await hotelRepository.findBasicByIds(hotelIds);
@@ -20,6 +22,15 @@ async function enrichHotelCardsByIds(hotelIds = []) {
     .filter(Boolean)
     .map((hotel) => (hotel.toJSON ? hotel.toJSON() : hotel));
 
+  const favoriteIds =
+    userId && ordered.length
+      ? await identity.getFavoriteHotelIds(
+          userId,
+          ordered.map((hotel) => hotel.id)
+        )
+      : [];
+  const favorites = new Set(favoriteIds.map(String));
+
   return ordered.map((hotel) => {
     const images = Array.isArray(hotel.images) ? hotel.images : [];
     const primary =
@@ -29,6 +40,7 @@ async function enrichHotelCardsByIds(hotelIds = []) {
 
     return {
       id: hotel.id,
+      is_favorite: favorites.has(String(hotel.id)),
       name: hotel.name,
       address: hotel.address,
       city: hotel.city ? { id: hotel.city.id, name: hotel.city.name, slug: hotel.city.slug } : null,

@@ -18,6 +18,8 @@
       <MediaImage :src="hotel.primaryImageUrl || ''" :alt="hotel.name || ''" /><SavedHotelIcon
         v-if="showFavorite"
         :hotel-id="String(hotel.id)"
+        :initial-is-favorite="hotel.is_favorite ?? false"
+        use-initial-favorite-status
       /><slot name="action" />
     </div>
     <div class="guest-property-copy">

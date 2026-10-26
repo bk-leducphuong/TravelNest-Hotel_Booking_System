@@ -1,15 +1,18 @@
 <script>
+  import DiscoverySection from './DiscoverySection.vue';
   import { mapActions, mapGetters } from 'vuex';
   import { SearchService } from '@/services/search.service';
-  import errorHandler from '@/request/errorHandler.js';
+  import ErrorState from '@/components/common/ErrorState.vue';
   import { getImageUrl } from '@/utils/images';
   import { dedupeRecentSearches } from '@/utils/recentSearches';
 
   export default {
     name: 'RecentSearchs',
+    components: { DiscoverySection, ErrorState },
     emits: ['update:recentSearches'],
     data() {
       return {
+        loadError: false,
         recentSearches: [],
       };
     },
@@ -21,6 +24,7 @@
     },
     methods: {
       async loadRecentSearches() {
+        this.loadError = false;
         if (!this.isUserAuthenticated) {
           try {
             const raw = localStorage.getItem('recentSearches');
@@ -41,7 +45,7 @@
           const list = response?.data?.searches ?? response?.searches ?? [];
           this.recentSearches = Array.isArray(list) ? list : [];
         } catch (error) {
-          errorHandler(error);
+          this.loadError = true;
           this.recentSearches = [];
         }
       },
@@ -119,11 +123,18 @@
   };
 </script>
 <template>
-  <section v-if="recentSearches.length" class="discovery-section">
-    <h2>{{ $t('userHome.recentSearches') }}</h2>
-    <div class="recent-grid">
+  <DiscoverySection
+    v-if="loadError || recentSearches.length"
+    :title="$t('userHome.recentSearches')"
+    section-key="recent-searches"
+    :items="recentSearches"
+  >
+    <template #status>
+      <ErrorState v-if="loadError" @retry="loadRecentSearches" />
+    </template>
+    <template #default="{ items: visibleItems }">
       <article
-        v-for="(search, index) in recentSearches"
+        v-for="(search, index) in visibleItems"
         :key="searchKey(search, index)"
         class="guest-section recent-card"
       >
@@ -141,20 +152,17 @@
           ×
         </button>
       </article>
-    </div>
-  </section>
+    </template>
+  </DiscoverySection>
 </template>
 <style scoped>
-  .recent-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 16px;
-  }
   .recent-card {
     position: relative;
     padding: 20px 50px 20px 20px;
   }
   .recent-open {
+    min-width: 0;
+    overflow-wrap: anywhere;
     background: none;
     border: 0;
     padding: 0;

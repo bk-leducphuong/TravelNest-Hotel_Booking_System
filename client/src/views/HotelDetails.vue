@@ -4,7 +4,8 @@
   import MapComponent from '@/components/map/MapComponent.vue';
   import { mapActions, mapGetters } from 'vuex';
   import ImageGallery from '@/components/hotel-image/ImageGallery.vue';
-  import { useToast } from 'vue-toastification';
+  import sectionFeedback from '@/mixins/sectionFeedback';
+  import ErrorState from '@/components/common/ErrorState.vue';
   import EmptyState from '@/components/common/EmptyState.vue';
   import { HotelService } from '@/services/hotel.service';
   import { ReviewService } from '@/services/review.service';
@@ -13,14 +14,13 @@
 
   // import ReviewForm from '@/components/review/ReviewForm.vue'
   import ReviewValidation from '@/components/review/ReviewValidation.vue';
-
-  import errorHandler from '@/request/errorHandler';
   import { HoldService } from '@/services/hold.service';
   import { stayNights, formatStayDate } from '@/utils/stay';
   import { guestMoney } from '@/utils/guestPresentation';
   import MediaImage from '@/components/ui/MediaImage.vue';
 
   export default {
+    mixins: [sectionFeedback],
     components: {
       MediaImage,
       TheHeader,
@@ -28,14 +28,9 @@
       MapComponent,
       ImageGallery,
       EmptyState,
+      ErrorState,
       // ReviewForm,
       ReviewValidation,
-    },
-    setup() {
-      // Get toast interface
-      const toast = useToast();
-      // Make it available inside methods
-      return { toast };
     },
     data() {
       return {
@@ -49,6 +44,7 @@
         hotelPolicies: [],
         checkInOut: {},
         bookingPending: false,
+        voteError: '',
         roomError: '',
         reviewsError: '',
         reviewVersion: 0,
@@ -537,6 +533,7 @@
           return;
         }
 
+        this.voteError = '';
         const index = this.popupReviews.findIndex((item) => item.review_id === review.review_id);
         if (index === -1) return;
 
@@ -555,7 +552,7 @@
             helpful_count: Number(data.helpfulCount) || 0,
           };
         } catch (error) {
-          errorHandler(error);
+          this.voteError = this.$t('feedback.actionMessage');
         }
       },
       // Criteria scores are normalised to a 0-5 scale on the client.
@@ -602,7 +599,7 @@
       },
       async applyChange() {
         if (!this.nights) {
-          this.toast.error(this.$t('hotelDetails.search.datesRequired'));
+          this.roomError = this.$t('hotelDetails.search.datesRequired');
           return;
         }
         const version = ++this.roomVersion;
@@ -664,6 +661,7 @@
       },
       // this method will be called when user click book button
       async processBooking() {
+        this.clearFeedback();
         if (this.bookingPending || !this.currentRooms || !this.selectedRooms.length) return;
         // Booking a hold requires an account. Send guests to the login page and
         // bring them back here afterwards instead of surfacing the API's 401 as a
@@ -724,7 +722,7 @@
             if (error.response?.status === 401) {
               this.$router.push({ path: '/login', query: { redirect: this.$route.path } });
             } else {
-              errorHandler(error);
+              this.showError();
             }
           } finally {
             this.bookingPending = false;
@@ -775,12 +773,7 @@
     />
     <main id="guest-main" tabindex="-1" class="guest-page hotel-page">
       <p v-if="detailsLoading" role="status" class="guest-section">{{ $t('guest.loading') }}</p>
-      <section v-else-if="detailsError" class="guest-section" role="alert">
-        <h1 class="guest-page-title">{{ $t(detailsError) }}</h1>
-        <button type="button" class="guest-button" @click="getHotelDetails">
-          {{ $t('guest.retry') }}
-        </button>
-      </section>
+      <ErrorState v-else-if="detailsError" :title="$t(detailsError)" @retry="getHotelDetails" />
       <template v-else>
         <div class="property-heading">
           <div>
@@ -865,7 +858,7 @@
                   {{ $t('hotelDetails.search.apply') }}
                 </button>
               </div>
-              <p v-if="roomError" role="alert">{{ roomError }}</p>
+              <ErrorState v-if="roomError" :message="roomError" @retry="applyChange" />
               <p v-if="isSearchRoomLoading" role="status">{{ $t('guest.loading') }}</p>
               <p v-else-if="!currentRooms" class="room-scope-hint">
                 {{ $t('guest.refreshAvailability') }}
@@ -982,6 +975,7 @@
             </section>
           </div>
           <aside class="property-booking guest-section">
+            <FeedbackMessage v-if="feedback" v-bind="feedback" @dismiss="clearFeedback" />
             <h2>{{ $t('guest.yourStay') }}</h2>
             <p v-if="nights">
               {{ formatStayDate(getSearchData.checkInDate, $i18n.locale) }} →
@@ -1020,64 +1014,102 @@
     </main>
     <el-dialog
       v-model="openCommentPopup"
-      :title="$t('hotelDetails.menu.reviews')"
-      width="800px"
+      :title="$t('hotelDetails.reviews.title')"
+      class="guest-reviews-dialog"
+      width="min(1080px, calc(100vw - 32px))"
+      top="5vh"
       append-to-body
-      ><form class="review-filters" @submit.prevent="applyReviewFilters">
-        <input
-          v-model="reviewFilters.q"
-          type="search"
-          :aria-label="$t('hotelDetails.reviews.filters.keywordPlaceholder')"
-          :placeholder="$t('hotelDetails.reviews.filters.keywordPlaceholder')"
-        /><select
-          v-model="reviewFilters.score"
-          :aria-label="$t('hotelDetails.reviews.filters.score')"
-        >
-          <option value="">{{ $t('guest.allRatings') }}</option>
-          <option value="excellent">9–10</option>
-          <option value="good">7–9</option>
-          <option value="average">5–7</option>
-          <option value="poor">1–5</option></select
-        ><select
-          v-model="reviewFilters.season"
-          :aria-label="$t('hotelDetails.reviews.filters.season')"
-        >
-          <option value="">{{ $t('guest.allSeasons') }}</option>
-          <option value="marMay">{{ $t('hotelDetails.reviews.filters.seasons.marMay') }}</option>
-          <option value="junAug">{{ $t('hotelDetails.reviews.filters.seasons.junAug') }}</option>
-          <option value="sepNov">{{ $t('hotelDetails.reviews.filters.seasons.sepNov') }}</option>
-          <option value="decFeb">
-            {{ $t('hotelDetails.reviews.filters.seasons.decFeb') }}
-          </option></select
-        ><select
-          v-model="reviewFilters.country"
-          :aria-label="$t('hotelDetails.reviews.filters.country')"
-        >
-          <option value="">{{ $t('guest.allCountries') }}</option>
-          <option v-for="country in reviewCountries" :key="country" :value="country">
-            {{ country }}
-          </option></select
-        ><label
-          ><input v-model="reviewFilters.hasMedia" type="checkbox" />
-          {{ $t('guest.withPhotos') }}</label
-        ><button class="guest-button" type="submit">{{ $t('guest.search') }}</button
-        ><button
-          class="guest-button guest-button-secondary"
-          type="button"
-          @click="clearReviewFilters"
-        >
-          {{ $t('guest.clear') }}
-        </button>
+    >
+      <template #header>
+        <h2 class="review-dialog-title">{{ $t('hotelDetails.reviews.title') }}</h2>
+        <p class="review-dialog-subtitle">{{ hotel.name }}</p>
+      </template>
+      <form class="review-filters" @submit.prevent="applyReviewFilters">
+        <label class="review-filter-field review-filter-keyword">
+          <span>{{ $t('hotelDetails.reviews.filters.keywordPlaceholder') }}</span>
+          <input
+            v-model="reviewFilters.q"
+            type="search"
+            :placeholder="$t('hotelDetails.reviews.filters.keywordPlaceholder')"
+          />
+        </label>
+        <label class="review-filter-field">
+          <span>{{ $t('hotelDetails.reviews.filters.score') }}</span>
+          <select v-model="reviewFilters.score">
+            <option value="">{{ $t('guest.allRatings') }}</option>
+            <option value="excellent">9–10</option>
+            <option value="good">7–9</option>
+            <option value="average">5–7</option>
+            <option value="poor">1–5</option>
+          </select>
+        </label>
+        <label class="review-filter-field">
+          <span>{{ $t('hotelDetails.reviews.filters.season') }}</span>
+          <select v-model="reviewFilters.season">
+            <option value="">{{ $t('guest.allSeasons') }}</option>
+            <option value="marMay">{{ $t('hotelDetails.reviews.filters.seasons.marMay') }}</option>
+            <option value="junAug">{{ $t('hotelDetails.reviews.filters.seasons.junAug') }}</option>
+            <option value="sepNov">{{ $t('hotelDetails.reviews.filters.seasons.sepNov') }}</option>
+            <option value="decFeb">
+              {{ $t('hotelDetails.reviews.filters.seasons.decFeb') }}
+            </option>
+          </select>
+        </label>
+        <label class="review-filter-field">
+          <span>{{ $t('hotelDetails.reviews.filters.country') }}</span>
+          <select v-model="reviewFilters.country">
+            <option value="">{{ $t('guest.allCountries') }}</option>
+            <option v-for="country in reviewCountries" :key="country" :value="country">
+              {{ country }}
+            </option>
+          </select>
+        </label>
+        <div class="review-filter-toolbar">
+          <label class="review-media-toggle">
+            <input v-model="reviewFilters.hasMedia" type="checkbox" />
+            {{ $t('guest.withPhotos') }}
+          </label>
+          <div class="review-filter-actions">
+            <button
+              class="guest-button guest-button-secondary"
+              type="button"
+              :disabled="reviewsLoading || !hasActiveReviewFilters"
+              @click="clearReviewFilters"
+            >
+              {{ $t('hotelDetails.reviews.filters.clear') }}
+            </button>
+            <button class="guest-button" type="submit" :disabled="reviewsLoading">
+              {{ $t('guest.search') }}
+            </button>
+          </div>
+        </div>
       </form>
-      <p v-if="reviewsLoading" role="status">{{ $t('guest.loading') }}</p>
-      <p v-else-if="reviewsError" role="alert">{{ reviewsError }}</p>
+      <FeedbackMessage v-if="voteError" :message="voteError" />
+      <p v-if="reviewsLoading" role="status" class="review-status">{{ $t('guest.loading') }}</p>
+      <ErrorState v-else-if="reviewsError" :message="reviewsError" @retry="fetchPopupReviews()" />
       <template v-else
-        ><article v-for="review in popupReviews" :key="review.review_id" class="property-review">
-          <p>
-            <strong>{{ review.username }}</strong>
-            <span class="guest-pill">{{ review.rating }}/10</span>
-            {{ formatReviewDate(review.created_at) }}
-          </p>
+        ><p class="review-results-count">
+          {{ $t('hotelDetails.reviews.filters.results', { count: reviewPagination.total }) }}
+        </p>
+        <article
+          v-for="review in popupReviews"
+          :key="review.review_id"
+          class="property-review modal-review"
+        >
+          <header class="review-card-header">
+            <div class="review-author">
+              <strong>{{ review.username }}</strong>
+              <span v-if="review.country">{{ review.country }}</span>
+              <time :datetime="review.created_at">
+                {{
+                  $t('hotelDetails.reviews.reviewDate', {
+                    date: formatReviewDate(review.created_at),
+                  })
+                }}
+              </time>
+            </div>
+            <span class="guest-score">{{ review.rating }}<small>/10</small></span>
+          </header>
           <h3 v-if="review.title">{{ review.title }}</h3>
           <p>{{ review.comment }}</p>
           <div class="review-images">
@@ -1088,7 +1120,10 @@
               :alt="review.title || hotel.name"
             />
           </div>
-          <blockquote v-if="review.reply">{{ review.reply.comment }}</blockquote>
+          <blockquote v-if="review.reply" class="review-property-reply">
+            <strong>{{ $t('hotelDetails.reviews.replyLabel') }}</strong>
+            <p>{{ review.reply.comment }}</p>
+          </blockquote>
           <div class="review-votes">
             <button
               type="button"
@@ -1105,25 +1140,36 @@
             </button>
           </div>
         </article>
-        <p v-if="!popupReviews.length">{{ $t('guest.noReviews') }}</p>
-        <div class="review-paging">
+        <p v-if="!popupReviews.length" class="review-status">
+          {{
+            $t(hasActiveReviewFilters ? 'hotelDetails.reviews.filters.empty' : 'guest.noReviews')
+          }}
+        </p>
+      </template>
+      <template #footer>
+        <div v-if="!reviewsError && reviewPagination.totalPages > 1" class="review-paging">
           <button
             type="button"
-            :disabled="reviewPagination.page <= 1"
+            :disabled="reviewsLoading || reviewPagination.page <= 1"
             @click="goToReviewPage(reviewPagination.page - 1)"
           >
             {{ $t('hotelDetails.reviews.pagination.prev') }}</button
-          ><span>{{ reviewPagination.page }} / {{ reviewPagination.totalPages }}</span
+          ><span>{{
+            $t('hotelDetails.reviews.pagination.pageOf', {
+              page: reviewPagination.page,
+              total: reviewPagination.totalPages,
+            })
+          }}</span
           ><button
             type="button"
-            :disabled="reviewPagination.page >= reviewPagination.totalPages"
+            :disabled="reviewsLoading || reviewPagination.page >= reviewPagination.totalPages"
             @click="goToReviewPage(reviewPagination.page + 1)"
           >
             {{ $t('hotelDetails.reviews.pagination.next') }}
           </button>
-        </div></template
-      ></el-dialog
-    >
+        </div>
+      </template>
+    </el-dialog>
     <TheFooter />
   </div>
 </template>
@@ -1343,23 +1389,174 @@
     gap: 12px;
   }
   .review-filters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    padding: 20px;
+    background: #f8fafb;
+    border: 1px solid #e8ecef;
+    border-radius: 16px;
+  }
+  :global(.guest-reviews-dialog) {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    max-height: 90dvh;
+    border-radius: 20px;
+    padding: 28px;
+  }
+  :global(.guest-reviews-dialog .el-dialog__header) {
+    padding-bottom: 20px;
+  }
+  :global(.guest-reviews-dialog .el-dialog__body) {
+    overflow-y: auto;
+    min-height: 0;
+    padding-right: 8px;
+    scrollbar-gutter: stable;
+  }
+  :global(.guest-reviews-dialog .el-dialog__footer) {
+    padding-top: 0;
+  }
+  .review-dialog-title {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.4;
+    color: var(--tn-ink);
+  }
+  .review-dialog-subtitle {
+    margin: 6px 0 0;
+    color: var(--tn-muted);
+    font-size: 14px;
+  }
+  .review-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .review-filter-keyword,
+  .review-filter-toolbar {
+    grid-column: 1 / -1;
+  }
+  .review-filter-toolbar,
+  .review-filter-actions {
+    display: flex;
+    align-items: center;
     gap: 12px;
+    flex-wrap: wrap;
+  }
+  .review-filter-toolbar {
+    justify-content: space-between;
+    padding-top: 4px;
+  }
+  .review-media-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    min-height: 44px;
+  }
+  .review-media-toggle input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--tn-action);
+    margin: 0;
   }
   .review-filters input[type='search'],
   .review-filters select {
     min-height: 44px;
     border: 1px solid #ddd;
     border-radius: 10px;
-    padding: 8px;
-    max-width: 100%;
+    padding: 10px 12px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    background: white;
+    font: inherit;
+    font-size: 13px;
+    color: inherit;
+  }
+  .review-results-count {
+    margin: 24px 0 16px;
+    font-size: 13px;
+    color: var(--tn-muted);
+  }
+  .modal-review {
+    padding: 24px;
+    margin-bottom: 16px;
+    border: 1px solid #e8ecef;
+    border-radius: 16px;
+    overflow-wrap: anywhere;
+  }
+  .review-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .review-author {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .review-author span,
+  .review-author time {
+    font-size: 12px;
+    color: var(--tn-muted);
+  }
+  .review-card-header .guest-score {
+    flex-shrink: 0;
+  }
+  .review-card-header small {
+    font-size: 10px;
+    font-weight: 400;
+  }
+  .modal-review > p,
+  .review-property-reply p {
+    line-height: 1.7;
+    white-space: pre-line;
+  }
+  .modal-review h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
+  }
+  .review-property-reply {
+    background: #f8fafb;
+    border-left: 3px solid #dce3e8;
+    border-radius: 0 10px 10px 0;
+    padding: 16px;
+    margin: 16px 0;
+  }
+  .review-property-reply p {
+    margin: 8px 0 0;
+  }
+  .review-status {
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--tn-muted);
   }
   .review-votes,
   .review-paging {
     display: flex;
-    gap: 16px;
+    gap: 10px;
     align-items: center;
+    flex-wrap: wrap;
+  }
+  .review-votes {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #eef1f3;
+  }
+  .review-paging {
+    justify-content: space-between;
+    border-top: 1px solid #e8ecef;
+    padding-top: 20px;
+    margin-top: 16px;
+    font-size: 13px;
   }
   .review-votes button,
   .review-paging button {
@@ -1368,6 +1565,22 @@
     border-radius: 10px;
     min-height: 44px;
     padding: 8px 14px;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+  }
+  .review-votes button[aria-pressed='true'] {
+    border-color: var(--tn-action);
+    background: var(--tn-soft);
+  }
+  .review-votes button:hover,
+  .review-paging button:not(:disabled):hover {
+    background: #f4f6f8;
+  }
+  .review-filter-actions button:disabled,
+  .review-paging button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
   .review-images {
     display: flex;
@@ -1387,6 +1600,27 @@
     }
   }
   @media (max-width: 600px) {
+    :global(.guest-reviews-dialog) {
+      padding: 20px 16px;
+    }
+    .review-filters {
+      grid-template-columns: minmax(0, 1fr);
+      padding: 16px;
+      gap: 12px;
+    }
+    .review-filter-actions {
+      width: 100%;
+    }
+    .review-filter-actions .guest-button {
+      flex: 1;
+    }
+    .modal-review {
+      padding: 16px;
+    }
+    .review-paging {
+      gap: 8px;
+      font-size: 12px;
+    }
     .property-heading {
       flex-direction: column;
       align-items: flex-start;

@@ -1,4 +1,5 @@
 <script>
+  import FeedbackMessage from '@/components/common/FeedbackMessage.vue';
   import { BookingService } from '@/services/booking.service';
   import { normalizeBooking, guestMoney } from '@/utils/guestPresentation';
   import { stayNights, formatStayDate } from '@/utils/stay';
@@ -6,7 +7,7 @@
   import MediaImage from '@/components/ui/MediaImage.vue';
   export default {
     name: 'BookingRecord',
-    components: { MediaImage },
+    components: { MediaImage, FeedbackMessage },
     props: { code: { type: String, default: '' } },
     data() {
       return { booking: null, loading: false, failure: '', version: 0 };
@@ -79,11 +80,13 @@
   <main id="guest-main" tabindex="-1" class="guest-page booking-record">
     <RouterLink to="/bookings" class="record-back">← {{ $t('account.menu.bookings') }}</RouterLink>
     <p v-if="loading" role="status" class="guest-section">{{ $t('guest.loading') }}</p>
-    <section v-else-if="failure" class="guest-section" role="alert">
-      <h1 class="guest-page-title">{{ $t(failure) }}</h1>
-      <p>{{ $t('guest.bookingRecovery') }}</p>
-      <button type="button" class="guest-button" @click="load">{{ $t('guest.retry') }}</button>
-    </section>
+    <FeedbackMessage
+      v-else-if="failure"
+      :title="$t(failure)"
+      :message="$t('guest.bookingRecovery')"
+      retryable
+      @retry="load"
+    />
     <template v-else-if="booking">
       <section class="record-banner">
         <div>

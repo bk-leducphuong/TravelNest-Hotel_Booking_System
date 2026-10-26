@@ -1,6 +1,6 @@
 <script>
   import { mapActions } from 'vuex';
-  import { useToast } from 'vue-toastification';
+  import sectionFeedback from '@/mixins/sectionFeedback';
   import { UserService } from '@/services/user.service';
   import { getImageUrl } from '@/utils/images';
   import { COUNTRIES, DEFAULT_DIAL_CODE, splitPhoneNumber } from '@/constants/countries';
@@ -22,12 +22,10 @@
   });
 
   export default {
-    setup() {
-      const toast = useToast();
-      return { toast };
-    },
+    mixins: [sectionFeedback],
     data() {
       return {
+        loadError: false,
         isLoading: false,
         activeEditor: '',
         savingSection: '',
@@ -121,33 +119,30 @@
         this.activeEditor = '';
         this.resetDraft();
       },
-      getErrorMessage(error, fallbackMessage) {
-        const apiError = error?.response?.data?.error;
-        const fieldMessages = apiError?.fields ? Object.values(apiError.fields) : [];
-        return fieldMessages[0] || apiError?.message || fallbackMessage;
-      },
       async loadUserInfo() {
+        this.loadError = false;
         this.isLoading = true;
         try {
           const response = await UserService.getCurrentUser();
           this.profile = this.normalizeProfile(response.data);
           this.resetDraft();
         } catch (error) {
-          this.toast.error(this.getErrorMessage(error, this.$t('account.personal.errors.load')));
+          this.loadError = true;
         } finally {
           this.isLoading = false;
         }
       },
       async saveProfile(payload, section, successMessage) {
+        this.clearFeedback();
         this.savingSection = section;
         try {
           await UserService.updateCurrentUser(payload);
           await this.loadUserInfo();
           await this.retrieveUserInformation();
           this.activeEditor = '';
-          this.toast.success(successMessage);
+          this.showSuccess(successMessage);
         } catch (error) {
-          this.toast.error(this.getErrorMessage(error, this.$t('account.personal.errors.save')));
+          this.showError(this.$t('account.personal.errors.save'));
         } finally {
           this.savingSection = '';
         }
@@ -233,6 +228,7 @@
         this.avatarPreview = URL.createObjectURL(file);
       },
       async saveAvatar() {
+        this.clearFeedback();
         if (!this.avatarFile) {
           return;
         }
@@ -246,9 +242,9 @@
           await this.loadUserInfo();
           await this.retrieveUserInformation();
           this.closeAvatarModal();
-          this.toast.success(this.$t('account.personal.toasts.avatarUpdated'));
+          this.showSuccess(this.$t('account.personal.toasts.avatarUpdated'));
         } catch (error) {
-          this.toast.error(this.getErrorMessage(error, this.$t('account.personal.errors.avatar')));
+          this.showError(this.$t('account.personal.errors.avatar'));
         } finally {
           this.isAvatarSaving = false;
         }
@@ -267,6 +263,11 @@
 
 <template>
   <section class="settings-panel">
+    <FeedbackMessage
+      v-if="feedback && !isAvatarModalOpen"
+      v-bind="feedback"
+      @dismiss="clearFeedback"
+    />
     <header class="panel-header">
       <div>
         <h1>{{ $t('account.personal.title') }}</h1>
@@ -278,6 +279,13 @@
       {{ $t('account.personal.loading') }}
     </div>
 
+    <FeedbackMessage
+      v-else-if="loadError"
+      :message="$t('account.personal.errors.load')"
+      retryable
+      @retry="loadUserInfo"
+    />
+
     <template v-else>
       <el-dialog
         v-model="isAvatarModalOpen"
@@ -286,6 +294,7 @@
         @close="closeAvatarModal"
       >
         <div class="avatar-dialog-content">
+          <FeedbackMessage v-if="feedback" v-bind="feedback" @dismiss="clearFeedback" />
           <div class="modal-header">
             <h2>{{ $t('account.personal.avatarModal.title') }}</h2>
             <button type="button" class="ghost-button" @click="closeAvatarModal">
@@ -696,7 +705,8 @@
 
   .panel-header h1 {
     margin: 0 0 8px;
-    font-size: 30px;
+    font-size: 24px;
+    line-height: 1.3;
     color: var(--tn-ink);
   }
 
@@ -722,7 +732,8 @@
 
   .detail-card h2 {
     margin: 0 0 8px;
-    font-size: 20px;
+    font-size: 16px;
+    line-height: 1.4;
     color: var(--tn-ink);
   }
 

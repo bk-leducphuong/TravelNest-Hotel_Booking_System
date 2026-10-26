@@ -2,6 +2,7 @@
   <LoginHeader :isAdminLogin="false" />
   <main id="guest-main" tabindex="-1" class="guest-page">
     <section class="guest-section auth-card">
+      <FeedbackMessage v-if="feedback" v-bind="feedback" @dismiss="clearFeedback" />
       <h1>{{ heading }}</h1>
       <p>{{ description }}</p>
 
@@ -55,7 +56,7 @@
 
 <script>
   import { mapActions, mapGetters } from 'vuex';
-  import { useToast } from 'vue-toastification';
+  import sectionFeedback from '@/mixins/sectionFeedback';
   import {
     isAuthenticated as isKeycloakAuthenticated,
     logout as keycloakLogout,
@@ -65,13 +66,10 @@
   import { adminAppUrl } from '@/utils/adminApp';
 
   export default {
+    mixins: [sectionFeedback],
     components: {
       LoginHeader,
       TheFooter,
-    },
-    setup() {
-      const toast = useToast();
-      return { toast };
     },
     data() {
       return {
@@ -127,14 +125,14 @@
           await this.login({ redirectRoute: this.$route.query.redirect || '/' });
         } catch (error) {
           this.authStarted = false;
-          this.toast.error(error.message || this.$t('authPage.errors.redirectFailed'));
+          this.showError(this.$t('authPage.errors.redirectFailed'));
         }
       },
       async startResetPassword() {
         try {
           await this.resetPassword({ redirectRoute: this.$route.query.redirect || '/' });
         } catch (error) {
-          this.toast.error(error.message || this.$t('authPage.errors.resetPasswordFailed'));
+          this.showError(this.$t('authPage.errors.resetPasswordFailed'));
         }
       },
       async retryBootstrap() {
@@ -142,7 +140,7 @@
           await this.checkAuth();
           this.redirectAuthenticatedUser();
         } catch (error) {
-          this.toast.error(error.message || this.$t('authPage.errors.emailNotVerified'));
+          this.showError(this.$t('authPage.errors.emailNotVerified'));
         }
       },
       async signOut() {
