@@ -1,106 +1,42 @@
-<template>
-  <div class="recent-search-container container" v-if="recentSearches.length > 0">
-    <h2 class="h2">{{ $t('userHome.recentSearches') }}</h2>
-    <div class="slider-container">
-      <ElCarousel
-        :interval="0"
-        :arrow="groupedSearches.length > 1 ? 'hover' : 'never'"
-        indicator-position="none"
-        height="96px"
-        class="search-carousel"
-      >
-        <ElCarouselItem v-for="(group, groupIndex) in groupedSearches" :key="groupIndex">
-          <div class="search-group">
-            <div
-              class="search-card"
-              v-for="(search, index) in group"
-              :key="searchKey(search, groupIndex * itemsPerSlide + index)"
-              @click="redirectToSearchResults(search)"
-            >
-              <div
-                class="search-image"
-                :class="{ 'search-image-fallback': !searchImageSrc(search) }"
-              >
-                <img
-                  v-if="searchImageSrc(search)"
-                  :src="searchImageSrc(search)"
-                  :alt="displayLocation(search)"
-                  @error="onImageError"
-                />
-                <i v-else class="fa-solid fa-city" aria-hidden="true"></i>
-              </div>
-              <div class="search-content">
-                <h2 class="search-title">{{ displayLocation(search) }}</h2>
-                <p class="search-details">
-                  {{ $t('userHeader.dateInputPlaceholder_1') }}
-                  {{ formatDate(getCheckIn(search)) }}
-                  {{ $t('userHeader.dateInputPlaceholder_2') }}
-                  {{ formatDate(getCheckOut(search)) }}
-                </p>
-              </div>
-              <button
-                class="close-button"
-                @click.stop="removeSearch(search, groupIndex * itemsPerSlide + index)"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        </ElCarouselItem>
-      </ElCarousel>
-    </div>
-  </div>
-</template>
-
 <script>
+  import DiscoverySection from './DiscoverySection.vue';
   import { mapActions, mapGetters } from 'vuex';
   import { SearchService } from '@/services/search.service';
-  import errorHandler from '@/request/errorHandler.js';
+  import ErrorState from '@/components/common/ErrorState.vue';
   import { getImageUrl } from '@/utils/images';
+  import { dedupeRecentSearches } from '@/utils/recentSearches';
 
   export default {
     name: 'RecentSearchs',
+    components: { DiscoverySection, ErrorState },
     emits: ['update:recentSearches'],
     data() {
       return {
+        loadError: false,
         recentSearches: [],
-        windowWidth: typeof window !== 'undefined' ? window.innerWidth : 1200,
       };
     },
     computed: {
       ...mapGetters('auth', ['isUserAuthenticated']),
-      itemsPerSlide() {
-        if (this.windowWidth >= 1400) return 5;
-        if (this.windowWidth >= 1200) return 4;
-        if (this.windowWidth >= 768) return 3;
-        return 2;
-      },
-      groupedSearches() {
-        const groups = [];
-        for (let i = 0; i < this.recentSearches.length; i += this.itemsPerSlide) {
-          groups.push(this.recentSearches.slice(i, i + this.itemsPerSlide));
-        }
-        return groups;
-      },
     },
     mounted() {
-      if (typeof window !== 'undefined') {
-        window.addEventListener('resize', this.handleResize);
-        this.handleResize();
-      }
       this.loadRecentSearches();
-    },
-    beforeUnmount() {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('resize', this.handleResize);
-      }
     },
     methods: {
       async loadRecentSearches() {
+        this.loadError = false;
         if (!this.isUserAuthenticated) {
-          this.recentSearches = localStorage.getItem('recentSearches')
-            ? JSON.parse(localStorage.getItem('recentSearches'))
-            : [];
+          try {
+            const raw = localStorage.getItem('recentSearches');
+            const parsed = raw ? JSON.parse(raw) : [];
+            const list = dedupeRecentSearches(parsed);
+            if (list.length !== (Array.isArray(parsed) ? parsed.length : 0)) {
+              localStorage.setItem('recentSearches', JSON.stringify(list));
+            }
+            this.recentSearches = list;
+          } catch {
+            this.recentSearches = [];
+          }
           return;
         }
         try {
@@ -109,12 +45,9 @@
           const list = response?.data?.searches ?? response?.searches ?? [];
           this.recentSearches = Array.isArray(list) ? list : [];
         } catch (error) {
-          errorHandler(error);
+          this.loadError = true;
           this.recentSearches = [];
         }
-      },
-      handleResize() {
-        this.windowWidth = window.innerWidth;
       },
       displayLocation(search) {
         if (!search) return '';
@@ -180,6 +113,7 @@
       removeSearch(_removedSearch, searchIndex) {
         const updatedSearches = [...this.recentSearches];
         updatedSearches.splice(searchIndex, 1);
+        this.recentSearches = updatedSearches;
         this.$emit('update:recentSearches', updatedSearches);
         if (!this.isUserAuthenticated) {
           localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
@@ -188,135 +122,71 @@
     },
   };
 </script>
-
-<style lang="scss" scoped>
-  @import '@/assets/styles/index.scss';
-
-  .recent-search-container {
-    margin-bottom: 30px;
-    margin-top: 30px;
+<template>
+  <DiscoverySection
+    v-if="loadError || recentSearches.length"
+    :title="$t('userHome.recentSearches')"
+    section-key="recent-searches"
+    :items="recentSearches"
+  >
+    <template #status>
+      <ErrorState v-if="loadError" @retry="loadRecentSearches" />
+    </template>
+    <template #default="{ items: visibleItems }">
+      <article
+        v-for="(search, index) in visibleItems"
+        :key="searchKey(search, index)"
+        class="guest-section recent-card"
+      >
+        <button type="button" class="recent-open" @click="redirectToSearchResults(search)">
+          <strong>{{ displayLocation(search) }}</strong
+          ><span
+            >{{ formatDate(getCheckIn(search)) }} → {{ formatDate(getCheckOut(search)) }}</span
+          ></button
+        ><button
+          type="button"
+          class="recent-remove"
+          :aria-label="$t('guest.removeSearch', { name: displayLocation(search) })"
+          @click="removeSearch(search, index)"
+        >
+          ×
+        </button>
+      </article>
+    </template>
+  </DiscoverySection>
+</template>
+<style scoped>
+  .recent-card {
     position: relative;
+    padding: 20px 50px 20px 20px;
   }
-
-  .h2 {
-    font-weight: bolder;
-    display: block;
-    font-size: 28px;
-  }
-
-  .slider-container {
-    position: relative;
-  }
-
-  .search-carousel {
-    :deep(.el-carousel__container) {
-      height: 96px;
-    }
-
-    :deep(.el-carousel__item) {
-      padding: 0 $spacing-sm;
-    }
-  }
-
-  .search-group {
-    display: flex;
-    gap: $spacing-lg;
-    justify-content: center;
-    height: 100%;
-    align-items: center;
-  }
-
-  .search-card {
-    flex: 0 0 400px;
-    background: $white;
-    border-radius: 12px;
-    padding: 16px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    position: relative;
-    transition: transform 0.3s;
-    cursor: pointer;
-
-    &:hover {
-      transform: translateY(-2px);
-    }
-
-    @media (max-width: 1400px) {
-      flex: 0 0 calc((100% - 60px) / 4);
-      max-width: 400px;
-    }
-
-    @media (max-width: 1200px) {
-      flex: 0 0 calc((100% - 40px) / 3);
-      max-width: 400px;
-    }
-
-    @media (max-width: 768px) {
-      flex: 0 0 calc((100% - 20px) / 2);
-      max-width: 400px;
-    }
-  }
-
-  .search-image {
-    width: 64px;
-    height: 64px;
-    border-radius: 8px;
-    overflow: hidden;
-    flex-shrink: 0;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 8px;
-    }
-  }
-
-  .search-image-fallback {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: $background-light;
-    color: $primary-color;
-    font-size: 24px;
-  }
-
-  .search-content {
-    flex-grow: 1;
-  }
-
-  .search-title {
-    font-size: $font-size-base;
-    font-weight: 600;
-    color: $text-primary;
-    margin: 0 0 4px 0;
-  }
-
-  .search-details {
-    font-size: $font-size-sm;
-    color: $text-secondary;
-    margin: 0;
-  }
-
-  .close-button {
-    position: absolute;
-    right: 16px;
-    top: 50%;
-    transform: translateY(-50%);
+  .recent-open {
+    min-width: 0;
+    overflow-wrap: anywhere;
     background: none;
-    border: none;
+    border: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+    text-align: left;
     cursor: pointer;
-    padding: 8px;
-    color: $text-secondary;
-    font-size: 25px;
-    @include flex-center;
-    z-index: 2;
-    transition: color 0.2s ease;
-
-    &:hover {
-      color: $text-primary;
-    }
+    color: var(--tn-brand);
+  }
+  .recent-open span {
+    font-size: 12px;
+    color: var(--tn-muted);
+  }
+  .recent-remove {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    font-size: 22px;
+    color: var(--tn-muted);
+    cursor: pointer;
   }
 </style>

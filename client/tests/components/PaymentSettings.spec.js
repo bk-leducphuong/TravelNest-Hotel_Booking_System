@@ -114,9 +114,34 @@ describe('PaymentSettings', () => {
     await flushPromises();
 
     await wrapper.find('.saved-card:nth-child(1) .link-button.danger').trigger('click');
-    await wrapper.find('.secondary-button').trigger('click');
+    await wrapper.find('.guest-button-secondary').trigger('click');
 
     expect(wrapper.findComponent({ name: 'ConfirmDialog' }).exists()).toBe(false);
     expect(PaymentService.removePaymentMethod).not.toHaveBeenCalled();
+  });
+  it('shows a retryable fetch error instead of an empty card list, then recovers', async () => {
+    PaymentService.listPaymentMethods.mockRejectedValueOnce(new Error('internal database failure'));
+    const wrapper = mountView();
+    await flushPromises();
+    expect(wrapper.find('[role="alert"]').text()).toContain('account.payment.errors.load');
+    expect(wrapper.text()).not.toContain('internal database failure');
+    expect(wrapper.find('.muted-card').exists()).toBe(false);
+    await wrapper.find('[role="alert"] button').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    expect(wrapper.findAll('.saved-card')).toHaveLength(2);
+  });
+
+  it('keeps successful action feedback visible until dismissed', async () => {
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.find('.saved-card:nth-child(2) .link-button').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('[role="status"]').text()).toContain(
+      'account.payment.toasts.defaultUpdated'
+    );
+    expect(wrapper.find('[role="status"] svg').exists()).toBe(true);
+    await wrapper.find('.section-feedback-dismiss').trigger('click');
+    expect(wrapper.find('[role="status"]').exists()).toBe(false);
   });
 });

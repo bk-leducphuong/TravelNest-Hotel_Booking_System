@@ -1,24 +1,25 @@
-<template>
-  <div class="tn-empty">
-    <i v-if="icon" :class="icon" class="tn-empty-icon" aria-hidden="true"></i>
-    <h3 class="tn-empty-title">{{ title }}</h3>
-    <p class="tn-empty-message">{{ message }}</p>
-    <button v-if="retryable" type="button" class="tn-retry" @click="$emit('retry')">
-      {{ retryLabel }}
-    </button>
-  </div>
-</template>
-
 <script>
+  import FeedbackMessage from './FeedbackMessage.vue';
   export default {
     name: 'ErrorState',
+    components: { FeedbackMessage },
     emits: ['retry'],
     props: {
-      title: { type: String, default: 'Something went wrong' },
-      message: { type: String, default: 'Please try again in a moment.' },
-      icon: { type: String, default: 'fa-solid fa-triangle-exclamation' },
+      title: { type: String, default: '' },
+      message: { type: String, default: '' },
+      icon: { type: String, default: '' },
       retryable: { type: Boolean, default: true },
-      retryLabel: { type: String, default: 'Try again' },
+      retryLabel: { type: String, default: '' },
     },
   };
 </script>
+
+<template>
+  <FeedbackMessage
+    :title="title"
+    :message="message"
+    :retryable="retryable"
+    :retry-label="retryLabel"
+    @retry="$emit('retry')"
+  />
+</template>

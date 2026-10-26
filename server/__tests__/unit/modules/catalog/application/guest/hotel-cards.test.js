@@ -1,4 +1,8 @@
-jest.mock('@modules/catalog/infrastructure/hotel.repository');
+jest.mock('@modules/catalog/infrastructure/hotel.repository', () => ({
+  findBasicByIds: jest.fn(),
+}));
+jest.mock('@modules/identity', () => ({ getFavoriteHotelIds: jest.fn() }));
+const identity = require('@modules/identity');
 
 const hotelRepository = require('@modules/catalog/infrastructure/hotel.repository');
 const { enrichHotelCardsByIds } = require('@modules/catalog/application/guest/hotel-cards');
@@ -25,6 +29,7 @@ describe('catalog/application/guest/hotel-cards', () => {
     expect(result).toEqual([
       {
         id: 'hotel-1',
+        is_favorite: false,
         name: 'Hotel Without Images',
         address: '123 Main St',
         city: { id: 'city-1', name: 'Da Nang', slug: 'da-nang' },
@@ -60,6 +65,16 @@ describe('catalog/application/guest/hotel-cards', () => {
     const result = await enrichHotelCardsByIds(['hotel-1']);
 
     expect(result[0].primaryImageUrl).toBe('hotels/hotel-1/primary.webp');
+  });
+
+  it('resolves UUID favorite status with one lookup for the whole list', async () => {
+    const ids = ['01a105dc-2570-72b0-a6be-410b1cb0a64c', '01a105dc-2570-72b0-a6be-410b1cb0a64d'];
+    hotelRepository.findBasicByIds.mockResolvedValue(ids.map((id) => ({ id })));
+    identity.getFavoriteHotelIds.mockResolvedValue([ids[1]]);
+    const result = await enrichHotelCardsByIds(ids, 'user-1');
+    expect(identity.getFavoriteHotelIds).toHaveBeenCalledTimes(1);
+    expect(identity.getFavoriteHotelIds).toHaveBeenCalledWith('user-1', ids);
+    expect(result.map((hotel) => hotel.is_favorite)).toEqual([false, true]);
   });
 
   it('returns an empty array for an empty id list without querying', async () => {

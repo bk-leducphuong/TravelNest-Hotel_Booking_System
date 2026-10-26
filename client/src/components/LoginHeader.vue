@@ -19,11 +19,18 @@
 <template>
   <BaseHeader :use-container="false" header-class="header-container">
     <template #nav-items>
-      <li v-if="isAdminLogin"><span>{{ $t('joinHeader.partnerQuestion') }}</span></li>
-      <li v-if="isAdminLogin" class="login" v-on:click="goToAdminApp('/login')">
-        {{ $t('joinHeader.login') }}
+      <li v-if="isAdminLogin">
+        <span>{{ $t('joinHeader.partnerQuestion') }}</span>
       </li>
-      <li class="guides">{{ $t('joinHeader.help') }}</li>
+      <li v-if="isAdminLogin">
+        <button
+          type="button"
+          class="guest-button guest-button-small"
+          @click="goToAdminApp('/login')"
+        >
+          {{ $t('joinHeader.login') }}
+        </button>
+      </li>
     </template>
   </BaseHeader>
 </template>

@@ -1,86 +1,67 @@
 <script>
-  import { mapActions } from 'vuex';
   import AiChatWidget from './components/ai-chat/AiChatWidget.vue';
-
+  import { ElConfigProvider } from 'element-plus';
+  import en from 'element-plus/es/locale/lang/en';
+  import vi from 'element-plus/es/locale/lang/vi';
   export default {
     name: 'App',
-    components: {
-      AiChatWidget,
+    components: { AiChatWidget, ElConfigProvider },
+    computed: {
+      widgetLocale() {
+        return this.$i18n.locale === 'vi' ? vi : en;
+      },
+      pageTitle() {
+        const names = {
+          Home: 'home',
+          SearchResults: 'search',
+          HotelDetails: 'hotel',
+          Book: 'checkout',
+          BookingDetails: 'booking',
+          BookingConfirmation: 'booking',
+          Bookings: 'bookings',
+          SavedHotels: 'saved',
+          AccountSettings: 'account',
+          Login: 'login',
+          BookingCancellation: 'cancel',
+          Reviews: 'reviews',
+          ReviewDetails: 'writeReview',
+          SettingDetails: 'settings',
+          Join: 'partner',
+          JoinForm: 'onboarding',
+          NotFound: 'notFound',
+        };
+        const key = names[this.$route.name];
+        return key ? `${this.$t(`guest.page.${key}`)} · TravelNest` : 'TravelNest';
+      },
     },
-    data() {
-      return {
-        hotels: [],
-      };
+    watch: {
+      pageTitle: {
+        immediate: true,
+        handler(value) {
+          document.title = value;
+        },
+      },
+      '$i18n.locale': {
+        immediate: true,
+        handler(value) {
+          document.documentElement.lang = value === 'vi' ? 'vi' : 'en';
+        },
+      },
     },
     mounted() {
-      const language = localStorage.getItem('language')
-        ? localStorage.getItem('language')
-        : navigator.language || navigator.userLanguage;
-      this.updateUserLanguage(language);
-      this.$i18n.locale = language.split('-')[0];
-
-      // Fetch user location and update Vuex store
-      this.getUserLocation()
-        .then((location) => {
-          this.updateUserLocation(location); // Dispatch action to update user location
-        })
-        .catch((error) => {
-          console.error('Failed to get user location:', error);
-          // You can handle the error here, e.g., show a default location
-        });
-    },
-    methods: {
-      ...mapActions('user', ['updateUserLocation', 'updateUserLanguage']),
-      handleConsent(accepted) {
-        if (accepted) {
-          // User accepted cookies, you can initialize tracking here
-          this.initializeTracking();
-        } else {
-          // User rejected cookies, respect their choice
-          this.disableTracking();
-        }
-      },
-      initializeTracking() {
-        // Initialize your tracking scripts, analytics, etc.
-        console.log('Tracking initialized');
-      },
-      disableTracking() {
-        // Disable or remove tracking scripts
-        console.log('Tracking disabled');
-      },
-      getUserLocation() {
-        if ('geolocation' in navigator) {
-          return new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(
-              (position) => {
-                const userLocation = {
-                  latitude: position.coords.latitude,
-                  longitude: position.coords.longitude,
-                };
-                resolve(userLocation);
-              },
-              (error) => {
-                console.error('Error getting user location:', error);
-                reject(error); // Important to reject on error
-              }
-            );
-          });
-        } else {
-          console.error('Geolocation is not supported by this browser.');
-          return Promise.reject('Geolocation not supported');
-        }
-      },
+      const preferred = (localStorage.getItem('language') || navigator.language || 'en').split(
+        '-'
+      )[0];
+      this.$i18n.locale = preferred === 'vi' ? 'vi' : 'en';
+      this.$store.dispatch('user/updateUserLanguage', this.$i18n.locale);
     },
   };
 </script>
-
 <template>
-  <div class="app-root">
-    <RouterView />
-    <AiChatWidget />
-  </div>
+  <ElConfigProvider :locale="widgetLocale"
+    ><div class="app-root"><RouterView /><AiChatWidget /></div
+  ></ElConfigProvider>
 </template>
-
 <style scoped>
   .app-root {
     width: 100%;

@@ -202,7 +202,7 @@ export default {
   max-width: 600px;
   margin: 0 auto;
   padding: 20px;
-  font-family: Arial, sans-serif;
+  font-family: inherit;
 }
 .form-button-container {
   display: flex;
@@ -241,7 +241,7 @@ select {
   font-weight: normal;
 }
 .rating-form {
-  font-family: Arial, sans-serif;
+  font-family: inherit;
   max-width: 500px;
   padding: 20px;
 }

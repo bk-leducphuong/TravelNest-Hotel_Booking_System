@@ -62,11 +62,7 @@
         </span>
         <small>{{ getCount('freeCancellation') }}</small>
       </label>
-      <label
-        v-for="option in popularOptions"
-        :key="option.key"
-        class="filter-option"
-      >
+      <label v-for="option in popularOptions" :key="option.key" class="filter-option">
         <span>
           <input
             type="checkbox"
@@ -200,7 +196,12 @@
           maxPrice: this.filters.maxPrice,
         },
         popularOptions: [
-          { key: 'breakfast', labelKey: 'filters.breakfastIncluded', type: 'amenity', value: 'BREAKFAST_INCLUDED' },
+          {
+            key: 'breakfast',
+            labelKey: 'filters.breakfastIncluded',
+            type: 'amenity',
+            value: 'BREAKFAST_INCLUDED',
+          },
           { key: 'pool', labelKey: 'filters.pool', type: 'amenity', value: 'POOL' },
           { key: 'bathtub', labelKey: 'filters.bathtub', type: 'amenity', value: 'BATHTUB' },
           { key: 'balcony', labelKey: 'filters.balcony', type: 'amenity', value: 'BALCONY' },
@@ -223,10 +224,10 @@
         ],
         starOptions: [5, 4, 3, 2, 1],
         reviewScoreOptions: [
-          { labelKey: 'filters.scoreExcellent', value: 4.5 },
-          { labelKey: 'filters.scoreVeryGood', value: 4 },
-          { labelKey: 'filters.scoreGood', value: 3.5 },
-          { labelKey: 'filters.scorePleasant', value: 3 },
+          { labelKey: 'filters.scoreExcellent', value: 9 },
+          { labelKey: 'filters.scoreVeryGood', value: 8 },
+          { labelKey: 'filters.scoreGood', value: 7 },
+          { labelKey: 'filters.scorePleasant', value: 6 },
         ],
         facilityOptions: [
           { labelKey: 'filters.wifi', value: 'FREE_WIFI' },
@@ -248,13 +249,13 @@
       hasActiveFilters() {
         return Boolean(
           this.filters.minPrice ||
-            this.filters.maxPrice ||
-            this.filters.freeCancellation ||
-            this.filters.minRating ||
-            this.filters.radius ||
-            this.filters.amenities.length ||
-            this.filters.mealPlans.length ||
-            this.filters.hotelClass.length
+          this.filters.maxPrice ||
+          this.filters.freeCancellation ||
+          this.filters.minRating ||
+          this.filters.radius ||
+          this.filters.amenities.length ||
+          this.filters.mealPlans.length ||
+          this.filters.hotelClass.length
         );
       },
     },

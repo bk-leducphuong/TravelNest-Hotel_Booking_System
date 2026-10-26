@@ -1,100 +1,55 @@
+<script>
+  export default {
+    methods: {
+      changeLanguage(event) {
+        const language = event.target.value;
+        this.$i18n.locale = language;
+        localStorage.setItem('language', language);
+        this.$store.dispatch('user/updateUserLanguage', language);
+      },
+    },
+  };
+</script>
 <template>
-  <section class="settings-panel">
-    <header class="panel-header">
-      <h1>{{ $t('account.general.title') }}</h1>
-      <p>
-        {{ $t('account.general.description') }}
-      </p>
+  <section class="general-settings">
+    <header class="guest-section">
+      <h1 class="guest-page-title">{{ $t('account.general.title') }}</h1>
+      <p class="guest-subtitle">{{ $t('account.general.description') }}</p>
     </header>
-
-    <article class="detail-card muted-card">
-      <div class="detail-row">
-        <div>
-          <h2>{{ $t('account.general.language') }}</h2>
-          <p>{{ $t('account.general.languageDescription') }}</p>
-        </div>
-        <button type="button" class="disabled-button" disabled>
-          {{ $t('account.status.comingSoon') }}
-        </button>
-      </div>
+    <article class="guest-section">
+      <h2>{{ $t('account.general.language') }}</h2>
+      <p class="guest-subtitle">{{ $t('account.general.languageDescription') }}</p>
+      <label
+        >{{ $t('language.selectTitle')
+        }}<select class="guest-select" :value="$i18n.locale" @change="changeLanguage">
+          <option value="en">English</option>
+          <option value="vi">Tiếng Việt</option>
+        </select></label
+      >
     </article>
-
-    <article class="detail-card muted-card">
-      <div class="detail-row">
-        <div>
-          <h2>{{ $t('account.general.currency') }}</h2>
-          <p>{{ $t('account.general.currencyDescription') }}</p>
-        </div>
-        <button type="button" class="disabled-button" disabled>
-          {{ $t('account.status.comingSoon') }}
-        </button>
-      </div>
+    <article class="guest-section">
+      <h2>{{ $t('account.general.currency') }}</h2>
+      <p class="guest-subtitle">{{ $t('account.general.currencyDescription') }}</p>
     </article>
   </section>
 </template>
-
 <style scoped>
-.settings-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.panel-header,
-.detail-card {
-  padding: 24px 28px;
-  border: 1px solid #dbe3f0;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.panel-header h1,
-.detail-card h2 {
-  margin: 0 0 8px;
-  color: #0f172a;
-}
-
-.panel-header h1 {
-  font-size: 30px;
-}
-
-.panel-header p,
-.detail-card p {
-  margin: 0;
-  color: #475569;
-  line-height: 1.6;
-}
-
-.detail-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.muted-card {
-  background: #f8fafc;
-}
-
-.disabled-button {
-  padding: 11px 16px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: #f8fafc;
-  color: #94a3b8;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-@media (max-width: 768px) {
-  .panel-header,
-  .detail-card {
-    padding: 20px;
+  .general-settings {
+    display: grid;
+    gap: 16px;
   }
-
-  .detail-row {
-    flex-direction: column;
-    align-items: stretch;
+  .guest-page-title {
+    font-size: 24px;
+    line-height: 1.3;
   }
-}
+  h2 {
+    font-size: 16px;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+  label {
+    display: block;
+    margin-top: 20px;
+    font-size: 13px;
+  }
 </style>

@@ -1,0 +1,24 @@
+/* Platform console: matches superadmin-client/pages/login.vue. */
+:root {
+  --tn-brand: #3730a3;
+  --tn-action: #4f46e5;
+  --tn-hover: #4338ca;
+  --tn-accent: #818cf8;
+  --tn-soft: #eef2ff;
+  --tn-canvas: #f0f9ff;
+  --tn-radius: 16px;
+}
+body.login-pf {
+  background: linear-gradient(135deg, var(--tn-soft), var(--tn-canvas));
+}
+#kc-header {
+  color: var(--tn-brand);
+}
+.login-pf-page .card-pf {
+  box-shadow: 0 20px 48px rgb(79 70 229 / 10%);
+}
+/* Platform accounts are provisioned by invitation. This is presentation only;
+   realm registration and API roles remain the authorization boundary. */
+#kc-registration {
+  display: none;
+}

@@ -1,32 +1,35 @@
 <script>
-import LoginHeader from '@/components/LoginHeader.vue'
-import { adminAppUrl } from '@/utils/adminApp'
-export default {
-  components: {
-    LoginHeader
-  },
-  methods: {
-    adminAppUrl,
-    goToWizard() {
-      this.$router.push('/join/become-a-host')
-    }
-  }
-}
+  import TheFooter from '@/components/Footer.vue';
+  import LoginHeader from '@/components/LoginHeader.vue';
+  import { adminAppUrl } from '@/utils/adminApp';
+  export default {
+    components: {
+      LoginHeader,
+      TheFooter,
+    },
+    methods: {
+      adminAppUrl,
+      goToWizard() {
+        this.$router.push('/join/become-a-host');
+      },
+    },
+  };
 </script>
 
 <template>
   <div class="join-container">
     <LoginHeader :isAdminLogin="true" />
-    <div class="main-container">
+    <main id="guest-main" tabindex="-1" class="guest-page main-container">
       <div class="left-main-container">
         <h1 class="main-title">
           {{ $t('join.titleLine1') }}<br />
-          <span class="highlight">{{ $t('join.titleHighlight') }}</span><br />
+          <span class="highlight">{{ $t('join.titleHighlight') }}</span
+          ><br />
           {{ $t('join.titleLine2') }}
         </h1>
-        <h1 class="subtitle">
+        <p class="subtitle">
           {{ $t('join.subtitle') }}
-        </h1>
+        </p>
       </div>
       <div class="register-card">
         <h2 class="register-title">{{ $t('join.registerTitle') }}</h2>
@@ -47,118 +50,77 @@ export default {
           </div>
         </div>
       </div>
-    </div>
+    </main>
+    <TheFooter />
   </div>
 </template>
 
 <style scoped>
-.join-container {
-  background-color: #003b95;
-  padding-bottom: 100px;
-}
-
-/* main container */
-.main-container {
-  overflow: hidden;
-  padding: 24px;
-  margin: 100px 100px 0px 100px;
-  height: 480px;
-  width: auto;
-  display: flex;
-  justify-content: space-between;
-  gap: 40px;
-}
-.main-container .left-main-container .main-title {
-  font-size: 46px;
-  color: white;
-  line-height: 1.2;
-  margin-bottom: 24px;
-}
-.main-container .left-main-container .main-title .highlight {
-  color: #4a89ff;
-}
-.main-container .left-main-container {
-  flex: 1;
-  padding-right: 20px;
-}
-.main-container .left-main-container .subtitle {
-  color: #ebf3ff;
-  font-size: 22px;
-  line-height: 28px;
-  margin-top: 8px;
-  padding-bottom: 8px;
-  font-weight: 500;
-}
-
-/* ô đăng ký */
-.register-card {
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
-  width: 380px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-.register-title {
-  font-size: 24px;
-  color: #333;
-  margin-bottom: 24px;
-}
-
-.list {
-  list-style: none;
-  margin-bottom: 24px;
-}
-
-.list li {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  color: #333;
-  margin-bottom: 16px;
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-.list li::before {
-  content: '✓';
-  color: #008009;
-  font-weight: bold;
-}
-
-.get-started-button {
-  background: #006ce4;
-  color: white;
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.get-started-button::after {
-  content: '→';
-}
-.get-started-button:hover {
-  background: #13539d;
-}
-
-.login-text {
-  font-size: 14px;
-  color: #333;
-}
-
-.login-link {
-  color: #006ce4;
-  text-decoration: none;
-  font-size: 14px;
-}
-/* hết ô đăng ký */
-
-/* end main-container */
+  .join-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .main-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 48px;
+    align-items: center;
+    padding-top: 64px;
+    padding-bottom: 64px;
+  }
+  .main-title {
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 500;
+    line-height: 1.25;
+    color: var(--tn-brand);
+  }
+  .subtitle {
+    color: var(--tn-muted);
+    font-size: 18px;
+    margin-top: 24px;
+  }
+  .register-card {
+    background: white;
+    border-radius: 20px;
+    padding: 32px;
+  }
+  .register-title {
+    font-size: 24px;
+    font-weight: 500;
+  }
+  .list {
+    padding-left: 20px;
+    line-height: 2;
+    font-size: 14px;
+    margin: 24px 0;
+  }
+  .get-started-button {
+    min-height: 44px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--tn-action);
+    color: white;
+    padding: 12px 20px;
+    cursor: pointer;
+  }
+  .login-text {
+    font-size: 14px;
+    margin-top: 24px;
+  }
+  .login-link {
+    display: inline-block;
+    margin-top: 8px;
+  }
+  @media (max-width: 767px) {
+    .main-container {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 32px;
+      padding-top: 32px;
+      padding-bottom: 32px;
+    }
+    .register-card {
+      padding: 24px;
+    }
+  }
 </style>
