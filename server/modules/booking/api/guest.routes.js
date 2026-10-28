@@ -4,6 +4,7 @@ const validate = require('@middlewares/validate.middleware');
 const bookingSchema = require('./guest.schema');
 const {
   getUserBookings,
+  getReviewableBookings,
   createBooking,
   createBookingPaymentIntent,
   getBookingById,
@@ -26,6 +27,13 @@ router.post('/', validate(bookingSchema.createBooking), createBooking);
  * Get all bookings for authenticated user
  */
 router.get('/', validate(bookingSchema.getUserBookings), getUserBookings);
+
+/**
+ * GET /api/bookings/reviewable
+ * Completed, unreviewed bookings the guest can still review.
+ * Registered before `/:bookingId` so the literal path wins.
+ */
+router.get('/reviewable', validate(bookingSchema.getReviewableBookings), getReviewableBookings);
 
 /**
  * GET /api/bookings/code/:bookingCode

@@ -683,6 +683,68 @@
 
 /**
  * @swagger
+ * /bookings/reviewable:
+ *   get:
+ *     summary: List completed bookings awaiting a review
+ *     description: |
+ *       Returns a page of the authenticated user's `completed` bookings that have no
+ *       review yet (cancelled, expired and no-show bookings are never returned), most
+ *       recent first. Each row carries its hotel name, city and active images; rooms are
+ *       not enriched. Booking statuses are refreshed against the current date first.
+ *     tags:
+ *       - Bookings
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Paginated list of completable review prompts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/GuestBookingSummary'
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                       example: 1
+ *                     limit:
+ *                       type: integer
+ *                       example: 20
+ *                     total:
+ *                       type: integer
+ *                       example: 12
+ *       400:
+ *         description: Validation error (`VALIDATION_ERROR` with `fields`)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Not authenticated
+ */
+
+/**
+ * @swagger
  * /bookings/code/{bookingCode}:
  *   get:
  *     summary: Get a booking by its public code

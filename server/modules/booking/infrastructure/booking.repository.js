@@ -1,4 +1,5 @@
 const find = require('./booking/find');
+const reviewable = require('./booking/reviewable');
 const write = require('./booking/write');
 const transactions = require('./booking/transactions');
 
@@ -11,6 +12,7 @@ const transactions = require('./booking/transactions');
  */
 module.exports = {
   ...find,
+  ...reviewable,
   ...write,
   ...transactions,
 };
