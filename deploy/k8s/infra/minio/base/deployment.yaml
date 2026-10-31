@@ -42,18 +42,34 @@ spec:
               name: api
             - containerPort: 9001
               name: console
+          # The data volume is network-attached, so /minio/health/* can take
+          # noticeably longer than a local disk under load. With the default
+          # 1s probe timeout the kubelet kills the server mid-request and
+          # restarts it (observed 16 restarts in 19d).
+          startupProbe:
+            httpGet:
+              path: /minio/health/live
+              port: api
+            # Allow up to 5 minutes for a cold start before liveness kicks in.
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
           livenessProbe:
             httpGet:
               path: /minio/health/live
               port: api
-            initialDelaySeconds: 15
+            initialDelaySeconds: 30
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /minio/health/ready
               port: api
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           resources:
             requests:
               cpu: 100m
