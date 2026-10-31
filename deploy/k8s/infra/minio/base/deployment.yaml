@@ -76,7 +76,11 @@ spec:
               memory: 256Mi
             limits:
               cpu: 500m
-              memory: 512Mi
+              # Steady state already sits at ~508Mi against the old 512Mi cap,
+              # so any bulk listing or maintenance operation pushed it straight
+              # into an OOM kill. A limit is not a reservation, so raising it
+              # costs nothing unless the memory is actually used.
+              memory: 1Gi
           volumeMounts:
             - name: data
               mountPath: /data
