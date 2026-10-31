@@ -9,7 +9,7 @@ vi.mock('@/services/review.service', () => ({
   ReviewService: { getReviews: vi.fn() },
 }));
 vi.mock('@/services/booking.service', () => ({
-  BookingService: { getBookings: vi.fn() },
+  BookingService: { getBookings: vi.fn(), getReviewableBookings: vi.fn() },
 }));
 vi.mock('@/request/errorHandler', () => ({ default: vi.fn() }));
 vi.mock('vue-toastification', () => ({
@@ -27,9 +27,15 @@ vi.mock('@/components/common/EmptyState.vue', () => ({
 
 const emptyReviews = { data: [], meta: { page: 1, limit: 20, total: 0, published: 0, hidden: 0 } };
 
-const mountView = ({ routeQuery = {}, reviews = emptyReviews, bookings = [] } = {}) => {
+const mountView = ({
+  routeQuery = {},
+  reviews = emptyReviews,
+  bookings = [],
+  bookingsMeta = { page: 1, limit: 20, total: bookings.length },
+} = {}) => {
   ReviewService.getReviews.mockResolvedValue(reviews);
   BookingService.getBookings.mockResolvedValue({ data: bookings });
+  BookingService.getReviewableBookings.mockResolvedValue({ data: bookings, meta: bookingsMeta });
 
   const push = vi.fn();
   const replace = vi.fn(() => Promise.resolve());
@@ -83,7 +89,7 @@ describe('Reviews', () => {
     expect(wrapper.vm.viewMode).toBe('all');
     expect(wrapper.vm.pagination.page).toBe(2);
     expect(ReviewService.getReviews).toHaveBeenCalledTimes(1);
-    expect(BookingService.getBookings).toHaveBeenCalledTimes(1);
+    expect(BookingService.getReviewableBookings).toHaveBeenCalledTimes(1);
     expect(push).not.toHaveBeenCalled();
     expect(wrapper.find('.pagination-wrapper').exists()).toBe(true);
     expect(wrapper.find('.review-list .pagination-wrapper').exists()).toBe(false);
@@ -150,18 +156,20 @@ describe('Reviews', () => {
     wrapper.unmount();
   });
 
-  it('loads page 1 with the page size and the unreviewed bookings', async () => {
+  it('loads page 1 with the page size and the reviewable bookings', async () => {
     const { wrapper } = mountView({
       reviews: {
         data: [{ id: 'r1', hotel: { name: 'Hotel A' } }],
         meta: { page: 1, limit: 20, total: 45, published: 40, hidden: 5 },
       },
       bookings: [{ id: 'b1', status: 'completed', hotel: { name: 'Hotel B' } }],
+      bookingsMeta: { page: 1, limit: 20, total: 42 },
     });
     await flushPromises();
 
     expect(ReviewService.getReviews).toHaveBeenCalledWith({ page: 1, limit: 20 });
-    expect(BookingService.getBookings).toHaveBeenCalledWith(true, { reviewed: false });
+    expect(BookingService.getReviewableBookings).toHaveBeenCalledWith({ page: 1, limit: 20 });
+    expect(BookingService.getBookings).not.toHaveBeenCalled();
     expect(wrapper.vm.pagination).toMatchObject({
       page: 1,
       limit: 20,
@@ -170,6 +178,14 @@ describe('Reviews', () => {
       published: 40,
       hidden: 5,
     });
+    expect(wrapper.vm.bookingsPagination).toEqual({
+      page: 1,
+      limit: 20,
+      total: 42,
+      totalPages: 3,
+    });
+    // The badge counts every reviewable stay, not just the loaded page.
+    expect(wrapper.vm.notReviewed).toBe(42);
     expect(wrapper.text()).toContain('reviewsPage.paginationSummary:1-20/45');
   });
 
@@ -248,6 +264,40 @@ describe('Reviews', () => {
     await flushPromises();
 
     expect(wrapper.vm.notReviewedBookings.map((b) => b.id)).toEqual(['b1']);
+  });
+
+  it('paginates reviewable stays independently of written reviews', async () => {
+    const { wrapper, push } = mountView({
+      bookings: [{ id: 'b1', status: 'completed', hotel: { name: 'Hotel B' } }],
+      bookingsMeta: { page: 1, limit: 20, total: 42 },
+    });
+    await flushPromises();
+
+    expect(wrapper.vm.showBookingsPagination).toBe(true);
+    expect(wrapper.vm.showPagination).toBe(false);
+
+    wrapper.vm.changeBookingsPage(2);
+
+    expect(push).toHaveBeenCalledWith({ query: { bookingsPage: 2 } });
+
+    wrapper.vm.viewMode = 'reviewed';
+    await flushPromises();
+
+    expect(wrapper.vm.showBookingsPagination).toBe(false);
+  });
+
+  it('honours ?bookingsPage= on mount', async () => {
+    const { wrapper } = mountView({
+      routeQuery: { page: '3', bookingsPage: '2' },
+      reviews: { data: [], meta: { page: 3, limit: 20, total: 45, published: 40, hidden: 5 } },
+      bookings: [{ id: 'b21', status: 'completed', hotel: { name: 'Hotel B' } }],
+      bookingsMeta: { page: 2, limit: 20, total: 42 },
+    });
+    await flushPromises();
+
+    expect(ReviewService.getReviews).toHaveBeenCalledWith({ page: 3, limit: 20 });
+    expect(BookingService.getReviewableBookings).toHaveBeenCalledWith({ page: 2, limit: 20 });
+    expect(wrapper.vm.bookingsPagination.page).toBe(2);
   });
 
   it('expands a written review to reveal its rating and media (#111)', async () => {
