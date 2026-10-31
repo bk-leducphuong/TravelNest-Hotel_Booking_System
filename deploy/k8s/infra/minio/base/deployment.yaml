@@ -42,25 +42,49 @@ spec:
               name: api
             - containerPort: 9001
               name: console
+          # The data volume is network-attached, so /minio/health/* can take
+          # noticeably longer than a local disk under load. With the default
+          # 1s probe timeout the kubelet kills the server mid-request and
+          # restarts it (observed 16 restarts in 19d).
+          startupProbe:
+            httpGet:
+              path: /minio/health/live
+              port: api
+            # Allow up to 5 minutes for a cold start before liveness kicks in.
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
           livenessProbe:
             httpGet:
               path: /minio/health/live
               port: api
-            initialDelaySeconds: 15
+            initialDelaySeconds: 30
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /minio/health/ready
               port: api
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           resources:
             requests:
               cpu: 100m
               memory: 256Mi
             limits:
-              cpu: 500m
-              memory: 512Mi
+              # 500m was the actual cause of the restart loop: cpu.stat showed
+              # 561/578 periods throttled (~97%), which delays /minio/health/*
+              # past the probe timeout and gets the server killed. MinIO needs
+              # headroom to burst during listings and bulk transfers.
+              cpu: 2
+              # Steady state already sits at ~508Mi against the old 512Mi cap,
+              # so any bulk listing or maintenance operation pushed it straight
+              # into an OOM kill. A limit is not a reservation, so raising it
+              # costs nothing unless the memory is actually used.
+              memory: 1Gi
           volumeMounts:
             - name: data
               mountPath: /data
