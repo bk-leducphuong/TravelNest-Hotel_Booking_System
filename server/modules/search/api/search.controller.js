@@ -98,10 +98,13 @@ const searchHotels = asyncHandler(async (req, res) => {
     ...searchParams,
     cityId: destination?.city_id ?? null,
     countryId: destination?.country_id ?? null,
-    city: destination?.type === 'city' ? destination.display_name : searchParams.city,
+    city:
+      destination?.type === 'city'
+        ? destination?.display_name || searchParams.city
+        : searchParams.city,
     country:
       destination?.type === 'country'
-        ? destination.display_name
+        ? destination?.display_name || searchParams.country
         : destination?.country_name || searchParams.country,
   };
 

@@ -13,6 +13,22 @@ const { attachFavoriteStatus } = require('./attachFavoriteStatus');
 const { resolveDestination } = require('./resolveDestination');
 
 /**
+ * Callers (e.g. the recent-search recorder) need the display fields that
+ * resolveDestination returns, not just the id/type. Returning them here keeps
+ * cityId/city/country from silently becoming null downstream.
+ */
+function toDestinationSummary(destination) {
+  return {
+    id: destination?.id || null,
+    type: destination?.type || null,
+    city_id: destination?.city_id || null,
+    country_id: destination?.country_id || null,
+    display_name: destination?.display_name || null,
+    country_name: destination?.country_name || null,
+  };
+}
+
+/**
  * Hybrid hotel search: resolve destination, find candidates (ES), verify
  * date-range availability, fetch room pricing, merge, filter, rank, paginate.
  *
@@ -60,7 +76,7 @@ async function searchHotels(params, userId = null) {
 
     if (candidateHotels.length === 0) {
       return {
-        destination: { id: destination?.id || null, type: destination?.type || null },
+        destination: toDestinationSummary(destination),
         searchResults: formatEmptyResponse(validated, startTime),
       };
     }
@@ -72,7 +88,7 @@ async function searchHotels(params, userId = null) {
 
     if (availableHotels.length === 0) {
       return {
-        destination: { id: destination?.id || null, type: destination?.type || null },
+        destination: toDestinationSummary(destination),
         searchResults: formatEmptyResponse(validated, startTime),
       };
     }
@@ -109,10 +125,7 @@ async function searchHotels(params, userId = null) {
     );
 
     return {
-      destination: {
-        id: destination?.id || null,
-        type: destination?.type || null,
-      },
+      destination: toDestinationSummary(destination),
       searchResults: response,
     };
   } catch (error) {
