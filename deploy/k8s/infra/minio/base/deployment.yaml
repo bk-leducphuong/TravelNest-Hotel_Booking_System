@@ -75,7 +75,11 @@ spec:
               cpu: 100m
               memory: 256Mi
             limits:
-              cpu: 500m
+              # 500m was the actual cause of the restart loop: cpu.stat showed
+              # 561/578 periods throttled (~97%), which delays /minio/health/*
+              # past the probe timeout and gets the server killed. MinIO needs
+              # headroom to burst during listings and bulk transfers.
+              cpu: 2
               # Steady state already sits at ~508Mi against the old 512Mi cap,
               # so any bulk listing or maintenance operation pushed it straight
               # into an OOM kill. A limit is not a reservation, so raising it
