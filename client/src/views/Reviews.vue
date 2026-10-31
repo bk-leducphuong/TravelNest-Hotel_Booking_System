@@ -29,19 +29,22 @@
         bookings: [],
         isLoading: false,
         isPageLoading: false,
+        isBookingsPageLoading: false,
         viewMode: 'all',
         displayMode: 'list',
         reviewsError: false,
         bookingsError: false,
         expandedReviewId: null,
         pagination: { page: 1, limit: 20, total: 0, totalPages: 0, published: 0, hidden: 0 },
+        // Reviewable stays have their own server-side pagination so the page
+        // never pulls a guest's whole booking history.
+        bookingsPagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
       };
     },
     computed: {
       ...mapGetters('user', ['getUserInformation']),
-      // Completed bookings the user hasn't reviewed yet. The server already
-      // excludes reviewed bookings (`reviewed: false`), so no client-side diffing
-      // against a partial reviews page is needed.
+      // The reviewable endpoint already returns only completed, unreviewed
+      // bookings; keep the status guard as a defensive filter.
       notReviewedBookings() {
         return this.bookings.filter((booking) => booking.status === 'completed');
       },
@@ -53,8 +56,9 @@
       reviewed() {
         return this.pagination.published;
       },
+      // Server truth for the tab badge: the loaded page is capped at `limit`.
       notReviewed() {
-        return this.notReviewedBookings.length;
+        return this.bookingsPagination.total;
       },
       // The "Reviewed" tab lists published reviews only; "All reviews" lists all.
       reviewStatusFilter() {
@@ -69,12 +73,16 @@
       showPagination() {
         return this.viewMode !== 'notReviewed' && this.pagination.totalPages > 1;
       },
+      // Stays pagination is shown wherever stays are listed ("All" and
+      // "Not reviewed yet"), independently of the reviews pagination.
+      showBookingsPagination() {
+        return this.viewMode !== 'reviewed' && this.bookingsPagination.totalPages > 1;
+      },
       paginationSummary() {
-        if (this.pagination.total === 0) return '';
-        const { page, limit, total } = this.pagination;
-        const start = (page - 1) * limit + 1;
-        const end = Math.min(page * limit, total);
-        return this.$t('reviewsPage.paginationSummary', { start, end, total });
+        return this.rangeSummary(this.pagination);
+      },
+      bookingsPaginationSummary() {
+        return this.rangeSummary(this.bookingsPagination);
       },
     },
     watch: {
@@ -88,7 +96,7 @@
           this.$router.replace({ query: { ...this.$route.query, page: 1 } }).catch(() => {});
         }
       },
-      // Keep the page in the URL (?page=N) so refresh/back/shared links work.
+      // Keep the reviews page in the URL (?page=N) so refresh/back/shared links work.
       async '$route.query.page'(value) {
         const page = this.parsePage(value);
         if (page === this.pagination.page) return;
@@ -98,6 +106,19 @@
           await this.loadReviews(page);
         } finally {
           this.isPageLoading = false;
+        }
+      },
+      // Reviewable stays have their own page (?bookingsPage=N) because they are
+      // listed independently of the written reviews.
+      async '$route.query.bookingsPage'(value) {
+        const page = this.parsePage(value);
+        if (page === this.bookingsPagination.page) return;
+        this.bookingsPagination.page = page;
+        this.isBookingsPageLoading = true;
+        try {
+          await this.loadBookings(page);
+        } finally {
+          this.isBookingsPageLoading = false;
         }
       },
     },
@@ -115,6 +136,12 @@
         const raw = Array.isArray(value) ? value[0] : value;
         const page = parseInt(raw, 10);
         return Number.isInteger(page) && page > 0 ? page : 1;
+      },
+      rangeSummary({ page, limit, total }) {
+        if (total === 0) return '';
+        const start = (page - 1) * limit + 1;
+        const end = Math.min(page * limit, total);
+        return this.$t('reviewsPage.paginationSummary', { start, end, total });
       },
       async loadReviews(page = this.pagination.page) {
         this.reviewsError = false;
@@ -139,11 +166,23 @@
           this.reviewsError = true;
         }
       },
-      async loadBookings() {
+      async loadBookings(page = this.bookingsPagination.page) {
         this.bookingsError = false;
         try {
-          const response = await BookingService.getBookings(true, { reviewed: false });
+          const response = await BookingService.getReviewableBookings({
+            page,
+            limit: this.bookingsPagination.limit,
+          });
           this.bookings = response?.data ?? [];
+          const meta = response?.meta ?? {};
+          const limit = meta.limit ?? this.bookingsPagination.limit;
+          const total = meta.total ?? this.bookings.length;
+          this.bookingsPagination = {
+            page: meta.page ?? page,
+            limit,
+            total,
+            totalPages: totalPagesFrom(total, limit),
+          };
         } catch (error) {
           this.bookingsError = true;
         }
@@ -151,7 +190,10 @@
       async load() {
         this.isLoading = true;
         try {
-          await Promise.all([this.loadReviews(this.pagination.page), this.loadBookings()]);
+          await Promise.all([
+            this.loadReviews(this.pagination.page),
+            this.loadBookings(this.bookingsPagination.page),
+          ]);
         } finally {
           this.isLoading = false;
         }
@@ -162,6 +204,16 @@
         if (this.pagination.totalPages && page > this.pagination.totalPages) return;
 
         this.$router.push({ query: { ...this.$route.query, page } });
+        this.$nextTick(() => {
+          this.$refs.rightContainer?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+        });
+      },
+      changeBookingsPage(page) {
+        if (this.isLoading || this.isBookingsPageLoading) return;
+        if (page === this.bookingsPagination.page || page < 1) return;
+        if (this.bookingsPagination.totalPages && page > this.bookingsPagination.totalPages) return;
+
+        this.$router.push({ query: { ...this.$route.query, bookingsPage: page } });
         this.$nextTick(() => {
           this.$refs.rightContainer?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
         });
@@ -208,6 +260,7 @@
         // Use the default list layout when browser storage is unavailable.
       }
       this.pagination.page = this.parsePage(this.$route.query.page);
+      this.bookingsPagination.page = this.parsePage(this.$route.query.bookingsPage);
       await Promise.all([this.load(), this.retrieveUserInformation().catch(() => {})]);
     },
   };
@@ -330,6 +383,17 @@
               </div>
             </div>
           </div>
+          <PaginationControls
+            v-if="showBookingsPagination"
+            class="list-pagination"
+            :page="bookingsPagination.page"
+            :total-pages="bookingsPagination.totalPages"
+            :total="bookingsPagination.total"
+            :limit="bookingsPagination.limit"
+            :is-loading="isLoading || isBookingsPageLoading"
+            :summary="bookingsPaginationSummary"
+            @change="changeBookingsPage"
+          />
 
           <!-- Written reviews -->
           <div
@@ -791,6 +855,10 @@
   }
   .property-image {
     flex-shrink: 0;
+  }
+  /* Keep the stays pagination on its own row in grid mode. */
+  .review-list--grid .list-pagination {
+    grid-column: 1 / -1;
   }
   .review-list--grid {
     display: grid;
