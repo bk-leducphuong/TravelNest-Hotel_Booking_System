@@ -73,6 +73,17 @@ exports.getUserBookings = {
 };
 
 /**
+ * GET /api/bookings/reviewable
+ * Completed, unreviewed bookings available for a guest review.
+ */
+exports.getReviewableBookings = {
+  query: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(20),
+  }),
+};
+
+/**
  * GET /api/bookings/:bookingId
  * Get a specific booking by ID
  */

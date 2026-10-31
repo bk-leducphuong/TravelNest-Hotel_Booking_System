@@ -1,5 +1,7 @@
 const bookingUseCases = {
   getUserBookings: require('../application/guest/getUserBookings').getUserBookings,
+  getReviewableBookings: require('../application/guest/getReviewableBookings')
+    .getReviewableBookings,
   getBookingById: require('../application/guest/getBookingById').getBookingById,
   getBookingByCode: require('../application/guest/getBookingByCode').getBookingByCode,
   cancelBooking: require('../application/guest/cancelBooking').cancelBooking,
@@ -35,6 +37,22 @@ const getUserBookings = asyncHandler(async (req, res) => {
     page,
     limit,
   });
+
+  res.status(200).json({
+    data: result.bookings,
+    meta: { page: result.page, limit: result.limit, total: result.total },
+  });
+});
+
+/**
+ * GET /api/bookings/reviewable
+ * Completed, unreviewed bookings the user can still write a review for.
+ */
+const getReviewableBookings = asyncHandler(async (req, res) => {
+  const userId = getSessionUserId(req);
+  const { page, limit } = req.query;
+
+  const result = await bookingUseCases.getReviewableBookings(userId, { page, limit });
 
   res.status(200).json({
     data: result.bookings,
@@ -122,6 +140,7 @@ const cancelBooking = asyncHandler(async (req, res) => {
 
 module.exports = {
   getUserBookings,
+  getReviewableBookings,
   createBooking,
   createBookingPaymentIntent,
   getBookingById,
