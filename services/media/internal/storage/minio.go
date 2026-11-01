@@ -15,18 +15,25 @@ import (
 type Client struct {
 	minio     *minio.Client
 	bucket    string
+	region    string
 	publicURL string
 }
 
-func NewClient(endpoint, accessKey, secretKey, bucket, publicURL string, useSSL bool) (*Client, error) {
+func NewClient(endpoint, accessKey, secretKey, bucket, region, publicURL string, useSSL bool) (*Client, error) {
+	if region == "" {
+		region = "us-east-1"
+	}
 	client, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
 		Secure: useSSL,
+		// Without this minio-go signs with us-east-1, which Cloudflare R2
+		// rejects; R2 expects "auto".
+		Region: region,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &Client{minio: client, bucket: bucket, publicURL: strings.TrimRight(publicURL, "/")}, nil
+	return &Client{minio: client, bucket: bucket, region: region, publicURL: strings.TrimRight(publicURL, "/")}, nil
 }
 
 func (c *Client) EnsureBucket(ctx context.Context) error {
@@ -37,7 +44,7 @@ func (c *Client) EnsureBucket(ctx context.Context) error {
 	if exists {
 		return nil
 	}
-	return c.minio.MakeBucket(ctx, c.bucket, minio.MakeBucketOptions{Region: "us-east-1"})
+	return c.minio.MakeBucket(ctx, c.bucket, minio.MakeBucketOptions{Region: c.region})
 }
 
 func (c *Client) Bucket() string {
