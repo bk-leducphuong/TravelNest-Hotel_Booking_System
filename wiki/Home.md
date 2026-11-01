@@ -18,15 +18,15 @@ TravelNest is a full-stack hotel booking platform inspired by [booking.com](http
 A single **production** environment runs on a Hetzner VPS (**k3s** + Argo CD),
 exposed through a **Cloudflare Tunnel**.
 
-| Service | URL |
-|---|---|
-| Guest app | [deployserver.work](https://deployserver.work) |
-| Admin console | [admin.deployserver.work](https://admin.deployserver.work) |
-| Superadmin console | [superadmin.deployserver.work](https://superadmin.deployserver.work) |
-| Backend API (Swagger) | [api.deployserver.work/api-docs](https://api.deployserver.work/api-docs) |
-| Keycloak | [keycloak.deployserver.work](https://keycloak.deployserver.work) |
-| Media storage (MinIO) | [storage.deployserver.work](https://storage.deployserver.work) |
-| Argo CD | [argocd.deployserver.work](https://argocd.deployserver.work) (behind Cloudflare Access) |
+| Service               | URL                                                                                     |
+| --------------------- | --------------------------------------------------------------------------------------- |
+| Guest app             | [deployserver.work](https://deployserver.work)                                          |
+| Admin console         | [admin.deployserver.work](https://admin.deployserver.work)                              |
+| Superadmin console    | [superadmin.deployserver.work](https://superadmin.deployserver.work)                    |
+| Backend API (Swagger) | [api.deployserver.work/api-docs](https://api.deployserver.work/api-docs)                |
+| Keycloak              | [keycloak.deployserver.work](https://keycloak.deployserver.work)                        |
+| Media storage (MinIO) | [storage.deployserver.work](https://storage.deployserver.work)                          |
+| Argo CD               | [argocd.deployserver.work](https://argocd.deployserver.work) (behind Cloudflare Access) |
 
 ## Quick Links
 
@@ -37,22 +37,22 @@ exposed through a **Cloudflare Tunnel**.
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend (User) | Vue 3, Vite, Vue Router, Vuex, Element Plus, Leaflet, i18n |
-| Admin App | Nuxt 4, Pinia, Tailwind CSS, Element Plus, TypeScript |
-| Backend API | Node.js, Express.js, Sequelize ORM (MySQL) |
-| Background Jobs | BullMQ (Redis-backed queues) |
-| Microservices | Go services: analytics, media, notification (NATS messaging) |
-| Primary Database | MySQL 8.0 |
-| Search & Logs | Elasticsearch 8.11 |
-| Analytics | MongoDB + Mongoose, ClickHouse |
-| Cache & Queues | Redis 7 |
-| Object Storage | MinIO / S3-compatible |
-| Payments | Stripe |
-| Notifications | Nodemailer, Infobip (SMS), Socket.IO |
-| Auth | Session-based, Passport (Google, Twitter), Keycloak |
-| Deployment | k3s + Argo CD GitOps (Hetzner VPS), Cloudflare Tunnel, GitHub Actions |
+| Layer            | Technology                                                            |
+| ---------------- | --------------------------------------------------------------------- |
+| Frontend (User)  | Vue 3, Vite, Vue Router, Vuex, Element Plus, Leaflet, i18n            |
+| Admin App        | Nuxt 4, Pinia, Tailwind CSS, Element Plus, TypeScript                 |
+| Backend API      | Node.js, Express.js, Sequelize ORM (MySQL)                            |
+| Background Jobs  | BullMQ (Redis-backed queues)                                          |
+| Microservices    | Go services: analytics, media, notification (NATS messaging)          |
+| Primary Database | MySQL 8.0                                                             |
+| Hotel Search     | MySQL (no external engine)                                            |
+| Analytics        | MongoDB + Mongoose, ClickHouse                                        |
+| Cache & Queues   | Redis 7                                                               |
+| Object Storage   | MinIO / S3-compatible                                                 |
+| Payments         | Stripe                                                                |
+| Notifications    | Nodemailer, Infobip (SMS), Socket.IO                                  |
+| Auth             | Session-based, Passport (Google, Twitter), Keycloak                   |
+| Deployment       | k3s + Argo CD GitOps (Hetzner VPS), Cloudflare Tunnel, GitHub Actions |
 
 ## Repository Structure
 
