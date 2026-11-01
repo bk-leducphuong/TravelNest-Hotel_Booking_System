@@ -60,8 +60,9 @@ spec:
                 limits:
                   cpu: 500m
                   memory: 512Mi
-            # 2. Upload dumps to MinIO once the dump sidecar signals completion,
-            #    then prune objects older than the retention window.
+            # 2. Upload dumps to the S3-compatible object store once the dump
+            #    sidecar signals completion, then prune objects older than the
+            #    retention window.
             - name: upload
               image: amazon/aws-cli:2.15.17
               imagePullPolicy: IfNotPresent
@@ -77,7 +78,7 @@ spec:
                     echo "dump did not complete in time" >&2
                     exit 1
                   fi
-                  endpoint="http://minio:9000"
+                  endpoint="${S3_ENDPOINT}"
                   bucket="travelnest-backups"
                   aws --endpoint-url "${endpoint}" s3 mb "s3://${bucket}" 2>/dev/null || true
                   aws --endpoint-url "${endpoint}" s3 cp /backup/ "s3://${bucket}/" \
@@ -91,19 +92,9 @@ spec:
                     [ -n "${key}" ] || continue
                     aws --endpoint-url "${endpoint}" s3 rm "s3://${bucket}/${key}"
                   done
-              env:
-                - name: AWS_ACCESS_KEY_ID
-                  valueFrom:
-                    secretKeyRef:
-                      name: minio-secret
-                      key: MINIO_ROOT_USER
-                - name: AWS_SECRET_ACCESS_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: minio-secret
-                      key: MINIO_ROOT_PASSWORD
-                - name: AWS_DEFAULT_REGION
-                  value: us-east-1
+              envFrom:
+                - secretRef:
+                    name: backup-secret
               volumeMounts:
                 - name: backup
                   mountPath: /backup
