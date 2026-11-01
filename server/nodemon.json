@@ -3,11 +3,8 @@
   "ignore": [
     "**/infra/minio-data/**",
     "**/infra/minio-data-test/**",
-    "**/api/elasticsearch/**",
     "**/infra/database/migrations/**",
     "**/seeders/database/**",
-    "**/infra/elasticsearch/data/**",
-    "**/seeders/elasticsearch/**",
     "**/seeders/mongodb/**",
     "**/docs/**"
   ]

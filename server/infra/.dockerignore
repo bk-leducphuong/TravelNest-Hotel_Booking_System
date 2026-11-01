@@ -24,6 +24,5 @@ Dockerfile*
 docker-compose*.yml
 .dockerignore
 database/migrations
-elasticsearch/data
 minio-data
 ../docs

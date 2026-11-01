@@ -1,71 +1,57 @@
-jest.mock('@config/logger.config', () => ({ error: jest.fn() }));
 jest.mock('@modules/catalog', () => ({
   getActiveDestinationById: jest.fn(),
   findBestMatchDestinationByName: jest.fn(),
-  suggestDestinations: jest.fn(),
-}));
-jest.mock('@modules/search/infrastructure/destination-elasticsearch.helper', () => ({
-  searchByText: jest.fn(),
-  getSuggestions: jest.fn(),
 }));
 
 const catalog = require('@modules/catalog');
-const destinationElasticsearchHelper = require('@modules/search/infrastructure/destination-elasticsearch.helper');
 const { resolveDestination } = require('@modules/search/application/resolveDestination');
+
+const HA_NOI = { id: 'd-hn', type: 'city', display_name: 'Ha Noi', city_id: 'c-hn' };
+const HCMC = { id: 'd-hcmc', type: 'city', display_name: 'Ho Chi Minh City' };
 
 describe('resolveDestination', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('returns null when there is no text location', async () => {
+  it('resolves an explicit destination id first', async () => {
+    catalog.getActiveDestinationById.mockResolvedValue(HA_NOI);
+
+    expect(await resolveDestination({ destinationId: 'd-hn', city: 'Da Nang' })).toBe(HA_NOI);
+    expect(catalog.findBestMatchDestinationByName).not.toHaveBeenCalled();
+  });
+
+  it('falls through to text when the explicit id is inactive/missing', async () => {
+    catalog.getActiveDestinationById.mockResolvedValue(null);
+    catalog.findBestMatchDestinationByName.mockResolvedValue(HA_NOI);
+
+    expect(await resolveDestination({ destinationId: 'gone', city: 'Ha Noi' })).toBe(HA_NOI);
+  });
+
+  it('returns null without text or id', async () => {
     expect(await resolveDestination({})).toBeNull();
-    expect(destinationElasticsearchHelper.searchByText).not.toHaveBeenCalled();
+    expect(catalog.findBestMatchDestinationByName).not.toHaveBeenCalled();
   });
 
-  it('uses an explicit destination id when it exists', async () => {
-    catalog.getActiveDestinationById.mockResolvedValue({ id: 'd-x', type: 'city' });
-
-    expect(await resolveDestination({ destinationId: 'd-x', city: 'Hanoi' })).toEqual({
-      id: 'd-x',
-      type: 'city',
-    });
-    expect(destinationElasticsearchHelper.searchByText).not.toHaveBeenCalled();
-  });
-
-  it('rewrites known aliases before querying ES', async () => {
-    destinationElasticsearchHelper.searchByText.mockResolvedValue([]);
-    catalog.findBestMatchDestinationByName.mockResolvedValue({ id: 'd-hcm', type: 'city' });
+  it('rewrites aliases before matching ("Saigon" -> "Ho Chi Minh City")', async () => {
+    catalog.findBestMatchDestinationByName.mockResolvedValue(HCMC);
 
     await resolveDestination({ city: 'Saigon' });
 
-    expect(destinationElasticsearchHelper.searchByText).toHaveBeenCalledWith(
-      'Ho Chi Minh City',
-      10
-    );
     expect(catalog.findBestMatchDestinationByName).toHaveBeenCalledWith('Ho Chi Minh City');
   });
 
-  it('prefers a city over a country from ES results', async () => {
-    destinationElasticsearchHelper.searchByText.mockResolvedValue([
-      { id: 'd-vn', type: 'country' },
-      { id: 'd-hn', type: 'city' },
-    ]);
+  it('passes free text through untouched when it is not an alias', async () => {
+    catalog.findBestMatchDestinationByName.mockResolvedValue(HA_NOI);
 
-    expect(await resolveDestination({ city: 'Hanoi' })).toEqual({ id: 'd-hn', type: 'city' });
+    await resolveDestination({ location: '  Ha Noi  ' });
+
+    expect(catalog.findBestMatchDestinationByName).toHaveBeenCalledWith('Ha Noi');
   });
 
-  it('falls back to the DB when ES returns nothing', async () => {
-    destinationElasticsearchHelper.searchByText.mockResolvedValue([]);
-    catalog.findBestMatchDestinationByName.mockResolvedValue({ id: 'd-hn', type: 'city' });
+  it('returns the textual match result (including null)', async () => {
+    catalog.findBestMatchDestinationByName.mockResolvedValue(null);
 
-    expect(await resolveDestination({ city: 'Hanoi' })).toEqual({ id: 'd-hn', type: 'city' });
-  });
-
-  it('falls back to the DB when ES throws', async () => {
-    destinationElasticsearchHelper.searchByText.mockRejectedValue(new Error('down'));
-    catalog.findBestMatchDestinationByName.mockResolvedValue({ id: 'd-hn', type: 'city' });
-
-    expect(await resolveDestination({ location: 'Hà Nội' })).toEqual({ id: 'd-hn', type: 'city' });
+    expect(await resolveDestination({ country: 'Atlantis' })).toBeNull();
   });
 });

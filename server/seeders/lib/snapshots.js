@@ -7,6 +7,7 @@
  */
 
 const { dropSecondaryIndexes, recreateIndexes } = require('./bulk');
+const { backfillSearchNames } = require('./search-names');
 
 const TABLE = 'hotel_search_snapshots';
 
@@ -107,6 +108,11 @@ async function rebuildHotelSearchSnapshots(
     }
 
     const [result] = await conn.query(REBUILD_SQL);
+
+    // The INSERT writes hotel_name directly; the normalized/compact search
+    // columns need JS-side accent handling afterwards.
+    await backfillSearchNames(conn, { table: TABLE, log });
+
     return {
       table: TABLE,
       affectedRows: Number(result.affectedRows ?? 0),

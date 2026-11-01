@@ -1,5 +1,9 @@
 # Fast Seed Pipeline (LOAD DATA) — Implementation Plan
 
+> **Note:** the optional Elasticsearch indexing step described below was removed
+> when search moved to MySQL-only (issue #153). MySQL/ MongoDB / MinIO seeding is
+> unchanged.
+
 **Status:** M1–M3 + image fast seeder implemented (`feat/fast-seed-pipeline`)
 **Target environment:** local dev MySQL (docker, `server/infra/docker-compose.yml`)
 **Primary goal:** wall-clock speed for million-row / GB tables

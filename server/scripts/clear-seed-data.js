@@ -4,7 +4,6 @@ require('dotenv').config({
 });
 
 const db = require('../models');
-const elasticsearchClient = require('../config/elasticsearch.config');
 const mongoDb = require('../config/mongodb.config');
 const { minioClient, bucketName } = require('../config/minio.config');
 const HotelViewEvent = require('../seeders/mongodb/models/hotel_view_event.model');
@@ -64,7 +63,6 @@ const DATABASE_TABLES = [
   'users',
 ];
 
-const ELASTICSEARCH_INDICES = ['hotels', 'destinations'];
 const MONGODB_COLLECTIONS = [
   ['search_logs', SearchLog],
   ['hotel_view_events', HotelViewEvent],
@@ -75,7 +73,6 @@ const MINIO_DELETE_BATCH_SIZE = 1000;
 function parseArgs(argv = process.argv.slice(2)) {
   return {
     skipDatabase: argv.includes('--skip-db'),
-    skipElasticsearch: argv.includes('--skip-es'),
     skipMongodb: argv.includes('--skip-mongo') || argv.includes('--skip-mongodb'),
     skipMinio: argv.includes('--skip-minio'),
     serial: argv.includes('--serial'),
@@ -127,42 +124,6 @@ async function clearDatabase() {
 
   console.log(`[database] Cleared ${results.length} tables.`);
   return { name: 'database', cleared: results.length };
-}
-
-async function clearElasticsearchIndex(index) {
-  const exists = await elasticsearchClient.indices.exists({ index });
-
-  if (!exists) {
-    console.log(`  ${index}: index does not exist`);
-    return { index, deleted: 0 };
-  }
-
-  const response = await elasticsearchClient.deleteByQuery({
-    index,
-    refresh: true,
-    conflicts: 'proceed',
-    body: {
-      query: {
-        match_all: {},
-      },
-    },
-  });
-
-  console.log(`  ${index}: deleted ${response.deleted || 0} documents`);
-  return { index, deleted: response.deleted || 0 };
-}
-
-async function clearElasticsearch() {
-  console.log('\n[elasticsearch] Clearing seed indices...');
-  await elasticsearchClient.ping();
-
-  const results = [];
-  for (const index of ELASTICSEARCH_INDICES) {
-    results.push(await clearElasticsearchIndex(index));
-  }
-
-  console.log('[elasticsearch] Finished clearing indices.');
-  return { name: 'elasticsearch', results };
 }
 
 async function clearMongodb() {
@@ -255,10 +216,6 @@ async function clearSeedData(options = parseArgs()) {
     tasks.push(['database', clearDatabase]);
   }
 
-  if (!options.skipElasticsearch) {
-    tasks.push(['elasticsearch', clearElasticsearch]);
-  }
-
   if (!options.skipMongodb) {
     tasks.push(['mongodb', clearMongodb]);
   }
@@ -287,7 +244,7 @@ async function main() {
   console.log('==============================================');
   console.log('  CLEAR SEED DATA');
   console.log('==============================================');
-  console.log('Targets: database, Elasticsearch, MongoDB, MinIO');
+  console.log('Targets: database, MongoDB, MinIO');
   console.log('Use --skip-db, --skip-es, --skip-mongo, --skip-minio, or --serial as needed.');
 
   const results = await clearSeedData();
@@ -305,7 +262,7 @@ async function main() {
     }
   }
 
-  await Promise.allSettled([db.sequelize.close(), elasticsearchClient.close(), mongoDb.close()]);
+  await Promise.allSettled([db.sequelize.close(), mongoDb.close()]);
 
   if (failed.length > 0) {
     process.exit(1);
@@ -317,7 +274,7 @@ async function main() {
 if (require.main === module) {
   main().catch(async (error) => {
     console.error('\nFatal error while clearing seed data:', error);
-    await Promise.allSettled([db.sequelize.close(), elasticsearchClient.close(), mongoDb.close()]);
+    await Promise.allSettled([db.sequelize.close(), mongoDb.close()]);
     process.exit(1);
   });
 }
@@ -325,7 +282,6 @@ if (require.main === module) {
 module.exports = {
   clearSeedData,
   clearDatabase,
-  clearElasticsearch,
   clearMongodb,
   clearMinio,
 };

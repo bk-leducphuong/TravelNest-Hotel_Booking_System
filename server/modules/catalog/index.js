@@ -62,7 +62,7 @@ async function findRoomByHotelAndName(hotelId, roomName, options = {}) {
   return await roomRepository.findByHotelAndName(hotelId, roomName, options);
 }
 
-// Destination resolution (used by search before falling back to ES).
+// Destination resolution (MySQL-only: cached active list + in-memory matching).
 async function getActiveDestinationById(destinationId) {
   return await destinationRepository.findActiveById(destinationId);
 }
@@ -73,6 +73,14 @@ async function findBestMatchDestinationByName(text) {
 
 async function suggestDestinations(text, limit) {
   return await destinationRepository.suggest(text, limit);
+}
+
+/**
+ * Drop the in-process destination cache. Call after a destination is created,
+ * edited or deactivated so the change is visible immediately.
+ */
+function invalidateDestinationsCache() {
+  destinationRepository.invalidateCache();
 }
 
 // City images (used by search to enrich destination cards).
@@ -103,6 +111,7 @@ module.exports = {
   getActiveDestinationById,
   findBestMatchDestinationByName,
   suggestDestinations,
+  invalidateDestinationsCache,
   getCityImagesByCityIds,
 
   // hotel search-snapshot projection (used by the snapshot worker + seeders)

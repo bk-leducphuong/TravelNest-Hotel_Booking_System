@@ -3,7 +3,6 @@ jest.mock('@platform/health/checks', () => ({
   checkMySQLConnection: jest.fn(),
   checkRedisConnection: jest.fn(),
   checkMinIOConnection: jest.fn(),
-  checkElasticsearchConnection: jest.fn(),
   checkAnalyticsService: jest.fn(),
 }));
 
@@ -17,7 +16,6 @@ function eachCheck() {
     checks.checkMySQLConnection,
     checks.checkRedisConnection,
     checks.checkMinIOConnection,
-    checks.checkElasticsearchConnection,
     checks.checkAnalyticsService,
   ];
 }
@@ -33,14 +31,7 @@ describe('platform/health/application/getHealthStatus', () => {
     const result = await getHealthStatus();
 
     expect(result.status).toBe('healthy');
-    expect(Object.keys(result.services)).toEqual([
-      'node',
-      'mysql',
-      'redis',
-      'minio',
-      'elasticsearch',
-      'analytics',
-    ]);
+    expect(Object.keys(result.services)).toEqual(['node', 'mysql', 'redis', 'minio', 'analytics']);
   });
 
   it('reports unhealthy when any dependency is unhealthy', async () => {

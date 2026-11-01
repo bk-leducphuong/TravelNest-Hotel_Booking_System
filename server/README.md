@@ -12,7 +12,7 @@ It powers search, bookings, reviews, notifications, payments, and analytics for 
   - Redis (sessions, caching, rate limiting)
   - BullMQ for background jobs (booking expiry, hold expiry, hotel snapshots, etc.)
 - **Search & Analytics**:
-  - Elasticsearch for hotel search and log indexing
+  - MySQL-only hotel search (denormalized `hotel_search_snapshots` + daily `room_inventory`)
   - MongoDB + Mongoose for search and view analytics
 - **Storage**: MinIO / S3-compatible storage for media
 - **Auth & Security**:
@@ -41,7 +41,6 @@ flowchart LR
     API["Express API\n(server.js)"] --> MQ["Redis + BullMQ"]
     API --> DB[(MySQL)]
     API --> RDS[(Redis)]
-    API --> ES[(Elasticsearch)]
     API --> MDB[(MongoDB Analytics)]
     API --> MINIO[(MinIO / S3)]
   end
@@ -65,7 +64,6 @@ flowchart LR
 - Node.js 18+ and npm
 - A running MySQL and Redis instance (local Docker is fine for development)
 - Optional (but recommended for full feature set):
-  - Elasticsearch
   - MongoDB
 
 ### Environment Variables
@@ -119,31 +117,27 @@ npm run seed:all:quick
 Useful database commands:
 
 - Run all seeds: `npm run seed:all`
-- Clear database, Elasticsearch seed indices, MongoDB analytics, and MinIO seed images: `npm run seed:clear`
+- Clear database, MongoDB analytics, and MinIO seed images: `npm run seed:clear`
 - Clear and reseed: `npm run seed:all:clear`
 - Run a specific seed, for example:
   - `npm run seed:user`
   - `npm run seed:hotel`
   - `npm run seed:booking`
 
-### Elasticsearch & MongoDB Analytics Setup (Optional for Local Dev)
+### MongoDB Analytics Setup (Optional for Local Dev)
 
-If you have Elasticsearch and MongoDB running locally:
+Hotel search is MySQL-only; there is no search engine to index. If you have
+MongoDB running locally you can seed the analytics collections:
 
 ```bash
-# Hotels search index
-npm run es:setup-hotels
-npm run es:seed-hotels
-
-# Log index
-npm run es:setup-logs
-
-# Seed MongoDB analytics data
 npm run mongo:seed:search_logs
 npm run mongo:seed:hotel_views
 ```
 
-These commands are primarily used in production via the deployment scripts; for local development you can skip them if you do not need full‑text search or analytics.
+For local development you can skip this if you do not need analytics data.
+
+See [`docs/architecture/search-mysql.md`](../docs/architecture/search-mysql.md)
+for the search design, price/availability semantics and measured timings.
 
 ### Run the Server (Development)
 

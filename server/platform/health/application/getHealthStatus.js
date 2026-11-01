@@ -14,19 +14,16 @@ async function getHealthStatus() {
     checks.checkMySQLConnection(),
     checks.checkRedisConnection(),
     checks.checkMinIOConnection(),
-    checks.checkElasticsearchConnection(),
     checks.checkAnalyticsService(),
   ]);
 
-  const [nodeCheck, mysqlCheck, redisCheck, minioCheck, elasticsearchCheck, analyticsCheck] =
-    settled;
+  const [nodeCheck, mysqlCheck, redisCheck, minioCheck, analyticsCheck] = settled;
 
   const services = {
     node: formatCheckResult(nodeCheck),
     mysql: formatCheckResult(mysqlCheck),
     redis: formatCheckResult(redisCheck),
     minio: formatCheckResult(minioCheck),
-    elasticsearch: formatCheckResult(elasticsearchCheck),
     analytics: formatCheckResult(analyticsCheck),
   };
 

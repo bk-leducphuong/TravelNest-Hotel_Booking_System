@@ -71,10 +71,10 @@ exports.searchHotels = {
         'number.base': 'maxPrice must be a number',
         'number.greater': 'maxPrice must be greater than minPrice',
       }),
-    minRating: Joi.number().min(0).max(5).messages({
+    minRating: Joi.number().min(0).max(10).messages({
       'number.base': 'minRating must be a number',
       'number.min': 'minRating must be at least 0',
-      'number.max': 'minRating cannot exceed 5',
+      'number.max': 'minRating cannot exceed 10',
     }),
     hotelClass: Joi.alternatives()
       .try(

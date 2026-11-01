@@ -1,6 +1,7 @@
 jest.mock('@platform/database', () => ({
   destinations: {
     findOne: jest.fn(),
+    findByPk: jest.fn(),
     findAll: jest.fn(),
   },
 }));
@@ -40,93 +41,105 @@ const VIETNAM = {
   is_active: true,
 };
 
-describe('destinationRepository.findBestMatchByName', () => {
+describe('destinationRepository', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    destinationRepository.invalidateCache();
   });
 
-  it('returns null for empty input without querying', async () => {
-    expect(await destinationRepository.findBestMatchByName('')).toBeNull();
-    expect(await destinationRepository.findBestMatchByName('   ')).toBeNull();
-    expect(destinations.findOne).not.toHaveBeenCalled();
-    expect(destinations.findAll).not.toHaveBeenCalled();
-  });
+  describe('findBestMatchByName', () => {
+    it('returns null for empty input without querying', async () => {
+      expect(await destinationRepository.findBestMatchByName('')).toBeNull();
+      expect(await destinationRepository.findBestMatchByName('   ')).toBeNull();
+      expect(destinations.findAll).not.toHaveBeenCalled();
+    });
 
-  it('matches the exact normalized name first', async () => {
-    destinations.findOne.mockResolvedValueOnce(HA_NOI);
+    it('resolves "Hanoi" to "Ha Noi" via the compact key', async () => {
+      destinations.findAll.mockResolvedValue([DA_NANG, HA_NOI, VIETNAM]);
 
-    expect(await destinationRepository.findBestMatchByName('Ha Noi')).toBe(HA_NOI);
-    expect(destinations.findAll).not.toHaveBeenCalled();
-  });
+      expect(await destinationRepository.findBestMatchByName('Hanoi')).toBe(HA_NOI);
+    });
 
-  it('resolves "Hanoi" to "Ha Noi" via the compact key', async () => {
-    destinations.findOne.mockResolvedValue(null);
-    destinations.findAll.mockResolvedValue([DA_NANG, HA_NOI, VIETNAM]);
+    it('resolves the diacritic form "Hà Nội"', async () => {
+      destinations.findAll.mockResolvedValue([DA_NANG, HA_NOI]);
 
-    expect(await destinationRepository.findBestMatchByName('Hanoi')).toBe(HA_NOI);
-  });
+      expect(await destinationRepository.findBestMatchByName('Hà Nội')).toBe(HA_NOI);
+    });
 
-  it('resolves the diacritic form "Hà Nội"', async () => {
-    destinations.findOne.mockResolvedValue(null);
-    destinations.findAll.mockResolvedValue([DA_NANG, HA_NOI]);
+    it('prefers a city over a country', async () => {
+      destinations.findAll.mockResolvedValue([VIETNAM, HA_NOI]);
 
-    expect(await destinationRepository.findBestMatchByName('Hà Nội')).toBe(HA_NOI);
-  });
+      expect(await destinationRepository.findBestMatchByName('Ha Noi')).toBe(HA_NOI);
+    });
 
-  it('prefers a city over a country', async () => {
-    destinations.findOne.mockResolvedValue(null);
-    destinations.findAll.mockResolvedValue([VIETNAM, HA_NOI]);
+    it('falls back to a substring match for partial input', async () => {
+      destinations.findAll.mockResolvedValue([DA_NANG, HA_NOI]);
 
-    expect(await destinationRepository.findBestMatchByName('Ha Noi')).toBe(HA_NOI);
-  });
+      expect(await destinationRepository.findBestMatchByName('noi')).toBe(HA_NOI);
+    });
 
-  it('falls back to a substring match for partial input', async () => {
-    destinations.findOne.mockResolvedValue(null);
-    destinations.findAll.mockResolvedValue([DA_NANG, HA_NOI]);
+    it('returns null when nothing matches', async () => {
+      destinations.findAll.mockResolvedValue([DA_NANG]);
 
-    expect(await destinationRepository.findBestMatchByName('noi')).toBe(HA_NOI);
-  });
+      expect(await destinationRepository.findBestMatchByName('Atlantis')).toBeNull();
+    });
 
-  it('returns null when nothing matches', async () => {
-    destinations.findOne.mockResolvedValue(null);
-    destinations.findAll.mockResolvedValue([DA_NANG]);
+    it('loads the active list once per TTL and can be invalidated', async () => {
+      destinations.findAll.mockResolvedValue([HA_NOI]);
 
-    expect(await destinationRepository.findBestMatchByName('Atlantis')).toBeNull();
-  });
-});
+      await destinationRepository.findBestMatchByName('Hanoi');
+      await destinationRepository.findBestMatchByName('Ha Noi');
 
-describe('destinationRepository.suggest', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+      expect(destinations.findAll).toHaveBeenCalledTimes(1);
 
-  it('returns nothing for blank input', async () => {
-    expect(await destinationRepository.suggest('  ')).toEqual([]);
-    expect(destinations.findAll).not.toHaveBeenCalled();
-  });
+      destinationRepository.invalidateCache();
+      await destinationRepository.findBestMatchByName('Hanoi');
 
-  it('suggests "Ha Noi" for "Hanoi" with an ES-shaped payload', async () => {
-    destinations.findAll.mockResolvedValue([DA_NANG, HA_NOI]);
-
-    const suggestions = await destinationRepository.suggest('Hanoi', 5);
-
-    expect(suggestions[0]).toMatchObject({
-      text: 'Ha Noi',
-      payload: { id: 'd-hn', type: 'city', country_name: 'Vietnam' },
+      expect(destinations.findAll).toHaveBeenCalledTimes(2);
     });
   });
 
-  it('ranks exact/prefix matches above substring matches', async () => {
-    destinations.findAll.mockResolvedValue([DA_NANG, HA_NOI]);
+  describe('suggest', () => {
+    it('returns nothing for blank input', async () => {
+      expect(await destinationRepository.suggest('  ')).toEqual([]);
+      expect(destinations.findAll).not.toHaveBeenCalled();
+    });
 
-    const suggestions = await destinationRepository.suggest('ha', 5);
+    it('suggests "Ha Noi" for "Hanoi" with a stable payload', async () => {
+      destinations.findAll.mockResolvedValue([DA_NANG, HA_NOI]);
 
-    expect(suggestions[0].text).toBe('Ha Noi');
+      const suggestions = await destinationRepository.suggest('Hanoi', 5);
+
+      expect(suggestions[0]).toMatchObject({
+        text: 'Ha Noi',
+        payload: { id: 'd-hn', type: 'city', country_name: 'Vietnam' },
+      });
+    });
+
+    it('ranks exact/prefix matches above substring matches', async () => {
+      destinations.findAll.mockResolvedValue([DA_NANG, HA_NOI]);
+
+      const suggestions = await destinationRepository.suggest('ha', 5);
+
+      expect(suggestions[0].text).toBe('Ha Noi');
+    });
+
+    it('honours the limit', async () => {
+      destinations.findAll.mockResolvedValue([DA_NANG, HA_NOI]);
+
+      expect(await destinationRepository.suggest('a', 1)).toHaveLength(1);
+    });
   });
 
-  it('honours the limit', async () => {
-    destinations.findAll.mockResolvedValue([DA_NANG, HA_NOI]);
+  describe('findActiveById', () => {
+    it('queries the database directly so a new destination is usable immediately', async () => {
+      destinations.findOne.mockResolvedValue(HA_NOI);
 
-    expect(await destinationRepository.suggest('a', 1)).toHaveLength(1);
+      expect(await destinationRepository.findActiveById('d-hn')).toBe(HA_NOI);
+      expect(destinations.findOne).toHaveBeenCalledWith({
+        where: { id: 'd-hn', is_active: true },
+        raw: true,
+      });
+    });
   });
 });

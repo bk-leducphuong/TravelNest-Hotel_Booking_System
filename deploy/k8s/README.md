@@ -21,10 +21,6 @@ Phase 1 deploys these workloads into a single-node `k3s` cluster:
 - `nats`
 - `keycloak`
 
-Only Elasticsearch stays external and is configured through Kubernetes secrets:
-
-- managed Elasticsearch (Elastic Cloud)
-
 ## Layout
 
 ```text
@@ -36,7 +32,7 @@ deploy/k8s/
     local/                 Local root kustomization + ApplicationSet
   apps/                    Application workloads (base + local/prod overlays)
   infra/                   In-cluster stateful services (base + local/prod overlays)
-  local/                   Dev-only Elasticsearch + manual maintenance jobs
+  local/                   Dev-only manual maintenance jobs
 ```
 
 Each cluster bootstraps one **environment root** (`environments/<env>`), which
@@ -87,10 +83,10 @@ spec:
     type: RollingSync
     rollingSync:
       steps:
-        - matchExpressions: [{key: wave, operator: In, values: ["10"]}]
-        - matchExpressions: [{key: wave, operator: In, values: ["20"]}]
-        - matchExpressions: [{key: wave, operator: In, values: ["30"]}]
-        - matchExpressions: [{key: wave, operator: In, values: ["40"]}]
+        - matchExpressions: [{ key: wave, operator: In, values: ["10"] }]
+        - matchExpressions: [{ key: wave, operator: In, values: ["20"] }]
+        - matchExpressions: [{ key: wave, operator: In, values: ["30"] }]
+        - matchExpressions: [{ key: wave, operator: In, values: ["40"] }]
 ```
 
 Note: RollingSync is beta and forces auto-sync **off** on the generated
@@ -191,12 +187,9 @@ rolls out. It reuses the `api-config` ConfigMap and `api-secret` Secret.
 ## Local environment (k3d)
 
 `deploy/k8s/local/` is a self-contained environment overlay for a local k3d
-cluster. It deploys the same workloads as prod plus a dev-only data store that
-stands in for the managed Elasticsearch:
+cluster. It deploys the same workloads as prod, plus a dev-only MongoDB instance:
 
 - `infra/mongodb/` — single-node MongoDB (`mongodb:27017`), shared with prod.
-- `local/elasticsearch/` — single-node Elasticsearch 8.11, security disabled
-  (`http://elasticsearch:9200`).
 
 All local Secrets are SOPS-encrypted with their own values — see
 [Secrets](#secrets-sops--age) and `deploy/docs/SECRETS.md`.
@@ -266,8 +259,8 @@ The overlays are intentionally cluster-agnostic so the same `prod` manifests run
 on the VPS k3s cluster or a managed cloud cluster. Assumptions to satisfy on any
 new cluster:
 
-- **StorageClass** — `mysql`, `redis`, `nats`, `minio`, `mongodb` and
-  `elasticsearch` use `volumeClaimTemplates` with **no `storageClassName`**, so
+- **StorageClass** — `mysql`, `redis`, `nats`, `minio` and `mongodb` use
+  `volumeClaimTemplates` with **no `storageClassName`**, so
   the cluster must have a default StorageClass. Don't hardcode one in the
   manifests; set the default on the cluster instead.
 - **Ingress class** — every Ingress hardcodes `ingressClassName: traefik`. A
@@ -292,7 +285,7 @@ and platform add-ons — see [`../terraform/README.md`](../terraform/README.md).
 
 > This is an **alternate** target, not the live environment. The production
 > cluster is the single-node Hetzner k3s cluster, where MySQL/Redis/MinIO/MongoDB/
-> NATS/Keycloak all run in-cluster and only Elasticsearch is external.
+> NATS/Keycloak all run in-cluster. Hotel search is MySQL-only.
 
 The `keycloak` database is created by
 `infra/keycloak/overlays/prod/db-init-job.yaml` (an Argo CD PreSync hook),
@@ -300,9 +293,8 @@ because RDS cannot run the old in-cluster MySQL init ConfigMap.
 
 ## Before First Deploy
 
-- Point the Elasticsearch credentials at your Elastic Cloud deployment via
-  `deploy/k8s/.env.prod`, then seal them (see above). MySQL, Redis, MinIO and
-  MongoDB are provisioned in-cluster.
+- MySQL, Redis, MinIO and MongoDB are provisioned in-cluster. Re-seal
+  `deploy/k8s/.env.prod` (see above) if you rotate any secret.
 - Image pushes deploy automatically: the image CI (on master) commits the new
   tag into the prod overlay and Argo CD rolls it out.
 - If you do not want public MinIO object delivery at `storage.deployserver.work`,

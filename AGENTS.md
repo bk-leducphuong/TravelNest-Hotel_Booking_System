@@ -49,7 +49,7 @@ Node.js `>=18` and Yarn `>=1.22` are expected.
 
 Use the format/example files as references. Do not commit real secrets.
 
-- `server/.env.format`: API, MySQL, Redis, MongoDB, Elasticsearch, MinIO, Stripe, SMTP, OAuth, worker settings.
+- `server/.env.format`: API, MySQL, Redis, MongoDB, MinIO, Stripe, SMTP, OAuth, worker settings.
 - `client/.env.format`: Vite variables such as `VITE_SERVER_HOST`, `VITE_STRIPE_PUBLIC_KEY`, `VITE_MINIO_URL`.
 - `admin-client/.env.example`: currently shows `NITRO_PUBLIC_API_BASE`, while `admin-client/nuxt.config.ts` reads `NUXT_PUBLIC_API_BASE`; check both before changing config.
 - `scrape_data/.env.format`: scraper location, API key, cookies, and MySQL settings.
@@ -61,16 +61,16 @@ The server loads `.env.${NODE_ENV}` in `server/server.js`; development usually m
 Pick the tool that matches the environment you mean. The full procedures live in
 the project skills — load them on demand instead of guessing.
 
-| Environment                                                      | How to reach it                                                         | Details                        |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------ |
-| Local dev services (MySQL, Redis, MongoDB, MinIO, Elasticsearch) | `make infra-*` (loads `server/.env.development`)                        | skill `travelnest-local-infra` |
-| Local Kubernetes (k3d)                                           | `KUBECONFIG=~/.kube/travelnest-local.yaml kubectl ...`                  | skill `travelnest-local-infra` |
-| Prod VPS (Hetzner CAX21)                                         | `ssh hetzner` (deploy user) / `ssh hetzner-root`                        | skill `travelnest-prod-ops`    |
-| Prod k3s cluster                                                 | `kubectl` / `argocd` **over ssh** (no prod kubeconfig locally)          | skill `travelnest-prod-ops`    |
-| Prod MySQL / Redis / MongoDB                                     | `cloudflared access tcp` + creds from gitignored `deploy/k8s/.env.prod` | skill `travelnest-prod-ops`    |
-| Prod deploys                                                     | Argo CD GitOps only — never `kubectl apply` by hand                     | `deploy/docs/CICD.md`          |
-| Grafana Cloud                                                    | `gcx` CLI; token sealed in `deploy/k8s/monitoring/secrets/`             | skill `travelnest-prod-ops`    |
-| Hetzner / Cloudflare                                             | `hcloud`, `cf`, `cloudflared`                                           | skill `travelnest-prod-ops`    |
+| Environment                                       | How to reach it                                                         | Details                        |
+| ------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------ |
+| Local dev services (MySQL, Redis, MongoDB, MinIO) | `make infra-*` (loads `server/.env.development`)                        | skill `travelnest-local-infra` |
+| Local Kubernetes (k3d)                            | `KUBECONFIG=~/.kube/travelnest-local.yaml kubectl ...`                  | skill `travelnest-local-infra` |
+| Prod VPS (Hetzner CAX21)                          | `ssh hetzner` (deploy user) / `ssh hetzner-root`                        | skill `travelnest-prod-ops`    |
+| Prod k3s cluster                                  | `kubectl` / `argocd` **over ssh** (no prod kubeconfig locally)          | skill `travelnest-prod-ops`    |
+| Prod MySQL / Redis / MongoDB                      | `cloudflared access tcp` + creds from gitignored `deploy/k8s/.env.prod` | skill `travelnest-prod-ops`    |
+| Prod deploys                                      | Argo CD GitOps only — never `kubectl apply` by hand                     | `deploy/docs/CICD.md`          |
+| Grafana Cloud                                     | `gcx` CLI; token sealed in `deploy/k8s/monitoring/secrets/`             | skill `travelnest-prod-ops`    |
+| Hetzner / Cloudflare                              | `hcloud`, `cf`, `cloudflared`                                           | skill `travelnest-prod-ops`    |
 
 Installed on this machine: `mysql`, `mongosh`, `redis-cli`, `stripe`,
 `cloudflared`, `hcloud`, `cf`, `kubectl`, `argocd`, `k3d`, `kustomize`,
@@ -109,7 +109,6 @@ Important paths:
 - `server/models/`: Sequelize models and associations; Mongo models live in `server/models/mongo/`.
 - `server/infra/database/migrations/`: Sequelize migrations.
 - `server/infra/database/seeders/`: development seed scripts.
-- `server/infra/elasticsearch/`: Elasticsearch index setup and seeders.
 - `server/infra/mongodb/`: Mongo analytics seeders.
 - `server/queues/` and `server/workers/`: BullMQ queues and processors.
 - `server/socket/`: Socket.IO setup and controllers.
@@ -132,7 +131,7 @@ Backend tests use Jest. Integration tests may require Docker/Testcontainers and 
 
 ## Backend Data And Services
 
-Primary storage is MySQL via Sequelize. Redis is used for sessions, cache/rate limiting, and BullMQ. MongoDB stores analytics such as search logs and hotel view events. Elasticsearch powers search/log indexes. MinIO/S3-compatible storage handles media. Stripe, SMTP/Nodemailer, Infobip, OAuth providers, and Socket.IO are integrated.
+Primary storage is MySQL via Sequelize. Redis is used for sessions, cache/rate limiting, and BullMQ. MongoDB stores analytics such as search logs and hotel view events. Hotel search is MySQL-only (denormalized `hotel_search_snapshots` read model + daily `room_inventory`). MinIO/S3-compatible storage handles media. Stripe, SMTP/Nodemailer, Infobip, OAuth providers, and Socket.IO are integrated.
 
 ### Real Infra Access For Debugging
 
@@ -141,7 +140,7 @@ data. They load `server/.env.development` by default and call the native CLIs, s
 verify the command before running writes or deletes.
 
 `mysql`, `mongosh`, `redis-cli`, and `curl` are installed, so the `mysql`,
-`redis`, `elasticsearch`, and `mongodb` Makefile targets work directly. `mc`
+`redis` and `mongodb` Makefile targets work directly. `mc`
 (MinIO client) is **not** installed here — see the `travelnest-local-infra` skill
 for the `aws s3 --endpoint-url` / MinIO-console fallback.
 
@@ -152,7 +151,6 @@ make infra-check
 make infra-mysql ARGS="-e 'SHOW TABLES;'"
 make infra-redis ARGS="PING"
 make infra-minio
-make infra-elasticsearch
 make infra-mongodb ARGS="--eval 'db.getCollectionNames()'"
 ```
 
@@ -167,7 +165,6 @@ Connection scripts live in `server/scripts/infra/`:
 - `mysql.sh`: uses `MYSQL_CLI_*`, falling back to `DB_*`; dev compose publishes MySQL on `localhost:3307`.
 - `redis.sh`: uses `REDIS_CLI_*`, falling back to `REDIS_*`.
 - `minio.sh`: configures an `mc` alias from `MINIO_CLI_*`/`MINIO_*`; with no args it lists the configured bucket.
-- `elasticsearch.sh`: runs `curl` against `ELASTICSEARCH_CLI_URL`/`ELASTICSEARCH_HOSTS`; with no args it calls `_cluster/health?pretty`.
 - `mongodb.sh`: uses `MONGODB_CLI_URI`, falling back to `MONGODB_URI`.
 
 Prefer read-only SQL/queries while debugging. For destructive commands, state the exact data impact first and get explicit user approval.
@@ -183,7 +180,7 @@ npm run mongo:seed:search_logs
 npm run mongo:seed:hotel_views
 ```
 
-Use Elasticsearch/Mongo seed commands only when the task needs search or analytics data.
+Use the Mongo seed commands only when the task needs analytics data.
 
 ## User Client Architecture
 
