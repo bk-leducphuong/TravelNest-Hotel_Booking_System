@@ -66,7 +66,7 @@ export async function fetchHotels(
   params: HotelListParams = {}
 ): Promise<Paged<HotelSummary>> {
   return await apiFetch<Paged<HotelSummary>>(
-    `/superadmin/hotels${queryString(params)}`
+    `/superadmin/hotels${queryString({ ...params })}`
   );
 }
 

@@ -1,23 +1,24 @@
 <script setup lang="ts">
-const items = [
-  { label: "Overview", to: "/finance" },
-  { label: "Payments", to: "/finance/payments" },
-  { label: "Refunds", to: "/finance/refunds" },
-  { label: "Payouts", to: "/finance/payouts" },
-  { label: "Ledger", to: "/finance/ledger" },
-];
+import { FINANCE_NAV } from "~/utils/navigation";
+const route = useRoute();
 </script>
-
 <template>
-  <nav class="flex flex-wrap gap-2">
+  <nav
+    :aria-label="$t('nav.finance')"
+    class="flex flex-wrap gap-2 rounded-panel bg-white p-3"
+  >
     <NuxtLink
-      v-for="item in items"
+      v-for="item in FINANCE_NAV"
       :key="item.to"
       :to="item.to"
-      class="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100"
-      active-class="bg-indigo-600 text-white hover:bg-indigo-600"
+      class="rounded-xl px-3 py-2 text-sm font-medium"
+      :class="
+        route.path === item.to
+          ? 'bg-soft text-brand'
+          : 'text-muted hover:bg-gray-50'
+      "
+      :aria-current="route.path === item.to ? 'page' : undefined"
+      >{{ $t(item.labelKey) }}</NuxtLink
     >
-      {{ item.label }}
-    </NuxtLink>
   </nav>
 </template>

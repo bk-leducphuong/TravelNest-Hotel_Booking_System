@@ -58,7 +58,7 @@ export async function fetchUsers(
   params: UserListParams = {}
 ): Promise<Paged<UserSummary>> {
   return await apiFetch<Paged<UserSummary>>(
-    `/superadmin/users${queryString(params)}`
+    `/superadmin/users${queryString({ ...params })}`
   );
 }
 

@@ -1,113 +1,98 @@
 <script setup lang="ts">
-import {
+import { fetchFinanceOverview } from "~/services/api/finance";
+const { date, money, number } = usePlatformFormat();
+const { data, loading, error, load } = usePlatformResource(
+  "platform.finance.read",
+  () => "finance-overview",
   fetchFinanceOverview,
-  type FinanceOverview,
-} from "~/services/api/finance";
-
-const loading = ref(false);
-const error = ref<string | null>(null);
-const overview = ref<FinanceOverview | null>(null);
-
-const load = async () => {
-  loading.value = true;
-  error.value = null;
-  try {
-    overview.value = await fetchFinanceOverview();
-  } catch (err) {
-    overview.value = null;
-    error.value =
-      err instanceof Error ? err.message : "Failed to load finance overview";
-  } finally {
-    loading.value = false;
-  }
-};
-
-onMounted(load);
-
-const sections = computed(() => [
-  {
-    key: "gross",
-    label: "Gross payments (completed)",
-    rows: overview.value?.gross ?? [],
-  },
-  {
-    key: "refunds",
-    label: "Refunds (succeeded)",
-    rows: overview.value?.refunds ?? [],
-  },
-  {
-    key: "payoutsPaid",
-    label: "Payouts (paid)",
-    rows: overview.value?.payoutsPaid ?? [],
-  },
-  {
-    key: "payoutsPending",
-    label: "Payouts (pending)",
-    rows: overview.value?.payoutsPending ?? [],
-  },
-]);
-
-const generatedAt = computed(() =>
-  overview.value ? new Date(overview.value.generatedAt).toLocaleString() : null
+  true
+);
+const hasSnapshot = computed(() =>
+  Boolean(
+    data.value &&
+    !data.value.stale &&
+    data.value.generatedAt &&
+    Number.isFinite(Date.parse(data.value.generatedAt))
+  )
+);
+const sections = computed(() =>
+  data.value
+    ? [
+        { key: "gross", rows: data.value.gross },
+        { key: "refunds", rows: data.value.refunds },
+        { key: "payoutsPaid", rows: data.value.payoutsPaid },
+        { key: "payoutsPending", rows: data.value.payoutsPending },
+      ]
+    : []
 );
 </script>
-
 <template>
-  <section class="space-y-6">
-    <div class="flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">
-          Finance
-        </h2>
-        <p class="mt-1 text-sm text-slate-500">
-          Platform-wide, read-only
-          <span v-if="generatedAt">· {{ generatedAt }}</span>
-        </p>
-      </div>
-      <el-button :loading="loading" @click="load">Refresh</el-button>
-    </div>
-
+  <div class="space-y-6">
+    <UiPageHeader
+      :title="$t('nav.financeOverview')"
+      :subtitle="$t('finance.description')"
+      ><template #actions
+        ><el-button :loading="loading" @click="load">{{
+          $t("common.refresh")
+        }}</el-button></template
+      ></UiPageHeader
+    >
     <FinanceNav />
-
-    <el-alert
-      v-if="error"
-      type="error"
-      :title="error"
-      :closable="false"
-      show-icon
+    <div class="space-y-1 text-xs text-muted">
+      <p>{{ $t("finance.summaryScope") }}</p>
+      <p>{{ $t("overview.refreshHint") }}</p>
+      <p v-if="hasSnapshot" role="status">
+        {{ $t("overview.generated", { date: date(data?.generatedAt) }) }}
+      </p>
+    </div>
+    <UiReadState
+      :loading="loading && !hasSnapshot"
+      :error="error"
+      @retry="load"
     />
-
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <el-card
+    <p v-if="error && hasSnapshot" role="status" class="text-sm text-muted">
+      {{ $t("common.retained") }}
+    </p>
+    <UiSectionCard
+      v-if="!loading && !error && !hasSnapshot"
+      :title="$t('overview.missingTitle')"
+      :description="$t('overview.missingDescription')"
+    />
+    <div
+      v-if="hasSnapshot"
+      class="grid gap-6 lg:grid-cols-2"
+      :aria-busy="loading"
+    >
+      <UiSectionCard
         v-for="section in sections"
         :key="section.key"
-        v-loading="loading"
-        class="shadow-sm"
+        :title="$t(`finance.${section.key}`)"
       >
-        <template #header>
-          <span class="font-medium">{{ section.label }}</span>
-        </template>
-        <el-empty
-          v-if="!section.rows.length"
-          description="No data"
-          :image-size="60"
-        />
-        <ul v-else class="space-y-2">
-          <li
+        <dl v-if="section.rows.length" class="space-y-5">
+          <div
             v-for="row in section.rows"
             :key="row.currency"
-            class="flex items-center justify-between gap-4"
+            class="flex flex-wrap items-center justify-between gap-3"
           >
-            <span class="text-sm text-slate-600">{{ row.currency }}</span>
-            <span class="text-sm font-medium text-slate-900">
-              {{ formatMoney(row.amount, row.currency) }}
-              <span class="ml-1 text-xs font-normal text-slate-400">
-                ({{ row.count }})
-              </span>
-            </span>
-          </li>
-        </ul>
-      </el-card>
+            <dt class="text-sm text-muted">{{ row.currency }}</dt>
+            <dd class="text-right">
+              <p class="text-xl font-medium tabular-nums">
+                {{ money(row.amount, row.currency) }}
+              </p>
+              <p class="mt-1 text-xs text-muted">
+                {{
+                  $t(row.count === 1 ? "finance.countOne" : "finance.count", {
+                    count: number(row.count),
+                  })
+                }}
+              </p>
+            </dd>
+          </div>
+        </dl>
+        <p v-else class="text-sm text-muted">
+          {{ $t("finance.emptyCurrency") }}
+        </p>
+      </UiSectionCard>
     </div>
-  </section>
+  </div>
 </template>

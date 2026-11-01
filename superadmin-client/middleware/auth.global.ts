@@ -1,5 +1,6 @@
 import { ApiError } from "~/services/http";
 import { isAuthenticated as keycloakIsAuthenticated } from "~/services/keycloak";
+import { firstPermittedPath, navigationForPath } from "~/utils/navigation";
 
 /**
  * Global auth + platform-access guard.
@@ -58,7 +59,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   if (isLoginRoute) {
-    return navigateTo("/");
+    return navigateTo(
+      auth.isPlatformStaff
+        ? (firstPermittedPath(auth.permissions) ?? "/403")
+        : "/403"
+    );
   }
 
   // Platform staff only.
@@ -66,7 +71,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return navigateTo("/403");
   }
 
-  if (auth.isPlatformStaff && isForbiddenRoute) {
-    return navigateTo("/");
+  // Keep /403 stable for platform staff who lack a particular page permission.
+  const destination = navigationForPath(to.path);
+  if (
+    !isForbiddenRoute &&
+    destination &&
+    !auth.permissions.includes(destination.permission)
+  ) {
+    return navigateTo("/403");
   }
 });

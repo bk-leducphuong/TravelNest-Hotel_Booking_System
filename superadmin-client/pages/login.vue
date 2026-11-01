@@ -1,110 +1,98 @@
 <script setup lang="ts">
-definePageMeta({
-  layout: false,
-});
-
+definePageMeta({ layout: false });
 const auth = useAuthStore();
 const route = useRoute();
-
+const { t } = useI18n();
 const loading = ref(false);
-
+const localError = ref(false);
 const errorCode = computed(() =>
   typeof route.query.error === "string" ? route.query.error : ""
 );
-const hasError = computed(() => Boolean(errorCode.value));
 const errorMessage = computed(() => {
-  switch (errorCode.value) {
-    case "ACCOUNT_DELETED":
-      return "This account has been deleted. Please contact support if you believe this is a mistake.";
-    case "ACCOUNT_INACTIVE":
-      return "This account is inactive. Please contact support.";
-    case "ACCOUNT_CONFLICT":
-      return "An account with this email address already exists. Please contact support.";
-    case "EMAIL_VERIFICATION_REQUIRED":
-      return "Please verify your email address before signing in.";
-    case "KEYCLOAK_SUBJECT_MISMATCH":
-      return "This account is linked to a different sign-in identity. Please contact support.";
-    default:
-      return "We couldn't complete sign-in. Please try again, or contact support if it keeps happening.";
-  }
+  const known = [
+    "ACCOUNT_DELETED",
+    "ACCOUNT_INACTIVE",
+    "ACCOUNT_CONFLICT",
+    "EMAIL_VERIFICATION_REQUIRED",
+    "KEYCLOAK_SUBJECT_MISMATCH",
+  ];
+  return t(
+    known.includes(errorCode.value)
+      ? `login.${errorCode.value}`
+      : "login.genericError"
+  );
 });
-
 const onSignIn = async () => {
   loading.value = true;
+  localError.value = false;
+  const value = route.query.redirect;
+  // Only an internal path may become the provider's return destination.
   const redirect =
-    typeof route.query.redirect === "string" ? route.query.redirect : "/";
+    typeof value === "string" &&
+    value.startsWith("/") &&
+    !value.startsWith("//") &&
+    !/[\\\r\n]/.test(value)
+      ? value
+      : "/";
   try {
     await auth.login(redirect);
+  } catch {
+    localError.value = true;
   } finally {
     loading.value = false;
   }
 };
-
 const onSignOut = async () => {
   loading.value = true;
+  localError.value = false;
   try {
     await auth.logout();
+  } catch {
+    localError.value = true;
   } finally {
     loading.value = false;
   }
 };
 </script>
-
 <template>
-  <div
-    class="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 to-sky-50"
-  >
-    <div
-      class="w-full max-w-md rounded-2xl bg-white/90 p-8 shadow-xl shadow-indigo-100 ring-1 ring-indigo-50"
-    >
-      <div class="mb-6 flex items-center justify-center gap-3">
+  <main class="flex min-h-screen items-center justify-center px-4 py-10">
+    <div class="tn-section w-full max-w-lg space-y-6">
+      <div class="flex justify-end"><UiLanguageSelect /></div>
+      <div class="flex items-center gap-3">
         <span
-          class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-indigo-500 text-xl font-semibold text-white"
+          class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-brand font-semibold text-white"
+          >TN</span
         >
-          TN
-        </span>
-        <div>
-          <h1 class="text-xl font-semibold tracking-tight text-slate-900">
-            TravelNest Platform
-          </h1>
-          <p class="text-sm text-slate-500">
-            Sign in to monitor hotels, users and finances
-          </p>
-        </div>
+        <h1 class="text-xl font-semibold tracking-tight text-brand">
+          {{ $t("login.title") }}
+        </h1>
       </div>
-
-      <el-alert
-        v-if="hasError"
-        class="mb-4"
-        type="error"
-        :closable="false"
-        show-icon
-        title="Sign-in failed"
-        :description="errorMessage"
-      />
-
+      <p class="text-sm text-muted">{{ $t("login.subtitle") }}</p>
+      <div
+        v-if="errorCode || localError"
+        role="alert"
+        class="space-y-2 rounded-xl bg-soft p-4"
+      >
+        <h2 class="font-medium">{{ $t("login.failed") }}</h2>
+        <p class="text-sm">{{ errorMessage }}</p>
+      </div>
       <el-button
-        v-if="hasError"
+        v-if="errorCode"
         type="primary"
-        class="w-full"
+        class="!ml-0 w-full !whitespace-normal"
         :loading="loading"
         @click="onSignOut"
+        >{{ $t("login.signOut") }}</el-button
       >
-        Sign out and use a different account
-      </el-button>
       <el-button
         v-else
         type="primary"
-        class="w-full"
+        class="!ml-0 w-full"
         :loading="loading"
         @click="onSignIn"
+        >{{ $t("login.signIn") }}</el-button
       >
-        Sign in with TravelNest
-      </el-button>
-
-      <p class="mt-4 text-center text-xs text-slate-400">
-        You will be redirected to the secure sign-in page.
-      </p>
+      <p class="text-xs text-muted">{{ $t("login.secure") }}</p>
     </div>
-  </div>
+  </main>
 </template>

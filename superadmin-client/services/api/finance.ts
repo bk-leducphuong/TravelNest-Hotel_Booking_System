@@ -11,7 +11,8 @@ export interface FinanceOverview {
   refunds: CurrencyAmount[];
   payoutsPaid: CurrencyAmount[];
   payoutsPending: CurrencyAmount[];
-  generatedAt: string;
+  generatedAt: string | null;
+  stale: boolean;
 }
 
 export interface Paged<T> {
@@ -129,7 +130,7 @@ export async function fetchPayments(
   params: FinanceListParams = {}
 ): Promise<Paged<PaymentRow>> {
   return await apiFetch<Paged<PaymentRow>>(
-    `/superadmin/finance/payments${queryString(params)}`
+    `/superadmin/finance/payments${queryString({ ...params })}`
   );
 }
 
@@ -137,7 +138,7 @@ export async function fetchRefunds(
   params: FinanceListParams = {}
 ): Promise<Paged<RefundRow>> {
   return await apiFetch<Paged<RefundRow>>(
-    `/superadmin/finance/refunds${queryString(params)}`
+    `/superadmin/finance/refunds${queryString({ ...params })}`
   );
 }
 
@@ -145,7 +146,7 @@ export async function fetchPayouts(
   params: FinanceListParams = {}
 ): Promise<Paged<PayoutRow>> {
   return await apiFetch<Paged<PayoutRow>>(
-    `/superadmin/finance/payouts${queryString(params)}`
+    `/superadmin/finance/payouts${queryString({ ...params })}`
   );
 }
 
@@ -153,6 +154,6 @@ export async function fetchLedger(
   params: FinanceListParams = {}
 ): Promise<Paged<LedgerRow>> {
   return await apiFetch<Paged<LedgerRow>>(
-    `/superadmin/finance/ledger${queryString(params)}`
+    `/superadmin/finance/ledger${queryString({ ...params })}`
   );
 }
