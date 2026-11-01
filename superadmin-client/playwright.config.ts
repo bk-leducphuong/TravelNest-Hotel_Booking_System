@@ -4,6 +4,7 @@ dotenv.config({ path: ".env.test" });
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  outputDir: "./test-results/e2e",
 
   timeout: 30 * 1000,
 
@@ -20,6 +21,7 @@ export default defineConfig({
   use: {
     // Matches the preview server port below
     baseURL: "http://localhost:8100",
+    launchOptions: { executablePath: process.env.CHROME_PATH },
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",

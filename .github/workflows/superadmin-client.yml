@@ -64,12 +64,18 @@ jobs:
         run: yarn workspace @travelnest/superadmin-client run test:ci
 
       - name: Run ESLint
-        continue-on-error: true
         run: yarn workspace @travelnest/superadmin-client run lint
 
       - name: Type check
-        continue-on-error: true
         run: yarn workspace @travelnest/superadmin-client run typecheck
+
+      - name: Install browser test dependencies
+        if: matrix.node-version == '22.x'
+        run: yarn workspace @travelnest/superadmin-client exec playwright install --with-deps chromium
+
+      - name: Verify platform workflows and accessibility
+        if: matrix.node-version == '22.x'
+        run: yarn workspace @travelnest/superadmin-client run test:browser
 
       - name: Check formatting
         continue-on-error: true
@@ -81,6 +87,17 @@ jobs:
         run: yarn workspace @travelnest/superadmin-client run build
         env:
           NODE_ENV: production
+
+      - name: Verify browser fixtures are absent from production
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          files = list(Path("superadmin-client/.output/public").rglob("*.js"))
+          assert files, "Production JavaScript was not generated"
+          markers = ("platform-fixture-user", "api.platform-fixture.test", "operator@example.test")
+          for path in files:
+              assert not any(marker in path.read_text() for marker in markers), f"Fixture marker in {path}"
+          PY
 
   # Multi-arch (amd64 + arm64) image built on native runners and published
   # by the shared workflow; see .github/workflows/_publish-image.yml.

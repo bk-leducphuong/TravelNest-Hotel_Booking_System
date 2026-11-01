@@ -2,12 +2,19 @@
  * Small display helpers shared by the platform pages.
  */
 
-export function formatDate(value: string | null | undefined): string {
-  if (!value) {
-    return "—";
-  }
+export function formatDate(
+  value: string | null | undefined,
+  locale = "en"
+): string {
+  if (!value) return "—";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString();
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : new Intl.DateTimeFormat(locale, {
+        dateStyle: "medium",
+        timeStyle: "long",
+        timeZone: "UTC",
+      }).format(date);
 }
 
 export function statusTagType(
@@ -34,15 +41,25 @@ export function statusTagType(
 
 export function formatMoney(
   amount: number | string | null | undefined,
-  currency = "USD"
+  currency?: string | null,
+  locale = "en"
 ): string {
-  const value = typeof amount === "string" ? Number(amount) : amount;
-  if (value === null || value === undefined || Number.isNaN(value)) {
+  if (
+    !currency ||
+    !/^[A-Za-z]{3}$/.test(currency) ||
+    amount == null ||
+    (typeof amount === "number" && !Number.isFinite(amount)) ||
+    (typeof amount === "string" && !/^[+-]?\d+(\.\d+)?$/.test(amount.trim()))
+  )
+    return "—";
+  try {
+    // Modern Intl accepts decimal strings exactly; the TS overload still expects
+    // a number. This assertion does not coerce large decimal strings to Number.
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: currency.toUpperCase(),
+    }).format(amount as number);
+  } catch {
     return "—";
   }
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 2,
-  }).format(value);
 }

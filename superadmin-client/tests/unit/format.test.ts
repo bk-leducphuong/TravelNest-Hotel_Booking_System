@@ -45,3 +45,23 @@ describe("format helpers", () => {
     });
   });
 });
+
+describe("currency and locale integrity", () => {
+  it("uses currency precision and the requested locale", () => {
+    expect(formatMoney("12.345", "KWD", "en")).toContain("12.345");
+    expect(formatMoney("1200", "JPY", "en")).not.toContain(".00");
+    expect(formatMoney("1200.50", "USD", "vi")).toContain("1.200,50");
+    expect(formatDate("2026-10-31T09:00:00Z", "en")).toContain("UTC");
+  });
+  it("preserves large decimal strings without a Number conversion", () => {
+    expect(formatMoney("100000000000000001.01", "USD", "en")).toContain(
+      "100,000,000,000,000,001.01"
+    );
+  });
+  it("does not invent a currency or format invalid/empty monetary values", () => {
+    expect(formatMoney("5")).toBe("—");
+    expect(formatMoney("", "USD")).toBe("—");
+    expect(formatMoney(Infinity, "USD")).toBe("—");
+    expect(formatMoney("5", "INVALID")).toBe("—");
+  });
+});

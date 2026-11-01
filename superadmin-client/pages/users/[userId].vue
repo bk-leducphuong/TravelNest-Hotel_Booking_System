@@ -1,183 +1,131 @@
 <script setup lang="ts">
-import { fetchUser, type UserDetail } from "~/services/api/users";
-
+import { fetchUser } from "~/services/api/users";
+import { safeDirectoryBack } from "~/utils/list-query";
+import { statusTagType } from "~/utils/format";
 const route = useRoute();
-const userId = computed(() => String(route.params.userId));
-
-const loading = ref(false);
-const error = ref<string | null>(null);
-const user = ref<UserDetail | null>(null);
-
-const load = async () => {
-  loading.value = true;
-  error.value = null;
-  try {
-    user.value = await fetchUser(userId.value);
-  } catch (err) {
-    user.value = null;
-    error.value = err instanceof Error ? err.message : "Failed to load user";
-  } finally {
-    loading.value = false;
-  }
-};
-
-onMounted(load);
+const { t } = useI18n();
+const { can } = usePermissions();
+const { date, number, label } = usePlatformFormat();
+const {
+  data: user,
+  loading,
+  error,
+  load,
+} = usePlatformResource(
+  "platform.user.read",
+  () => String(route.params.userId),
+  () => fetchUser(String(route.params.userId))
+);
+const back = computed(() => safeDirectoryBack(route.query.back, "/users"));
+const fields = computed(() =>
+  user.value
+    ? [
+        { label: t("fields.id"), value: user.value.id },
+        { label: t("fields.email"), value: user.value.email },
+        { label: t("fields.phone"), value: user.value.phoneNumber },
+        { label: t("fields.birthDate"), value: user.value.dateOfBirth },
+        { label: t("fields.address"), value: user.value.address },
+        { label: t("fields.joined"), value: date(user.value.createdAt) },
+        { label: t("fields.lastLogin"), value: date(user.value.lastLoginAt) },
+        {
+          label: t("fields.verified"),
+          value: date(user.value.emailVerifiedAt),
+        },
+      ]
+    : []
+);
 </script>
-
 <template>
-  <section class="space-y-6">
-    <NuxtLink to="/users" class="text-sm text-indigo-600 hover:text-indigo-800">
-      ← Back to users
-    </NuxtLink>
-
-    <el-alert
-      v-if="error"
-      type="error"
-      :title="error"
-      :closable="false"
-      show-icon
-    />
-
-    <div v-loading="loading">
-      <template v-if="user">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 class="text-2xl font-semibold tracking-tight text-slate-900">
-              {{ user.fullName || user.email }}
-            </h2>
-            <p class="mt-1 text-sm text-slate-500">{{ user.email }}</p>
+  <div class="space-y-6">
+    <NuxtLink :to="back" class="text-sm underline underline-offset-4"
+      >← {{ $t("common.backUsers") }}</NuxtLink
+    >
+    <UiPageHeader v-if="loading || error" :title="$t('nav.users')" />
+    <UiReadState :loading="loading" :error="error" @retry="load" />
+    <template v-if="user && !loading && !error">
+      <UiPageHeader :title="user.fullName || user.email" :subtitle="user.email"
+        ><template #actions
+          ><UiStatusPill :tone="statusTagType(user.status)">{{
+            label("status", user.status)
+          }}</UiStatusPill></template
+        ></UiPageHeader
+      >
+      <p class="text-xs text-muted">
+        {{
+          $t(
+            can("platform.user.pii_read")
+              ? "directory.piiVisible"
+              : "directory.piiMasked"
+          )
+        }}
+      </p>
+      <div class="tn-detail-grid">
+        <UiSectionCard :title="$t('directory.profile')"
+          ><UiDetailFields :fields="fields"
+        /></UiSectionCard>
+        <UiSectionCard :title="$t('directory.access')"
+          ><h3 class="mb-3 text-sm text-muted">{{ $t("fields.roles") }}</h3>
+          <div class="flex flex-wrap gap-2">
+            <UiStatusPill v-for="role in user.globalRoles" :key="role">{{
+              label("roles", role)
+            }}</UiStatusPill
+            ><span v-if="!user.globalRoles.length">—</span>
           </div>
-          <el-tag :type="statusTagType(user.status)" effect="plain">
-            {{ user.status }}
-          </el-tag>
+          <p class="mb-2 mt-6 text-sm text-muted">
+            {{ $t("fields.bookings") }}
+          </p>
+          <p class="text-3xl font-medium tabular-nums">
+            {{ number(user.bookings.total) }}
+          </p>
+          <p class="mt-2 text-xs text-muted">
+            {{ $t("directory.countsScope") }}
+          </p></UiSectionCard
+        >
+      </div>
+      <UiSectionCard :title="$t('directory.memberships')">
+        <p v-if="!user.memberships.length" class="text-sm text-muted">
+          {{ $t("directory.noMemberships") }}
+        </p>
+        <div
+          v-else
+          class="tn-table-region"
+          tabindex="0"
+          role="region"
+          :aria-label="$t('directory.memberships')"
+        >
+          <table>
+            <caption class="sr-only">
+              {{
+                $t("directory.memberships")
+              }}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">{{ $t("fields.hotel") }}</th>
+                <th scope="col">{{ $t("fields.status") }}</th>
+                <th scope="col">{{ $t("fields.role") }}</th>
+                <th scope="col">{{ $t("fields.primaryOwner") }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="member in user.memberships" :key="member.hotelId">
+                <td>
+                  <NuxtLink
+                    v-if="can('platform.hotel.read')"
+                    :to="`/hotels/${member.hotelId}`"
+                    >{{ member.hotelName || member.hotelId }}</NuxtLink
+                  ><span v-else>{{ member.hotelName || member.hotelId }}</span>
+                </td>
+                <td>{{ label("status", member.hotelStatus) }}</td>
+                <td>{{ label("roles", member.role) }}</td>
+                <td>
+                  {{ $t(member.isPrimaryOwner ? "common.yes" : "common.no") }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-
-        <div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <el-card class="shadow-sm lg:col-span-2">
-            <template #header>
-              <span class="font-medium">Profile</span>
-            </template>
-            <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <dt class="text-xs uppercase tracking-wide text-slate-400">
-                  Phone
-                </dt>
-                <dd class="text-sm text-slate-900">
-                  {{ user.phoneNumber || "—" }}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-xs uppercase tracking-wide text-slate-400">
-                  Date of birth
-                </dt>
-                <dd class="text-sm text-slate-900">
-                  {{ user.dateOfBirth || "—" }}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-xs uppercase tracking-wide text-slate-400">
-                  Address
-                </dt>
-                <dd class="text-sm text-slate-900">
-                  {{ user.address || "—" }}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-xs uppercase tracking-wide text-slate-400">
-                  Joined
-                </dt>
-                <dd class="text-sm text-slate-900">
-                  {{ formatDate(user.createdAt) }}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-xs uppercase tracking-wide text-slate-400">
-                  Last login
-                </dt>
-                <dd class="text-sm text-slate-900">
-                  {{ formatDate(user.lastLoginAt) }}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-xs uppercase tracking-wide text-slate-400">
-                  Email verified
-                </dt>
-                <dd class="text-sm text-slate-900">
-                  {{ formatDate(user.emailVerifiedAt) }}
-                </dd>
-              </div>
-            </dl>
-          </el-card>
-
-          <el-card class="shadow-sm">
-            <template #header>
-              <span class="font-medium">Access</span>
-            </template>
-            <p class="text-xs uppercase tracking-wide text-slate-400">
-              Global roles
-            </p>
-            <div class="mt-1 flex flex-wrap gap-1">
-              <el-tag
-                v-for="role in user.globalRoles"
-                :key="role"
-                size="small"
-                effect="plain"
-              >
-                {{ role }}
-              </el-tag>
-              <span
-                v-if="!user.globalRoles.length"
-                class="text-sm text-slate-400"
-                >—</span
-              >
-            </div>
-            <p class="mt-4 text-xs uppercase tracking-wide text-slate-400">
-              Bookings
-            </p>
-            <p class="text-2xl font-semibold text-slate-900">
-              {{ user.bookings.total }}
-            </p>
-          </el-card>
-        </div>
-
-        <el-card class="mt-6 shadow-sm">
-          <template #header>
-            <span class="font-medium">Hotel memberships</span>
-          </template>
-          <el-empty
-            v-if="!user.memberships.length"
-            description="No hotel memberships"
-            :image-size="60"
-          />
-          <el-table v-else :data="user.memberships">
-            <el-table-column label="Hotel" min-width="220">
-              <template #default="{ row }">
-                <NuxtLink
-                  :to="`/hotels/${row.hotelId}`"
-                  class="text-indigo-600 hover:text-indigo-800"
-                >
-                  {{ row.hotelName || row.hotelId }}
-                </NuxtLink>
-              </template>
-            </el-table-column>
-            <el-table-column label="Role" width="140">
-              <template #default="{ row }">
-                <el-tag size="small" effect="plain">{{
-                  row.role || "—"
-                }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="Primary owner" width="140">
-              <template #default="{ row }">
-                <el-tag v-if="row.isPrimaryOwner" type="success" size="small"
-                  >Yes</el-tag
-                >
-                <span v-else class="text-slate-400">No</span>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </template>
-    </div>
-  </section>
+      </UiSectionCard>
+    </template>
+  </div>
 </template>

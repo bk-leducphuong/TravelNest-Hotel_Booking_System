@@ -12,7 +12,8 @@ export interface PlatformOverview {
   bookings: {
     total: number;
   };
-  generatedAt: string;
+  generatedAt: string | null;
+  stale: boolean;
 }
 
 /**
