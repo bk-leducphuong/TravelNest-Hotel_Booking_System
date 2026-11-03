@@ -1,15 +1,45 @@
 const { destinations } = require('@platform/database');
-const { normalizeText, compactKey } = require('@utils/placeName');
+const {
+  buildIndex,
+  matchDestination,
+  suggestDestinations,
+} = require('../domain/destination-matching');
 
-/** The destinations table is small (provinces + countries); cap the scan anyway. */
-const CANDIDATE_LIMIT = 500;
+/**
+ * Destination Repository - database access for the destinations table.
+ *
+ * Destination matching is MySQL-only: the active destination list is small
+ * (provinces + countries), so it is loaded once and matched in process memory.
+ * The cache is bounded by TTL and can be invalidated explicitly after a
+ * destination is created, edited or deactivated.
+ */
+
+/** How long a loaded destination list may be reused. */
+const CACHE_TTL_MS = 60 * 1000;
+/** Safety cap: the destination table is tiny, but never scan unbounded. */
+const MAX_DESTINATIONS = 5000;
 
 class DestinationRepository {
+  constructor() {
+    this.cache = null;
+    this.cacheExpiresAt = 0;
+  }
+
+  /** Drop the in-process cache (call after destination writes). */
+  invalidateCache() {
+    this.cache = null;
+    this.cacheExpiresAt = 0;
+  }
+
   async findById(id) {
     if (!id) return null;
     return destinations.findByPk(id, { raw: true });
   }
 
+  /**
+   * Explicit ids are resolved directly so a brand-new destination is usable
+   * before the cached list refreshes.
+   */
   async findActiveById(id) {
     if (!id) return null;
     return destinations.findOne({
@@ -22,113 +52,51 @@ class DestinationRepository {
   }
 
   /**
-   * Resolve a free-text place name to a destination.
-   *
-   * Order: exact normalized name, then a diacritic/space-insensitive compact
-   * match ("Hanoi" == "Ha Noi" == "Hà Nội"), then a substring fallback for
-   * partial input ("Thua Thien" -> "Thua Thien - Hue"). Cities win over
-   * countries at every step.
+   * Load (and cache) the active destinations plus their precomputed match keys.
+   * Stale reads are bounded by CACHE_TTL_MS; writes invalidate explicitly.
    */
-  async findBestMatchByName(text) {
-    const normalized = normalizeText(text);
-    if (!normalized) return null;
+  async loadActiveIndex() {
+    const now = Date.now();
+    if (this.cache && now < this.cacheExpiresAt) {
+      return this.cache;
+    }
 
-    const exactCity = await destinations.findOne({
-      where: {
-        type: 'city',
-        is_active: true,
-        normalized_name: normalized,
-      },
-      raw: true,
-    });
-    if (exactCity) return exactCity;
-
-    const exactCountry = await destinations.findOne({
-      where: {
-        type: 'country',
-        is_active: true,
-        normalized_name: normalized,
-      },
-      raw: true,
-    });
-    if (exactCountry) return exactCountry;
-
-    const compact = compactKey(text);
-    const candidates = await destinations.findAll({
+    const rows = await destinations.findAll({
       where: { is_active: true },
-      limit: CANDIDATE_LIMIT,
+      order: [['display_name', 'ASC']],
+      limit: MAX_DESTINATIONS,
       raw: true,
     });
 
-    const matchesCompact = (destination) =>
-      Boolean(compact) &&
-      (compactKey(destination.display_name) === compact ||
-        compactKey(destination.normalized_name) === compact ||
-        compactKey(destination.slug) === compact);
+    this.cache = buildIndex(rows);
+    this.cacheExpiresAt = now + CACHE_TTL_MS;
 
-    const compactCity = candidates.find((d) => d.type === 'city' && matchesCompact(d));
-    if (compactCity) return compactCity;
-
-    const compactCountry = candidates.find((d) => d.type === 'country' && matchesCompact(d));
-    if (compactCountry) return compactCountry;
-
-    const key = compact || normalized;
-    const contains = (destination) => compactKey(destination.normalized_name).includes(key);
-
-    const containsCity = candidates.find((d) => d.type === 'city' && contains(d));
-    if (containsCity) return containsCity;
-
-    const containsCountry = candidates.find((d) => d.type === 'country' && contains(d));
-    return containsCountry || null;
+    return this.cache;
   }
 
   /**
-   * Lightweight destination autocomplete used as a DB fallback when
-   * Elasticsearch returns no suggestions. Returns ES-shaped suggestion objects
-   * (`{ text, score, payload }`) so the API response stays uniform.
+   * Resolve a free-text place name to a destination.
+   *
+   * Order: exact normalized/compact name, then prefix, then substring, then a
+   * conservative typo match. Cities win over countries at the same tier, and an
+   * ambiguous typo returns null instead of guessing.
+   */
+  async findBestMatchByName(text) {
+    if (typeof text !== 'string' || !text.trim()) return null;
+
+    const index = await this.loadActiveIndex();
+    return matchDestination(index, text);
+  }
+
+  /**
+   * Destination autocomplete. Returns the shape SearchBar consumes:
+   * `{ text, score, payload }`.
    */
   async suggest(text, limit = 10) {
-    const normalized = normalizeText(text);
-    if (!normalized) return [];
+    if (typeof text !== 'string' || !text.trim()) return [];
 
-    const key = compactKey(text) || normalized;
-
-    const candidates = await destinations.findAll({
-      where: { is_active: true },
-      limit: CANDIDATE_LIMIT,
-      raw: true,
-    });
-
-    const scoreOf = (destination) => {
-      const display = compactKey(destination.display_name);
-      const norm = compactKey(destination.normalized_name);
-      if (display === key || norm === key) return 3;
-      if (display.startsWith(key) || norm.startsWith(key)) return 2;
-      if (display.includes(key) || norm.includes(key)) return 1;
-      return 0;
-    };
-
-    return candidates
-      .map((destination) => ({ destination, score: scoreOf(destination) }))
-      .filter((entry) => entry.score > 0)
-      .sort(
-        (a, b) =>
-          b.score - a.score || a.destination.display_name.localeCompare(b.destination.display_name)
-      )
-      .slice(0, limit)
-      .map(({ destination, score }) => ({
-        text: destination.display_name,
-        score,
-        payload: {
-          id: destination.id,
-          type: destination.type,
-          city_id: destination.city_id,
-          country_id: destination.country_id,
-          display_name: destination.display_name,
-          country_name: destination.country_name,
-          slug: destination.slug,
-        },
-      }));
+    const index = await this.loadActiveIndex();
+    return suggestDestinations(index, text, limit);
   }
 }
 

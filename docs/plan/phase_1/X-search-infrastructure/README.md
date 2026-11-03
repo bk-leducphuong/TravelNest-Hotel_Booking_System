@@ -1,5 +1,9 @@
 # X — Search Infrastructure
 
+> **Superseded.** Elasticsearch was removed from the search path in issue #153;
+> search now runs on MySQL (`docs/architecture/search-mysql.md`). This review
+> checklist is kept as a historical planning artifact.
+
 > Part of [Phase 1 — Feature Test & Production-Readiness Review](../TEST-REVIEW-PLAN.md).
 > **Status:** ⬜ Not reviewed · **Owner:** _TBD_ · **Tier:** 5
 
@@ -23,9 +27,9 @@ _(Rubric: see [plan §3](../TEST-REVIEW-PLAN.md#3-review-rubric--the-axes-applie
 
 ## Test cases
 
-| # | Case | Type | Expected | Actual | Pass | Evidence |
-|---|------|------|----------|--------|------|----------|
-| 1 |      |      |          |        | ⬜   |          |
+| #   | Case | Type | Expected | Actual | Pass | Evidence |
+| --- | ---- | ---- | -------- | ------ | ---- | -------- |
+| 1   |      |      |          |        | ⬜   |          |
 
 ## Verdict
 

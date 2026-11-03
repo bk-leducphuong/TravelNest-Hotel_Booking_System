@@ -31,7 +31,6 @@ flowchart TB
   subgraph D["Data — exactly one writer per table"]
     mysql[("MySQL<br/>owned table sets, per service")]
     mongo[("MongoDB<br/>analytics")]
-    es[("Elasticsearch<br/>search index")]
     redis[("Redis<br/>cache + holds")]
     minio[("MinIO<br/>media objects")]
   end
@@ -56,8 +55,7 @@ flowchart TB
   booking --> mysql
   payments --> mysql
   notifications --> mysql
-  search --> es
-  search -. "read-only projection source" .-> mysql
+  search --> mysql
   analytics --> mongo
   media --> minio
   media -. "metadata read" .-> mysql

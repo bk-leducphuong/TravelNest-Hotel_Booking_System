@@ -1,9 +1,13 @@
 /**
- * Post-processing filters for search results (pure).
+ * Post-processing helpers for search results (pure).
+ *
+ * Budget filtering now happens before offer selection (see domain/offers.js)
+ * because a hotel must be represented by an offer the guest can actually buy.
+ * Date-specific price filtering therefore no longer lives here.
  */
 
 /**
- * Normalize an amenity list that may arrive as an array or a JSON string.
+ * Normalize a list that may arrive as an array or a JSON string.
  */
 function normalizeList(value) {
   if (Array.isArray(value)) return value;
@@ -17,35 +21,4 @@ function normalizeList(value) {
   }
 }
 
-/**
- * Apply price filters that need exact room prices for the requested dates.
- */
-function applyDateSpecificFilters(hotels, params) {
-  const { minPrice, maxPrice } = params;
-
-  if (minPrice === undefined && maxPrice === undefined) {
-    return hotels;
-  }
-
-  return hotels.filter((hotel) => {
-    const perNight = parseFloat(
-      hotel.min_price_per_night ?? hotel.available_rooms?.[0]?.price_per_night
-    );
-
-    if (!Number.isFinite(perNight)) {
-      return false;
-    }
-
-    if (minPrice !== undefined && perNight < parseFloat(minPrice)) {
-      return false;
-    }
-
-    if (maxPrice !== undefined && perNight > parseFloat(maxPrice)) {
-      return false;
-    }
-
-    return true;
-  });
-}
-
-module.exports = { normalizeList, applyDateSpecificFilters };
+module.exports = { normalizeList };

@@ -10,7 +10,7 @@
 
 TravelNest follows a **monorepo architecture** with a Node.js/Express backend, a Vue 3 guest app, two Nuxt 4 consoles (admin + superadmin), and evolving Go microservices. The system is migrating from a monolith to a microservices architecture using NATS JetStream as the event bus.
 
-The whole stack runs on a single-node **k3s** cluster on a Hetzner VPS (ARM64), exposed through a **Cloudflare Tunnel** and reconciled by **Argo CD**. Elasticsearch is the only external managed dependency (**Elastic Cloud**); everything else runs in-cluster.
+The whole stack runs on a single-node **k3s** cluster on a Hetzner VPS (ARM64), exposed through a **Cloudflare Tunnel** and reconciled by **Argo CD**. All stateful dependencies run in-cluster; hotel search is MySQL-only, with no external search engine.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -30,17 +30,17 @@ The whole stack runs on a single-node **k3s** cluster on a Hetzner VPS (ARM64), 
     └─────────┘  └─────────┘  └─────┬─────┘
                                     │
          ┌──────────────────────────┼──────────────────────┐
-         │          │               │              │       │
-    ┌────┴────┐ ┌───┴────┐   ┌─────┴──────┐ ┌─────┴───┐ ┌──┴────┐
-    │  MySQL  │ │ Redis  │   │Elasticsearch│ │ MongoDB │ │ MinIO │
-    │  (SQL)  │ │(Cache) │   │  (Search)   │ │(Analyt.)│ │(Stor.)│
-    └─────────┘ └───┬────┘   └────────────┘ └─────────┘ └───────┘
+         │          │                      │              │
+    ┌────┴────┐ ┌───┴────┐          ┌──────┴───┐     ┌────┴───┐
+    │  MySQL  │ │ Redis  │          │ MongoDB  │     │ MinIO  │
+    │(SQL+srch)│ │(Cache) │          │(Analyt.) │     │(Stor.) │
+    └─────────┘ └───┬────┘          └──────────┘     └────────┘
                     │
               ┌─────┴─────┐
               │  BullMQ   │
               │ (Workers) │
               └───────────┘
-                                   
+
          ┌──────────────────────────┐
          │     NATS JetStream       │
          │     (Event Bus)          │
@@ -55,24 +55,27 @@ The whole stack runs on a single-node **k3s** cluster on a Hetzner VPS (ARM64), 
 ## Component Breakdown
 
 ### Frontend Layer
+
 - **User Client** (`client/`): Vue 3 SPA for guests — browse hotels, search, book, review
 - **Admin Client** (`admin-client/`): Nuxt 4 app for property owners/admins — manage listings, bookings, analytics
 - **Superadmin Client** (`superadmin-client/`): Nuxt 4 console for platform-level administration
 
 ### Backend Layer
+
 - **API Server** (`server/`): Express.js REST API, Socket.IO realtime, BullMQ background workers
 - **Go Microservices** (`services/`): Analytics, media processing, and notification services
 - **Message Bus**: NATS JetStream for async communication between Node.js and Go services
 
 ### Data Layer
+
 - **MySQL 8.0**: Primary relational database (Sequelize ORM, 47+ models)
 - **Redis 7**: Caching, session storage, BullMQ queue backend
-- **Elasticsearch 8.11**: Hotel search (edge ngram, geo, completion suggest) + log aggregation — **external** (Elastic Cloud)
 - **MongoDB**: Analytics events (search logs, hotel view events)
 - **MinIO**: S3-compatible object storage for images and media
 - **ClickHouse**: Analytics data warehouse (search logs)
 
 ### External Integrations
+
 - **Stripe**: Payment processing, webhooks, refunds, payouts, ledger
 - **Infobip**: SMS notifications
 - **Nodemailer**: Email delivery

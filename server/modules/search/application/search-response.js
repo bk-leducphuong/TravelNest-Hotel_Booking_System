@@ -2,12 +2,55 @@ const { buildFilterOptions } = require('../domain/facets');
 
 /**
  * Build the paginated search response envelope.
+ *
+ * Facets and totals are computed over the complete eligible set (before
+ * pagination), never over a candidate cap or a single page.
  */
-function formatSearchResponse(hotels, params, totalCandidates, startTime) {
-  const { page, limit } = params;
 
-  const total = hotels.length;
+function buildFiltersApplied(params) {
+  return {
+    destinationId: params.destinationId,
+    destinationType: params.destinationType,
+    cityId: params.cityId,
+    countryId: params.countryId,
+    city: params.city,
+    country: params.country,
+    hotelName: params.nameText || null,
+    checkIn: params.checkIn,
+    checkOut: params.checkOut,
+    nights: params.nights,
+    adults: params.adults,
+    children: params.children,
+    rooms: params.rooms,
+    totalGuests: params.totalGuests,
+    priceRange: {
+      min: params.minPrice,
+      max: params.maxPrice,
+    },
+    minRating: params.minRating,
+    hotelClass: params.hotelClass,
+    amenities: params.amenities,
+    freeCancellation: params.freeCancellation,
+    sortBy: params.sortBy,
+  };
+}
+
+function buildPagination(params, total) {
+  const { page, limit } = params;
   const totalPages = Math.ceil(total / limit);
+
+  return {
+    page,
+    limit,
+    total,
+    totalPages,
+    hasNextPage: page < totalPages,
+    hasPrevPage: page > 1,
+  };
+}
+
+function formatSearchResponse(hotels, params, candidateCount, startTime) {
+  const { page, limit } = params;
   const offset = (page - 1) * limit;
   const paginatedHotels = hotels.slice(offset, offset + limit);
 
@@ -15,42 +58,13 @@ function formatSearchResponse(hotels, params, totalCandidates, startTime) {
     success: true,
     data: {
       hotels: paginatedHotels,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
-      filters_applied: {
-        destinationId: params.destinationId,
-        destinationType: params.destinationType,
-        cityId: params.cityId,
-        countryId: params.countryId,
-        city: params.city,
-        country: params.country,
-        checkIn: params.checkIn,
-        checkOut: params.checkOut,
-        nights: params.nights,
-        adults: params.adults,
-        children: params.children,
-        rooms: params.rooms,
-        totalGuests: params.totalGuests,
-        priceRange: {
-          min: params.minPrice,
-          max: params.maxPrice,
-        },
-        minRating: params.minRating,
-        hotelClass: params.hotelClass,
-        amenities: params.amenities,
-        freeCancellation: params.freeCancellation,
-        sortBy: params.sortBy,
-      },
+      pagination: buildPagination(params, hotels.length),
+      filters_applied: buildFiltersApplied(params),
       filter_options: buildFilterOptions(hotels),
       search_metadata: {
-        es_candidates: totalCandidates,
-        available_hotels: total,
+        provider: 'mysql',
+        candidates: candidateCount,
+        available_hotels: hotels.length,
         search_time_ms: Date.now() - startTime,
         timestamp: new Date().toISOString(),
       },
@@ -66,27 +80,11 @@ function formatEmptyResponse(params, startTime) {
     success: true,
     data: {
       hotels: [],
-      pagination: {
-        page: params.page,
-        limit: params.limit,
-        total: 0,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPrevPage: false,
-      },
-      filters_applied: {
-        destinationId: params.destinationId,
-        destinationType: params.destinationType,
-        cityId: params.cityId,
-        countryId: params.countryId,
-        city: params.city,
-        country: params.country,
-        checkIn: params.checkIn,
-        checkOut: params.checkOut,
-        nights: params.nights,
-      },
+      pagination: buildPagination(params, 0),
+      filters_applied: buildFiltersApplied(params),
       search_metadata: {
-        es_candidates: 0,
+        provider: 'mysql',
+        candidates: 0,
         available_hotels: 0,
         search_time_ms: Date.now() - startTime,
         timestamp: new Date().toISOString(),
@@ -105,4 +103,4 @@ function formatEmptyResponse(params, startTime) {
   };
 }
 
-module.exports = { formatSearchResponse, formatEmptyResponse };
+module.exports = { formatSearchResponse, formatEmptyResponse, buildFiltersApplied };

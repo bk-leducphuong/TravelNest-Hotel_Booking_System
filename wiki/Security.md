@@ -8,7 +8,7 @@ surfaces are authorised.
 
 ### 1. Internal superadmin API was fully unauthenticated
 
-`/api/v1/internal/superadmin/*` (DB init, seeders, Elasticsearch/Mongo seeding, bulk
+`/api/v1/internal/superadmin/*` (DB init, seeders, Mongo seeding, bulk
 email/in-app notifications) had every guard commented out — anyone could trigger them.
 
 - The whole router is now protected: `router.use(requireInternalSuperadmin)`
@@ -72,17 +72,18 @@ any hotel/room/review.
 
 ## Environment variables
 
-| Variable | Purpose | Default |
-|---|---|---|
-| `INTERNAL_SUPERADMIN_TOKEN` / `SUPERADMIN_API_TOKEN` | Token access for `/internal/superadmin` | unset (token access disabled; admin bearer still works) |
-| `ENABLE_BULL_BOARD` | Expose the queue dashboard | `false` |
-| `BULL_BOARD_USERNAME` / `BULL_BOARD_PASSWORD` | Basic-auth credentials for Bull Board | unset |
-| `RATE_LIMIT_MAX` | Requests per IP per 15 min | `300` |
-| `TRUST_PROXY` | Trust `X-Forwarded-For` (`true`/`1`/`false`/count) | unset (no trust) |
+| Variable                                             | Purpose                                            | Default                                                 |
+| ---------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------- |
+| `INTERNAL_SUPERADMIN_TOKEN` / `SUPERADMIN_API_TOKEN` | Token access for `/internal/superadmin`            | unset (token access disabled; admin bearer still works) |
+| `ENABLE_BULL_BOARD`                                  | Expose the queue dashboard                         | `false`                                                 |
+| `BULL_BOARD_USERNAME` / `BULL_BOARD_PASSWORD`        | Basic-auth credentials for Bull Board              | unset                                                   |
+| `RATE_LIMIT_MAX`                                     | Requests per IP per 15 min                         | `300`                                                   |
+| `TRUST_PROXY`                                        | Trust `X-Forwarded-For` (`true`/`1`/`false`/count) | unset (no trust)                                        |
 
 ## Tests
 
 `__tests__/unit/middlewares/`
+
 - `image-auth.middleware.test.js` — admin/hotel-role/self-avatar/catalog/malformed-id cases.
 - `bull-board-auth.middleware.test.js` — disabled/enabled/unauthenticated/authenticated.
 - `internal-superadmin.middleware.test.js` — constant-time comparison.

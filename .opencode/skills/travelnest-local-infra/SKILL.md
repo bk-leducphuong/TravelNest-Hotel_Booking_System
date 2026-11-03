@@ -1,6 +1,6 @@
 ---
 name: travelnest-local-infra
-description: Inspect TravelNest local development data and the local k3d Kubernetes cluster — MySQL, Redis, MongoDB, MinIO, Elasticsearch, migrations, and seeds. Use when debugging local data, running make infra-*, querying the dev database/cache, or checking the local cluster. For the production VPS/cluster use the travelnest-prod-ops skill instead.
+description: Inspect TravelNest local development data and the local k3d Kubernetes cluster — MySQL, Redis, MongoDB, MinIO, migrations, and seeds. Use when debugging local data, running make infra-*, querying the dev database/cache, or checking the local cluster. For the production VPS/cluster use the travelnest-prod-ops skill instead.
 metadata:
   audience: maintainers
   workflow: local-dev
@@ -28,7 +28,6 @@ make infra-check                                   # which CLIs are present
 make infra-mysql ARGS="-e 'SHOW TABLES;'"
 make infra-redis ARGS="PING"
 make infra-minio
-make infra-elasticsearch                           # defaults to _cluster/health?pretty
 make infra-mongodb ARGS="--eval 'db.getCollectionNames()'"
 ```
 
@@ -40,13 +39,12 @@ make infra-mysql ENV_FILE=server/.env.development ARGS="-e 'SELECT COUNT(*) FROM
 
 Connection scripts live in `server/scripts/infra/`:
 
-| Script             | Credentials used                          | Notes                                                |
-| ------------------ | ----------------------------------------- | ---------------------------------------------------- |
-| `mysql.sh`         | `MYSQL_CLI_*` → `DB_*`                    | dev compose publishes MySQL on `localhost:3307`      |
-| `redis.sh`         | `REDIS_CLI_*` → `REDIS_*`                 | default DB index `1`                                 |
-| `minio.sh`         | `MINIO_CLI_*` → `MINIO_*`                 | configures an `mc` alias; no args lists the bucket   |
-| `elasticsearch.sh` | `ELASTICSEARCH_CLI_*` → `ELASTICSEARCH_*` | `curl`-based; first arg is the path                  |
-| `mongodb.sh`       | `MONGODB_CLI_URI` → `MONGODB_URI`         | falls back to `localhost:27017/travelnest_analytics` |
+| Script       | Credentials used                  | Notes                                                |
+| ------------ | --------------------------------- | ---------------------------------------------------- |
+| `mysql.sh`   | `MYSQL_CLI_*` → `DB_*`            | dev compose publishes MySQL on `localhost:3307`      |
+| `redis.sh`   | `REDIS_CLI_*` → `REDIS_*`         | default DB index `1`                                 |
+| `minio.sh`   | `MINIO_CLI_*` → `MINIO_*`         | configures an `mc` alias; no args lists the bucket   |
+| `mongodb.sh` | `MONGODB_CLI_URI` → `MONGODB_URI` | falls back to `localhost:27017/travelnest_analytics` |
 
 ## Missing CLIs (fallbacks)
 

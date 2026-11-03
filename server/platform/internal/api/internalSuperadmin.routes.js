@@ -38,10 +38,6 @@ router.post('/images/seed', asyncHandler(controller.runImageSeeder));
 
 router.post('/city-images/seed', asyncHandler(controller.runCityImageSeeder));
 
-router.post('/elasticsearch/setup/:target', asyncHandler(controller.setupElasticsearch));
-
-router.post('/elasticsearch/seeders/:target', asyncHandler(controller.runElasticsearchSeeder));
-
 router.post('/mongodb/seeders/:target', asyncHandler(controller.runMongodbSeeder));
 
 module.exports = router;

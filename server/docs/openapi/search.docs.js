@@ -9,15 +9,18 @@
  * @swagger
  * /search/hotels:
  *   get:
- *     summary: Search hotels with hybrid ES + DB architecture
+ *     summary: Search hotels with MySQL-only architecture
  *     description: |
- *       Search for available hotels using a hybrid architecture combining Elasticsearch for fast filtering
- *       and database queries for precise availability checking.
+ *       Search for available hotels using MySQL only: the denormalized
+ *       `hotel_search_snapshots` read model filters candidates, then a single
+ *       batched inventory query computes availability and the cheapest eligible
+ *       room offer for every requested night.
  *
  *       **Search Flow:**
- *       1. Elasticsearch finds candidate hotels based on location, price, amenities, etc.
- *       2. Database verifies date-specific room availability
- *       3. Results are merged, ranked, and paginated
+ *       1. Destination resolution (MySQL + normalization/aliases)
+ *       2. Candidate hotels filtered in `hotel_search_snapshots`
+ *       3. Batched availability + offer selection from `room_inventory`
+ *       4. Ranking, facets and pagination over the complete eligible set
  *
  *       Authentication is optional (`optionalAuthenticate`): when a bearer token is supplied
  *       the search is recorded against the user and favourite status is attached to results.
@@ -304,9 +307,12 @@
  *                     search_metadata:
  *                       type: object
  *                       properties:
- *                         es_candidates:
+ *                         provider:
+ *                           type: string
+ *                           enum: [mysql]
+ *                         candidates:
  *                           type: integer
- *                           description: Number of hotels found by Elasticsearch
+ *                           description: Number of candidate hotels before availability filtering
  *                         available_hotels:
  *                           type: integer
  *                           description: Number of hotels with availability
@@ -422,7 +428,7 @@
  * /search/autocomplete:
  *   get:
  *     summary: Get autocomplete suggestions for hotel names
- *     description: Returns hotel name suggestions based on user input (powered by Elasticsearch)
+ *     description: Returns hotel name suggestions based on user input (MySQL snapshot name columns)
  *     tags:
  *       - Search
  *     parameters:

@@ -29,17 +29,6 @@ const DATABASE_SEEDERS = {
   destination: 'seeders/database/destinations.seed.js',
 };
 
-const ELASTICSEARCH_SETUP = {
-  hotels: 'infra/elasticsearch/setup-hotels-index.js',
-  logs: 'infra/elasticsearch/setup-logs-index.js',
-  destinations: 'infra/elasticsearch/setup-destinations-index.js',
-};
-
-const ELASTICSEARCH_SEEDERS = {
-  hotels: 'seeders/elasticsearch/hotels_index.seed.js',
-  destinations: 'seeders/elasticsearch/destinations_index.seed.js',
-};
-
 const MONGODB_SEEDERS = {
   search_logs: 'seeders/mongodb/search_logs.seed.js',
   hotel_views: 'seeders/mongodb/hotel_view_events.seed.js',
@@ -47,7 +36,5 @@ const MONGODB_SEEDERS = {
 
 module.exports = {
   DATABASE_SEEDERS,
-  ELASTICSEARCH_SETUP,
-  ELASTICSEARCH_SEEDERS,
   MONGODB_SEEDERS,
 };

@@ -30,7 +30,7 @@ Start the required services via Docker:
 # Start MySQL + Redis (minimum for API)
 docker compose -f server/infra/docker-compose.yml up -d mysql redis
 
-# Or start everything (MySQL, Redis, Elasticsearch, MongoDB, MinIO)
+# Or start everything (MySQL, Redis, MongoDB, MinIO, NATS, Keycloak)
 docker compose -f server/infra/docker-compose.yml up -d
 ```
 
@@ -112,14 +112,14 @@ yarn test                # Test all packages
 
 ## Environment Files Reference
 
-| Package | Template File | Key Variables |
-|---|---|---|
-| `server/` | `.env.format` | `DB_*`, `REDIS_*`, `ES_*`, `STRIPE_*`, `MINIO_*` |
-| `client/` | `.env.format` | `VITE_API_BASE_URL`, `VITE_STRIPE_PUBLIC_KEY` |
-| `admin-client/` | `.env.example` | `NUXT_PUBLIC_API_BASE` |
-| `services/analytics/` | `.env.format` | `NATS_*`, `REDIS_*`, `MONGODB_*` |
-| `services/media/` | `.env.format` | `NATS_*`, `MINIO_*`, `MYSQL_*` |
-| `services/notification/` | `.env.format` | `NATS_*`, `MYSQL_*`, `SMTP_*` |
+| Package                  | Template File  | Key Variables                                    |
+| ------------------------ | -------------- | ------------------------------------------------ |
+| `server/`                | `.env.format`  | `DB_*`, `REDIS_*`, `ES_*`, `STRIPE_*`, `MINIO_*` |
+| `client/`                | `.env.format`  | `VITE_API_BASE_URL`, `VITE_STRIPE_PUBLIC_KEY`    |
+| `admin-client/`          | `.env.example` | `NUXT_PUBLIC_API_BASE`                           |
+| `services/analytics/`    | `.env.format`  | `NATS_*`, `REDIS_*`, `MONGODB_*`                 |
+| `services/media/`        | `.env.format`  | `NATS_*`, `MINIO_*`, `MYSQL_*`                   |
+| `services/notification/` | `.env.format`  | `NATS_*`, `MYSQL_*`, `SMTP_*`                    |
 
 ## Verify Everything Works
 

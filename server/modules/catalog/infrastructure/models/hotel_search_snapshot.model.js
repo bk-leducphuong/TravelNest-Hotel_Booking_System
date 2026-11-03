@@ -1,11 +1,11 @@
 /**
  * Hotel Search Snapshot Model
  *
- * Purpose: Denormalized search index optimized for fast filtering and Elasticsearch sync
+ * Purpose: Denormalized read model for hotel search
  * - One row per hotel
- * - No joins required at query time
+ * - No joins required for candidate filtering
  * - Updated asynchronously via events/jobs
- * - Synced to Elasticsearch for full-text search
+ * - Hotel names are stored pre-normalized for MySQL name matching
  *
  * Use Cases:
  * - Fast location-based searches (map & distance)
@@ -38,6 +38,16 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.STRING(255),
         allowNull: false,
         comment: 'Hotel name for display and search',
+      },
+      hotel_name_normalized: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        comment: 'Lowercased, accent-stripped hotel name for matching',
+      },
+      hotel_name_compact: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        comment: 'Space/punctuation-insensitive hotel-name key',
       },
       city_id: {
         type: DataTypes.UUID,
@@ -212,6 +222,30 @@ module.exports = function (sequelize, DataTypes) {
           using: 'BTREE',
           fields: [{ name: 'city_id' }],
           comment: 'Index for city-based searches (FK)',
+        },
+        {
+          name: 'idx_hss_city_status',
+          using: 'BTREE',
+          fields: [{ name: 'city_id' }, { name: 'status' }, { name: 'hotel_id' }],
+          comment: 'Candidate hotels for a resolved city',
+        },
+        {
+          name: 'idx_hss_country_status',
+          using: 'BTREE',
+          fields: [{ name: 'country_id' }, { name: 'status' }, { name: 'hotel_id' }],
+          comment: 'Candidate hotels for a resolved country',
+        },
+        {
+          name: 'idx_hss_name_normalized',
+          using: 'BTREE',
+          fields: [{ name: 'hotel_name_normalized' }],
+          comment: 'Normalized hotel-name prefix lookup',
+        },
+        {
+          name: 'idx_hss_name_compact',
+          using: 'BTREE',
+          fields: [{ name: 'hotel_name_compact' }],
+          comment: 'Diacritic/space-insensitive hotel-name lookup',
         },
         {
           name: 'idx_country',

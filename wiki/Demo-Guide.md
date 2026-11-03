@@ -5,7 +5,7 @@ A repeatable path to bring up TravelNest and run a full guest + host demo.
 ## 1. Prerequisites
 
 - **Node.js ≥ 20** and **Yarn 4** (`corepack enable && corepack prepare yarn@4.5.3 --activate`)
-- **MySQL 8**, **Redis**, **MinIO**, **Elasticsearch**, **MongoDB** — start them with the
+- **MySQL 8**, **Redis**, **MinIO**, **MongoDB** — start them with the
   repo's infra scripts (`make infra-*`) or your own instances.
 - **Keycloak** — the app authenticates with Keycloak (realm `travelnest`; clients
   `travelnest-web` for the guest app and `travelnest-admin` for the admin app).
@@ -19,7 +19,7 @@ yarn install
 
 ```bash
 # from the repo root (uses server/.env.development by default)
-make infra-mysql infra-redis infra-minio infra-elasticsearch infra-mongodb
+make infra-mysql infra-redis infra-minio infra-mongodb
 ```
 
 ## 3. Migrate + seed a demo dataset
@@ -30,7 +30,7 @@ yarn demo:seed      # clear seed data, then seed everything incl. finance
 ```
 
 `yarn demo:seed` = `seed:clear` + `seed-all --with-finance` (hotels, rooms, inventory,
-users, staff, bookings, reviews, transactions/payments/payouts, images, Elasticsearch,
+users, staff, bookings, reviews, transactions/payments/payouts, images,
 and MongoDB analytics). Use `--quick` for a smaller/faster dataset:
 
 ```bash
@@ -57,13 +57,13 @@ The staff seeder creates deterministic accounts (password `Test@1234`, override 
 `SEED_TEST_PASSWORD`). When Keycloak admin credentials are configured it also provisions
 the matching Keycloak users, realm roles, `hotel_users` memberships and `hotels.owner_id`.
 
-| Email | Role | Use |
-|---|---|---|
-| `admin@travelnest.local` | platform admin | full admin console, all hotels |
-| `support@travelnest.local` | support agent | platform staff views |
-| `owner@travelnest.local` | hotel owner | host/property management |
-| `manager@travelnest.local` | hotel manager | hotel-scoped admin |
-| `staff@travelnest.local` | hotel staff | hotel-scoped admin |
+| Email                      | Role           | Use                            |
+| -------------------------- | -------------- | ------------------------------ |
+| `admin@travelnest.local`   | platform admin | full admin console, all hotels |
+| `support@travelnest.local` | support agent  | platform staff views           |
+| `owner@travelnest.local`   | hotel owner    | host/property management       |
+| `manager@travelnest.local` | hotel manager  | hotel-scoped admin             |
+| `staff@travelnest.local`   | hotel staff    | hotel-scoped admin             |
 
 ## 6. Suggested demo script
 
@@ -79,8 +79,8 @@ the matching Keycloak users, realm roles, `hotel_users` memberships and `hotels.
 - **Auth is Keycloak-only.** Make sure the realm/clients exist and the seeded accounts are
   provisioned before the demo; otherwise login fails. Set `SEED_TEST_PASSWORD` to a known
   value and re-run `seed:hotel_staff`.
-- **External services** (MySQL/Redis/MinIO/Elasticsearch/Mongo/NATS/Keycloak) must be up.
-  Search degrades if Elasticsearch is down; the hotel search-snapshot pipeline is seeded,
+- **External services** (MySQL/Redis/MinIO/Mongo/NATS/Keycloak) must be up.
+  Hotel search is MySQL-only; the hotel search-snapshot pipeline is seeded,
   not event-driven.
 - **Stripe** must be in test mode with valid test keys for the payment step.
 
