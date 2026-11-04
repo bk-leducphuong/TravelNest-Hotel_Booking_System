@@ -1,3 +1,4 @@
+const ApiError = require('@utils/ApiError');
 const logger = require('@config/logger.config');
 
 const { rankAndSort } = require('../domain/ranking');
@@ -35,7 +36,7 @@ async function searchHotels(params, userId = null) {
   const startTime = Date.now();
 
   try {
-    const destination = await resolveDestination(params);
+    const destination = params.mapSearch ? null : await resolveDestination(params);
 
     // When a destination resolved, the free text is that destination's name —
     // never also constrain on a hotel-name match. Unresolved text is treated as
@@ -57,6 +58,10 @@ async function searchHotels(params, userId = null) {
     };
 
     const candidateHotels = await findCandidates(validated);
+
+    if (params.mapSearch && candidateHotels.length > 2000) {
+      throw new ApiError(400, 'MAP_AREA_TOO_DENSE', 'Zoom in to search a smaller area');
+    }
 
     if (candidateHotels.length === 0) {
       return {

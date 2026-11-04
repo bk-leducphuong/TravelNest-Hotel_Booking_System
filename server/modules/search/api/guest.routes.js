@@ -4,6 +4,7 @@ const validate = require('@middlewares/validate.middleware');
 const searchSchema = require('./guest.schema');
 const {
   searchHotels,
+  searchMapHotels,
   getHotelAvailability,
   getAutocompleteSuggestions,
   getDestinationAutocomplete,
@@ -12,6 +13,13 @@ const {
   getTrendingDestinations,
 } = require('./search.controller');
 const router = express.Router();
+
+router.get(
+  '/hotels/map',
+  optionalAuthenticate,
+  validate(searchSchema.searchMapHotels),
+  searchMapHotels
+);
 
 router.get('/hotels', optionalAuthenticate, validate(searchSchema.searchHotels), searchHotels);
 

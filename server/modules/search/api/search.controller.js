@@ -258,7 +258,33 @@ const getRecentSearches = asyncHandler(async (req, res) => {
   });
 });
 
+const searchMapHotels = asyncHandler(async (req, res) => {
+  const params = {
+    ...req.query,
+    mapSearch: true,
+    page: 1,
+    limit: 200,
+    bounds: Object.fromEntries(
+      ['north', 'south', 'east', 'west'].map((key) => [key, Number(req.query[key])])
+    ),
+    hotelClass: parseList(req.query.hotelClass, parseInteger),
+    amenities: parseList(req.query.amenities, (item) => item.toUpperCase()),
+  };
+  const { searchResults } = await searchUseCases.searchHotels(params, getAuthenticatedUserId(req));
+  const { hotels, pagination } = searchResults.data;
+  res.json({
+    success: true,
+    data: {
+      hotels: hotels.map(({ available_rooms, selected_offer, ...hotel }) => hotel),
+      total: pagination.total,
+      hasMore: pagination.hasNextPage,
+      limit: 200,
+    },
+  });
+});
+
 module.exports = {
+  searchMapHotels,
   searchHotels,
   getHotelAvailability,
   getAutocompleteSuggestions,
