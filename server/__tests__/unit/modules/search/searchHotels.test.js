@@ -149,3 +149,22 @@ describe('searchHotels', () => {
     expect(result.searchResults).toEqual({ data: { hotels: [] } });
   });
 });
+
+describe('map search limits', () => {
+  beforeEach(() => jest.clearAllMocks());
+  it('rejects dense viewports before querying room inventory', async () => {
+    findCandidates.mockResolvedValue(
+      Array.from({ length: 2001 }, (_, i) => ({ hotel_id: String(i) }))
+    );
+    await expect(
+      searchHotels({
+        ...params,
+        city: undefined,
+        mapSearch: true,
+        bounds: { north: 11, south: 10, east: 107, west: 106 },
+      })
+    ).rejects.toThrow('Zoom in');
+    expect(resolveDestination).not.toHaveBeenCalled();
+    expect(getOffers).not.toHaveBeenCalled();
+  });
+});

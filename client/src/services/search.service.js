@@ -9,6 +9,10 @@ export const SearchService = {
     return http.get('/search/hotels', { params });
   },
 
+  searchMapHotels(params, signal) {
+    return http.get('/search/hotels/map', { params, signal });
+  },
+
   getHotelAvailability(hotelId, params = {}) {
     return http.get(`/search/hotels/${hotelId}/availability`, { params });
   },

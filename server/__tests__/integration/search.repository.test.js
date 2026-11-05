@@ -155,6 +155,32 @@ describe('search eligibility (MySQL)', () => {
     await expect(offersFor([hotel.id])).resolves.toEqual([]);
   });
 
+  it('filters map candidates by viewport before applying stay availability', async () => {
+    const inside = await createHotel('Fixture Map Inside');
+    const outside = await createHotel('Fixture Map Outside');
+    const unavailable = await createHotel('Fixture Map Unavailable');
+    await snapshots.update({ latitude: 23 }, { where: { hotel_id: outside.id } });
+    await createRoom(inside.id, 'Map Suite');
+    const candidates = await searchRepository.findCandidateHotels({
+      mapSearch: true,
+      bounds: { north: 21.1, south: 21, west: 105.8, east: 105.9 },
+    });
+    const ids = candidates.map((hotel) => hotel.hotel_id);
+    expect(ids).toContain(inside.id);
+    expect(ids).toContain(unavailable.id);
+    expect(ids).not.toContain(outside.id);
+    const rows = await offersFor([inside.id, unavailable.id]);
+    const byHotel = new Map([
+      [inside.id, rows.map((row) => normalizeOffer(row, { nights: 3, rooms: 1 }))],
+    ]);
+    const eligible = buildHotelResults(
+      candidates.filter((hotel) => [inside.id, unavailable.id].includes(hotel.hotel_id)),
+      byHotel,
+      {}
+    );
+    expect(eligible.map((hotel) => hotel.hotel_id)).toEqual([inside.id]);
+  });
+
   it('treats closed and sold-out nights as unavailable', async () => {
     const hotel = await createHotel('Fixture Closed Night Lodge');
     await createRoom(hotel.id, 'Suite', {

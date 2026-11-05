@@ -66,6 +66,18 @@
     computed: {
       ...mapGetters('search', ['getSearchData']),
       ...mapGetters('auth', ['isUserAuthenticated']),
+      mapSearchParams() {
+        const stay = this.getSearchData;
+        return {
+          checkIn: stay.checkInDate,
+          checkOut: stay.checkOutDate,
+          adults: Number(stay.adults) || 2,
+          children: Number(stay.children) || 0,
+          rooms: Number(stay.rooms) || 1,
+          sortBy: this.sortByParam,
+          ...this.buildFilterParams(),
+        };
+      },
       totalResults() {
         return this.pagination.total || this.hotels.length;
       },
@@ -481,7 +493,7 @@
 </script>
 <template>
   <TheHeader :is-search-open="true" />
-  <MapComponent v-if="openMapPopup" :hotels="hotels" @close-map-popup="closeMapPopup" />
+  <MapComponent v-if="openMapPopup" :hotels="hotels" :search-params="mapSearchParams" @close-map-popup="closeMapPopup" />
   <main id="guest-main" tabindex="-1" class="guest-page search-page">
     <div class="search-page-heading inner-content">
       <div>
@@ -639,10 +651,20 @@
             </div>
             <div class="result-price">
               <span>{{ $t('guest.stayFrom') }}</span
-              ><strong>{{ guestMoney(hotel.min_price_for_dates, 'USD', $i18n.locale) }}</strong
+              ><strong>{{
+                guestMoney(
+                  hotel.min_price_for_requested_rooms ?? hotel.min_price_for_dates,
+                  hotel.currency || 'USD',
+                  $i18n.locale
+                )
+              }}</strong
               ><span
                 >{{ $t('bookingFlow.nightPlural', { count: computedNumberOfDays }) }} ·
-                {{ $t('guest.oneRoom') }}</span
+                {{
+                  hotel.min_price_for_requested_rooms != null
+                    ? $t('map.roomCount', { count: Number(getSearchData.rooms) || 1 })
+                    : $t('guest.oneRoom')
+                }}</span
               ><RouterLink
                 class="guest-button"
                 :to="{ name: 'HotelDetails', params: { hotel_id: hotel.hotel_id } }"

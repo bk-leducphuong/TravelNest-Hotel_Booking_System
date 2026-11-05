@@ -758,7 +758,7 @@
 <template>
   <div id="hotelDetails">
     <TheHeader :is-search-open="true" />
-    <MapComponent v-if="openMapPopup" :hotels="[hotel]" @close-map-popup="closeMapPopup" />
+    <MapComponent v-if="openMapPopup" :hotels="[hotel]" :initial-selected-hotel-id="hotel.hotel_id" @close-map-popup="closeMapPopup" />
     <ImageGallery
       :room_list="room_list"
       :hotel-images="hotelImages"

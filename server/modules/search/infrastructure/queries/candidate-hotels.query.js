@@ -180,13 +180,23 @@ function buildCandidateQuery(params) {
     buildAmenitiesCondition(amenities, where, replacements);
   }
 
-  buildGeoCondition(params, where, replacements, select);
+  if (params.mapSearch && params.bounds) {
+    Object.assign(replacements, params.bounds);
+    where.push('s.latitude BETWEEN :south AND :north');
+    where.push(
+      params.bounds.west > params.bounds.east
+        ? '(s.longitude >= :west OR s.longitude <= :east)'
+        : 's.longitude BETWEEN :west AND :east'
+    );
+  } else {
+    buildGeoCondition(params, where, replacements, select);
+  }
 
   const sql = `
     SELECT ${select.join(',\n      ')}
       FROM hotel_search_snapshots s
      WHERE ${where.map((clause) => `(${clause})`).join('\n       AND ')}
-     ORDER BY ${textOnly ? 'name_match_tier DESC, ' : ''}s.avg_rating DESC, s.hotel_id ASC`;
+     ORDER BY ${textOnly ? 'name_match_tier DESC, ' : ''}s.avg_rating DESC, s.hotel_id ASC${params.mapSearch ? ' LIMIT 2001' : ''}`;
 
   return { sql, replacements, textOnly, cap: TEXT_CANDIDATE_CAP };
 }
