@@ -18,15 +18,18 @@
     <p v-if="error" role="alert" class="map-message">{{ error }}</p>
     <p v-if="hasMore" class="map-message">{{ $t('map.moreResults') }}</p>
     <div class="map-layout" :aria-busy="loading">
-      <aside class="hotel-list" :aria-label="$t('map.title')">
+      <aside ref="hotelList" class="hotel-list" :aria-label="$t('map.title')">
         <p v-if="!displayHotels.length">{{ $t('map.empty') }}</p>
         <article
           v-for="hotel in displayHotels"
           :key="hotel.hotel_id"
           :ref="(el) => setCardRef(hotel.hotel_id, el)"
           class="hotel-card"
-          :class="{ selected: hotel.hotel_id === selectedHotelId }"
-          @mouseenter="hoveredHotelId = hotel.hotel_id"
+          :class="{
+            selected: hotel.hotel_id === selectedHotelId,
+            highlighted: hotel.hotel_id === highlightedHotelId,
+          }"
+          @mouseenter="onCardHover(hotel)"
           @mouseleave="hoveredHotelId = null"
         >
           <img
@@ -80,9 +83,11 @@
             :key="hotel.hotel_id"
             :lat-lng="latLng(hotel)"
             :icon="priceIcon(hotel)"
-            :z-index-offset="hotel.hotel_id === selectedHotelId ? 1000 : 0"
+            :z-index-offset="hotel.hotel_id === highlightedHotelId ? 1000 : 0"
             :options="{ title: hotelName(hotel), alt: hotelName(hotel), keyboard: true }"
             @click="selectHotel(hotel)"
+            @mouseover="onMarkerHover(hotel)"
+            @mouseout="hoveredHotelId = null"
           />
         </LMap>
         <p v-if="!mappableHotels.length && !loading" class="map-notice">
@@ -129,6 +134,9 @@
       };
     },
     computed: {
+      highlightedHotelId() {
+        return this.hoveredHotelId ?? this.selectedHotelId;
+      },
       displayHotels() {
         return this.results ?? this.hotels;
       },
@@ -154,9 +162,14 @@
         return Boolean(this.criteria.checkIn && this.criteria.checkOut);
       },
       searchSummary() {
-        return this.canSearch
-          ? `${this.criteria.checkIn} → ${this.criteria.checkOut} · ${this.$t('map.party', { guests: Number(this.criteria.adults) + Number(this.criteria.children || 0), rooms: this.criteria.rooms })}`
-          : this.$t('map.title');
+        if (!this.canSearch) return this.$t('map.title');
+        const guests = Number(this.criteria.adults) + Number(this.criteria.children || 0);
+        const rooms = Number(this.criteria.rooms) || 1;
+        const party = this.$t('map.party', {
+          guests: this.$t('map.guestCount', { count: guests }, guests),
+          rooms: this.$t('map.roomCount', { count: rooms }, rooms),
+        });
+        return `${this.criteria.checkIn} → ${this.criteria.checkOut} · ${party}`;
       },
     },
     watch: {
@@ -214,7 +227,7 @@
       priceIcon(hotel) {
         const element = document.createElement('span');
         element.textContent = this.priceLabel(hotel);
-        const active = [this.selectedHotelId, this.hoveredHotelId].includes(hotel.hotel_id);
+        const active = hotel.hotel_id === this.highlightedHotelId;
         return L.divIcon({
           html: element,
           className: `hotel-price-marker${active ? ' active' : ''}`,
@@ -231,10 +244,49 @@
         if (element) this.cardRefs[id] = element;
         else delete this.cardRefs[id];
       },
+      revealMarker(hotel) {
+        const map = this.$refs.map?.leafletObject;
+        if (!map || !this.hasCoords(hotel)) return;
+        // Leave room for the marker label and the mobile hotel card.
+        const bottomPadding =
+          window.innerWidth <= 700 ? (this.$refs.hotelList?.clientHeight || 0) + 48 : 48;
+        map.panInside(this.latLng(hotel), {
+          paddingTopLeft: [80, 48],
+          paddingBottomRight: [120, bottomPadding],
+          animate: true,
+        });
+      },
+      revealCard(hotel) {
+        const list = this.$refs.hotelList;
+        const card = this.cardRefs[hotel.hotel_id];
+        if (!list || !card) return;
+        const listBounds = list.getBoundingClientRect();
+        const cardBounds = card.getBoundingClientRect();
+        if (!cardBounds.height) return;
+        let offset = 0;
+        if (cardBounds.top < listBounds.top) offset = cardBounds.top - listBounds.top;
+        else if (cardBounds.bottom > listBounds.bottom) {
+          offset =
+            cardBounds.height > listBounds.height
+              ? cardBounds.top - listBounds.top
+              : cardBounds.bottom - listBounds.bottom;
+        }
+        if (offset) list.scrollTo({ top: list.scrollTop + offset, behavior: 'smooth' });
+      },
+      onCardHover(hotel) {
+        this.hoveredHotelId = hotel.hotel_id;
+        this.revealMarker(hotel);
+      },
+      onMarkerHover(hotel) {
+        this.hoveredHotelId = hotel.hotel_id;
+        this.revealCard(hotel);
+      },
       selectHotel(hotel, pan = false) {
         this.selectedHotelId = hotel.hotel_id;
-        this.cardRefs[hotel.hotel_id]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        if (pan && this.hasCoords(hotel)) this.$refs.map?.leafletObject?.panTo(this.latLng(hotel));
+        this.$nextTick(() => {
+          this.revealCard(hotel);
+          if (pan) this.revealMarker(hotel);
+        });
       },
       openHotel(hotel) {
         this.$router.push({
@@ -380,7 +432,7 @@
     overflow: hidden;
     margin-bottom: 12px;
   }
-  .hotel-card.selected {
+  .hotel-card.highlighted {
     border-color: #006ce4;
   }
   .hotel-card img {
@@ -409,6 +461,13 @@
     align-items: center;
     justify-content: space-between;
     margin-top: 10px;
+  }
+  .card-actions :deep(.favorite-button) {
+    position: static;
+    flex-shrink: 0;
+    padding: 0;
+    background: white;
+    color: #1f2937;
   }
   .map-container {
     flex: 1;

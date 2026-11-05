@@ -936,10 +936,11 @@
   "map.stayTotal": "Total for your stay and requested rooms",
   "map.viewProperty": "View property",
   "map.priceUnavailable": "Price unavailable",
-  "map.party": "{guests} guests · {rooms} rooms",
+  "map.party": "{guests} · {rooms}",
   "map.areaChanged": "Map moved. Search this area to update results.",
   "map.zoomIn": "Zoom in to search a smaller area.",
   "map.zoomOrDates": "Check your stay dates or zoom in to search a smaller area.",
   "map.loadError": "Could not update hotels. Your previous results are still shown. Try again.",
-  "map.roomCount": "{count} rooms"
+  "map.guestCount": "{count} guest | {count} guests",
+  "map.roomCount": "{count} room | {count} rooms"
 }

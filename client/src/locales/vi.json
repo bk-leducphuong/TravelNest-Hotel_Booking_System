@@ -936,10 +936,11 @@
   "map.stayTotal": "Tổng tiền cho kỳ nghỉ và số phòng đã chọn",
   "map.viewProperty": "Xem chỗ nghỉ",
   "map.priceUnavailable": "Chưa có giá",
-  "map.party": "{guests} khách · {rooms} phòng",
+  "map.party": "{guests} · {rooms}",
   "map.areaChanged": "Bản đồ đã di chuyển. Tìm trong khu vực này để cập nhật.",
   "map.zoomIn": "Phóng to để tìm trong khu vực nhỏ hơn.",
   "map.zoomOrDates": "Kiểm tra ngày lưu trú hoặc phóng to khu vực tìm kiếm.",
   "map.loadError": "Không thể cập nhật khách sạn. Kết quả trước vẫn được giữ. Vui lòng thử lại.",
+  "map.guestCount": "{count} khách",
   "map.roomCount": "{count} phòng"
 }
