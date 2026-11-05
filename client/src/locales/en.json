@@ -373,7 +373,7 @@
   "bookingFlow.keepBooking": "I want to keep this booking",
   "bookingFlow.previousStep": "Previous step",
   "bookingFlow.confirmCancellation": "Confirm cancellation",
-  "bookingFlow.cancelRefundNote": "When you cancel your booking, your money will be refunded in 24 hours. If dont, please contact us to support. For any questions,",
+  "bookingFlow.cancelRefundNote": "Any refund goes to the original payment method.",
   "bookingFlow.contactUs": "contact us directly",
   "bookingFlow.cancelBooking": "Cancel Booking",
   "bookingFlow.bookedRooms": "Booked rooms:",
@@ -914,7 +914,26 @@
       "refundAmount": "Refund amount",
       "originalAmount": "Original booking total",
       "unavailable": "This booking cannot be cancelled from this page.",
-      "failed": "Cancellation failed. Your booking has not been confirmed as cancelled. Please try again."
+      "failed": "Cancellation failed. Your booking has not been confirmed as cancelled. Please try again.",
+      "quoteChanged": "The quote changed or expired. Review the updated amounts and confirm again.",
+      "manualReview": "Your refund requires a manual review. The amount has not been decided yet.",
+      "noRefund": "No automatic refund is due for this cancellation.",
+      "destination": "Any refund goes to the original payment method.",
+      "eta": "Estimated arrival after processing: {min}–{max} business days. Bank timing may vary.",
+      "refreshStatus": "Refresh refund status",
+      "status": {
+        "queued": "Refund queued for processing.",
+        "submitting": "Refund submission is in progress.",
+        "provider_pending": "The payment provider is processing your refund.",
+        "unknown": "We are confirming the refund with the payment provider.",
+        "needs_attention": "The refund needs staff attention.",
+        "succeeded": "The payment provider has confirmed your refund.",
+        "pending": "Refund queued for processing.",
+        "processing": "Your refund is processing.",
+        "failed": "The payment provider could not complete your refund. Staff review is needed.",
+        "cancelled": "The refund was cancelled. Contact support for details."
+      },
+      "alreadyCommitted": "Already refunded or reserved for another refund"
     },
     "removeSearch": "Remove search for {name}",
     "securityUnavailable": "Account security is temporarily unavailable. Please try again later."

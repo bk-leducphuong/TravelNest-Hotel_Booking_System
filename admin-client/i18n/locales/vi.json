@@ -784,5 +784,13 @@
   "amenities.code.EXTRA_BED": "Giường phụ",
   "amenities.code.COT_AVAILABLE": "Có nôi cho trẻ",
   "rooms.openFailed": "Đã tạo phòng ({id}) nhưng chưa mở được. Chọn Quản lý để thử lại.",
-  "properties.photos.title": "Ảnh khách sạn"
+  "properties.photos.title": "Ảnh khách sạn",
+  "payments.refunds.needsAttention": "Cần hỗ trợ",
+  "payments.refunds.failure": "Chi tiết xử lý",
+  "payments.refunds.manualReview": "Cần xét duyệt",
+  "payments.refunds.review": "Xét duyệt hoàn tiền",
+  "payments.refunds.zeroReview": "Nhập 0 để từ chối hoàn tiền. Lý do được lưu trong lịch sử xét duyệt.",
+  "payments.refunds.saveReview": "Lưu quyết định",
+  "payments.refunds.reviewFailed": "Không thể lưu quyết định. Vui lòng tải lại và thử lại.",
+  "payments.refunds.amountUndecided": "Chưa xác định"
 }

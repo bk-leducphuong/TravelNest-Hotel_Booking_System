@@ -110,6 +110,7 @@ exports.getBookingByCode = {
  * Cancel a booking
  */
 exports.cancelBooking = {
+  body: Joi.object({ quoteId: Joi.string().uuid().required() }).required(),
   params: Joi.object({
     bookingId: bookingIdSchema,
   }).required(),

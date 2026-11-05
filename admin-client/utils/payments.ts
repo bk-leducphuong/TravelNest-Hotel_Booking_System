@@ -14,7 +14,13 @@ export const TRANSACTION_STATUSES = [
 
 export const TRANSACTION_TYPES = ["payment", "refund", "payout"] as const;
 
-export const REFUND_STATUSES = ["pending", "processing", "succeeded", "failed", "cancelled"] as const;
+export const REFUND_STATUSES = [
+  "pending",
+  "processing",
+  "succeeded",
+  "failed",
+  "cancelled",
+] as const;
 
 export const REFUND_REASONS = [
   "free_cancellation",
@@ -28,7 +34,9 @@ export const REFUND_REASONS = [
 type TagType = "primary" | "success" | "info" | "warning" | "danger";
 
 export function humanize(value: string): string {
-  return value.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+  return value
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export function transactionStatusTagType(status: string): TagType {
@@ -68,8 +76,11 @@ export function isRefundableTransaction(status: string): boolean {
   return status === "completed" || status === "partially_refunded";
 }
 
-export function isRetryableRefund(status: string): boolean {
-  return status === "failed";
+export function isRetryableRefund(
+  status: string,
+  workflowState?: string | null
+): boolean {
+  return status === "processing" && workflowState === "needs_attention";
 }
 
 /**
@@ -82,7 +93,9 @@ export function activeRefundTotal(
     return 0;
   }
   return refunds
-    .filter((refund) => ["pending", "processing", "succeeded"].includes(refund.status))
+    .filter((refund) =>
+      ["pending", "processing", "succeeded"].includes(refund.status)
+    )
     .reduce((sum, refund) => sum + Number(refund.amount || 0), 0);
 }
 
@@ -90,5 +103,10 @@ export function remainingRefundable(
   transactionAmount: string | number,
   refunds: { amount: string | number; status: string }[] | undefined
 ): number {
-  return Math.max(0, Math.round((Number(transactionAmount || 0) - activeRefundTotal(refunds)) * 100) / 100);
+  return Math.max(
+    0,
+    Math.round(
+      (Number(transactionAmount || 0) - activeRefundTotal(refunds)) * 100
+    ) / 100
+  );
 }

@@ -10,7 +10,7 @@
     components: { MediaImage, FeedbackMessage },
     props: { code: { type: String, default: '' } },
     data() {
-      return { booking: null, loading: false, failure: '', version: 0 };
+      return { refundStatus: null, booking: null, loading: false, failure: '', version: 0 };
     },
     computed: {
       cancellable() {
@@ -48,6 +48,7 @@
       async load() {
         const version = ++this.version;
         this.booking = null;
+        this.refundStatus = null;
         this.failure = '';
         this.loading = true;
         if (!this.code) {
@@ -60,6 +61,10 @@
           if (version !== this.version) return;
           this.booking = normalizeBooking(response?.data);
           if (!this.booking?.booking_code) this.failure = 'guest.bookingNotFound';
+          if (this.booking?.status === 'cancelled') {
+            const status = await BookingService.getRefundStatus(this.booking.id);
+            if (version === this.version) this.refundStatus = status.data;
+          }
         } catch (error) {
           if (version !== this.version) return;
           const status = error.response?.status;
@@ -153,6 +158,28 @@
             :to="`/bookings/${encodeURIComponent(booking.booking_code)}/cancel`"
             >{{ $t('bookingFlow.cancelYourBooking') }}</RouterLink
           >
+          <div v-if="refundStatus" role="status">
+            <p>
+              {{
+                $t(
+                  refundStatus.decision?.outcome === 'manual_review'
+                    ? 'guest.cancel.manualReview'
+                    : refundStatus.refund
+                      ? `guest.cancel.status.${refundStatus.refund.workflowState || refundStatus.refund.status}`
+                      : 'guest.cancel.noRefund'
+                )
+              }}
+            </p>
+            <p v-if="refundStatus.refund && refundStatus.refund.eligibility !== 'manual_review'">
+              {{ $t('guest.cancel.refundAmount') }}:
+              {{
+                guestMoney(refundStatus.refund.amount, refundStatus.refund.currency, $i18n.locale)
+              }}
+            </p>
+            <button type="button" class="guest-button guest-button-secondary" @click="load">
+              {{ $t('guest.cancel.refreshStatus') }}
+            </button>
+          </div>
           <p v-if="cancellable" class="guest-subtitle">{{ $t('guest.cancellationReview') }}</p>
           <RouterLink class="record-browse no-print" to="/">{{
             $t('bookingFlow.bookAnotherRoom')

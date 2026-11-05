@@ -11,6 +11,8 @@ const superadminModule = require('@modules/superadmin');
 const workers = [
   jobs.holdExpiry.createWorker(),
   jobs.bookingExpiry.createWorker(),
+  require('@modules/payment').jobs.refunds.createWorker(),
+  require('@modules/payment').jobs.refunds.createReconciliationWorker(),
   superadminModule.jobs.platformStatsRefresh.createWorker(),
 ];
 
@@ -50,6 +52,7 @@ async function startWorkers() {
 
     await jobs.holdExpiry.schedule();
     await jobs.bookingExpiry.schedule();
+    await require('@modules/payment').jobs.refunds.schedule();
     await superadminModule.jobs.platformStatsRefresh.schedule();
 
     // Worker.run() is a blocking main loop that only resolves once the worker

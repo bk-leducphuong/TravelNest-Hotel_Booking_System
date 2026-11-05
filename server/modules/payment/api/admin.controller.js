@@ -1,4 +1,5 @@
 const asyncHandler = require('@utils/asyncHandler');
+const ApiError = require('@utils/ApiError');
 
 const { listTransactions } = require('../application/admin/listTransactions');
 const { getTransaction } = require('../application/admin/getTransaction');
@@ -33,9 +34,18 @@ const getHotelSummaryHandler = asyncHandler(async (req, res) => {
 });
 
 const initiateRefundHandler = asyncHandler(async (req, res) => {
+  if (!req.get('Idempotency-Key') || req.get('Idempotency-Key').length > 200)
+    throw new ApiError(
+      400,
+      'INVALID_IDEMPOTENCY_KEY',
+      'A non-empty idempotency key of at most 200 characters is required'
+    );
   const result = await initiateRefund(req.params.transactionId, req.body, {
     actorUserId: req.user.id,
     requestId: req.id,
+    idempotencyKey: req.get('Idempotency-Key')
+      ? `admin-${req.user.id}-${req.get('Idempotency-Key')}`
+      : undefined,
   });
 
   res.status(201).json({ data: result });
@@ -68,7 +78,23 @@ const retryRefundHandler = asyncHandler(async (req, res) => {
   res.status(200).json({ data: result });
 });
 
+const resolveRefundReviewHandler = asyncHandler(async (req, res) => {
+  const refund = await getRefund(req.params.refundId);
+  const { queueRefund } = require('../application/refund-obligations');
+  const result = await queueRefund(
+    refund.transaction_id,
+    { amount: req.body.amount, reason: 'other' },
+    {
+      reviewId: refund.id,
+      actorUserId: req.user.id,
+      reviewReason: req.body.reason,
+    }
+  );
+  res.status(200).json({ data: result });
+});
+
 module.exports = {
+  resolveRefundReviewHandler,
   listTransactionsHandler,
   getTransactionHandler,
   getHotelSummaryHandler,

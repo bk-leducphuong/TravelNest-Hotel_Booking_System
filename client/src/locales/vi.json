@@ -373,7 +373,7 @@
   "bookingFlow.keepBooking": "Tôi muốn giữ đặt phòng này",
   "bookingFlow.previousStep": "Bước trước",
   "bookingFlow.confirmCancellation": "Xác nhận hủy",
-  "bookingFlow.cancelRefundNote": "Khi bạn hủy đặt phòng, tiền sẽ được hoàn lại trong vòng 24 giờ. Nếu không, vui lòng liên hệ để được hỗ trợ. Nếu có bất kỳ thắc mắc nào,",
+  "bookingFlow.cancelRefundNote": "Tiền hoàn được gửi về phương thức thanh toán ban đầu.",
   "bookingFlow.contactUs": "liên hệ trực tiếp với chúng tôi",
   "bookingFlow.cancelBooking": "Hủy đặt phòng",
   "bookingFlow.bookedRooms": "Phòng đã đặt:",
@@ -914,7 +914,26 @@
       "refundAmount": "Số tiền hoàn",
       "originalAmount": "Tổng tiền đặt phòng ban đầu",
       "unavailable": "Không thể hủy đơn đặt phòng này từ trang này.",
-      "failed": "Hủy đặt phòng thất bại. Chưa xác nhận đơn đã hủy. Vui lòng thử lại."
+      "failed": "Hủy đặt phòng thất bại. Chưa xác nhận đơn đã hủy. Vui lòng thử lại.",
+      "quoteChanged": "Báo giá đã thay đổi hoặc hết hạn. Vui lòng kiểm tra số tiền mới và xác nhận lại.",
+      "manualReview": "Khoản hoàn tiền cần được xét duyệt. Số tiền hoàn chưa được xác định.",
+      "noRefund": "Lần hủy này không có khoản hoàn tiền tự động.",
+      "destination": "Tiền hoàn được gửi về phương thức thanh toán ban đầu.",
+      "eta": "Dự kiến nhận tiền sau khi xử lý: {min}–{max} ngày làm việc. Thời gian có thể khác tùy ngân hàng.",
+      "refreshStatus": "Cập nhật trạng thái hoàn tiền",
+      "status": {
+        "queued": "Khoản hoàn tiền đang chờ xử lý.",
+        "submitting": "Đang gửi yêu cầu hoàn tiền.",
+        "provider_pending": "Nhà cung cấp thanh toán đang xử lý hoàn tiền.",
+        "unknown": "Chúng tôi đang xác minh khoản hoàn tiền với nhà cung cấp thanh toán.",
+        "needs_attention": "Khoản hoàn tiền cần nhân viên hỗ trợ.",
+        "succeeded": "Nhà cung cấp thanh toán đã xác nhận hoàn tiền.",
+        "pending": "Khoản hoàn tiền đang chờ xử lý.",
+        "processing": "Khoản hoàn tiền đang được xử lý.",
+        "failed": "Không thể hoàn tiền. Cần nhân viên xét duyệt.",
+        "cancelled": "Yêu cầu hoàn tiền đã bị hủy. Vui lòng liên hệ hỗ trợ."
+      },
+      "alreadyCommitted": "Đã hoàn hoặc đã giữ cho một khoản hoàn tiền khác"
     },
     "removeSearch": "Xóa tìm kiếm {name}",
     "securityUnavailable": "Tạm thời chưa thể quản lý bảo mật tài khoản. Vui lòng thử lại sau."

@@ -1,56 +1,65 @@
-import http from './http'
+import http from './http';
 
 export const BookingService = {
   createBooking(bookingData, idempotencyKey) {
     return http.post('/bookings', bookingData, {
       headers: {
-        'Idempotency-Key': idempotencyKey
-      }
-    })
+        'Idempotency-Key': idempotencyKey,
+      },
+    });
   },
 
   createBookingPaymentIntent(bookingId, paymentData = {}) {
-    return http.post(`/bookings/${bookingId}/payment-intent`, paymentData)
+    return http.post(`/bookings/${bookingId}/payment-intent`, paymentData);
   },
 
   getBookings(includeCancelled = false, options = {}) {
-    const params = { includeCancelled }
+    const params = { includeCancelled };
     // Optional server-side filters/pagination.
     if (typeof options.reviewed === 'boolean') {
-      params.reviewed = options.reviewed
+      params.reviewed = options.reviewed;
     }
     if (options.bookedAfter) {
-      params.bookedAfter = options.bookedAfter
+      params.bookedAfter = options.bookedAfter;
     }
     if (options.page) {
-      params.page = options.page
+      params.page = options.page;
     }
     if (options.limit) {
-      params.limit = options.limit
+      params.limit = options.limit;
     }
     return http.get('/bookings', {
-      params
-    })
+      params,
+    });
   },
 
   // Completed trips the user can still review (paginated server-side).
   getReviewableBookings(params = {}) {
     return http.get('/bookings/reviewable', {
-      params
-    })
+      params,
+    });
   },
 
   getBookingById(bookingId) {
-    return http.get(`/bookings/${bookingId}`)
+    return http.get(`/bookings/${bookingId}`);
   },
 
   getBookingByCode(bookingCode) {
-    return http.get(`/bookings/code/${bookingCode}`)
+    return http.get(`/bookings/code/${bookingCode}`);
   },
 
-  cancelBooking(bookingId, processRefund = false) {
+  getCancellationQuote(bookingId) {
+    return http.get(`/bookings/${bookingId}/cancellation-quote`);
+  },
+
+  getRefundStatus(bookingId) {
+    return http.get(`/bookings/${bookingId}/refund`);
+  },
+
+  cancelBooking(bookingId, quoteId) {
     return http.delete(`/bookings/${bookingId}`, {
-      params: { processRefund }
-    })
-  }
-}
+      data: { quoteId },
+      headers: { 'Idempotency-Key': quoteId },
+    });
+  },
+};

@@ -48,6 +48,13 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
         defaultValue: 'stripe',
       },
+      idempotency_key: { type: DataTypes.STRING(255), allowNull: true, unique: true },
+      workflow_state: { type: DataTypes.STRING(32), allowNull: true },
+      attempt_count: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      first_attempt_at: { type: DataTypes.DATE, allowNull: true },
+      next_retry_at: { type: DataTypes.DATE, allowNull: true },
+      lease_until: { type: DataTypes.DATE, allowNull: true },
+      lease_token: { type: DataTypes.UUID, allowNull: true },
       provider_refund_id: {
         type: DataTypes.STRING(255),
         allowNull: true,

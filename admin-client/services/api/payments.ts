@@ -92,6 +92,7 @@ export interface RefundTransactionRef {
 }
 
 export interface RefundListItem {
+  workflow_state?: string | null;
   id: string;
   booking_id: string;
   transaction_id: string;
@@ -121,7 +122,7 @@ export interface InitiateRefundResult {
   status: string;
   amount: number;
   currency: string;
-  transactionStatus: string;
+  transactionStatus?: string;
 }
 
 export interface TransactionFilters {
@@ -155,7 +156,9 @@ function toQuery<T extends object>(filters: T): string {
   return query ? `?${query}` : "";
 }
 
-export async function fetchPaymentSummary(hotelId: string): Promise<PaymentSummary> {
+export async function fetchPaymentSummary(
+  hotelId: string
+): Promise<PaymentSummary> {
   const response = await apiFetch<{ data: PaymentSummary }>(
     `/admin/payments/hotels/${encodeURIComponent(hotelId)}/summary`
   );
@@ -165,13 +168,16 @@ export async function fetchPaymentSummary(hotelId: string): Promise<PaymentSumma
 export async function fetchTransactions(
   filters: TransactionFilters = {}
 ): Promise<{ data: TransactionListItem[]; meta: PaginatedMeta }> {
-  const response = await apiFetch<{ data: TransactionListItem[]; meta: PaginatedMeta }>(
-    `/admin/payments/transactions${toQuery(filters)}`
-  );
+  const response = await apiFetch<{
+    data: TransactionListItem[];
+    meta: PaginatedMeta;
+  }>(`/admin/payments/transactions${toQuery(filters)}`);
   return { data: response.data, meta: response.meta };
 }
 
-export async function fetchTransaction(transactionId: string): Promise<TransactionDetail> {
+export async function fetchTransaction(
+  transactionId: string
+): Promise<TransactionDetail> {
   const response = await apiFetch<{ data: TransactionDetail }>(
     `/admin/payments/transactions/${encodeURIComponent(transactionId)}`
   );
@@ -180,11 +186,16 @@ export async function fetchTransaction(transactionId: string): Promise<Transacti
 
 export async function initiateRefund(
   transactionId: string,
-  payload: InitiateRefundPayload
+  payload: InitiateRefundPayload,
+  idempotencyKey: string
 ): Promise<InitiateRefundResult> {
   const response = await apiFetch<{ data: InitiateRefundResult }>(
     `/admin/payments/transactions/${encodeURIComponent(transactionId)}/refunds`,
-    { method: "POST", body: payload }
+    {
+      method: "POST",
+      body: payload,
+      headers: { "Idempotency-Key": idempotencyKey },
+    }
   );
   return response.data;
 }
@@ -192,9 +203,10 @@ export async function initiateRefund(
 export async function fetchRefunds(
   filters: RefundFilters = {}
 ): Promise<{ data: RefundListItem[]; meta: PaginatedMeta }> {
-  const response = await apiFetch<{ data: RefundListItem[]; meta: PaginatedMeta }>(
-    `/admin/payments/refunds${toQuery(filters)}`
-  );
+  const response = await apiFetch<{
+    data: RefundListItem[];
+    meta: PaginatedMeta;
+  }>(`/admin/payments/refunds${toQuery(filters)}`);
   return { data: response.data, meta: response.meta };
 }
 
@@ -205,10 +217,27 @@ export async function fetchRefund(refundId: string): Promise<RefundListItem> {
   return response.data;
 }
 
-export async function retryRefund(refundId: string): Promise<InitiateRefundResult> {
+export async function retryRefund(
+  refundId: string
+): Promise<InitiateRefundResult> {
   const response = await apiFetch<{ data: InitiateRefundResult }>(
     `/admin/payments/refunds/${encodeURIComponent(refundId)}/retry`,
     { method: "POST" }
+  );
+  return response.data;
+}
+
+export async function resolveRefundReview(
+  refundId: string,
+  amount: number,
+  reason: string
+): Promise<InitiateRefundResult> {
+  const response = await apiFetch<{ data: InitiateRefundResult }>(
+    `/admin/payments/refunds/${refundId}/review`,
+    {
+      method: "POST",
+      body: { amount, reason },
+    }
   );
   return response.data;
 }

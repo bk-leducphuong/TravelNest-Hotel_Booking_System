@@ -4,7 +4,12 @@ import { createI18n } from 'vue-i18n';
 import en from '@/locales/en.json';
 import BookingRecord from '@/components/booking/BookingRecord.vue';
 import { BookingService } from '@/services/booking.service';
-vi.mock('@/services/booking.service', () => ({ BookingService: { getBookingByCode: vi.fn() } }));
+vi.mock('@/services/booking.service', () => ({
+  BookingService: {
+    getBookingByCode: vi.fn(),
+    getRefundStatus: vi.fn().mockResolvedValue({ data: { decision: { outcome: 'no_refund' } } }),
+  },
+}));
 const mountRecord = (code = 'TN123') =>
   mount(BookingRecord, {
     props: { code },

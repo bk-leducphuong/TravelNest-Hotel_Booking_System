@@ -397,7 +397,7 @@
  *                 format: double
  *     BookingCancellationPolicyEvaluation:
  *       type: object
- *       description: Result of evaluating the cancellation policy at cancel time.
+ *       description: Result of evaluating the immutable booking-time cancellation policy snapshot.
  *       properties:
  *         eligible:
  *           type: boolean
@@ -406,9 +406,10 @@
  *           enum: [eligible, ineligible, manual_review]
  *         reason:
  *           type: string
- *           enum: [no_structured_rule, non_refundable_rule, free_cancellation, customer_request]
+ *           enum: [no_structured_rule, missing_policy_snapshot, missing_provider_charge, currency_requires_review, provider_data_requires_review, no_captured_payment, admin_override, non_refundable_rule, free_cancellation, customer_request]
  *         refundAmount:
  *           type: number
+ *           nullable: true
  *           format: double
  *         refundPercent:
  *           type: number
@@ -430,12 +431,19 @@
  *           type: boolean
  *     BookingRefund:
  *       type: object
- *       description: Refund result mapped onto the legacy guest shape.
+ *       description: Durable refund or manual-review record; workflowState describes asynchronous progress.
  *       properties:
  *         refundId:
  *           type: string
  *           nullable: true
- *           description: Provider (Stripe) refund ID
+ *           description: Internal durable refund record ID
+ *         providerRefundId:
+ *           type: string
+ *           nullable: true
+ *           description: Stripe refund ID once submitted
+ *         workflowState:
+ *           type: string
+ *           nullable: true
  *         amount:
  *           type: number
  *           format: double
@@ -906,9 +914,10 @@
  *     summary: Cancel a booking
  *     description: |
  *       Cancels a booking owned by the authenticated user, releasing reserved inventory.
- *       When `processRefund=true` and the evaluated cancellation policy yields a positive
- *       refund amount, a refund is requested from the Payment module. Refund failures do
- *       not block cancellation; the `refund` field is then null.
+ *       Requires a current cancellation quote. Commits the cancellation, inventory
+ *       release, refund/review obligation and outbox together. Eligible refunds are
+ *       automatic and execute asynchronously after commit. Duplicates replay the stored
+ *       decision. The deprecated processRefund query flag cannot disable eligibility.
  *     tags:
  *       - Bookings
  *     security:
@@ -921,12 +930,17 @@
  *           type: string
  *           format: uuid
  *         description: Booking UUID
- *       - in: query
- *         name: processRefund
- *         schema:
- *           type: boolean
- *           default: false
- *         description: When true, attempt to refund the booking per its cancellation policy
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [quoteId]
+ *             properties:
+ *               quoteId:
+ *                 type: string
+ *                 format: uuid
  *     responses:
  *       200:
  *         description: Booking cancelled
@@ -936,8 +950,7 @@
  *               $ref: '#/components/schemas/GuestBookingCancelResponse'
  *       400:
  *         description: |
- *           Booking already cancelled (`ALREADY_CANCELLED`) or completed
- *           (`CANNOT_CANCEL_COMPLETED`).
+ *           Request validation failed; a quoteId is required.
  *         content:
  *           application/json:
  *             schema:
@@ -951,9 +964,48 @@
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       409:
- *         description: Booking was cancelled concurrently (`BOOKING_ALREADY_CANCELLED`)
+ *         description: Quote expired or changed (`CANCELLATION_QUOTE_EXPIRED`), or invalid booking status transition
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ */
+
+/**
+ * @swagger
+ * /bookings/{bookingId}/cancellation-quote:
+ *   get:
+ *     summary: Preview a buyer-owned cancellation and refund
+ *     description: Stores a server quote valid for five minutes. Evaluates frozen room policies, captured payment and reserved refunds. Missing historical/provider data is explicitly manual_review.
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookingId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Quote with quoteId, expiresAt, amountPaid, amountAlreadyCommitted, cancellationFee, refundAmount, currency, eligibility, destination and estimated etaDays.
+ *       404:
+ *         description: Booking not found or not owned by buyer.
+ *       409:
+ *         description: Booking cannot be cancelled in its current state.
+ * /bookings/{bookingId}/refund:
+ *   get:
+ *     summary: Track the cancellation decision and refund status
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookingId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Buyer-owned cancellation decision and current refund, including workflowState and eligibility.
+ *       404:
+ *         description: Booking not found or not owned by buyer.
  */

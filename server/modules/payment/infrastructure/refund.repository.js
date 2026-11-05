@@ -59,12 +59,25 @@ const UPDATABLE_FIELDS = {
   failureMessage: 'failure_message',
   failure_message: 'failure_message',
   metadata: 'metadata',
+  ...Object.fromEntries(
+    [
+      'workflow_state',
+      'attempt_count',
+      'first_attempt_at',
+      'next_retry_at',
+      'lease_until',
+      'lease_token',
+    ].map((key) => [key, key])
+  ),
 };
 
 class RefundRepository {
   async create(data, options = {}) {
     return await Refunds.create(
       {
+        idempotency_key: data.idempotencyKey || null,
+        workflow_state: data.workflowState || null,
+        next_retry_at: data.idempotencyKey ? new Date() : null,
         booking_id: data.bookingId,
         transaction_id: data.transactionId,
         buyer_id: data.buyerId,
@@ -83,6 +96,55 @@ class RefundRepository {
       },
       options
     );
+  }
+
+  async reconciliationPage(afterId, limit = 100) {
+    return Refunds.findAll({
+      where: {
+        idempotency_key: { [Op.ne]: null },
+        ...(afterId ? { id: { [Op.gt]: afterId } } : {}),
+        [Op.or]: [
+          { first_attempt_at: { [Op.ne]: null } },
+          { provider_refund_id: { [Op.ne]: null } },
+        ],
+      },
+      order: [['id', 'ASC']],
+      limit,
+    });
+  }
+
+  async findReviewForTransaction(transactionId, options = {}) {
+    return Refunds.findOne({
+      where: { transaction_id: transactionId, workflow_state: 'manual_review', status: 'pending' },
+      ...options,
+    });
+  }
+
+  async findByKey(key, options = {}) {
+    return Refunds.findOne({ where: { idempotency_key: key }, ...options });
+  }
+
+  async due(limit = 50) {
+    return Refunds.findAll({
+      where: {
+        idempotency_key: { [Op.ne]: null },
+        status: { [Op.in]: ['pending', 'processing'] },
+        workflow_state: { [Op.notIn]: ['needs_attention', 'manual_review'] },
+        [Op.and]: [
+          { [Op.or]: [{ next_retry_at: null }, { next_retry_at: { [Op.lte]: new Date() } }] },
+          { [Op.or]: [{ lease_until: null }, { lease_until: { [Op.lte]: new Date() } }] },
+        ],
+      },
+      order: [['requested_at', 'ASC']],
+      limit,
+    });
+  }
+
+  async findLeasedForTransaction(transactionId, options = {}) {
+    return Refunds.findOne({
+      where: { transaction_id: transactionId, lease_until: { [Op.gt]: new Date() } },
+      ...options,
+    });
   }
 
   async findById(refundId, options = {}) {

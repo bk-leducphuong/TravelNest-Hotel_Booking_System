@@ -2,6 +2,7 @@ const logger = require('@config/logger.config');
 
 const payoutRepository = require('../infrastructure/payout.repository');
 const { PAYOUT_STATUS } = require('../domain/payout-rules');
+const { settleTransfer } = require('./settleTransfer');
 
 /**
  * Reconcile a Stripe Connect `transfer.*` event with the local payout row.
@@ -69,7 +70,9 @@ async function reconcileTransferFromStripe({ transfer, eventType } = {}) {
     update.paidAt = new Date();
   }
 
-  await payoutRepository.update(payout.id, update);
+  if (nextStatus === PAYOUT_STATUS.PAID) {
+    await settleTransfer(payout, transfer);
+  } else await payoutRepository.update(payout.id, update);
 
   logger.info(
     {

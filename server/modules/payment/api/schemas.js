@@ -55,7 +55,7 @@ const getHotelPaymentSummary = {
 const initiateRefund = {
   params: Joi.object({ transactionId: uuid.required() }).required(),
   body: Joi.object({
-    amount: Joi.number().greater(0),
+    amount: Joi.number().greater(0).precision(2),
     reason: Joi.string().valid(...REFUND_REASONS),
   }).required(),
 };
@@ -75,6 +75,14 @@ const getRefund = {
   params: Joi.object({ refundId: uuid.required() }).required(),
 };
 
+const resolveRefundReview = {
+  params: Joi.object({ refundId: uuid.required() }).required(),
+  body: Joi.object({
+    amount: Joi.number().min(0).precision(2).required(),
+    reason: Joi.string().trim().min(3).max(500).required(),
+  }).required(),
+};
+
 const retryRefund = {
   params: Joi.object({ refundId: uuid.required() }).required(),
 };
@@ -87,4 +95,5 @@ module.exports = {
   listRefunds,
   getRefund,
   retryRefund,
+  resolveRefundReview,
 };

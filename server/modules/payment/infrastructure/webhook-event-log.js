@@ -5,6 +5,7 @@ const webhookEventLogRepository = require('./webhook_event_log.repository');
  * audit trail) and re-exported by the payment module's public interface.
  */
 module.exports = {
+  claim: (event) => webhookEventLogRepository.claim(event),
   findByEventId: (eventId) => webhookEventLogRepository.findByEventId(eventId),
   create: (data) => webhookEventLogRepository.create(data),
   updateStatus: (eventId, status, errorMessage) =>

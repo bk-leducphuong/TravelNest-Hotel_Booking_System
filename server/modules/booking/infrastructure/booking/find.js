@@ -103,9 +103,10 @@ async function countByBuyerId(buyerId, options = {}) {
   return await Bookings.count(query);
 }
 
-async function findById(bookingId) {
+async function findById(bookingId, options = {}) {
   return await Bookings.findOne({
     where: { id: bookingId },
+    ...options,
   });
 }
 
@@ -191,7 +192,7 @@ async function findByIdAndBuyerId(bookingId, buyerId) {
   });
 }
 
-async function findCancellationContextByIdAndBuyerId(bookingId, buyerId) {
+async function findCancellationContextByIdAndBuyerId(bookingId, buyerId, options = {}) {
   return await Bookings.findOne({
     where: {
       id: bookingId,
@@ -206,10 +207,11 @@ async function findCancellationContextByIdAndBuyerId(bookingId, buyerId) {
       {
         model: BookingRooms,
         as: 'bookingRooms',
-        attributes: ['room_id', 'quantity'],
+        attributes: ['room_id', 'quantity', 'subtotal', 'total_price'],
         required: false,
       },
     ],
+    ...options,
   });
 }
 
@@ -350,7 +352,12 @@ async function findDetailedByBookingCodeAndBuyerId(bookingCode, buyerId, options
   });
 }
 
+async function findCancellationHotel(hotelId) {
+  return Hotels.findByPk(hotelId, { attributes: ['id', 'timezone', 'check_in_time'] });
+}
+
 module.exports = {
+  findCancellationHotel,
   findByBuyerId,
   countByBuyerId,
   findById,

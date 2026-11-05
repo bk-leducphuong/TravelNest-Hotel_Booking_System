@@ -33,19 +33,17 @@ const handleStripeWebhook = async (req, res) => {
   const signature = req.headers['stripe-signature'];
   const rawBody = req.body;
 
+  let event;
+  let claimed = false;
   try {
     // 1. Verify and parse webhook (adapter's job)
-    const event = await webhookAdapter.verifyAndParse(rawBody, signature);
+    event = await webhookAdapter.verifyAndParse(rawBody, signature);
 
-    // 2. Check for duplicate events (idempotency)
-    const isDuplicate = await webhookAdapter.isDuplicate(event.id);
-    if (isDuplicate) {
-      logger.info('Duplicate webhook event received', { eventId: event.id });
-      return res.status(200).json({ received: true, duplicate: true });
-    }
-
-    // 3. Log event for audit trail
-    await webhookAdapter.logEvent(event.id, event.type, event.raw, 'processing');
+    const claim = await paymentModule.webhookEventLog.claim(event);
+    if (claim === 'processed') return res.status(200).json({ received: true, duplicate: true });
+    if (claim === 'busy')
+      return res.status(503).json({ error: 'Webhook processing in progress; retry later' });
+    claimed = true;
 
     // 4. Route to appropriate handler
     await routeWebhookEvent(event);
@@ -62,8 +60,8 @@ const handleStripeWebhook = async (req, res) => {
       return res.status(400).json({ error: 'Invalid signature' });
     }
 
-    if (error.eventId) {
-      await paymentModule.webhookEventLog.updateStatus(error.eventId, 'failed', error.message);
+    if (claimed && event?.id) {
+      await paymentModule.webhookEventLog.updateStatus(event.id, 'failed', error.message);
     }
 
     res.status(500).json({ error: 'Webhook processing failed' });
@@ -81,6 +79,13 @@ async function routeWebhookEvent(event) {
 
     case 'payment_intent.payment_failed':
       await handlePaymentFailed(event);
+      break;
+
+    case 'refund.created':
+    case 'refund.updated':
+    case 'refund.failed':
+    case 'charge.refund.updated':
+      await paymentModule.handleRefundSucceeded({ refundId: event.data.id });
       break;
 
     case 'charge.refunded':
@@ -194,24 +199,9 @@ async function handlePaymentFailed(event) {
  * Handle charge.refunded event
  */
 async function handleChargeRefunded(event) {
-  logger.info('Handling charge.refunded', { eventId: event.id });
-
-  try {
-    const context = webhookAdapter.extractRefundContext(event);
-
-    await paymentModule.handleRefundSucceeded(context);
-
-    await notificationPublisher.publishRefundCreated(context, {
-      sourceEventId: event.id,
-    });
-
-    logger.info('Refund handled successfully', {
-      eventId: event.id,
-      bookingCode: context.bookingCode,
-    });
-  } catch (error) {
-    logger.error('Error handling refund:', error);
-    throw error;
+  // Charge payloads can contain a truncated list. Reconcile every provider refund.
+  for (const refundId of await paymentAdapter.listRefundsForCharge(event.data.id)) {
+    await paymentModule.handleRefundSucceeded({ refundId });
   }
 }
 

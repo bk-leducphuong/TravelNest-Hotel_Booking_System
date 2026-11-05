@@ -121,9 +121,27 @@ const paymentProvider = {
 
 module.exports = {
   adminRoutes,
+  jobs: { refunds: require('./jobs/refunds') },
   guestRoutes,
   webhookRoutes,
   refundBooking,
+  recordCancellationReview: (...args) =>
+    require('./application/refund-obligations').recordCancellationReview(...args),
+  cancellationPayment: (...args) =>
+    require('./application/refund-obligations').cancellationPayment(...args),
+  createCancellationRefund: (...args) =>
+    require('./application/refund-obligations').createObligation(...args),
+  getCancellationRefund: async (id, options = {}) => {
+    const refund = await require('./infrastructure/refund.repository').findById(id, options);
+    return require('./application/refund-obligations').presentRefund(refund);
+  },
+  recordCancellationEvent: (payload, options) =>
+    require('./infrastructure/outbox.repository').record(
+      `booking-cancelled-${payload.bookingId}`,
+      'booking.cancelled',
+      payload,
+      options
+    ),
 
   // Guest payment path
   createPaymentIntent,
@@ -156,6 +174,8 @@ module.exports = {
   failIdempotencyRecord,
   touchIdempotencyRecord,
   getPrimaryOwnerByHotelId,
+  lockHotelBalance: (...args) => ledgerRepository.lockHotelBalance(...args),
+  availableHotelBalance: (...args) => ledgerRepository.availableHotelBalance(...args),
   webhookEventLog,
 
   // Stripe provider operations (booking's payment flow).

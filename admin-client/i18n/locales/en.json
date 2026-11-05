@@ -784,5 +784,13 @@
   "amenities.code.EXTRA_BED": "Extra bed",
   "amenities.code.COT_AVAILABLE": "Cot available",
   "rooms.openFailed": "The room was created ({id}), but could not be opened. Select Manage to try again.",
-  "properties.photos.title": "Property photo"
+  "properties.photos.title": "Property photo",
+  "payments.refunds.needsAttention": "Needs attention",
+  "payments.refunds.failure": "Processing details",
+  "payments.refunds.manualReview": "Manual review",
+  "payments.refunds.review": "Review refund decision",
+  "payments.refunds.zeroReview": "Enter 0 to decline the refund. Your reason is recorded in the audit history.",
+  "payments.refunds.saveReview": "Save decision",
+  "payments.refunds.reviewFailed": "Could not save the refund decision. Refresh and try again.",
+  "payments.refunds.amountUndecided": "Not decided"
 }

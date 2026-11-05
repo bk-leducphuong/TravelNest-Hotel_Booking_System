@@ -97,4 +97,12 @@ router.post(
   controller.retryRefundHandler
 );
 
+router.post(
+  '/refunds/:refundId/review',
+  requireHotelPermission(PERMISSIONS.PAYMENT_REFUND),
+  validate(schema.resolveRefundReview),
+  refundInHotel,
+  controller.resolveRefundReviewHandler
+);
+
 module.exports = router;

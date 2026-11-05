@@ -14,7 +14,7 @@
         error: '',
         version: 0,
         acknowledged: false,
-        processRefund: true,
+        quote: null,
         processing: false,
         result: null,
       };
@@ -52,7 +52,13 @@
         this.acknowledged = false;
         try {
           const response = await BookingService.getBookingByCode(this.$route.params.bookingCode);
-          if (version === this.version) this.booking = normalizeBooking(response?.data);
+          if (version !== this.version) return;
+          this.booking = normalizeBooking(response?.data);
+          if (this.canCancel) await this.loadQuote();
+          else if (this.booking.status === 'cancelled') {
+            const status = await BookingService.getRefundStatus(this.booking.id);
+            if (version === this.version) this.result = status.data;
+          }
         } catch (error) {
           if (version === this.version)
             this.error = this.$t(
@@ -62,18 +68,39 @@
           if (version === this.version) this.loading = false;
         }
       },
+      async loadQuote() {
+        const version = this.version;
+        this.quote = null;
+        this.acknowledged = false;
+        const response = await BookingService.getCancellationQuote(this.booking.id);
+        if (version === this.version) this.quote = response.data;
+      },
+      async refreshRefund() {
+        const version = this.version;
+        try {
+          const response = await BookingService.getRefundStatus(this.booking.id);
+          if (version === this.version) this.result = response.data;
+        } catch {
+          if (version === this.version) this.error = this.$t('guest.loadFailed');
+        }
+      },
       async cancelBooking() {
-        if (!this.canCancel || !this.acknowledged || this.processing || this.result) return;
+        if (!this.quote || !this.canCancel || !this.acknowledged || this.processing || this.result)
+          return;
         const version = this.version;
         this.processing = true;
         this.error = '';
         try {
-          const response = await BookingService.cancelBooking(this.booking.id, this.processRefund);
+          const response = await BookingService.cancelBooking(this.booking.id, this.quote.quoteId);
           if (version !== this.version) return;
           this.result = response.data;
           this.booking.status = 'cancelled';
         } catch (error) {
-          if (version === this.version) this.error = this.$t('guest.cancel.failed');
+          if (version !== this.version) return;
+          if (error.response?.status === 409) {
+            await this.loadQuote();
+            this.error = this.$t('guest.cancel.quoteChanged');
+          } else this.error = this.$t('guest.cancel.failed');
         } finally {
           if (version === this.version) this.processing = false;
         }
@@ -102,16 +129,21 @@
           <p role="status">
             {{
               $t(
-                result.refundProcessed
-                  ? 'guest.cancel.refundSubmitted'
-                  : 'guest.cancel.refundNotProcessed'
+                result.decision?.outcome === 'manual_review'
+                  ? 'guest.cancel.manualReview'
+                  : result.refund
+                    ? `guest.cancel.status.${result.refund.workflowState || result.refund.status}`
+                    : 'guest.cancel.noRefund'
               )
             }}
           </p>
-          <p v-if="result.refund">
+          <p v-if="result.refund && result.refund.eligibility !== 'manual_review'">
             {{ $t('guest.cancel.refundAmount') }}:
             {{ guestMoney(result.refund.amount, result.refund.currency, $i18n.locale) }}
           </p>
+          <button type="button" class="guest-button guest-button-secondary" @click="refreshRefund">
+            {{ $t('guest.cancel.refreshStatus') }}
+          </button>
           <RouterLink to="/bookings" class="guest-button">{{
             $t('account.menu.bookings')
           }}</RouterLink></template
@@ -119,13 +151,31 @@
         <template v-else-if="canCancel"
           ><h2>{{ $t('bookingFlow.confirmCancellation') }}</h2>
           <p>{{ $t('guest.cancel.review') }}</p>
-          <p class="guest-subtitle">{{ $t('guest.cancel.noQuote') }}</p>
+          <template v-if="quote">
+            <p v-if="quote.eligibility === 'manual_review'" role="status">
+              {{ $t('guest.cancel.manualReview') }}
+            </p>
+            <template v-else>
+              <p>
+                {{ $t('guest.cancel.refundAmount') }}:
+                <strong>{{ guestMoney(quote.refundAmount, quote.currency, $i18n.locale) }}</strong>
+              </p>
+              <p>
+                {{ $t('bookingFlow.cancellationFee') }}
+                {{ guestMoney(quote.cancellationFee, quote.currency, $i18n.locale) }}
+              </p>
+              <p v-if="quote.amountAlreadyCommitted > 0">
+                {{ $t('guest.cancel.alreadyCommitted') }}:
+                {{ guestMoney(quote.amountAlreadyCommitted, quote.currency, $i18n.locale) }}
+              </p>
+              <p v-if="quote.refundAmount > 0">{{ $t('guest.cancel.destination') }}</p>
+              <p v-if="quote.refundAmount > 0">
+                {{ $t('guest.cancel.eta', { min: quote.etaDays.min, max: quote.etaDays.max }) }}
+              </p>
+            </template>
+          </template>
           <form class="guest-form" @submit.prevent="cancelBooking">
             <label class="cancel-checkbox"
-              ><input v-model="processRefund" type="checkbox" :disabled="processing" />{{
-                $t('guest.cancel.requestRefund')
-              }}</label
-            ><label class="cancel-checkbox"
               ><input v-model="acknowledged" type="checkbox" required :disabled="processing" />{{
                 $t('guest.cancel.acknowledge')
               }}</label
@@ -134,7 +184,7 @@
             <button
               type="submit"
               class="guest-button cancel-danger"
-              :disabled="!acknowledged || processing"
+              :disabled="!quote || !acknowledged || processing"
             >
               {{ processing ? $t('guest.loading') : $t('bookingFlow.cancelBooking') }}</button
             ><RouterLink

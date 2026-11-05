@@ -40,7 +40,7 @@ class StripeWebhookAdapter {
   async isDuplicate(eventId) {
     try {
       const existing = await this.eventLogRepository.findByEventId(eventId);
-      return !!existing;
+      return existing?.status === 'processed';
     } catch (error) {
       logger.error('Error checking event duplication:', error);
       // If we can't check, assume not duplicate to avoid blocking

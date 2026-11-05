@@ -8,6 +8,7 @@ jest.mock('@modules/booking/infrastructure/hold.repository', () => ({
 }));
 jest.mock('@modules/booking/infrastructure/booking.repository', () => ({
   findCancellationRule: jest.fn(),
+  findCancellationHotel: jest.fn(),
 }));
 jest.mock('@modules/inventory', () => ({
   checkAvailabilityForHold: jest.fn(),
@@ -42,6 +43,9 @@ describe('HoldService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    require('@modules/booking/infrastructure/booking.repository').findCancellationHotel.mockResolvedValue(
+      { timezone: 'UTC', check_in_time: '14:00:00' }
+    );
     mockTransaction = {
       commit: jest.fn().mockResolvedValue(undefined),
       rollback: jest.fn().mockResolvedValue(undefined),

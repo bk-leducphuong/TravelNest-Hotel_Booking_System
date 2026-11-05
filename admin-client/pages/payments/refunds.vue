@@ -2,6 +2,7 @@
 import {
   fetchRefunds,
   retryRefund,
+  resolveRefundReview,
   type RefundListItem,
 } from "~/services/api/payments";
 import { formatDateTime, formatMoney } from "~/utils/format";
@@ -22,6 +23,41 @@ const listRequests = useRequestVersion();
 const retryingId = ref<string | null>(null);
 const refunds = ref<RefundListItem[]>([]);
 const total = ref(0);
+
+const reviewRow = ref<RefundListItem | null>(null);
+function openReview(row: RefundListItem) {
+  reviewRow.value = row;
+  reviewAmount.value = 0;
+  reviewReason.value = "";
+  reviewOpen.value = true;
+}
+const reviewOpen = ref(false);
+const reviewAmount = ref(0);
+const reviewReason = ref("");
+const reviewing = ref(false);
+async function saveReview() {
+  if (
+    !reviewRow.value ||
+    reviewing.value ||
+    !can("payment.refund") ||
+    reviewReason.value.trim().length < 3
+  )
+    return;
+  reviewing.value = true;
+  try {
+    await resolveRefundReview(
+      reviewRow.value.id,
+      reviewAmount.value,
+      reviewReason.value.trim()
+    );
+    reviewOpen.value = false;
+    await load();
+  } catch {
+    listError.value = t("payments.refunds.reviewFailed");
+  } finally {
+    reviewing.value = false;
+  }
+}
 
 const filters = reactive({
   status: "",
@@ -222,15 +258,31 @@ watch(
               align="right"
             >
               <template #default="{ row }">{{
-                formatMoney(row.amount, row.currency)
+                row.workflow_state === "manual_review"
+                  ? $t("payments.refunds.amountUndecided")
+                  : formatMoney(row.amount, row.currency)
               }}</template>
             </el-table-column>
             <el-table-column :label="$t('common.status')" width="130">
               <template #default="{ row }">
                 <el-tag :type="refundStatusTagType(row.status)" effect="light">
                   {{ $t(`payments.refundStatus.${row.status}`) }}
+                  <span v-if="row.workflow_state === 'manual_review'">
+                    · {{ $t("payments.refunds.manualReview") }}</span
+                  >
+                  <span v-if="row.workflow_state === 'needs_attention'">
+                    · {{ $t("payments.refunds.needsAttention") }}</span
+                  >
                 </el-tag>
               </template>
+            </el-table-column>
+            <el-table-column
+              :label="$t('payments.refunds.failure')"
+              min-width="180"
+            >
+              <template #default="{ row }">{{
+                row.failure_message || "—"
+              }}</template>
             </el-table-column>
             <el-table-column
               :label="$t('payments.refunds.col.reason')"
@@ -267,7 +319,20 @@ watch(
                   {{ $t("payments.refunds.action.transaction") }}
                 </el-button>
                 <el-button
-                  v-if="can('payment.refund') && isRetryableRefund(row.status)"
+                  v-if="
+                    can('payment.refund') &&
+                    row.workflow_state === 'manual_review'
+                  "
+                  link
+                  type="primary"
+                  @click="openReview(row as RefundListItem)"
+                  >{{ $t("payments.refunds.review") }}</el-button
+                >
+                <el-button
+                  v-if="
+                    can('payment.refund') &&
+                    isRetryableRefund(row.status, row.workflow_state)
+                  "
                   link
                   type="danger"
                   :loading="retryingId === row.id"
@@ -297,5 +362,29 @@ watch(
         </div>
       </UiSectionCard>
     </template>
+    <el-dialog
+      v-model="reviewOpen"
+      :title="$t('payments.refunds.review')"
+      width="min(90vw, 480px)"
+    >
+      <label
+        >{{ $t("payments.col.amount")
+        }}<el-input-number v-model="reviewAmount" :min="0" :precision="2"
+      /></label>
+      <p>{{ $t("payments.refunds.zeroReview") }}</p>
+      <label
+        >{{ $t("payments.refunds.col.reason")
+        }}<el-input v-model="reviewReason" type="textarea" :maxlength="500"
+      /></label>
+      <template #footer
+        ><el-button
+          type="primary"
+          :loading="reviewing"
+          :disabled="reviewReason.trim().length < 3"
+          @click="saveReview"
+          >{{ $t("payments.refunds.saveReview") }}</el-button
+        ></template
+      >
+    </el-dialog>
   </section>
 </template>

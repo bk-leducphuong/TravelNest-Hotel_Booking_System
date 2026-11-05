@@ -1,0 +1,38 @@
+%%{init: {"theme": "neutral", "flowchart": {"nodeSpacing": 28, "rankSpacing": 45, "wrappingWidth": 230}, "themeVariables": {"fontSize": "15px"}}}%%
+flowchart TB
+  subgraph clients["User interfaces"]
+    guest["Guest app · Vue<br/>Quote and cancellation"]
+    admin["Admin app · Nuxt<br/>Review and reconciliation"]
+  end
+  subgraph api["Express API process"]
+    auth["Access control<br/>Buyer / hotel permissions"]
+    booking["Booking<br/>Policy, quote, cancellation"]
+    payment["Payment<br/>Refund obligation / review"]
+    inventory["Inventory<br/>Release rooms once"]
+    hook["Stripe webhook<br/>Signature and inbox"]
+    reconcile["Refund reconciler<br/>Apply provider outcome"]
+  end
+  db[("MySQL<br/>Business and financial records")]
+  worker["Worker process<br/>Refunds and event delivery"]
+  redis[("Redis / BullMQ<br/>Job schedules")]
+  stripe["Stripe<br/>Payment provider"]
+  events["Event subscribers<br/>Notifications / realtime"]
+  guest --> auth
+  admin --> auth
+  auth --> booking
+  auth --> payment
+  booking --> payment
+  booking --> inventory
+  booking --> db
+  payment --> db
+  inventory --> db
+  redis -. "scheduled jobs" .-> worker
+  worker -->|"durable obligations"| db
+  worker -->|"create or retrieve refund"| stripe
+  stripe -->|"signed events"| hook
+  hook --> reconcile
+  reconcile --> db
+  worker -->|"shared code"| reconcile
+  worker -->|"committed events"| events
+  classDef store fill:#eff6ff,stroke:#2563eb,color:#172554;
+  class db,redis store;
