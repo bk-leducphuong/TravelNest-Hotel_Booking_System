@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { shallowMount, flushPromises } from '@vue/test-utils';
+import * as L from 'leaflet/dist/leaflet-src.esm';
 vi.mock('@vue-leaflet/vue-leaflet', () => ({
   LMap: { template: '<div />' },
   LTileLayer: {},
@@ -48,6 +49,56 @@ function mountMap() {
   });
 }
 describe('hotel map', () => {
+  it.each([
+    { hotels: [] },
+    { hotels: [hotel] },
+    { hotels: [hotel, { ...hotel, hotel_id: 'h2', latitude: '0.01', longitude: '0.02' }] },
+  ])(
+    'initializes a real map with $hotels.length hotels and continues to area search',
+    async ({ hotels }) => {
+      const wrapper = mountMap();
+      await wrapper.setProps({ hotels });
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      Object.defineProperties(container, {
+        clientWidth: { value: 800 },
+        clientHeight: { value: 600 },
+      });
+      const map = L.map(container).setView(wrapper.vm.initialCenter, 13);
+      wrapper.findComponent({ ref: 'map' }).vm.leafletObject = map;
+      const observe = vi.fn();
+      const disconnect = vi.fn();
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor() {
+            this.observe = observe;
+            this.disconnect = disconnect;
+          }
+        }
+      );
+      const search = vi.spyOn(wrapper.vm, 'searchArea').mockResolvedValue();
+      try {
+        expect(() => wrapper.vm.onMapReady()).not.toThrow();
+        expect(wrapper.vm.ready).toBe(true);
+        expect(map.getBounds().isValid()).toBe(true);
+        for (const entry of hotels)
+          expect(map.getBounds().contains(wrapper.vm.latLng(entry))).toBe(true);
+        expect(observe).toHaveBeenCalledWith(container);
+        if (hotels.length) expect(search).not.toHaveBeenCalled();
+        for (const entry of hotels) wrapper.vm.onMarkerReady(entry.hotel_id);
+        expect(search).toHaveBeenCalledOnce();
+        wrapper.vm.searchInitialArea();
+        expect(search).toHaveBeenCalledOnce();
+      } finally {
+        wrapper.unmount();
+        map.remove();
+        container.remove();
+        vi.unstubAllGlobals();
+      }
+      expect(disconnect).toHaveBeenCalledOnce();
+    }
+  );
   it('pans to the hovered card marker without changing zoom or searching again', async () => {
     const wrapper = mountMap();
     const panInside = vi.fn();

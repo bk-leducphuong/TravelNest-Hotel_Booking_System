@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 
 for (const mobile of [false, true]) {
   test(`map area search and selection (${mobile ? 'mobile' : 'desktop'})`, async ({ page }) => {
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.stack));
     if (mobile) await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => localStorage.setItem('language', 'en'));
     await page.route('**/src/services/keycloak.service*', (route) =>
@@ -42,10 +44,18 @@ for (const mobile of [false, true]) {
         expect(url.searchParams.get('rooms')).toBe(String(rooms));
         data = { hotels: mapHotels, total: mapHotels.length, hasMore: false };
       } else if (url.pathname.endsWith('/search/hotels'))
-        data = { hotels: [hotel], pagination: { page: 1, limit: 20, total: 1, totalPages: 1 } };
+        data = {
+          hotels: [hotel, { ...areaHotel, latitude: 10.8, longitude: 106.74 }],
+          pagination: { page: 1, limit: 20, total: 2, totalPages: 1 },
+        };
       return route.fulfill({ json: { success: true, data } });
     });
-    await page.route('https://tile.openstreetmap.org/**', (route) => route.abort());
+    await page.route('https://tile.openstreetmap.org/**', (route) =>
+      route.fulfill({
+        contentType: 'image/svg+xml',
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#e5eedb"/></svg>',
+      })
+    );
     await page.goto(
       `/search?location=Hanoi&checkInDate=2099-01-01&checkOutDate=2099-01-03&adults=2&children=0&rooms=${rooms}`
     );
@@ -56,6 +66,9 @@ for (const mobile of [false, true]) {
       .click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
+    await expect(dialog.locator('.leaflet-tile-loaded').first()).toBeVisible();
+    await expect.poll(() => mapRequests).toBe(1);
+    expect(pageErrors).toEqual([]);
     await expect(dialog.locator('.hotel-price-marker')).toHaveCount(mapHotels.length);
     await expect(dialog.locator('.hotel-price-marker[title="Area Hotel"]')).toContainText('180');
     await expect(dialog.locator('.map-toolbar')).toContainText(
@@ -87,14 +100,13 @@ for (const mobile of [false, true]) {
         })
         .toBe(true);
       // Move the map far enough to hide that marker, then hover its card.
-      const zoom = dialog.locator('.leaflet-control-zoom-in');
-      await zoom.click();
-      await zoom.click();
       const mapBox = await canvas.boundingBox();
-      await page.mouse.move(mapBox.x + mapBox.width / 2, mapBox.y + mapBox.height / 2);
-      await page.mouse.down();
-      await page.mouse.move(mapBox.x + 25, mapBox.y + 25, { steps: 10 });
-      await page.mouse.up();
+      for (let i = 0; i < 3; i++) {
+        await page.mouse.move(mapBox.x + 100, mapBox.y + 80);
+        await page.mouse.down();
+        await page.mouse.move(mapBox.x + mapBox.width - 25, mapBox.y + 80, { steps: 15 });
+        await page.mouse.up();
+      }
       await expect
         .poll(async () => {
           const mapBounds = await canvas.boundingBox();
@@ -134,5 +146,6 @@ for (const mobile of [false, true]) {
     await dialog.locator('.el-dialog__headerbtn').click();
     await expect(dialog).not.toBeVisible();
     await expect(page.getByText('Map Hotel', { exact: true }).first()).toBeVisible();
+    expect(pageErrors).toEqual([]);
   });
 }
