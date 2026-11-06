@@ -20,6 +20,7 @@
     "seed:all:finance": "cross-env NODE_ENV=development node seeders/database/seed-all.js --with-finance",
     "demo:reset": "npm run seed:clear && cross-env NODE_ENV=development node seeders/database/seed-all.js --with-finance",
     "keycloak:audit-users": "cross-env NODE_ENV=development node scripts/keycloak/audit-users.js --dry-run",
+    "keycloak:configure-google": "cross-env NODE_ENV=development node scripts/keycloak/configure-google-idp.js",
     "keycloak:migrate-users": "cross-env NODE_ENV=development node scripts/keycloak/migrate-users.js",
     "keycloak:verify-users": "cross-env NODE_ENV=development node scripts/keycloak/verify-users.js",
     "seed:user": "cross-env NODE_ENV=development node seeders/database/user.seed.js",

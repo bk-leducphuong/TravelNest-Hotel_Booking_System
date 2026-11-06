@@ -374,6 +374,10 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       KC_PROXY_HEADERS: xforwarded
+      # Consumed by the ${...} placeholders in travelnest-realm.json so the
+      # Google identity provider is configured on a fresh realm import.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
     volumes:
       - ./keycloak/travelnest-realm.json:/opt/keycloak/data/import/travelnest-realm.json:ro
       - ./keycloak/themes:/opt/keycloak/themes:ro
