@@ -391,6 +391,6 @@ Every manual case below used real Stripe sandbox objects (`acct_1T4DQCC8yETwFKHF
 
 ### Follow-ups
 
-1. Fix booking history to include cancelled bookings (e.g. expose `includeCancelled`/a cancelled filter) so guests can reopen refund tracking, as the workflow document promises.
+1. Fixed after this run: `/bookings` now exposes active/cancelled views (`status=active|cancelled|all`), cancelled rows carry a guest-safe refund summary, and the booking record and cancellation page share one refund tracker. Re-run L12 against this branch to sign off the repaired path.
 2. Configure a local hotel with non-zero tax/service fees to exercise proportional allocation through a real booking; today only automated suites cover it.
 3. Alert integration is still required to prove `refund_attention_required` and reconciliation drift reach an operator.

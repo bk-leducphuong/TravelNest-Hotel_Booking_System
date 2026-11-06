@@ -270,6 +270,52 @@
  *               $ref: '#/components/schemas/BookingHotel'
  *             room:
  *               $ref: '#/components/schemas/BookingRoomSummary'
+ *             cancellation:
+ *               $ref: '#/components/schemas/GuestBookingCancellationSummary'
+ *     GuestBookingCancellationSummary:
+ *       type: object
+ *       description: Present on cancelled bookings in the history list.
+ *       properties:
+ *         outcome:
+ *           type: string
+ *           enum: [refund_required, no_refund, manual_review]
+ *         decidedAt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *         refund:
+ *           nullable: true
+ *           allOf:
+ *             - $ref: '#/components/schemas/GuestBookingRefundSummary'
+ *     GuestBookingRefundSummary:
+ *       type: object
+ *       description: Guest-safe refund state; provider identifiers are never exposed.
+ *       properties:
+ *         refundId:
+ *           type: string
+ *           format: uuid
+ *         amount:
+ *           type: number
+ *         currency:
+ *           type: string
+ *           example: USD
+ *         status:
+ *           type: string
+ *           enum: [pending, processing, succeeded, failed, cancelled]
+ *         workflowState:
+ *           type: string
+ *           enum: [queued, submitting, provider_pending, unknown, needs_attention, manual_review, review_resolved, succeeded, failed, cancelled]
+ *         eligibility:
+ *           type: string
+ *           enum: [eligible, ineligible, manual_review]
+ *         requestedAt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *         processedAt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
  *     GuestBookingDetail:
  *       allOf:
  *         - $ref: '#/components/schemas/Booking'
@@ -677,7 +723,16 @@
  *         schema:
  *           type: boolean
  *           default: false
- *         description: When true, cancelled bookings are included (excluded by default)
+ *         description: Legacy alias for `status=all`. Ignored when `status` is provided.
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, cancelled, all]
+ *           default: active
+ *         description: |
+ *           History view. `active` excludes cancelled bookings (default),
+ *           `cancelled` returns only cancelled bookings, and `all` returns both.
  *     responses:
  *       200:
  *         description: List of the user's bookings

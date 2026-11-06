@@ -50,6 +50,21 @@ beforeEach(() => {
       refund: { amount: 75, currency: 'USD', status: 'pending', workflowState: 'queued' },
     },
   });
+  BookingService.getRefundStatus.mockResolvedValue({
+    data: {
+      decision: {
+        outcome: 'refund_required',
+        quote: { cancellationFee: 25, currency: 'USD', etaDays: { min: 5, max: 10 } },
+      },
+      refund: {
+        amount: 75,
+        currency: 'USD',
+        status: 'pending',
+        workflowState: 'queued',
+        eligibility: 'eligible',
+      },
+    },
+  });
 });
 it('shows the server quote and confirms it without an opt-out refund checkbox', async () => {
   const wrapper = mountPage();
@@ -65,6 +80,28 @@ it('shows the server quote and confirms it without an opt-out refund checkbox', 
   expect(wrapper.text()).not.toContain('24 hours');
   wrapper.unmount();
 });
+it('reopens refund tracking for an already cancelled booking', async () => {
+  BookingService.getBookingByCode.mockResolvedValue({
+    data: {
+      id: 'b1',
+      booking_code: 'TN1',
+      status: 'cancelled',
+      total_price: 100,
+      currency: 'USD',
+      hotel: { name: 'Refund hotel' },
+    },
+  });
+
+  const wrapper = mountPage();
+  await flushPromises();
+
+  expect(BookingService.getCancellationQuote).not.toHaveBeenCalled();
+  expect(BookingService.getRefundStatus).toHaveBeenCalledWith('b1');
+  expect(wrapper.text()).toContain(en.guest.cancel.trackingTitle);
+  expect(wrapper.text()).toContain(en.guest.cancel.status.queued);
+  wrapper.unmount();
+});
+
 it('requires acknowledgement again when the quote expires', async () => {
   BookingService.cancelBooking.mockRejectedValue({ response: { status: 409 } });
   const wrapper = mountPage();

@@ -16,6 +16,9 @@ export const BookingService = {
   getBookings(includeCancelled = false, options = {}) {
     const params = { includeCancelled };
     // Optional server-side filters/pagination.
+    if (options.status) {
+      params.status = options.status;
+    }
     if (typeof options.reviewed === 'boolean') {
       params.reviewed = options.reviewed;
     }

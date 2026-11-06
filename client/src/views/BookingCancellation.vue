@@ -5,8 +5,9 @@
   import { BookingService } from '@/services/booking.service';
   import { normalizeBooking, guestMoney } from '@/utils/guestPresentation';
   import { formatStayDate } from '@/utils/stay';
+  import RefundTracker from '@/components/booking/RefundTracker.vue';
   export default {
-    components: { Header, Footer, FeedbackMessage },
+    components: { Header, Footer, FeedbackMessage, RefundTracker },
     data() {
       return {
         booking: null,
@@ -16,7 +17,6 @@
         acknowledged: false,
         quote: null,
         processing: false,
-        result: null,
       };
     },
     computed: {
@@ -48,17 +48,12 @@
         this.loading = true;
         this.error = '';
         this.booking = null;
-        this.result = null;
         this.acknowledged = false;
         try {
           const response = await BookingService.getBookingByCode(this.$route.params.bookingCode);
           if (version !== this.version) return;
           this.booking = normalizeBooking(response?.data);
           if (this.canCancel) await this.loadQuote();
-          else if (this.booking.status === 'cancelled') {
-            const status = await BookingService.getRefundStatus(this.booking.id);
-            if (version === this.version) this.result = status.data;
-          }
         } catch (error) {
           if (version === this.version)
             this.error = this.$t(
@@ -75,25 +70,14 @@
         const response = await BookingService.getCancellationQuote(this.booking.id);
         if (version === this.version) this.quote = response.data;
       },
-      async refreshRefund() {
-        const version = this.version;
-        try {
-          const response = await BookingService.getRefundStatus(this.booking.id);
-          if (version === this.version) this.result = response.data;
-        } catch {
-          if (version === this.version) this.error = this.$t('guest.loadFailed');
-        }
-      },
       async cancelBooking() {
-        if (!this.quote || !this.canCancel || !this.acknowledged || this.processing || this.result)
-          return;
+        if (!this.quote || !this.canCancel || !this.acknowledged || this.processing) return;
         const version = this.version;
         this.processing = true;
         this.error = '';
         try {
-          const response = await BookingService.cancelBooking(this.booking.id, this.quote.quoteId);
+          await BookingService.cancelBooking(this.booking.id, this.quote.quoteId);
           if (version !== this.version) return;
-          this.result = response.data;
           this.booking.status = 'cancelled';
         } catch (error) {
           if (version !== this.version) return;
@@ -124,30 +108,18 @@
     />
     <div v-else class="cancel-grid">
       <section class="guest-section">
-        <template v-if="result"
-          ><h2>{{ $t('bookingFlow.cancelledSuccess') }}</h2>
-          <p role="status">
-            {{
-              $t(
-                result.decision?.outcome === 'manual_review'
-                  ? 'guest.cancel.manualReview'
-                  : result.refund
-                    ? `guest.cancel.status.${result.refund.workflowState || result.refund.status}`
-                    : 'guest.cancel.noRefund'
-              )
-            }}
-          </p>
-          <p v-if="result.refund && result.refund.eligibility !== 'manual_review'">
-            {{ $t('guest.cancel.refundAmount') }}:
-            {{ guestMoney(result.refund.amount, result.refund.currency, $i18n.locale) }}
-          </p>
-          <button type="button" class="guest-button guest-button-secondary" @click="refreshRefund">
-            {{ $t('guest.cancel.refreshStatus') }}
-          </button>
+        <template v-if="booking.status === 'cancelled'">
+          <h2>{{ $t('bookingFlow.cancelledSuccess') }}</h2>
+          <RefundTracker
+            plain
+            class="cancel-refund"
+            :booking-id="booking.id"
+            :booking-code="booking.booking_code"
+          />
           <RouterLink to="/bookings" class="guest-button">{{
             $t('account.menu.bookings')
-          }}</RouterLink></template
-        >
+          }}</RouterLink>
+        </template>
         <template v-else-if="canCancel"
           ><h2>{{ $t('bookingFlow.confirmCancellation') }}</h2>
           <p>{{ $t('guest.cancel.review') }}</p>
@@ -267,6 +239,9 @@
   .cancel-amount {
     font-size: 28px;
     color: var(--tn-brand);
+  }
+  .cancel-refund {
+    margin-top: 20px;
   }
   aside ul {
     padding-left: 20px;

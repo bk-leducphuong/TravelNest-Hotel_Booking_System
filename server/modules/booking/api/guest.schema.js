@@ -56,6 +56,11 @@ exports.getUserBookings = {
     includeCancelled: Joi.boolean().default(false).messages({
       'boolean.base': 'includeCancelled must be a boolean',
     }),
+    // Explicit history view. When present it wins over `includeCancelled`.
+    // `active` keeps the historical default (cancelled bookings excluded).
+    status: Joi.string().valid('active', 'cancelled', 'all').optional().messages({
+      'any.only': 'status must be one of: active, cancelled, all',
+    }),
     // Optional filter by review state: true = only reviewed bookings,
     // false = only bookings without a review.
     reviewed: Joi.boolean().optional().messages({

@@ -135,6 +135,15 @@ module.exports = {
     const refund = await require('./infrastructure/refund.repository').findById(id, options);
     return require('./application/refund-obligations').presentRefund(refund);
   },
+  getCancellationRefundSummaries: async (refundIds = [], options = {}) => {
+    const refunds = await require('./infrastructure/refund.repository').findByIds(
+      refundIds,
+      options
+    );
+    return refunds.map((refund) =>
+      require('./application/refund-obligations').presentRefundSummary(refund)
+    );
+  },
   recordCancellationEvent: (payload, options) =>
     require('./infrastructure/outbox.repository').record(
       `booking-cancelled-${payload.bookingId}`,

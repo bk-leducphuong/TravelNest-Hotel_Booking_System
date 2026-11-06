@@ -53,7 +53,7 @@ A lost response is not a failed refund. Recovery first retrieves the recorded pr
 
 Webhook receipts use a durable inbox: completed events are deduplicated, active processing returns 503 so Stripe retries, and failed/stale receipts can be reclaimed. Refund-level events fetch current provider state. `charge.refunded` reconciles the complete provider refund list, not a possibly truncated embedded list. Signature verification and raw request bodies remain intact.
 
-Admin refunds show manual-review and needs-attention cases, their errors, and the review/reconciliation actions. Guests can refresh refund status from either the cancellation page or booking record. English and Vietnamese text use the actual quote and status.
+Admin refunds show manual-review and needs-attention cases, their errors, and the review/reconciliation actions. Guests can refresh refund status from the cancellation page, the booking record, or the Cancelled tab of `/bookings`. Booking history exposes a `status` view (`active`, `cancelled`, `all`) and attaches a guest-safe cancellation decision/refund summary to cancelled rows, so refund tracking can be reopened without a direct link. English and Vietnamese text use the actual quote and status.
 
 Structured error signals are `refund_attention_required`, `Refund reconciliation failed`, and `Refund reconciliation could not locate provider operation`; the daily completion log includes `checked` and `drift`. Connect log alerts to these signals in the deployment's alerting configuration. The SQL outbox retains failed event deliveries for retry; duplicate notifications use the stable refund ID.
 
@@ -86,14 +86,15 @@ During rollout, existing queued payout amounts might exceed the new available ba
 
 ## API changes
 
-| Endpoint                                                          | Behavior                                                                                                                                       |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/v1/bookings/:bookingId/cancellation-quote`              | Buyer-owned quote with `quoteId`, `expiresAt`, captured/refundable amounts, policy fee, currency, destination and estimate.                    |
-| `DELETE /api/v1/bookings/:bookingId`                              | Body `{ "quoteId": "..." }`; commits cancellation and durable decision, returns pending refund/review state. Duplicate requests replay safely. |
-| `GET /api/v1/bookings/:bookingId/refund`                          | Buyer-owned decision and current refund status.                                                                                                |
-| `POST /api/v1/admin/payments/transactions/:transactionId/refunds` | Queues a financial adjustment; required `Idempotency-Key` is scoped to the actor and limited to 200 characters.                                |
-| `POST /api/v1/admin/payments/refunds/:refundId/retry`             | Requests reconciliation of an uncertain operation; never creates an uncorrelated replacement.                                                  |
-| `POST /api/v1/admin/payments/refunds/:refundId/review`            | Hotel-authorized `{ "amount": 0, "reason": "..." }` rejects a review; a positive amount approves and queues it.                                |
+| Endpoint                                                          | Behavior                                                                                                                                                                   |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/bookings?status=cancelled`                           | Buyer-owned history view. `active` excludes cancelled bookings; `cancelled` returns only cancelled bookings with a guest-safe decision/refund summary; `all` returns both. |
+| `GET /api/v1/bookings/:bookingId/cancellation-quote`              | Buyer-owned quote with `quoteId`, `expiresAt`, captured/refundable amounts, policy fee, currency, destination and estimate.                                                |
+| `DELETE /api/v1/bookings/:bookingId`                              | Body `{ "quoteId": "..." }`; commits cancellation and durable decision, returns pending refund/review state. Duplicate requests replay safely.                             |
+| `GET /api/v1/bookings/:bookingId/refund`                          | Buyer-owned decision and current refund status.                                                                                                                            |
+| `POST /api/v1/admin/payments/transactions/:transactionId/refunds` | Queues a financial adjustment; required `Idempotency-Key` is scoped to the actor and limited to 200 characters.                                                            |
+| `POST /api/v1/admin/payments/refunds/:refundId/retry`             | Requests reconciliation of an uncertain operation; never creates an uncorrelated replacement.                                                                              |
+| `POST /api/v1/admin/payments/refunds/:refundId/review`            | Hotel-authorized `{ "amount": 0, "reason": "..." }` rejects a review; a positive amount approves and queues it.                                                            |
 
 ## Rollout
 

@@ -56,6 +56,43 @@ describe('URL-loaded booking record', () => {
     expect(wrapper.find('[role=alert]').exists()).toBe(false);
     wrapper.unmount();
   });
+  it('renders refund tracking for a cancelled booking', async () => {
+    BookingService.getBookingByCode.mockResolvedValue({
+      data: {
+        id: 'b1',
+        booking_code: 'TN123',
+        status: 'cancelled',
+        check_in_date: '2026-11-10',
+        check_out_date: '2026-11-13',
+        total_price: '240.50',
+        hotel: { name: 'Cancelled hotel' },
+      },
+    });
+    BookingService.getRefundStatus.mockResolvedValue({
+      data: {
+        decision: {
+          outcome: 'refund_required',
+          quote: { cancellationFee: 0, etaDays: { min: 5, max: 10 } },
+        },
+        refund: {
+          amount: 240.5,
+          currency: 'USD',
+          status: 'processing',
+          workflowState: 'provider_pending',
+          eligibility: 'eligible',
+        },
+      },
+    });
+
+    const wrapper = mountRecord();
+    await flushPromises();
+
+    expect(BookingService.getRefundStatus).toHaveBeenCalledWith('b1');
+    expect(wrapper.text()).toContain(en.guest.cancel.trackingTitle);
+    expect(wrapper.text()).toContain('$240.50');
+    wrapper.unmount();
+  });
+
   it('does not let an earlier code overwrite a later navigation', async () => {
     let resolveOld;
     BookingService.getBookingByCode

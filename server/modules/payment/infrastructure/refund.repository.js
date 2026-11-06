@@ -151,6 +151,15 @@ class RefundRepository {
     return await Refunds.findOne({ where: { id: refundId }, ...options });
   }
 
+  /** Batch lookup used when enriching a page of bookings with refund state. */
+  async findByIds(refundIds = [], options = {}) {
+    if (!refundIds.length) return [];
+    return await Refunds.findAll({
+      where: { id: { [Op.in]: refundIds } },
+      ...options,
+    });
+  }
+
   async findByIdWithRelations(refundId, options = {}) {
     return await Refunds.findOne({
       where: { id: refundId },

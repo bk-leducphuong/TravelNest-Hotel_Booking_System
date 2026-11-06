@@ -26,6 +26,24 @@ function presentRefund(refund) {
   };
 }
 
+/**
+ * Guest-safe refund summary for booking history. No provider identifiers or
+ * internal failure details are exposed here.
+ */
+function presentRefundSummary(refund) {
+  if (!refund) return null;
+  return {
+    refundId: refund.id,
+    amount: Number(refund.amount),
+    currency: refund.currency,
+    status: refund.status,
+    workflowState: refund.workflow_state,
+    eligibility: refund.eligibility,
+    requestedAt: refund.requested_at || null,
+    processedAt: refund.processed_at || null,
+  };
+}
+
 async function cancellationPayment(bookingId, options = {}) {
   const payment = await transactions.findByBookingId(bookingId, options);
   const paid = payment && ['completed', 'partially_refunded', 'refunded'].includes(payment.status);
@@ -301,5 +319,6 @@ module.exports = {
   createObligation,
   queueRefund,
   presentRefund,
+  presentRefundSummary,
   recordCancellationReview,
 };

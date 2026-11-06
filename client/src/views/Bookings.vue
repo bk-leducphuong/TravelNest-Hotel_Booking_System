@@ -12,7 +12,10 @@
   import router from '@/router/index.js';
   import { getFirstImageUrl } from '@/utils/images';
   import { BookingService } from '@/services/booking.service';
+  import { buildRefundChip } from '@/utils/refundPresentation';
   import { totalPagesFrom } from '@/utils/pagination';
+
+  const BOOKING_VIEWS = ['active', 'cancelled'];
 
   export default {
     components: {
@@ -33,6 +36,7 @@
         loadError: false,
         requestVersion: 0,
         filter: 'all',
+        view: 'active',
         displayMode: 'list',
         pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
       };
@@ -40,6 +44,15 @@
     computed: {
       showPagination() {
         return this.pagination.totalPages > 1;
+      },
+      refundChips() {
+        return this.bookings.reduce((chips, booking) => {
+          chips[booking.booking_code] = buildRefundChip(booking, this.$i18n.locale);
+          return chips;
+        }, {});
+      },
+      isCancelledView() {
+        return this.view === 'cancelled';
       },
       paginationSummary() {
         if (this.pagination.total === 0) return '';
@@ -57,6 +70,15 @@
         this.pagination.page = page;
         await this.getAllBookings(page);
       },
+      // Keep the current tab in the URL (?status=cancelled) so back/refresh and
+      // shared links reopen the same history view.
+      async '$route.query.status'(value) {
+        const view = this.parseView(value);
+        if (view === this.view) return;
+        this.view = view;
+        this.pagination.page = 1;
+        await this.getAllBookings(1);
+      },
     },
     methods: {
       setDisplayMode(mode) {
@@ -73,6 +95,17 @@
         const raw = Array.isArray(value) ? value[0] : value;
         const page = parseInt(raw, 10);
         return Number.isInteger(page) && page > 0 ? page : 1;
+      },
+      parseView(value) {
+        const raw = Array.isArray(value) ? value[0] : value;
+        return BOOKING_VIEWS.includes(raw) ? raw : 'active';
+      },
+      async setView(view) {
+        if (!BOOKING_VIEWS.includes(view) || view === this.view) return;
+        this.view = view;
+        this.pagination.page = 1;
+        this.$router.push({ query: { ...this.$route.query, status: view, page: 1 } });
+        await this.getAllBookings(1);
       },
       // Rolling-window filter matching the trip dropdown. Returns an ISO
       // timestamp (or null for "all") applied server-side on the booking's
@@ -107,11 +140,11 @@
         this.isLoading = true;
         this.loadError = false;
         try {
-          const options = { page, limit: this.pagination.limit };
+          const options = { page, limit: this.pagination.limit, status: this.view };
           const bookedAfter = this.bookedAfterForFilter(this.filter);
           if (bookedAfter) options.bookedAfter = bookedAfter;
 
-          const response = await BookingService.getBookings(false, options);
+          const response = await BookingService.getBookings(this.isCancelledView, options);
           if (version !== this.requestVersion) return;
           this.bookings = this.groupBookings(response?.data || []);
 
@@ -153,6 +186,7 @@
               totalPrice: booking.total_price,
               currency: booking.currency || 'USD',
               numberOfGuests: booking.number_of_guests,
+              cancellation: booking.cancellation || null,
             });
           } else {
             groupedBookings.get(bookingCode).rooms.push(room);
@@ -216,6 +250,7 @@
       } catch {
         // Keep the default list layout when storage is unavailable.
       }
+      this.view = this.parseView(this.$route.query.status);
       this.pagination.page = this.parsePage(this.$route.query.page);
       await this.getAllBookings(this.pagination.page);
     },
@@ -225,12 +260,26 @@
   <Header :is-search-open="false" />
   <main id="guest-main" tabindex="-1" class="guest-page" ref="listTop">
     <div class="trips-heading">
-      <h1 class="guest-page-title">{{ $t('bookingFlow.bookingsAndTrips') }}</h1>
+      <div>
+        <h1 class="guest-page-title">{{ $t('bookingFlow.bookingsAndTrips') }}</h1>
+        <div class="trips-tabs" role="group" :aria-label="$t('bookingFlow.bookingViews')">
+          <button
+            v-for="tab in ['active', 'cancelled']"
+            :key="tab"
+            type="button"
+            :aria-pressed="view === tab"
+            @click="setView(tab)"
+          >
+            {{ $t(tab === 'cancelled' ? 'bookingFlow.cancelledTab' : 'bookingFlow.tripsTab') }}
+          </button>
+        </div>
+      </div>
       <div class="trips-controls">
         <label
           ><select
             class="guest-select"
             :value="filter"
+            :aria-label="$t('bookingFlow.bookedWithin')"
             @change="arrangeBookings($event.target.value)"
           >
             <option
@@ -278,8 +327,16 @@
       @retry="getAllBookings()"
     /><EmptyState
       v-else-if="!bookings.length"
-      :title="$t('bookingFlow.noBookingsTitle')"
-      :message="$t('bookingFlow.noBookingsMessage')"
+      :title="
+        $t(isCancelledView ? 'bookingFlow.noCancelledBookingsTitle' : 'bookingFlow.noBookingsTitle')
+      "
+      :message="
+        $t(
+          isCancelledView
+            ? 'bookingFlow.noCancelledBookingsMessage'
+            : 'bookingFlow.noBookingsMessage'
+        )
+      "
     />
     <div v-else class="trips-list" :class="`trips-list--${displayMode}`">
       <article
@@ -292,7 +349,19 @@
           :alt="booking.hotel?.name || ''"
         />
         <div class="trip-content">
-          <span class="guest-pill">{{ statusLabel(booking.status) }}</span>
+          <div class="trip-pills">
+            <span class="guest-pill">{{ statusLabel(booking.status) }}</span>
+            <span
+              v-if="refundChips[booking.booking_code]"
+              class="guest-pill"
+              :class="`refund-pill--${refundChips[booking.booking_code].tone}`"
+            >
+              {{ $t(refundChips[booking.booking_code].labelKey) }}
+              <template v-if="refundChips[booking.booking_code].amountText">
+                · {{ refundChips[booking.booking_code].amountText }}
+              </template>
+            </span>
+          </div>
           <h2>{{ booking.hotel?.name }}</h2>
           <p>{{ formatDate(booking.checkInDate) }} → {{ formatDate(booking.checkOutDate) }}</p>
           <p class="guest-subtitle">{{ booking.booking_code }}</p>
@@ -300,7 +369,7 @@
         <div class="trip-action">
           <strong>{{ guestMoney(booking.totalPrice, booking.currency, $i18n.locale) }}</strong
           ><button type="button" class="guest-button" @click="seeDetails(booking.booking_code)">
-            {{ $t('guest.viewBooking') }}
+            {{ $t(booking.status === 'cancelled' ? 'guest.viewRefund' : 'guest.viewBooking') }}
           </button>
         </div>
       </article>
@@ -368,6 +437,53 @@
   .trips-heading label {
     font-size: 12px;
     color: var(--tn-muted);
+  }
+  .trips-tabs {
+    display: flex;
+    gap: 4px;
+    margin-top: 12px;
+    border-bottom: 1px solid var(--tn-border);
+  }
+  .trips-tabs button {
+    min-height: 44px;
+    padding: 10px 14px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--tn-muted);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .trips-tabs button[aria-pressed='true'] {
+    color: var(--tn-brand);
+    border-bottom-color: var(--tn-brand);
+    font-weight: 500;
+  }
+  .trips-tabs button:focus-visible {
+    outline: 2px solid var(--tn-brand);
+    outline-offset: -2px;
+  }
+  .trip-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .refund-pill--progress {
+    background: #e8f2fd;
+    color: #0051a8;
+  }
+  .refund-pill--success {
+    background: #e6f5ec;
+    color: #17663a;
+  }
+  .refund-pill--warning {
+    background: #fff4dd;
+    color: #7a4b00;
+  }
+  .refund-pill--neutral {
+    background: #f0f0f0;
+    color: #4d4d4d;
   }
   .trips-list {
     display: grid;

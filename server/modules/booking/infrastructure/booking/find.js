@@ -21,16 +21,26 @@ const {
  * cancelled, review-state and booked-after filters.
  */
 function buildBuyerQuery(buyerId, options = {}) {
-  const { excludeCancelled = true, reviewed, bookedAfter } = options;
+  const { excludeCancelled = true, status, reviewed, bookedAfter } = options;
 
   const where = {
     buyer_id: buyerId,
   };
 
-  if (excludeCancelled) {
+  // `status` is the explicit history view (active/cancelled/all). Fall back to
+  // the legacy `excludeCancelled` boolean for older clients that do not send it.
+  const view = ['active', 'cancelled', 'all'].includes(status)
+    ? status
+    : excludeCancelled
+      ? 'active'
+      : 'all';
+
+  if (view === 'active') {
     where.status = {
       [Op.ne]: 'cancelled',
     };
+  } else if (view === 'cancelled') {
+    where.status = 'cancelled';
   }
 
   // Rolling-window trip filter (e.g. bookings made in the last week/month/year).
