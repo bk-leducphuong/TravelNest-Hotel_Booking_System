@@ -124,6 +124,8 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.JSON,
         allowNull: true,
       },
+      cancellation_quote: { type: DataTypes.JSON, allowNull: true },
+      cancellation_decision: { type: DataTypes.JSON, allowNull: true },
       cancellation_policy_snapshot: {
         type: DataTypes.JSON,
         allowNull: true,

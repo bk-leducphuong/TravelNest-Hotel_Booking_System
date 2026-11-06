@@ -12,6 +12,24 @@ const {
 const logger = require('@config/logger.config');
 
 class PayoutRepository {
+  async sumReserved(hotelId, currency, excludeId, options = {}) {
+    return Number(
+      (await Payouts.sum('amount', {
+        where: {
+          hotel_id: hotelId,
+          currency,
+          status: { [Op.in]: ['pending', 'processing'] },
+          ...(excludeId ? { id: { [Op.ne]: excludeId } } : {}),
+        },
+        ...options,
+      })) || 0
+    );
+  }
+
+  async findForClaim(payoutId, options = {}) {
+    return Payouts.findByPk(payoutId, options);
+  }
+
   async create(payoutData, options = {}) {
     try {
       return await Payouts.create(

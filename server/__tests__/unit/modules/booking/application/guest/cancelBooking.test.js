@@ -1,151 +1,159 @@
 jest.mock('@modules/booking/infrastructure/booking.repository', () => ({
+  findById: jest.fn(),
   findCancellationContextByIdAndBuyerId: jest.fn(),
-  findCancellationRule: jest.fn(),
-  findTransactionByBookingId: jest.fn(),
-  updateStatus: jest.fn(),
+  update: jest.fn(),
 }));
 jest.mock('@modules/inventory', () => ({ releaseRooms: jest.fn() }));
-jest.mock('@modules/payment', () => ({ refundBooking: jest.fn() }));
+jest.mock('@modules/payment', () => ({
+  cancellationPayment: jest.fn(),
+  createCancellationRefund: jest.fn(),
+  getCancellationRefund: jest.fn(),
+  recordCancellationEvent: jest.fn(),
+  recordCancellationReview: jest.fn(),
+}));
 jest.mock('@config/database.config', () => ({ transaction: jest.fn() }));
-
-const bookingRepository = require('@modules/booking/infrastructure/booking.repository');
-const inventoryModule = require('@modules/inventory');
-const paymentModule = require('@modules/payment');
+const bookings = require('@modules/booking/infrastructure/booking.repository');
+const inventory = require('@modules/inventory');
+const payment = require('@modules/payment');
 const sequelize = require('@config/database.config');
 const { cancelBooking } = require('@modules/booking/application/guest/cancelBooking');
+const { cancellationQuote } = require('@modules/booking/application/guest/cancellationQuote');
 
-const bookingData = {
-  id: 5,
-  status: 'confirmed',
-  hotel_id: 1,
-  room_id: 2,
-  quantity: 1,
-  total_price: '100.00',
-  currency: 'USD',
-  booking_code: 'ABC123',
-  check_in_date: '2999-01-15',
-  check_out_date: '2999-01-17',
-  hotel: { timezone: 'UTC', check_in_time: '14:00:00' },
-  bookingRooms: [{ room_id: 2, quantity: 1 }],
-};
-
-const refundableRule = {
-  id: 9,
-  is_refundable: true,
-  free_cancellation_until_hours_before_checkin: 24,
-  refund_percent_before_deadline: 100,
-  refund_percent_after_deadline: 50,
-};
-
-function primeHappyPath() {
-  bookingRepository.findCancellationContextByIdAndBuyerId.mockResolvedValue({
-    ...bookingData,
-    toJSON: () => bookingData,
-  });
-  bookingRepository.findCancellationRule.mockResolvedValue(refundableRule);
-  bookingRepository.findTransactionByBookingId.mockResolvedValue({ amount: '100.00' });
-  bookingRepository.updateStatus.mockResolvedValue([1]);
-  inventoryModule.releaseRooms.mockResolvedValue(undefined);
-  sequelize.transaction.mockImplementation((callback) => callback({}));
-  paymentModule.refundBooking.mockResolvedValue({
-    refundId: 77,
-    providerRefundId: 're_123',
-    amount: 100,
+const tx = { LOCK: { UPDATE: 'UPDATE' } };
+let booking;
+let committed;
+beforeEach(() => {
+  committed = false;
+  booking = {
+    id: 'b1',
+    buyer_id: 'u1',
+    status: 'confirmed',
+    hotel_id: 'h1',
+    booking_code: 'TN1',
+    total_price: 100,
     currency: 'USD',
-    status: 'succeeded',
-    transactionStatus: 'refunded',
+    check_in_date: '2999-01-01',
+    check_out_date: '2999-01-02',
+    bookingRooms: [{ room_id: 'r1', quantity: 1 }],
+    cancellation_policy_snapshot: {
+      version: 2,
+      rooms: [
+        {
+          roomId: 'r1',
+          ruleId: 'rule1',
+          amountMinor: 10000,
+          isRefundable: true,
+          refundPercentBeforeDeadline: 100,
+          refundPercentAfterDeadline: 50,
+          freeCancellationDeadline: '2998-12-31T00:00:00.000Z',
+        },
+      ],
+    },
+  };
+  sequelize.transaction.mockImplementation(async (callback) => {
+    const result = await callback(tx);
+    committed = true;
+    return result;
   });
+  bookings.findById.mockImplementation(async () => ({ ...booking }));
+  bookings.findCancellationContextByIdAndBuyerId.mockImplementation(async () => ({ ...booking }));
+  bookings.update.mockImplementation(async (id, data) => {
+    Object.assign(booking, data);
+    return [1];
+  });
+  payment.cancellationPayment.mockResolvedValue({
+    payment: { id: 'p1', stripe_charge_id: 'ch1', currency: 'USD' },
+    amountPaid: 100,
+    remaining: 100,
+  });
+  payment.createCancellationRefund.mockImplementation(async (p, data, options) => {
+    expect(committed).toBe(false);
+    expect(options.transaction).toBe(tx);
+    return { refundId: 'ref1', amount: data.amount, currency: 'USD', status: 'pending' };
+  });
+  payment.getCancellationRefund.mockResolvedValue({ refundId: 'ref1', status: 'processing' });
+  payment.recordCancellationReview.mockResolvedValue({
+    refundId: 'review1',
+    eligibility: 'manual_review',
+  });
+});
+async function quote() {
+  committed = false;
+  const result = await cancellationQuote('b1', 'u1');
+  committed = false;
+  return result;
 }
 
-describe('booking/application/guest/cancelBooking', () => {
-  it('throws 404 when the booking is not owned by the buyer', async () => {
-    bookingRepository.findCancellationContextByIdAndBuyerId.mockResolvedValue(null);
-
-    await expect(cancelBooking(5, 1)).rejects.toMatchObject({
-      statusCode: 404,
-      code: 'BOOKING_NOT_FOUND',
-    });
+it('rejects cancellation by a different buyer before changing data', async () => {
+  await expect(cancelBooking('b1', 'other')).rejects.toMatchObject({ statusCode: 404 });
+  expect(bookings.update).not.toHaveBeenCalled();
+});
+it('rejects terminal states and does not release inventory', async () => {
+  booking.status = 'expired';
+  await expect(cancelBooking('b1', 'u1')).rejects.toMatchObject({
+    code: 'INVALID_BOOKING_STATUS_TRANSITION',
   });
-
-  it('rejects cancelling an already cancelled booking', async () => {
-    bookingRepository.findCancellationContextByIdAndBuyerId.mockResolvedValue({
-      toJSON: () => ({ ...bookingData, status: 'cancelled' }),
-    });
-
-    await expect(cancelBooking(5, 1)).rejects.toMatchObject({
-      statusCode: 409,
-      code: 'BOOKING_ALREADY_CANCELLED',
-    });
+  expect(inventory.releaseRooms).not.toHaveBeenCalled();
+});
+it('requires a fresh matching quote before cancellation', async () => {
+  await expect(cancelBooking('b1', 'u1', { quoteId: 'wrong' })).rejects.toMatchObject({
+    code: 'CANCELLATION_QUOTE_EXPIRED',
   });
-
-  it('rejects cancelling a completed booking', async () => {
-    bookingRepository.findCancellationContextByIdAndBuyerId.mockResolvedValue({
-      toJSON: () => ({ ...bookingData, status: 'completed' }),
-    });
-
-    await expect(cancelBooking(5, 1)).rejects.toMatchObject({
-      statusCode: 400,
-      code: 'CANNOT_CANCEL_COMPLETED',
-    });
+  expect(payment.createCancellationRefund).not.toHaveBeenCalled();
+});
+it('writes the obligation, decision and release in the same transaction, then replays duplicates', async () => {
+  const issued = await quote();
+  const result = await cancelBooking('b1', 'u1', { quoteId: issued.quoteId, processRefund: false });
+  expect(result).toMatchObject({
+    status: 'cancelled',
+    refundProcessed: false,
+    decision: { outcome: 'refund_required', refundId: 'ref1' },
   });
-
-  it('cancels, releases inventory and refunds through the payment module', async () => {
-    primeHappyPath();
-
-    const result = await cancelBooking(5, 1, { processRefund: true });
-
-    expect(inventoryModule.releaseRooms).toHaveBeenCalledWith(
-      {
-        bookedRooms: [{ room_id: 2, roomQuantity: 1 }],
-        checkInDate: '2999-01-15',
-        checkOutDate: '2999-01-17',
-      },
-      { transaction: {} }
-    );
-    expect(bookingRepository.updateStatus).toHaveBeenCalledWith(5, 'cancelled', {
-      transaction: {},
-    });
-    expect(paymentModule.refundBooking).toHaveBeenCalledWith(5, {
-      reason: 'free_cancellation',
-      amount: 100,
-      actorUserId: 1,
-    });
-    expect(result).toMatchObject({
-      bookingId: 5,
-      bookingCode: 'ABC123',
-      message: 'Booking cancelled successfully',
-      refundProcessed: true,
-      cancellationPolicy: { refundAmount: 100, reason: 'free_cancellation' },
-      refund: {
-        refundId: 're_123',
-        refundRecordId: 77,
-        amount: 100,
-        currency: 'USD',
-        status: 'succeeded',
-      },
-    });
+  expect(bookings.findById).toHaveBeenCalledWith('b1', { transaction: tx, lock: 'UPDATE' });
+  expect(payment.recordCancellationEvent).toHaveBeenCalledWith(
+    expect.objectContaining({ bookingId: 'b1' }),
+    { transaction: tx }
+  );
+  expect(inventory.releaseRooms).toHaveBeenCalledTimes(1);
+  expect(await cancelBooking('b1', 'u1', { quoteId: issued.quoteId })).toMatchObject({
+    idempotentReplay: true,
   });
-
-  it('does not refund unless it is requested', async () => {
-    primeHappyPath();
-
-    const result = await cancelBooking(5, 1);
-
-    expect(paymentModule.refundBooking).not.toHaveBeenCalled();
-    expect(result.refundProcessed).toBe(false);
-    expect(result.refund).toBeNull();
+  expect(payment.createCancellationRefund).toHaveBeenCalledTimes(1);
+  expect(inventory.releaseRooms).toHaveBeenCalledTimes(1);
+});
+it('rejects a quote when the captured refundable balance changes', async () => {
+  const issued = await quote();
+  payment.cancellationPayment.mockResolvedValue({
+    payment: { id: 'p1', stripe_charge_id: 'ch1', currency: 'USD' },
+    amountPaid: 100,
+    remaining: 50,
   });
-
-  it('still cancels when the refund fails', async () => {
-    primeHappyPath();
-    paymentModule.refundBooking.mockRejectedValue(new Error('stripe unavailable'));
-
-    const result = await cancelBooking(5, 1, { processRefund: true });
-
-    expect(bookingRepository.updateStatus).toHaveBeenCalledWith(5, 'cancelled', {
-      transaction: {},
-    });
-    expect(result.refundProcessed).toBe(false);
-    expect(result.refund).toBeNull();
+  await expect(cancelBooking('b1', 'u1', { quoteId: issued.quoteId })).rejects.toMatchObject({
+    code: 'CANCELLATION_QUOTE_EXPIRED',
   });
+});
+it('fails the entire cancellation when recording the obligation fails', async () => {
+  const issued = await quote();
+  payment.createCancellationRefund.mockRejectedValue(new Error('database unavailable'));
+  await expect(cancelBooking('b1', 'u1', { quoteId: issued.quoteId })).rejects.toThrow(
+    'database unavailable'
+  );
+  expect(inventory.releaseRooms).not.toHaveBeenCalled();
+  expect(booking.status).toBe('confirmed');
+});
+it('records a manual review instead of silently discarding missing policies', async () => {
+  booking.cancellation_policy_snapshot = null;
+  const issued = await quote();
+  const result = await cancelBooking('b1', 'u1', { quoteId: issued.quoteId });
+  expect(result.decision.outcome).toBe('manual_review');
+  expect(payment.recordCancellationReview).toHaveBeenCalled();
+  expect(payment.createCancellationRefund).not.toHaveBeenCalled();
+});
+it('records unpaid cancellations without a provider obligation', async () => {
+  payment.cancellationPayment.mockResolvedValue({ payment: null, amountPaid: 0, remaining: 0 });
+  const issued = await quote();
+  expect((await cancelBooking('b1', 'u1', { quoteId: issued.quoteId })).decision.outcome).toBe(
+    'no_refund'
+  );
+  expect(payment.createCancellationRefund).not.toHaveBeenCalled();
 });

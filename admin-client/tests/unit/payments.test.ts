@@ -18,7 +18,8 @@ describe("payment helpers", () => {
     });
 
     it("only retries failed refunds", () => {
-      expect(isRetryableRefund("failed")).toBe(true);
+      expect(isRetryableRefund("failed")).toBe(false);
+      expect(isRetryableRefund("processing", "needs_attention")).toBe(true);
       expect(isRetryableRefund("succeeded")).toBe(false);
       expect(isRetryableRefund("processing")).toBe(false);
     });
@@ -36,9 +37,15 @@ describe("payment helpers", () => {
     });
 
     it("computes the remaining refundable balance", () => {
-      expect(remainingRefundable("100.00", [{ amount: "30.00", status: "succeeded" }])).toBe(70);
+      expect(
+        remainingRefundable("100.00", [
+          { amount: "30.00", status: "succeeded" },
+        ])
+      ).toBe(70);
       expect(remainingRefundable("100.00", [])).toBe(100);
-      expect(remainingRefundable("100.00", [{ amount: "150", status: "succeeded" }])).toBe(0);
+      expect(
+        remainingRefundable("100.00", [{ amount: "150", status: "succeeded" }])
+      ).toBe(0);
     });
   });
 

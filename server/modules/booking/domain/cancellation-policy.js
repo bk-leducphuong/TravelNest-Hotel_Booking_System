@@ -82,4 +82,42 @@ function evaluateCancellationPolicy(rule, booking, now = new Date()) {
   };
 }
 
-module.exports = { evaluateCancellationPolicy };
+/** Evaluate only the terms recorded at booking time; never reconstruct history from live rules. */
+function evaluateSnapshot(booking, now = new Date()) {
+  const snapshot = booking.cancellation_policy_snapshot;
+  const manual = {
+    ...evaluateCancellationPolicy(null, booking, now),
+    reason: 'missing_policy_snapshot',
+  };
+  if (snapshot?.version !== 2 || !snapshot.rooms?.length) return manual;
+  let minor = 0;
+  let totalMinor = 0;
+  const deadlines = [];
+  for (const room of snapshot.rooms) {
+    if (!room.ruleId || !Number.isSafeInteger(room.amountMinor) || room.amountMinor < 0)
+      return manual;
+    const deadline = room.freeCancellationDeadline ? new Date(room.freeCancellationDeadline) : null;
+    if (deadline && !Number.isFinite(deadline.getTime())) return manual;
+    const before = !deadline || now <= deadline;
+    const percent = Number(
+      before ? room.refundPercentBeforeDeadline : room.refundPercentAfterDeadline
+    );
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) return manual;
+    totalMinor += room.amountMinor;
+    minor += room.isRefundable ? Math.round((room.amountMinor * percent) / 100) : 0;
+    if (deadline) deadlines.push(deadline.toISOString());
+  }
+  if (totalMinor !== Math.round(Number(booking.total_price) * 100)) return manual;
+  return {
+    eligible: minor > 0,
+    eligibility: minor > 0 ? 'eligible' : 'ineligible',
+    reason: minor > 0 ? 'customer_request' : 'non_refundable_rule',
+    refundAmount: minor / 100,
+    cancellationFee: (totalMinor - minor) / 100,
+    currency: booking.currency || 'USD',
+    freeCancellationDeadline: deadlines.sort()[0] || null,
+    isRefundable: minor > 0,
+  };
+}
+
+module.exports = { evaluateCancellationPolicy, evaluateSnapshot };

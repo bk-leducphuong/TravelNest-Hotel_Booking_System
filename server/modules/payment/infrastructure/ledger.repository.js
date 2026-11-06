@@ -2,6 +2,63 @@ const { LedgerAccounts, LedgerEntries, HotelUsers } = require('@platform/databas
 const logger = require('@config/logger.config');
 
 class LedgerRepository {
+  async lockHotelBalance(hotelId, currency, options) {
+    const account = await this.findOrCreateAccount(
+      {
+        accountType: 'hotel_owner_payable',
+        ownerType: 'hotel',
+        ownerId: hotelId,
+        currency,
+        name: `Hotel payable ${currency}`,
+      },
+      options
+    );
+    return LedgerAccounts.findByPk(account.id, {
+      ...options,
+      lock: options.transaction.LOCK.UPDATE,
+    });
+  }
+
+  async findWithAccounts(entryGroupKey, options = {}) {
+    return LedgerEntries.findAll({
+      where: { entry_group_key: entryGroupKey },
+      include: [{ model: LedgerAccounts, as: 'ledger_account' }],
+      ...options,
+    });
+  }
+
+  async getRefundPostingTotals(transactionId, options = {}) {
+    const sequelize = require('@config/database.config');
+    const rows = await sequelize.query(
+      `SELECT
+      COALESCE(SUM(CASE WHEN a.account_type = 'platform_revenue' AND e.direction = 'debit' THEN e.amount ELSE 0 END), 0) AS fee,
+      COALESCE(SUM(CASE WHEN a.account_type = 'platform_cash' AND e.direction = 'credit' THEN e.amount ELSE 0 END), 0) AS gross
+      FROM ledger_entries e JOIN ledger_accounts a ON a.id = e.ledger_account_id JOIN refunds r ON r.id = e.refund_id
+      WHERE e.transaction_id = :transactionId AND e.event_type = 'refund_succeeded' AND r.status = 'succeeded'`,
+      { replacements: { transactionId }, type: sequelize.QueryTypes.SELECT, ...options }
+    );
+    return rows[0];
+  }
+
+  async availableHotelBalance(hotelId, currency, options = {}) {
+    const sequelize = require('@config/database.config');
+    const [row] = await sequelize.query(
+      `SELECT
+      (SELECT COALESCE(SUM(CASE WHEN e.direction = 'credit' THEN e.amount ELSE -e.amount END),0)
+       FROM ledger_entries e JOIN ledger_accounts a ON a.id=e.ledger_account_id
+       WHERE a.owner_id=:hotelId AND a.account_type='hotel_owner_payable' AND a.currency=:currency)
+      - (SELECT COALESCE(SUM(CASE WHEN r.workflow_state='manual_review' THEN t.amount ELSE r.amount END),0) FROM refunds r JOIN transactions t ON t.id=r.transaction_id WHERE r.hotel_id=:hotelId AND r.currency=:currency AND r.status IN ('pending','processing'))
+      - (SELECT COALESCE(SUM(GREATEST(0,
+          COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(b.cancellation_decision, '$.approvedRefundAmount')) AS DECIMAL(10,2)),0)
+          + COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(b.cancellation_decision, '$.quote.amountAlreadyCommitted')) AS DECIMAL(10,2)),0)
+          - (SELECT COALESCE(SUM(cr.amount),0) FROM refunds cr WHERE cr.booking_id=b.id AND cr.status IN ('pending','processing','succeeded')))),0)
+         FROM bookings b WHERE b.hotel_id=:hotelId AND b.currency=:currency
+         AND JSON_UNQUOTE(JSON_EXTRACT(b.cancellation_decision, '$.outcome'))='refund_required') AS available`,
+      { replacements: { hotelId, currency }, type: sequelize.QueryTypes.SELECT, ...options }
+    );
+    return Number(row.available);
+  }
+
   buildAccountKey({ accountType, ownerType, ownerId, currency }) {
     return [accountType, ownerType, ownerId || 'platform', currency.toUpperCase()].join(':');
   }

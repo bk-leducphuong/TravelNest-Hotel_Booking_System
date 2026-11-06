@@ -1,3 +1,5 @@
+jest.mock('@modules/payout/application/settleTransfer', () => ({ settleTransfer: jest.fn() }));
+const { settleTransfer } = require('@modules/payout/application/settleTransfer');
 jest.mock('@modules/payout/infrastructure/payout.repository', () => ({
   findById: jest.fn(),
   findByProviderTransferId: jest.fn(),
@@ -37,9 +39,9 @@ describe('payout/application/reconcileTransfer', () => {
     });
 
     expect(payoutRepository.findById).toHaveBeenCalledWith(22);
-    expect(payoutRepository.update).toHaveBeenCalledWith(
-      22,
-      expect.objectContaining({ status: 'paid', providerTransferId: 'tr_2' })
+    expect(settleTransfer).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 22 }),
+      expect.objectContaining({ id: 'tr_2' })
     );
   });
 
@@ -48,9 +50,9 @@ describe('payout/application/reconcileTransfer', () => {
 
     await reconcileTransferFromStripe({ transfer: { id: 'tr_1' }, eventType: 'transfer.created' });
 
-    expect(payoutRepository.update).toHaveBeenCalledWith(
-      11,
-      expect.objectContaining({ status: 'paid', providerTransferId: 'tr_1' })
+    expect(settleTransfer).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 11 }),
+      expect.objectContaining({ id: 'tr_1' })
     );
   });
 

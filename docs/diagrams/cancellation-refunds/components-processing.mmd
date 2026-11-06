@@ -1,0 +1,40 @@
+%%{init: {"theme": "neutral", "flowchart": {"nodeSpacing": 28, "rankSpacing": 45, "wrappingWidth": 230}, "themeVariables": {"fontSize": "15px"}}}%%
+flowchart TB
+  subgraph worker["Background worker process"]
+    recovery["Recovery scanner<br/>Every 15 seconds"]
+    attempt["Refund executor<br/>SQL lease per payment"]
+    adapter["Stripe adapter<br/>Stable operation key"]
+    daily["Daily reconciliation<br/>Retrieve existing refunds"]
+    delivery["Outbox dispatcher<br/>Reliable publication"]
+  end
+  subgraph api["Express API process"]
+    webhook["Webhook handler<br/>Signature and inbox"]
+    staff["Admin actions<br/>Review / reconcile"]
+  end
+  reconciler["Shared refund reconciler<br/>API + worker code"]
+  ledger["Ledger<br/>Balanced, idempotent entries"]
+  payout["Payouts<br/>Reservations / owner debt"]
+  db[("MySQL<br/>Durable financial records")]
+  stripe["Stripe provider"]
+  subscribers["Notification / realtime subscribers"]
+  recovery --> attempt
+  attempt -->|"commit lease"| db
+  attempt --> adapter
+  adapter -->|"create or retrieve"| stripe
+  adapter -->|"provider result"| reconciler
+  daily -->|"retrieve only"| stripe
+  daily --> reconciler
+  stripe -->|"signed event"| webhook
+  webhook -->|"claim or deduplicate event"| db
+  webhook -->|"retrieve state"| adapter
+  webhook --> reconciler
+  staff -->|"persist decision"| db
+  reconciler --> ledger
+  reconciler -->|"atomic outcome + ledger + outbox"| db
+  ledger --> db
+  payout -->|"account lock + reservations"| db
+  db -->|"undelivered events"| delivery
+  delivery --> subscribers
+  delivery -->|"mark delivered"| db
+  classDef store fill:#eff6ff,stroke:#2563eb,color:#172554;
+  class db store;

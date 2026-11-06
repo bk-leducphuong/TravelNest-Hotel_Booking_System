@@ -14,7 +14,17 @@ async function refundBooking(bookingId, { reason, amount, actorUserId, requestId
     throw new ApiError(404, 'TRANSACTION_NOT_FOUND', 'No payment transaction for this booking');
   }
 
-  return await initiateRefund(transaction.id, { reason, amount }, { actorUserId, requestId });
+  return await initiateRefund(
+    transaction.id,
+    { reason, amount },
+    {
+      actorUserId,
+      requestId,
+      idempotencyKey: requestId
+        ? `booking-refund-request-${requestId}`
+        : `booking-refund-${bookingId}`,
+    }
+  );
 }
 
 module.exports = { refundBooking };

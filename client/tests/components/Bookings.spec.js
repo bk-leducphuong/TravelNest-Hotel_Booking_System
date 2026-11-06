@@ -42,6 +42,22 @@ const bookingRow = (code) => ({
   hotel: { name: 'Nest Hotel', city: 'Hanoi', image_urls: ['a.jpg'] },
 });
 
+const cancelledRow = (code) => ({
+  ...bookingRow(code),
+  status: 'cancelled',
+  cancellation: {
+    outcome: 'refund_required',
+    refund: {
+      refundId: 'ref-1',
+      amount: '100',
+      currency: 'USD',
+      status: 'succeeded',
+      workflowState: 'succeeded',
+      eligibility: 'eligible',
+    },
+  },
+});
+
 const mountView = ({ routeQuery = {}, response = emptyResponse } = {}) => {
   BookingService.getBookings.mockResolvedValue(response);
 
@@ -146,7 +162,11 @@ describe('Bookings', () => {
     });
     await flushPromises();
 
-    expect(BookingService.getBookings).toHaveBeenCalledWith(false, { page: 1, limit: 10 });
+    expect(BookingService.getBookings).toHaveBeenCalledWith(false, {
+      page: 1,
+      limit: 10,
+      status: 'active',
+    });
     expect(wrapper.vm.pagination).toMatchObject({ page: 1, limit: 10, total: 25, totalPages: 3 });
     expect(wrapper.vm.bookings).toHaveLength(1);
     expect(wrapper.text()).toContain('Showing 1-10 of 25 bookings');
@@ -218,5 +238,42 @@ describe('Bookings', () => {
 
     expect(wrapper.vm.showPagination).toBe(false);
     expect(wrapper.find('.pagination-wrapper').exists()).toBe(false);
+  });
+
+  it('loads the cancelled view from the URL and shows refund state', async () => {
+    const { wrapper } = mountView({
+      routeQuery: { status: 'cancelled' },
+      response: { data: [cancelledRow('CAN1')], meta: { page: 1, limit: 10, total: 1 } },
+    });
+    await flushPromises();
+
+    expect(BookingService.getBookings).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({ status: 'cancelled', page: 1 })
+    );
+    expect(wrapper.find('.trip-pills .refund-pill--success').exists()).toBe(true);
+    expect(wrapper.find('.trip-action button').text()).toContain('guest.viewRefund');
+    expect(wrapper.findAll('.trips-tabs button')[1].attributes('aria-pressed')).toBe('true');
+    wrapper.unmount();
+  });
+
+  it('switches to the cancelled tab and reloads page 1', async () => {
+    const { wrapper, push } = mountView({
+      response: { data: [bookingRow('ABC123')], meta: { page: 1, limit: 10, total: 1 } },
+    });
+    await flushPromises();
+
+    await wrapper.findAll('.trips-tabs button')[1].trigger('click');
+    await flushPromises();
+
+    expect(wrapper.vm.view).toBe('cancelled');
+    expect(push).toHaveBeenCalledWith({
+      query: { status: 'cancelled', page: 1 },
+    });
+    expect(BookingService.getBookings).toHaveBeenLastCalledWith(
+      true,
+      expect.objectContaining({ status: 'cancelled', page: 1 })
+    );
+    wrapper.unmount();
   });
 });

@@ -5,9 +5,10 @@
   import { stayNights, formatStayDate } from '@/utils/stay';
   import { getFirstImageUrl } from '@/utils/images';
   import MediaImage from '@/components/ui/MediaImage.vue';
+  import RefundTracker from '@/components/booking/RefundTracker.vue';
   export default {
     name: 'BookingRecord',
-    components: { MediaImage, FeedbackMessage },
+    components: { MediaImage, FeedbackMessage, RefundTracker },
     props: { code: { type: String, default: '' } },
     data() {
       return { booking: null, loading: false, failure: '', version: 0 };
@@ -159,6 +160,12 @@
           }}</RouterLink>
         </aside>
       </div>
+      <RefundTracker
+        v-if="booking.status === 'cancelled'"
+        class="record-refund"
+        :booking-id="booking.id"
+        :booking-code="booking.booking_code"
+      />
     </template>
   </main>
 </template>
@@ -190,6 +197,9 @@
     grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
     align-items: start;
     gap: 24px;
+  }
+  .record-refund {
+    margin-top: 24px;
   }
   .record-property {
     display: flex;
