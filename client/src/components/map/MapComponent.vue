@@ -85,6 +85,7 @@
             :icon="priceIcon(hotel)"
             :z-index-offset="hotel.hotel_id === highlightedHotelId ? 1000 : 0"
             :options="{ title: hotelName(hotel), alt: hotelName(hotel), keyboard: true }"
+            @ready="onMarkerReady(hotel.hotel_id)"
             @click="selectHotel(hotel)"
             @mouseover="onMarkerHover(hotel)"
             @mouseout="hoveredHotelId = null"
@@ -101,7 +102,7 @@
 
 <script>
   import { LMap, LTileLayer, LMarker } from '@vue-leaflet/vue-leaflet';
-  import * as L from 'leaflet';
+  import * as L from 'leaflet/dist/leaflet-src.esm';
   import 'leaflet/dist/leaflet.css';
   import SavedHotelIcon from '@/components/SavedHotelIcon.vue';
   import { getFirstImageUrl, getImageUrl } from '@/utils/images';
@@ -126,6 +127,8 @@
         areaChanged: false,
         areaSearched: false,
         ready: false,
+        readyMarkerIds: new Set(),
+        initialSearchStarted: false,
         requestVersion: 0,
         cardRefs: {},
         controller: null,
@@ -315,12 +318,28 @@
         if (!map) return;
         map.invalidateSize();
         const points = this.hotels.filter(this.hasCoords).map(this.latLng);
-        if (points.length > 1)
-          map.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 15 });
+        // Let the map create bounds with its own Leaflet instance.
+        if (points.length > 1) map.fitBounds(points, { padding: [40, 40], maxZoom: 15 });
         else if (points.length) map.setView(points[0], 14);
         this.ready = true;
         this.resizeObserver = new ResizeObserver(() => map.invalidateSize({ pan: false }));
         this.resizeObserver.observe(map.getContainer());
+        this.searchInitialArea();
+      },
+      onMarkerReady(id) {
+        this.readyMarkerIds.add(id);
+        this.searchInitialArea();
+      },
+      searchInitialArea() {
+        // Vue Leaflet mounts markers asynchronously. Replacing results before
+        // they are ready can unmount layers whose Leaflet objects do not exist yet.
+        if (
+          !this.ready ||
+          this.initialSearchStarted ||
+          !this.mappableHotels.every((hotel) => this.readyMarkerIds.has(hotel.hotel_id))
+        )
+          return;
+        this.initialSearchStarted = true;
         if (this.canSearch) this.searchArea();
       },
       currentBounds() {
