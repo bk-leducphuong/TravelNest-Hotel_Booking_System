@@ -112,3 +112,60 @@ describe('search.controller.searchHotels', () => {
     expect(recordRecentSearch).not.toHaveBeenCalled();
   });
 });
+
+describe('search.controller.searchMapHotels', () => {
+  it('returns compact results with limits independently of list pagination', async () => {
+    jest.clearAllMocks();
+    searchUseCases.searchHotels.mockResolvedValue({
+      searchResults: {
+        data: {
+          hotels: [
+            {
+              hotel_id: 'h1',
+              min_price_for_dates: 100,
+              available_rooms: [{ room_id: 1 }],
+              selected_offer: { room_id: 1 },
+            },
+          ],
+          pagination: { total: 205, hasNextPage: true },
+        },
+      },
+    });
+    const req = {
+      query: {
+        checkIn: '2099-01-01',
+        checkOut: '2099-01-03',
+        adults: 2,
+        north: 11,
+        south: 10,
+        east: 107,
+        west: 106,
+        hotelClass: '4,5',
+        amenities: 'wifi,pool',
+      },
+    };
+    const res = mockRes();
+    await require('@modules/search/api/search.controller').searchMapHotels(req, res, jest.fn());
+    expect(searchUseCases.searchHotels).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mapSearch: true,
+        page: 1,
+        limit: 200,
+        bounds: { north: 11, south: 10, east: 107, west: 106 },
+        hotelClass: [4, 5],
+        amenities: ['WIFI', 'POOL'],
+      }),
+      null
+    );
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      data: {
+        hotels: [{ hotel_id: 'h1', min_price_for_dates: 100 }],
+        total: 205,
+        hasMore: true,
+        limit: 200,
+      },
+    });
+    expect(recordRecentSearch).not.toHaveBeenCalled();
+  });
+});

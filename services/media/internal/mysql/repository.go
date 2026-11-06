@@ -225,16 +225,6 @@ func (r *Repository) RoomBelongsToHotel(ctx context.Context, roomID, hotelID str
 	return err == nil, err
 }
 
-func (r *Repository) UpdateRoomImages(ctx context.Context, roomID, imageURLsJSON string) error {
-	result, err := r.db.ExecContext(ctx, `
-		UPDATE rooms SET image_urls = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
-	`, imageURLsJSON, roomID)
-	if err != nil {
-		return err
-	}
-	return requireAffected(result, "room")
-}
-
 type scanner interface {
 	Scan(dest ...any) error
 }

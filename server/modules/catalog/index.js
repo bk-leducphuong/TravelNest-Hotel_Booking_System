@@ -1,6 +1,8 @@
 const roomRepository = require('./infrastructure/room-admin.repository');
 const guestRoutes = require('./api/guest.routes');
 const adminRoutes = require('./api/admin.routes');
+const locationAdminRoutes = require('./api/location.routes');
+const amenityAdminRoutes = require('./api/amenity.routes');
 const hotelRepository = require('./infrastructure/hotel.repository');
 const destinationRepository = require('./infrastructure/destination.repository');
 const imageRepository = require('./infrastructure/image.repository');
@@ -36,21 +38,49 @@ async function getRoomForHotel(roomId, hotelId) {
 }
 
 // Write API for partner onboarding (catalog owns hotels + rooms).
-async function upsertHotel(hotelData) {
-  return await hotelRepository.upsertHotel(hotelData);
+async function createHotel(hotelData, options = {}) {
+  return await hotelRepository.createHotel(hotelData, options);
 }
 
-async function createRoom(roomData) {
-  return await roomRepository.create(roomData);
+async function updateHotel(hotelId, hotelData, options = {}) {
+  return await hotelRepository.updateHotelFromPayload(hotelId, hotelData, options);
 }
 
-// Destination resolution (used by search before falling back to ES).
+async function findCityIdByName(name, options = {}) {
+  return await hotelRepository.findCityIdByName(name, options);
+}
+
+async function createRoom(roomData, options = {}) {
+  return await roomRepository.create(roomData, options);
+}
+
+async function updateRoom(roomId, values, options = {}) {
+  return await roomRepository.update(roomId, values, options);
+}
+
+async function findRoomByHotelAndName(hotelId, roomName, options = {}) {
+  return await roomRepository.findByHotelAndName(hotelId, roomName, options);
+}
+
+// Destination resolution (MySQL-only: cached active list + in-memory matching).
 async function getActiveDestinationById(destinationId) {
   return await destinationRepository.findActiveById(destinationId);
 }
 
 async function findBestMatchDestinationByName(text) {
   return await destinationRepository.findBestMatchByName(text);
+}
+
+async function suggestDestinations(text, limit) {
+  return await destinationRepository.suggest(text, limit);
+}
+
+/**
+ * Drop the in-process destination cache. Call after a destination is created,
+ * edited or deactivated so the change is visible immediately.
+ */
+function invalidateDestinationsCache() {
+  destinationRepository.invalidateCache();
 }
 
 // City images (used by search to enrich destination cards).
@@ -61,6 +91,8 @@ async function getCityImagesByCityIds(cityIds, options = {}) {
 module.exports = {
   guestRoutes,
   adminRoutes,
+  locationAdminRoutes,
+  amenityAdminRoutes,
 
   // rooms
   getRoomsForHotel,
@@ -68,12 +100,18 @@ module.exports = {
   getRoomForHotel,
 
   // onboarding writes
-  upsertHotel,
+  createHotel,
+  updateHotel,
+  findCityIdByName,
   createRoom,
+  updateRoom,
+  findRoomByHotelAndName,
 
   // destinations
   getActiveDestinationById,
   findBestMatchDestinationByName,
+  suggestDestinations,
+  invalidateDestinationsCache,
   getCityImagesByCityIds,
 
   // hotel search-snapshot projection (used by the snapshot worker + seeders)

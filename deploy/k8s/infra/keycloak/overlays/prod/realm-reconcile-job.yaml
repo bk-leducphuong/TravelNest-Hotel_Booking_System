@@ -1,0 +1,78 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keycloak-realm-reconcile
+  annotations:
+    # Keycloak's `--import-realm` only imports a realm that does NOT exist yet, so
+    # edits to travelnest-realm.json never reach an already-provisioned realm.
+    # That is how the SPA clients ended up without their `post.logout.redirect.uris`
+    # (logout then failed with "Invalid redirect uri").
+    #
+    # This PostSync hook reconciles the resources declared in the realm file
+    # (clients, realm/client roles, identity providers) on every sync, so config
+    # changes actually apply. `users`/`groups` are empty in the file, so existing
+    # users are left untouched.
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: keycloak-realm-reconcile
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: realm-reconcile
+          image: quay.io/keycloak/keycloak:26.0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              KC=/opt/keycloak/bin/kcadm.sh
+
+              echo "Waiting for Keycloak to accept admin login..."
+              ok=""
+              for i in $(seq 1 60); do
+                if "$KC" config credentials \
+                    --server "http://keycloak:8080" \
+                    --realm master \
+                    --user "$KEYCLOAK_ADMIN_USER" \
+                    --password "$KEYCLOAK_ADMIN_PASSWORD" >/dev/null 2>&1; then
+                  ok="yes"
+                  echo "  authenticated on attempt ${i}."
+                  break
+                fi
+                echo "  attempt ${i}/60..."
+                sleep 5
+              done
+              [ -n "$ok" ] || { echo "Keycloak did not become ready" >&2; exit 1; }
+
+              echo "Reconciling realm 'travelnest' from travelnest-realm.json..."
+              "$KC" create partialImport -r travelnest \
+                -f /realm/travelnest-realm.json \
+                -s ifResourceExists=OVERWRITE
+              echo "Realm reconciled."
+          envFrom:
+            - configMapRef:
+                name: keycloak-config
+            - secretRef:
+                name: keycloak-secret
+          volumeMounts:
+            - name: realm
+              mountPath: /realm
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+      volumes:
+        - name: realm
+          configMap:
+            name: keycloak-realm

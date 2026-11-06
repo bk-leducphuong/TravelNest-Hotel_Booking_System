@@ -26,6 +26,7 @@ const DOMAIN_EVENTS = {
   BOOKING_STATUS_CHANGED: 'booking.status_changed',
   BOOKING_CANCELLED: 'booking.cancelled',
   BOOKING_COMPLETED: 'booking.completed',
+  BOOKING_CREATED: 'booking.created',
   PAYOUT_BATCH_GENERATED: 'payout.batch_generated',
   PAYOUT_PAID: 'payout.paid',
   PAYOUT_FAILED: 'payout.failed',

@@ -2,17 +2,13 @@ export default {
   joinFormData: {
     // form 1
     streetName: null,
-    zipCode: null,
     city: null,
 
     // form 2
     coordinates: {
-      latitude: 23.12312, // test values
-      longitude: 123.12312
+      latitude: null,
+      longitude: null
     },
-
-    // form 3
-    services: [],
 
     // form 4
     hotelName: null,
@@ -23,39 +19,35 @@ export default {
     checkInTo: null,
     checkOutFrom: null,
     checkOutTo: null,
-    haveChildren: null,
-    havePet: null,
 
     // form 6
     roomDetails: {
       roomType: null,
       numberOfRooms: 0,
-      numberOfGuests: 0,
-      roomArea: 0,
-      allowSmoke: null
+      numberOfGuests: 0
     },
     bedOptions: [
       {
         index: 0,
-        name: 'Giường đơn',
+        name: 'join.form.bedSingle',
         width: '90 - 130',
         quantity: 0
       },
       {
         index: 1,
-        name: 'Giường đôi',
+        name: 'join.form.bedDouble',
         width: '131 - 150',
         quantity: 0
       },
       {
         index: 2,
-        name: 'Giường lớn (cỡ King)',
+        name: 'join.form.bedKing',
         width: '151 - 180',
         quantity: 0
       },
       {
         index: 3,
-        name: 'Giường cực lớn (cỡ Super-King)',
+        name: 'join.form.bedSuperKing',
         width: '181 - 210',
         quantity: 0
       }

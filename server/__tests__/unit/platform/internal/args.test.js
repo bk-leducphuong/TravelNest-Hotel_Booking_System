@@ -4,8 +4,6 @@ const {
   buildImageSeedArgs,
   buildImageSeedEnv,
   buildCityImageSeedArgs,
-  buildElasticsearchSetupArgs,
-  buildElasticsearchSeedArgs,
   buildMongodbSeedArgs,
 } = require('@platform/internal/args');
 
@@ -69,22 +67,6 @@ describe('platform/internal/args', () => {
 
   it('builds city image args', () => {
     expect(buildCityImageSeedArgs({ primaryOnly: false })).toEqual(['--all-images']);
-  });
-
-  it('builds Elasticsearch setup args (log index only for logs)', () => {
-    expect(buildElasticsearchSetupArgs('logs', { force: true, createIndex: true })).toEqual([
-      '--force',
-      '--create-index',
-    ]);
-    expect(buildElasticsearchSetupArgs('hotels', { force: true, createIndex: true })).toEqual([
-      '--force',
-    ]);
-  });
-
-  it('builds Elasticsearch seeder args for hotels', () => {
-    expect(
-      buildElasticsearchSeedArgs('hotels', { hotelIds: ['a', 'b'], status: 'active' })
-    ).toEqual(['--hotel-ids=a,b', '--status=active']);
   });
 
   it('builds MongoDB seeder args per target', () => {

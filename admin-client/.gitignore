@@ -25,3 +25,6 @@ logs
 
 playwright-report
 test-results
+
+# Nuxt CLI preferences created while running the isolated browser fixture
+tests/fixtures/console/.nuxtrc

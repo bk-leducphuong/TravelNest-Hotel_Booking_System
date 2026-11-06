@@ -20,10 +20,11 @@ async function attachFavoriteStatus(response, userId) {
 
   const hotelIds = hotels.map((hotel) => hotel.hotel_id).filter(Boolean);
   const favoriteHotelIds = await identity.getFavoriteHotelIds(userId, hotelIds);
-  const favoriteHotelIdSet = new Set(favoriteHotelIds.map((hotelId) => Number(hotelId)));
+  // Hotel ids are UUIDs: compare as strings, never as numbers.
+  const favoriteHotelIdSet = new Set(favoriteHotelIds.map((hotelId) => String(hotelId)));
 
   hotels.forEach((hotel) => {
-    hotel.is_favorite = favoriteHotelIdSet.has(Number(hotel.hotel_id));
+    hotel.is_favorite = favoriteHotelIdSet.has(String(hotel.hotel_id));
   });
 }
 

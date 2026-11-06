@@ -105,14 +105,15 @@ function formatReviews(rows = []) {
         : null,
       reply: reviewData.reply
         ? {
-            comment: reviewData.reply.comment,
+            comment: reviewData.reply.reply_text ?? reviewData.reply.comment,
             createdAt: reviewData.reply.created_at,
           }
         : null,
       media: (reviewData.media || []).map((media) => ({
         id: media.id,
         type: media.media_type,
-        url: media.media_url,
+        url: media.url ?? media.media_url ?? media.object_key,
+        thumbnailUrl: media.thumbnail_url ?? media.thumbnailUrl,
       })),
     };
   });

@@ -46,6 +46,6 @@ export async function fetchAudit(
   params: AuditListParams = {}
 ): Promise<Paged<AuditEntry>> {
   return await apiFetch<Paged<AuditEntry>>(
-    `/superadmin/audit${queryString(params)}`
+    `/superadmin/audit${queryString({ ...params })}`
   );
 }

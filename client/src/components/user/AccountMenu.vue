@@ -2,7 +2,6 @@
 import {
   ArrowDown,
   ChatDotRound,
-  CreditCard,
   Document,
   House,
   Star,
@@ -13,32 +12,22 @@ import { getImageUrl } from '@/utils/images'
 
 const menuItems = [
   {
-    label: 'Manage account',
+    labelKey: 'account.menu.manageAccount',
     route: '/account-settings',
     icon: House,
   },
   {
-    label: 'Bookings & Trips',
+    labelKey: 'account.menu.bookings',
     route: '/bookings',
     icon: Document,
   },
   {
-    label: 'Genius loyalty programme',
-    disabled: true,
-    icon: Star,
-  },
-  {
-    label: 'Rewards & Wallet',
-    disabled: true,
-    icon: CreditCard,
-  },
-  {
-    label: 'Reviews',
+    labelKey: 'account.menu.reviews',
     route: '/reviews',
     icon: ChatDotRound,
   },
   {
-    label: 'Saved',
+    labelKey: 'account.menu.saved',
     route: '/saved-hotels',
     icon: Star,
   },
@@ -58,7 +47,7 @@ export default {
     ...mapGetters('user', ['getUserInformation']),
     displayName() {
       const user = this.getUserInformation || {}
-      return user.full_name || user.username || 'User Name'
+      return user.full_name || user.username || this.$t('account.menu.userNameFallback')
     },
     displayAvatar() {
       return getImageUrl(this.getUserInformation?.profile_picture_url)
@@ -88,7 +77,7 @@ export default {
 
 <template>
   <el-dropdown trigger="click" @command="handleCommand">
-    <button type="button" class="account-trigger">
+    <button type="button" class="account-trigger" :aria-label="$t('account.menu.manageAccount')">
       <span class="avatar-frame">
         <img v-if="displayAvatar" :src="displayAvatar" alt="User avatar" />
         <img v-else src="../../assets/avatar/default_avatar.png" alt="Default avatar" />
@@ -96,7 +85,7 @@ export default {
 
       <span class="identity">
         <span class="name">{{ displayName }}</span>
-        <span class="tier">Genius Level ?</span>
+
       </span>
 
       <el-icon class="trigger-icon"><ArrowDown /></el-icon>
@@ -106,20 +95,20 @@ export default {
       <el-dropdown-menu class="account-dropdown">
         <el-dropdown-item
           v-for="item in menuItems"
-          :key="item.label"
+          :key="item.labelKey"
           :command="item.route"
           :disabled="item.disabled"
         >
           <div class="menu-item">
             <el-icon class="menu-icon"><component :is="item.icon" /></el-icon>
-            <span>{{ item.label }}</span>
+            <span>{{ $t(item.labelKey) }}</span>
           </div>
         </el-dropdown-item>
 
         <el-dropdown-item divided command="logout">
           <div class="menu-item">
             <el-icon class="menu-icon"><SwitchButton /></el-icon>
-            <span>Sign out</span>
+            <span>{{ $t('account.menu.signOut') }}</span>
           </div>
         </el-dropdown-item>
       </el-dropdown-menu>
@@ -132,7 +121,7 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  width: 170px;
+  max-width: 170px;
   min-height: 36px;
   padding: 0;
   border: none;
@@ -165,7 +154,7 @@ export default {
 .name {
   max-width: 105px;
   overflow: hidden;
-  color: #fff;
+  color: var(--tn-ink);
   font-size: 14px;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -179,7 +168,7 @@ export default {
 }
 
 .trigger-icon {
-  color: #fff;
+  color: var(--tn-ink);
   font-size: 12px;
 }
 
@@ -197,4 +186,8 @@ export default {
 .menu-icon {
   font-size: 16px;
 }
+</style>
+
+<style scoped>
+@media (max-width:767px) { .identity,.trigger-icon { display:none; } .account-trigger { width:36px; } }
 </style>

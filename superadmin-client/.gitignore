@@ -25,3 +25,4 @@ logs
 
 playwright-report
 test-results
+.nuxtrc

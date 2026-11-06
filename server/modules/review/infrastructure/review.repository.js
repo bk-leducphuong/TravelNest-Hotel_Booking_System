@@ -1,64 +1,22 @@
-const { Op } = require('sequelize');
+const { Op, fn, col } = require('sequelize');
 
 const {
   reviews: Reviews,
   review_replies: ReviewReplies,
-  review_media: ReviewMedia,
-  users: Users,
   hotels: Hotels,
+  images: Images,
 } = require('@platform/database');
 const sequelize = require('@config/database.config');
 
+const { MODERATION_INCLUDE, PUBLIC_INCLUDE, toLimit, toOffset } = require('./review.query');
+
 /**
- * Review repository - the only place that touches review tables.
+ * Review repository - the write/moderation side of the review tables: creating
+ * reviews, the user and moderation queries, and admin replies.
+ *
+ * Public guest reads live in `review-read.repository`; helpful votes live in
+ * `review-vote.repository`.
  */
-
-const PUBLIC_INCLUDE = [
-  {
-    model: Users,
-    as: 'user',
-    attributes: ['id', 'first_name', 'last_name', 'profile_picture_url', 'country'],
-    required: false,
-  },
-  {
-    model: ReviewReplies,
-    as: 'reply',
-    attributes: ['id', 'reply_text', 'created_at', 'updated_at'],
-    required: false,
-    include: [{ model: Users, as: 'user', attributes: ['id', 'first_name', 'last_name'] }],
-  },
-  {
-    model: ReviewMedia,
-    as: 'media',
-    attributes: ['id', 'media_type', 'url', 'thumbnail_url', 'display_order'],
-    required: false,
-  },
-];
-
-const MODERATION_INCLUDE = [
-  ...PUBLIC_INCLUDE,
-  {
-    model: Hotels,
-    as: 'hotel',
-    attributes: ['id', 'name', 'city_id'],
-    required: false,
-  },
-];
-
-function toLimit(limit, fallback = 20, max = 100) {
-  const parsed = parseInt(limit, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return fallback;
-  }
-  return Math.min(parsed, max);
-}
-
-function toOffset(page, limit) {
-  const parsed = parseInt(page, 10);
-  const safePage = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
-  return (safePage - 1) * limit;
-}
-
 class ReviewRepository {
   async create(data, options = {}) {
     return await Reviews.create(
@@ -95,36 +53,13 @@ class ReviewRepository {
     });
   }
 
-  async findPublishedByHotel(hotelId, { page = 1, limit = 20 } = {}) {
+  async findByUser(userId, { page = 1, limit = 20, status } = {}) {
     const safeLimit = toLimit(limit);
+    // Default: everything the user authored except soft-deleted rows. `status`
+    // narrows to a single moderation state (e.g. 'published' for the Reviewed tab).
+    const statusFilter = status || { [Op.in]: ['published', 'hidden'] };
     return await Reviews.findAndCountAll({
-      where: { hotel_id: hotelId, status: 'published' },
-      attributes: [
-        'id',
-        'rating_overall',
-        'rating_cleanliness',
-        'rating_location',
-        'rating_service',
-        'rating_value',
-        'title',
-        'comment',
-        'is_verified',
-        'helpful_count',
-        'status',
-        'created_at',
-      ],
-      include: PUBLIC_INCLUDE,
-      order: [['created_at', 'DESC']],
-      limit: safeLimit,
-      offset: toOffset(page, safeLimit),
-      distinct: true,
-    });
-  }
-
-  async findByUser(userId, { page = 1, limit = 20 } = {}) {
-    const safeLimit = toLimit(limit);
-    return await Reviews.findAndCountAll({
-      where: { user_id: userId },
+      where: { user_id: userId, status: statusFilter },
       attributes: [
         'id',
         'hotel_id',
@@ -139,7 +74,21 @@ class ReviewRepository {
         'updated_at',
       ],
       include: [
-        { model: Hotels, as: 'hotel', attributes: ['id', 'name'], required: false },
+        {
+          model: Hotels,
+          as: 'hotel',
+          attributes: ['id', 'name', 'city_id'],
+          required: false,
+          include: [
+            {
+              model: Images,
+              as: 'images',
+              where: { status: 'active' },
+              attributes: ['id', 'object_key', 'is_primary', 'display_order'],
+              required: false,
+            },
+          ],
+        },
         ...PUBLIC_INCLUDE,
       ],
       order: [['created_at', 'DESC']],
@@ -147,6 +96,31 @@ class ReviewRepository {
       offset: toOffset(page, safeLimit),
       distinct: true,
     });
+  }
+
+  /**
+   * Per-status counts for a user's own reviews (excludes soft-deleted rows), so
+   * the dashboard can show "All reviews" (published + hidden) vs "Reviewed"
+   * (published) without loading every row.
+   */
+  async countByStatusForUser(userId) {
+    const rows = await Reviews.findAll({
+      where: {
+        user_id: userId,
+        status: { [Op.in]: ['published', 'hidden'] },
+      },
+      attributes: ['status', [fn('COUNT', col('id')), 'count']],
+      group: ['status'],
+      raw: true,
+    });
+
+    const counts = { published: 0, hidden: 0 };
+    rows.forEach((row) => {
+      if (Object.prototype.hasOwnProperty.call(counts, row.status)) {
+        counts[row.status] = parseInt(row.count, 10) || 0;
+      }
+    });
+    return counts;
   }
 
   async findByBookingIds(bookingIds = [], options = {}) {

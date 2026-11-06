@@ -23,6 +23,7 @@ IMAGE="${FRONTEND_IMAGE:-docker.io/leducphuong/travelnest-frontend:local}"
 
 VITE_SERVER_HOST="${VITE_SERVER_HOST:-/api/v1}"
 VITE_MINIO_URL="${VITE_MINIO_URL:-http://storage.travelnest.local/uploads/}"
+VITE_ADMIN_HOST="${VITE_ADMIN_HOST:-http://admin.travelnest.local}"
 VITE_KEYCLOAK_URL="${VITE_KEYCLOAK_URL:-http://keycloak.travelnest.local}"
 VITE_KEYCLOAK_REALM="${VITE_KEYCLOAK_REALM:-travelnest}"
 VITE_KEYCLOAK_CLIENT_ID="${VITE_KEYCLOAK_CLIENT_ID:-travelnest-web}"
@@ -38,6 +39,7 @@ done
 echo "Building $IMAGE"
 echo "  VITE_SERVER_HOST      = $VITE_SERVER_HOST"
 echo "  VITE_MINIO_URL        = $VITE_MINIO_URL"
+echo "  VITE_ADMIN_HOST       = $VITE_ADMIN_HOST"
 echo "  VITE_KEYCLOAK_URL     = $VITE_KEYCLOAK_URL"
 echo "  VITE_KEYCLOAK_REALM   = $VITE_KEYCLOAK_REALM"
 echo "  VITE_KEYCLOAK_CLIENT  = $VITE_KEYCLOAK_CLIENT_ID"
@@ -48,6 +50,7 @@ docker build \
   -t "$IMAGE" \
   --build-arg "VITE_SERVER_HOST=$VITE_SERVER_HOST" \
   --build-arg "VITE_MINIO_URL=$VITE_MINIO_URL" \
+  --build-arg "VITE_ADMIN_HOST=$VITE_ADMIN_HOST" \
   --build-arg "VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL" \
   --build-arg "VITE_KEYCLOAK_REALM=$VITE_KEYCLOAK_REALM" \
   --build-arg "VITE_KEYCLOAK_CLIENT_ID=$VITE_KEYCLOAK_CLIENT_ID" \

@@ -67,7 +67,14 @@ export async function apiFetch<T>(
   });
 
   const text = await response.text();
-  const payload = text ? JSON.parse(text) : null;
+  let payload = null;
+  try {
+    payload = text ? JSON.parse(text) : null;
+  } catch {
+    // Proxies can return an HTML error page. Preserve status handling (especially
+    // session expiry) rather than leaking a JSON parser error to the UI.
+    if (response.ok) throw new ApiError("Invalid service response", 502);
+  }
 
   if (!response.ok) {
     const message =

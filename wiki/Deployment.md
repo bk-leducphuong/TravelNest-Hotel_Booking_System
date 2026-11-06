@@ -57,7 +57,7 @@ deploy/k8s/
 │   ├── prod/              Prod root kustomization + ApplicationSet
 │   └── local/             Local root kustomization + ApplicationSet
 ├── monitoring/            Grafana Cloud (Alloy) monitoring
-├── local/                 Dev-only MongoDB/Elasticsearch + manual jobs
+├── local/                 Dev-only manual maintenance jobs
 └── bootstrap/argocd/      Argo CD bootstrap (+ KSOPS)
 ```
 
@@ -106,7 +106,6 @@ not distinguish `develop` from `master` tags and hit Docker Hub rate limits).
 
 ## External Managed Services
 
-- **Elasticsearch** (search/logs) — Elastic Cloud
 - **Cloudflare Tunnel** (public ingress, plus Access in front of Argo CD)
 
 Everything else — MySQL, Redis, MinIO, MongoDB, NATS, Keycloak — runs in-cluster.
@@ -131,14 +130,13 @@ Secrets — see [`deploy/docs/SECRETS.md`](../deploy/docs/SECRETS.md).
 
 `deploy/scripts/` includes:
 
-| Script | Purpose |
-|---|---|
-| `ci/update-image-tag.sh` | Rewrite a `newTag` in a kustomization (CI promotion) |
-| `secrets/` | SOPS + age key generation and prod/local secret sealing |
-| `validate-manifests.sh` | Render every Kustomize target and schema-check it |
-| `setup-hotels-index.sh` | Elasticsearch hotels index |
-| `build-local-frontend.sh` | Build + import the local k3d frontend image |
-| `enable-local-edge.sh` | Publish host `:80` to the local k3d load balancer |
+| Script                    | Purpose                                                 |
+| ------------------------- | ------------------------------------------------------- |
+| `ci/update-image-tag.sh`  | Rewrite a `newTag` in a kustomization (CI promotion)    |
+| `secrets/`                | SOPS + age key generation and prod/local secret sealing |
+| `validate-manifests.sh`   | Render every Kustomize target and schema-check it       |
+| `build-local-frontend.sh` | Build + import the local k3d frontend image             |
+| `enable-local-edge.sh`    | Publish host `:80` to the local k3d load balancer       |
 
 ## Monitoring
 

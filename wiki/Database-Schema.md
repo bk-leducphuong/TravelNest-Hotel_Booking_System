@@ -104,9 +104,9 @@ Review               ReviewMedia          ReviewReply
 ├── user_id (FK)     ├── review_id (FK)   ├── review_id (FK)
 ├── hotel_id (FK)    └── image_url        ├── user_id (FK)
 ├── rating                                     └── content
-├── title            
-├── content          
-└── timestamps       
+├── title
+├── content
+└── timestamps
 ```
 
 ### Geography
@@ -117,7 +117,7 @@ Country              City                 Destination
 ├── code             ├── country_id (FK)  ├── city_id (FK)
 ├── name             ├── name             ├── type
 └── phone_code       ├── lat/lng          └── is_active
-                     └── is_active        
+                     └── is_active
 ```
 
 ---
@@ -146,38 +146,31 @@ HotelViewEvent
 
 ---
 
-## Elasticsearch (Search)
+## Hotel Search (MySQL)
 
-### Hotels Index
-
-```
-hotels
-├── hotel_id
-├── hotel_name (text + edge_ngram + completion suggest)
-├── city (keyword)
-├── country (keyword)
-├── location (geo_point)
-├── prices (nested)
-├── avg_rating
-├── review_count
-├── amenity_codes
-├── available (boolean flag per date)
-├── popularity_score
-└── is_active
-```
-
-### Logs Index
+Search uses MySQL only; there is no search index to keep in sync.
 
 ```
-logs-*
-├── timestamp
-├── level
-├── message
-├── service
-├── request_id
-├── user_id
-└── metadata (nested)
+hotel_search_snapshots (read model, one row per hotel)
+├── hotel_id (PK, FK hotels.id)
+├── hotel_name
+├── hotel_name_normalized   -- lowercase, accent-stripped
+├── hotel_name_compact      -- alphanumeric-only key
+├── city_id / country_id    -- candidate filtering
+├── latitude / longitude    -- bounding box + haversine
+├── avg_rating / review_count
+├── hotel_class
+├── amenity_codes (JSON)    -- all-selected-amenities filter
+├── has_free_cancellation
+├── primary_image_url
+├── total_bookings / view_count
+└── status
 ```
+
+Live availability and pricing come from the authoritative `room_inventory`
+(`room_id`, `date`, `total_rooms`, `booked_rooms`, `held_rooms`, `status`,
+`price_per_night`, `currency`) with `MIN(total_rooms - booked_rooms - held_rooms)`
+over the requested nights. See `docs/architecture/search-mysql.md`.
 
 ---
 

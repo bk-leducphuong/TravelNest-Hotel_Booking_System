@@ -21,7 +21,7 @@ const { useAuthStoreMock } = vi.hoisted(() => ({
 vi.mock("~/stores/auth", () => ({ useAuthStore: useAuthStoreMock }));
 
 describe("Can component (Nuxt runtime)", () => {
-  let Can: any;
+  let Can: typeof import("~/components/Can.vue").default;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -29,7 +29,7 @@ describe("Can component (Nuxt runtime)", () => {
   });
 
   it("renders the slot when the permission is granted", async () => {
-    const wrapper: VueWrapper<any> = await mountSuspended(Can, {
+    const wrapper: VueWrapper = await mountSuspended(Can, {
       props: { permission: "review.read" },
       slots: { default: () => "allowed-content" },
     });
@@ -38,7 +38,7 @@ describe("Can component (Nuxt runtime)", () => {
   });
 
   it("hides the slot when the permission is missing", async () => {
-    const wrapper: VueWrapper<any> = await mountSuspended(Can, {
+    const wrapper: VueWrapper = await mountSuspended(Can, {
       props: { permission: "payment.refund" },
       slots: { default: () => "hidden-content" },
     });
@@ -47,7 +47,7 @@ describe("Can component (Nuxt runtime)", () => {
   });
 
   it("supports the `any` variant", async () => {
-    const wrapper: VueWrapper<any> = await mountSuspended(Can, {
+    const wrapper: VueWrapper = await mountSuspended(Can, {
       props: { any: ["payment.refund", "booking.read"] },
       slots: { default: () => "any-content" },
     });

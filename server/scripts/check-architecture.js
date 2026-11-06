@@ -47,7 +47,7 @@ const SKIP_DIRS = new Set([
 ]);
 
 /** Path fragments (relative to server/) to skip even inside scanned dirs. */
-const SKIP_FRAGMENTS = ['minio-data', 'elasticsearch/data'];
+const SKIP_FRAGMENTS = ['minio-data'];
 
 /**
  * Layer leaks that must not grow. Each entry counts import occurrences from

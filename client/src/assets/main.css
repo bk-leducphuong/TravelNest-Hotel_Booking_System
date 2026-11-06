@@ -15,7 +15,7 @@ a {
   color: inherit;          /* Bỏ màu mặc định (kế thừa màu từ parent) */
   background: none;        /* Bỏ nền mặc định */
   border: none;            /* Bỏ viền (nếu có) */
-  outline: none;           /* Bỏ viền nét đứt khi click vào */
+  /* Focus is styled by guest-theme.css. */           /* Bỏ viền nét đứt khi click vào */
   cursor: pointer;         /* Giữ con trỏ dưới dạng con trỏ tay */
 }
 

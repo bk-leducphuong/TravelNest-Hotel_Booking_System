@@ -144,32 +144,6 @@ function buildCityImageSeedArgs(body = {}) {
   return args;
 }
 
-function buildElasticsearchSetupArgs(target, body = {}) {
-  const args = [];
-
-  booleanFlag(args, body.force === true, '--force');
-
-  if (target === 'logs') {
-    booleanFlag(args, body.createIndex === true, '--create-index');
-  }
-
-  return args;
-}
-
-function buildElasticsearchSeedArgs(target, body = {}) {
-  const args = [];
-
-  booleanFlag(args, body.clear === true || body.clearExisting === true, '--clear');
-  positiveIntegerArg(args, body.batchSize, '--batch-size');
-
-  if (target === 'hotels') {
-    listArg(args, body.hotelIds, '--hotel-ids');
-    stringArg(args, body.status, '--status');
-  }
-
-  return args;
-}
-
 function buildMongodbSeedArgs(target, body = {}) {
   const args = [];
 
@@ -198,7 +172,5 @@ module.exports = {
   buildImageSeedArgs,
   buildImageSeedEnv,
   buildCityImageSeedArgs,
-  buildElasticsearchSetupArgs,
-  buildElasticsearchSeedArgs,
   buildMongodbSeedArgs,
 };

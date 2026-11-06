@@ -267,6 +267,21 @@
  *         total:
  *           type: integer
  *           example: 42
+ *         facets:
+ *           type: object
+ *           description: Filter options derived from the hotel's published reviews
+ *           properties:
+ *             countries:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   country:
+ *                     type: string
+ *                     example: Spain
+ *                   count:
+ *                     type: integer
+ *                     example: 3
  *     ReviewHotelListResponse:
  *       type: object
  *       properties:
@@ -345,6 +360,21 @@
  *             message:
  *               type: string
  *               example: Review posted successfully
+ *     ReviewVoteResponse:
+ *       type: object
+ *       properties:
+ *         data:
+ *           type: object
+ *           properties:
+ *             isHelpful:
+ *               type: boolean
+ *               nullable: true
+ *               description: The caller's vote (null after removal)
+ *               example: true
+ *             helpfulCount:
+ *               type: integer
+ *               description: Recomputed number of helpful votes on the review
+ *               example: 7
  *     AdminReviewListResponse:
  *       type: object
  *       properties:
@@ -476,6 +506,40 @@
  *           maximum: 100
  *           default: 20
  *         description: Number of items per page
+ *       - in: query
+ *         name: minRating
+ *         schema:
+ *           type: number
+ *           minimum: 1
+ *           maximum: 10
+ *         description: Only reviews with an overall rating greater than or equal to this value
+ *       - in: query
+ *         name: maxRating
+ *         schema:
+ *           type: number
+ *           minimum: 1
+ *           maximum: 10
+ *         description: Only reviews with an overall rating below this value (score band upper bound)
+ *       - in: query
+ *         name: months
+ *         schema:
+ *           type: string
+ *         description: Comma-separated month numbers (1-12) the review was written in, e.g. "3,4,5"
+ *       - in: query
+ *         name: country
+ *         schema:
+ *           type: string
+ *         description: Reviewer nationality
+ *       - in: query
+ *         name: hasMedia
+ *         schema:
+ *           type: boolean
+ *         description: Only reviews with at least one photo
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         description: Keyword matched against the review title and comment
  *     responses:
  *       200:
  *         description: Paginated list of published reviews
@@ -485,6 +549,99 @@
  *               $ref: '#/components/schemas/ReviewHotelListResponse'
  *       400:
  *         description: Validation error (invalid hotelId or pagination)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
+/**
+ * @swagger
+ * /reviews/{reviewId}/vote:
+ *   put:
+ *     summary: Cast or change a helpful vote on a review
+ *     description: |
+ *       Records the authenticated user's helpful/not-helpful vote on a review.
+ *       One vote per user per review: an existing vote is updated in place.
+ *       Users cannot vote on their own review.
+ *     tags:
+ *       - Reviews
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reviewId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Review UUID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [isHelpful]
+ *             properties:
+ *               isHelpful:
+ *                 type: boolean
+ *                 description: true = helpful, false = not helpful
+ *     responses:
+ *       200:
+ *         description: The vote was recorded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ReviewVoteResponse'
+ *       400:
+ *         description: Validation error or attempting to vote on your own review
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Review not found or not published
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *   delete:
+ *     summary: Remove your helpful vote from a review
+ *     description: Idempotent — removing a vote you did not cast is a no-op.
+ *     tags:
+ *       - Reviews
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reviewId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Review UUID
+ *     responses:
+ *       200:
+ *         description: The vote was removed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ReviewVoteResponse'
+ *       401:
+ *         description: Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Review not found or not published
  *         content:
  *           application/json:
  *             schema:

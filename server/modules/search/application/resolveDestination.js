@@ -1,10 +1,13 @@
-const logger = require('@config/logger.config');
 const catalog = require('@modules/catalog');
-const destinationElasticsearchHelper = require('../infrastructure/destination-elasticsearch.helper');
+const { applyAlias } = require('@utils/placeName');
 
 /**
  * Resolve a unified destination (city or country) from raw search parameters.
- * Explicit id wins, then Elasticsearch text search, then a DB best-match.
+ *
+ * Order: explicit id, then MySQL/application matching against the cached active
+ * destination list. Known aliases are rewritten first ("Saigon" -> "Ho Chi Minh
+ * City") and both exact/compact/fuzzy matching are diacritic and space
+ * insensitive, so "Hanoi", "Hà Nội" and "Ha Noi" resolve to the same place.
  */
 async function resolveDestination(params) {
   const explicitDestinationId = params.destinationId;
@@ -13,24 +16,10 @@ async function resolveDestination(params) {
     if (existing) return existing;
   }
 
-  const text = (params.city || params.country || params.location || '').trim();
-  if (!text) return null;
+  const rawText = (params.city || params.country || params.location || '').trim();
+  if (!rawText) return null;
 
-  try {
-    const esResults = await destinationElasticsearchHelper.searchByText(text, 10);
-
-    const cities = esResults.filter((destination) => destination.type === 'city');
-    if (cities.length > 0) {
-      return cities[0];
-    }
-
-    const countries = esResults.filter((destination) => destination.type === 'country');
-    if (countries.length > 0) {
-      return countries[0];
-    }
-  } catch (error) {
-    logger.error(error, 'Destination ES resolution error, falling back to DB');
-  }
+  const text = applyAlias(rawText);
 
   return catalog.findBestMatchDestinationByName(text);
 }

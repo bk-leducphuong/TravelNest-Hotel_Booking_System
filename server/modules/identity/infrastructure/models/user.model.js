@@ -66,6 +66,12 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: true,
         unique: 'connect_account_id_UNIQUE',
       },
+      stripe_customer_id: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        unique: 'stripe_customer_id_UNIQUE',
+        comment: 'Stripe customer that owns this user saved payment methods.',
+      },
       address: {
         type: DataTypes.TEXT,
         allowNull: true,
@@ -150,6 +156,12 @@ module.exports = function (sequelize, DataTypes) {
           fields: [{ name: 'connect_account_id' }],
         },
         {
+          name: 'stripe_customer_id_UNIQUE',
+          unique: true,
+          using: 'BTREE',
+          fields: [{ name: 'stripe_customer_id' }],
+        },
+        {
           name: 'keycloak_user_id_UNIQUE',
           unique: true,
           using: 'BTREE',
@@ -197,6 +209,10 @@ module.exports = function (sequelize, DataTypes) {
     User.hasMany(models.connected_payment_accounts, {
       foreignKey: 'user_id',
       as: 'connected_payment_accounts',
+    });
+    User.hasMany(models.saved_payment_methods, {
+      foreignKey: 'user_id',
+      as: 'saved_payment_methods',
     });
     User.hasMany(models.payouts, {
       foreignKey: 'owner_id',

@@ -72,6 +72,11 @@ async function findByBuyerId(buyerId, options = {}) {
 
   if (include) {
     query.include = include;
+    // `limit` + a hasMany include would otherwise make Sequelize wrap the
+    // select in a subquery, leaving `$reviews.id$` inside a scope where the
+    // reviews join doesn't exist (MySQL: Unknown column 'reviews.id').
+    // `reviews.booking_id` is UNIQUE, so a flat join cannot duplicate bookings.
+    query.subQuery = false;
   }
 
   if (typeof limit === 'number') {
@@ -326,6 +331,15 @@ async function findDetailedByBookingCodeAndBuyerId(bookingCode, buyerId, options
         model: Hotels,
         as: 'hotel',
         attributes: ['id', 'name', 'city_id', 'address'],
+        include: [
+          {
+            model: Images,
+            as: 'images',
+            where: { status: 'active' },
+            attributes: ['id', 'object_key', 'is_primary', 'display_order'],
+            required: false,
+          },
+        ],
       },
       {
         model: Transactions,

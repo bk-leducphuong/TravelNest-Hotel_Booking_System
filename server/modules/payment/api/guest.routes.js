@@ -7,6 +7,11 @@ const {
   getUserPayments,
   getPaymentByBookingId,
   getPaymentByTransactionId,
+  createSetupIntent,
+  savePaymentMethod,
+  listPaymentMethods,
+  setDefaultPaymentMethod,
+  removePaymentMethod,
 } = require('./payment.controller');
 const router = express.Router();
 
@@ -44,6 +49,26 @@ router.get(
   '/transactions/:transactionId',
   validate(paymentSchema.getPaymentByTransactionId),
   getPaymentByTransactionId
+);
+
+/**
+ * Saved payment methods (account settings).
+ *
+ * NOTE: `/methods/setup-intent` is declared before `/methods/:paymentMethodId`
+ * so the literal path is not swallowed by the param route.
+ */
+router.post('/methods/setup-intent', validate(paymentSchema.createSetupIntent), createSetupIntent);
+router.post('/methods', validate(paymentSchema.savePaymentMethod), savePaymentMethod);
+router.get('/methods', validate(paymentSchema.listPaymentMethods), listPaymentMethods);
+router.post(
+  '/methods/:paymentMethodId/default',
+  validate(paymentSchema.paymentMethodIdParam),
+  setDefaultPaymentMethod
+);
+router.delete(
+  '/methods/:paymentMethodId',
+  validate(paymentSchema.paymentMethodIdParam),
+  removePaymentMethod
 );
 
 module.exports = router;

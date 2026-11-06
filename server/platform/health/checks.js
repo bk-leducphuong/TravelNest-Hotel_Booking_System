@@ -1,7 +1,6 @@
 const sequelize = require('@config/database.config');
 const redisClient = require('@config/redis.config');
 const { minioClient, bucketName } = require('@config/minio.config');
-const elasticsearchClient = require('@config/elasticsearch.config');
 const logger = require('@config/logger.config');
 const { analytics: analyticsService } = require('@modules/analytics');
 
@@ -173,43 +172,6 @@ async function checkMinIOConnection() {
   }
 }
 
-async function checkElasticsearchConnection() {
-  const startTime = Date.now();
-  try {
-    const pingResponse = await elasticsearchClient.ping();
-
-    if (!pingResponse) {
-      throw new Error('Elasticsearch ping failed');
-    }
-
-    const health = await elasticsearchClient.cluster.health();
-    const info = await elasticsearchClient.info();
-
-    return {
-      status: 'healthy',
-      message: 'Elasticsearch connection is active',
-      details: {
-        host: process.env.ELASTICSEARCH_HOSTS,
-        clusterName: health.cluster_name,
-        clusterStatus: health.status,
-        numberOfNodes: health.number_of_nodes,
-        numberOfDataNodes: health.number_of_data_nodes,
-        activeShards: health.active_shards,
-        version: info.version.number,
-      },
-      responseTime: Date.now() - startTime,
-    };
-  } catch (error) {
-    logger.error('Elasticsearch health check failed:', error);
-    return {
-      status: 'unhealthy',
-      message: 'Elasticsearch connection failed',
-      error: error.message,
-      responseTime: Date.now() - startTime,
-    };
-  }
-}
-
 async function checkAnalyticsService() {
   const startTime = Date.now();
   try {
@@ -243,6 +205,5 @@ module.exports = {
   checkMySQLConnection,
   checkRedisConnection,
   checkMinIOConnection,
-  checkElasticsearchConnection,
   checkAnalyticsService,
 };

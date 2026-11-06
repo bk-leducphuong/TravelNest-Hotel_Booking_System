@@ -18,7 +18,6 @@ export default [
       'logs/**',
       'infra/minio-data/**',
       'infra/minio-data-test/**',
-      'infra/elasticsearch/data/**',
     ],
   },
 

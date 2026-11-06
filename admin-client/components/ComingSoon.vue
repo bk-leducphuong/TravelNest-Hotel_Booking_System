@@ -9,12 +9,12 @@ defineProps<{
   <section class="space-y-2">
     <h2 class="text-2xl font-semibold tracking-tight text-slate-900">{{ title }}</h2>
     <p class="text-sm text-slate-500">
-      {{ description || "This screen is coming in a later phase." }}
+      {{ description || $t('comingSoon.laterPhase') }}
     </p>
     <el-alert type="info" :closable="false" show-icon class="mt-4">
-      <template #title>Not implemented yet</template>
+      <template #title>{{ $t('comingSoon.notImplemented') }}</template>
       <template #default>
-        This module is scaffolded; the data screens land in the next phases.
+        {{ $t('comingSoon.scaffolded') }}
       </template>
     </el-alert>
   </section>

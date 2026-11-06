@@ -1,68 +1,61 @@
-# TravelNest Platform (superadmin client)
+# TravelNest Platform
 
-Cross-tenant monitoring console for the TravelNest platform. It shows all
-hotels, users and finances in one place — as opposed to `admin-client`, which is
-hotel-scoped and uses the `X-Hotel-Id` header.
+Read-only, cross-hotel monitoring console for platform staff. Built with Nuxt 4
+(SPA), Vue, Pinia, Tailwind, Element Plus, TypeScript and Keycloak OIDC/PKCE.
 
-> **Status:** Phase 0 scaffold. Only the **Overview** page is implemented; Hotels,
-> Users, Audit (Phase 1) and Finance (Phase 2) pages land next. See
-> [`../SUPERADMIN_PLAN.md`](../SUPERADMIN_PLAN.md).
+The console includes Overview, Hotels and hotel details, Users and user details,
+Finance summary/payments/refunds/payouts/ledger, and Audit log. It uses global
+`platform.*` permissions and never sends a hotel-scoping `X-Hotel-Id` header.
+Server-side authorization and PII masking remain authoritative.
 
-## Stack
+The UI migration covers all existing pages plus missing-page recovery. Shared
+EN/VI controls, responsive navigation and data tables, URL-backed filtering,
+read-only record drawers and explicit loading/error/empty states follow the
+existing guest/hotel-admin foundations. See the
+[update plan](../docs/plan/superadmin-ui-ux-update.md) and
+[implementation report and screenshots](../docs/reports/progress/superadmin-ui-redesign.md).
 
-Nuxt 4 (SPA), Vue 3, Pinia, Tailwind CSS, Element Plus, TypeScript, Vitest,
-Playwright, Keycloak (`keycloak-js`, OIDC + PKCE).
+Date filters use UTC calendar days, including the entire selected end date.
+Finance totals remain separated by currency. Snapshot Refresh retrieves stored
+counts; it does not recalculate them. Finance/audit drawers inspect the returned
+list row; they do not introduce unsupported detail APIs or mutation actions.
 
-## Getting started
+## Development
 
-```bash
-# from the repository root
-yarn install
-yarn dev:superadmin
-```
+From the repository root, run `yarn install --immutable`, configure a local
+`superadmin-client/.env` using `.env.example`, then run `yarn dev:superadmin`.
+The development port is 8100. API and Keycloak configuration use the
+`NUXT_PUBLIC_*` variables listed in `.env.example`.
 
-The dev server listens on **http://localhost:8100**.
+Only global `admin` / `support_agent` identities enter the console. Destinations
+also require their matching global permission. Staff without Overview access can
+sign in to their first permitted destination. Support PII is masked by the API;
+`platform.user.pii_read` controls unmasked access and server audit behavior.
 
-Copy `.env.example` to `.env` and set the Keycloak/API values:
-
-```
-NUXT_PUBLIC_API_BASE=http://localhost:3000/api/v1
-NUXT_PUBLIC_KEYCLOAK_URL=http://localhost:8080
-NUXT_PUBLIC_KEYCLOAK_REALM=travelnest
-NUXT_PUBLIC_KEYCLOAK_CLIENT_ID=travelnest-superadmin
-NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI=http://localhost:8100/silent-check-sso.html
-```
-
-## Access control
-
-- The app is gated to platform staff: a Keycloak user whose global roles include
-  `admin` or `support_agent`. Everyone else is sent to `/403`.
-- Every API call goes to `/api/v1/superadmin/*` and is authorized server-side by
-  granular `platform.*` permissions. `support_agent` is read-only and sees masked
-  user PII; `admin` may unmask via `platform.user.pii_read`.
-- Session bootstrap uses `GET /api/v1/superadmin/me`.
-
-## Keycloak setup (required)
-
-Create a public client `travelnest-superadmin` in the realm with:
-
-- Standard flow + PKCE (`S256`)
-- Valid redirect URIs: `http://localhost:8100/*` (dev) and the production host
-- Web origins: the same origins
-
-## Commands
+## Verification
 
 ```bash
-yarn workspace @travelnest/superadmin-client dev
-yarn workspace @travelnest/superadmin-client build
+yarn workspace @travelnest/superadmin-client lint
 yarn workspace @travelnest/superadmin-client typecheck
-yarn workspace @travelnest/superadmin-client test:unit
+yarn workspace @travelnest/superadmin-client test:ci
+yarn workspace @travelnest/superadmin-client test:browser
+yarn build:superadmin
 yarn workspace @travelnest/superadmin-client test:e2e
 ```
 
-## Deploy notes (TODO)
+Install Chromium with `yarn workspace @travelnest/superadmin-client exec playwright install chromium`
+or set `CHROME_PATH=/usr/bin/google-chrome` for the browser fixture suite.
 
-- Add `.github/workflows/superadmin-client.yml` (mirror `admin-client.yml`).
-- Add k8s manifests + Argo CD app, and a DNS entry (e.g.
-  `superadmin.deployserver.work`).
-- Provision the Keycloak client and redirect URIs.
+`test:browser` builds a separate Nuxt app under `tests/fixtures/console`, serves
+it on port 8115, and intercepts its API reads with synthetic responses. Its
+session plugin is registered only in the fixture config, never the production
+app. This verifies frontend behavior, not real Keycloak/API authorization.
+The existing `test:e2e` checks the production login entry point on port 8100.
+It rebuilds production; avoid concurrent builds in the same output directory.
+
+## Deployment
+
+Image CI is defined in `.github/workflows/superadmin-client.yml`; manifests live
+under `deploy/k8s/apps/superadmin-client`. Production releases follow the existing
+Argo CD workflow in [CICD.md](../deploy/docs/CICD.md). Real identity-provider and
+API checks remain separate release validation.

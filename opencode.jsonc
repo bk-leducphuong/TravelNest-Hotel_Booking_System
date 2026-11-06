@@ -1,0 +1,70 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // TravelNest project config — NATIVE V2 shape.
+  //
+  // V2 is the runtime here (`opencode2`). V2 reads MCP servers from
+  // `mcp.servers.<name>` (NOT `mcp.<name>`), disables with `disabled: true`
+  // (NOT `enabled: false`), and uses a `permissions` array (NOT `permission.bash`).
+  // The V1 shapes are only honoured via an in-memory migration, which DROPS
+  // override-only MCP entries — so always write V2 shape here.
+  //
+  // The global ~/.config/opencode/opencode.jsonc still supplies settings for
+  // other projects (e.g. SessionUp's CloudWatch). A higher-precedence project
+  // entry REPLACES the whole server object of the same name, so repeat every
+  // field we still need.
+  "mcp": {
+    "servers": {
+      // The only MCP we want here. Overrides the global `playwright` server.
+      "playwright": {
+        "type": "local",
+        "command": ["npx", "@playwright/mcp@latest", "--extension"],
+        "environment": {
+          // Secret kept out of git (.opencode/secrets/ is gitignored, chmod 600).
+          // `{file:...}` resolves relative to this config file and works in V2.
+          "PLAYWRIGHT_MCP_EXTENSION_TOKEN": "{file:.opencode/secrets/playwright-token.txt}"
+        }
+      },
+
+      // Global enables this against AWS_PROFILE=prod, which is the *SessionUp*
+      // account — not TravelNest. Restate it here so we can disable it.
+      "awslabs.cloudwatch-mcp-server": {
+        "type": "local",
+        "command": ["uvx", "awslabs.cloudwatch-mcp-server@latest"],
+        "disabled": true
+      }
+    }
+  },
+
+  // Playwright MCP writes session artifacts here on every run; keep them out of
+  // the file watcher so they don't churn the index.
+  "watcher": {
+    "ignore": [".playwright-mcp/**"]
+  },
+
+  // Read-only work is unrestricted (V2's base policy already allows `*`).
+  // Anything that mutates a remote environment asks first. Last matching rule
+  // wins; a trailing " *" also matches the command with no arguments.
+  "permissions": [
+    { "action": "shell", "resource": "ssh hetzner *", "effect": "ask" },
+
+    { "action": "shell", "resource": "*kubectl apply*", "effect": "ask" },
+    { "action": "shell", "resource": "*kubectl delete*", "effect": "ask" },
+    { "action": "shell", "resource": "*kubectl edit*", "effect": "ask" },
+    { "action": "shell", "resource": "*kubectl patch*", "effect": "ask" },
+    { "action": "shell", "resource": "*kubectl scale*", "effect": "ask" },
+
+    { "action": "shell", "resource": "argocd app sync *", "effect": "ask" },
+    { "action": "shell", "resource": "argocd app rollback *", "effect": "ask" },
+    { "action": "shell", "resource": "argocd app delete *", "effect": "ask" },
+
+    { "action": "shell", "resource": "hcloud * delete *", "effect": "ask" },
+    { "action": "shell", "resource": "hcloud * create *", "effect": "ask" },
+    { "action": "shell", "resource": "sops *", "effect": "ask" },
+    { "action": "shell", "resource": "cloudflared tunnel * delete *", "effect": "ask" },
+    { "action": "shell", "resource": "cloudflared tunnel * create *", "effect": "ask" },
+
+    { "action": "shell", "resource": "mysql * -e *", "effect": "ask" },
+    { "action": "shell", "resource": "mongosh * --eval *", "effect": "ask" }
+  ]
+}

@@ -86,6 +86,15 @@ describe('bookingRepository.findByBuyerId', () => {
     expect(query.limit).toBe(20);
     expect(query.offset).toBe(40);
   });
+
+  it('disables the subquery when a reviewed filter is paginated', async () => {
+    await bookingRepository.findByBuyerId('user-1', { reviewed: false, limit: 20, offset: 0 });
+
+    const [query] = Bookings.findAll.mock.calls[0];
+    // Without this Sequelize pushes `$reviews.id$` into a subquery that has no
+    // reviews join, so MySQL raises "Unknown column 'reviews.id'".
+    expect(query.subQuery).toBe(false);
+  });
 });
 
 describe('bookingRepository.countByBuyerId', () => {
@@ -144,6 +153,8 @@ describe('bookingRepository.findReviewableByBuyerId', () => {
     expect(query.limit).toBe(20);
     expect(query.offset).toBe(40);
     expect(query.order).toEqual([['created_at', 'DESC']]);
+    // Keep the reviews filter in the same scope as its join.
+    expect(query.subQuery).toBe(false);
     // Rooms are not loaded for review prompts.
     expect(query.include.some((item) => item.as === 'room')).toBe(false);
   });

@@ -1,0 +1,67 @@
+name: Keycloak Image CI
+
+# Keycloak itself is infra, not app code: it runs the upstream image plus the
+# TravelNest login themes committed under server/infra/keycloak/themes. The
+# stock quay.io image ships no custom themes, so the realm's `login_theme`
+# values silently fall back to the built-in ones and nothing new appears under
+# Realm settings -> Themes. This workflow bakes the theme directory into a
+# versioned image and promotes its immutable `sha-*` tag into the prod overlay.
+
+on:
+  push:
+    # Only master publishes images: this repo has a single (production)
+    # environment, so develop builds must not produce publishable sha-* tags.
+    branches: [master]
+    paths:
+      - "server/infra/keycloak/**"
+      - ".github/workflows/keycloak.yml"
+  pull_request:
+    branches: [master, develop, staging]
+    paths:
+      - "server/infra/keycloak/**"
+      - ".github/workflows/keycloak.yml"
+  release:
+    types: [published]
+  workflow_dispatch:
+
+concurrency:
+  group: keycloak-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # PRs only prove the Dockerfile still builds; publication is master-only.
+  validate:
+    name: Build Keycloak Image (no push)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+
+      - name: Build (native arch only)
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+        with:
+          context: ./server/infra/keycloak
+          file: ./server/infra/keycloak/Dockerfile
+          platforms: linux/amd64
+          push: false
+
+  # Multi-arch (amd64 + arm64) image built on native runners and published
+  # by the shared workflow; see .github/workflows/_publish-image.yml.
+  build-and-push:
+    name: Build and Push Keycloak Image
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
+    secrets: inherit
+    uses: ./.github/workflows/_publish-image.yml
+    with:
+      image: travelnest-keycloak
+      context: ./server/infra/keycloak
+      dockerfile: ./server/infra/keycloak/Dockerfile
+      summary_title: Keycloak image published
+      promote_targets: |
+        quay.io/keycloak/keycloak:deploy/k8s/infra/keycloak/overlays/prod/kustomization.yaml

@@ -2,8 +2,8 @@ import { test, expect } from "@playwright/test";
 
 /**
  * The console is behind Keycloak, so the only fully unauthenticated surface is
- * the login page. Authenticated flows (overview, /403) require a seeded
- * environment and Keycloak; add them once an E2E environment is available.
+ * the login page. Frontend authenticated behavior has a separate isolated
+ * fixture suite; real identity-provider integration requires a seeded environment.
  */
 test.describe("Login page", () => {
   test("renders the Keycloak sign-in entry point", async ({ page }) => {

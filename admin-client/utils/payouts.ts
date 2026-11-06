@@ -23,10 +23,6 @@ export const ONBOARDING_STATUSES = [
 
 type TagType = "primary" | "success" | "info" | "warning" | "danger";
 
-export function humanize(value: string): string {
-  return value.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
 export function payoutStatusTagType(status: string): TagType {
   switch (status) {
     case "paid":

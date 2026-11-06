@@ -23,9 +23,14 @@ router.get(
   getRecentlyViewedHotels
 );
 
-router.post('/batch', validate(hotelSchema.getHotelsByIds), getHotelsByIds);
+router.post('/batch', optionalAuthenticate, validate(hotelSchema.getHotelsByIds), getHotelsByIds);
 
-router.get('/trending', validate(hotelSchema.getTrendingHotels), getTrendingHotels);
+router.get(
+  '/trending',
+  optionalAuthenticate,
+  validate(hotelSchema.getTrendingHotels),
+  getTrendingHotels
+);
 
 router.get(
   `/${HOTEL_ID_ROUTE_PARAM}`,

@@ -7,9 +7,25 @@ const { createPaymentIntent } = require('./application/guest/createPaymentIntent
 const { getPaymentByBookingId } = require('./application/guest/getPaymentByBookingId');
 const { getPaymentByTransactionId } = require('./application/guest/getPaymentByTransactionId');
 const { getUserPayments } = require('./application/guest/getUserPayments');
+const { createSetupIntent } = require('./application/guest/createSetupIntent');
+const { savePaymentMethod } = require('./application/guest/savePaymentMethod');
+const { listPaymentMethods } = require('./application/guest/listPaymentMethods');
+const { setDefaultPaymentMethod } = require('./application/guest/setDefaultPaymentMethod');
+const { removePaymentMethod } = require('./application/guest/removePaymentMethod');
+const {
+  getSavedPaymentMethodForCheckout,
+} = require('./application/guest/getSavedPaymentMethodForCheckout');
 const { handlePaymentSucceeded } = require('./application/webhooks/handlePaymentSucceeded');
 const { handlePaymentFailed } = require('./application/webhooks/handlePaymentFailed');
 const { handleRefundSucceeded } = require('./application/webhooks/handleRefundSucceeded');
+const {
+  handlePaymentMethodAttached,
+} = require('./application/webhooks/handlePaymentMethodAttached');
+const { handlePaymentMethodUpdated } = require('./application/webhooks/handlePaymentMethodUpdated');
+const {
+  handlePaymentMethodDetached,
+} = require('./application/webhooks/handlePaymentMethodDetached');
+const { handleCustomerUpdated } = require('./application/webhooks/handleCustomerUpdated');
 const transactionRepository = require('./infrastructure/transaction.repository');
 const ledgerRepository = require('./infrastructure/ledger.repository');
 const idempotencyRepository = require('./infrastructure/idempotency.repository');
@@ -82,7 +98,24 @@ const webhookEventLog = require('./infrastructure/webhook-event-log');
  */
 const paymentProvider = {
   getPayment: (paymentId) => stripePaymentAdapter.getPayment(paymentId),
-  createPayment: (params) => stripePaymentAdapter.createPayment(params),
+  /**
+   * Create a PaymentIntent. When `paymentMethodId` is one of the buyer's saved
+   * cards we attach the owning Stripe customer, which Stripe requires before an
+   * attached payment method can be charged.
+   */
+  createPayment: async (params) => {
+    let customerId = params.customerId || null;
+
+    if (!customerId && params.paymentMethodId && (params.buyerId || params.userId)) {
+      const saved = await getSavedPaymentMethodForCheckout(
+        params.buyerId || params.userId,
+        params.paymentMethodId
+      );
+      customerId = saved?.customerId || null;
+    }
+
+    return stripePaymentAdapter.createPayment({ ...params, customerId });
+  },
   cancelPayment: (paymentId) => stripePaymentAdapter.cancelPayment(paymentId),
 };
 
@@ -97,11 +130,21 @@ module.exports = {
   getPaymentByBookingId,
   getPaymentByTransactionId,
   getUserPayments,
+  createSetupIntent,
+  savePaymentMethod,
+  listPaymentMethods,
+  setDefaultPaymentMethod,
+  removePaymentMethod,
+  getSavedPaymentMethodForCheckout,
 
   // Stripe webhook handlers
   handlePaymentSucceeded,
   handlePaymentFailed,
   handleRefundSucceeded,
+  handlePaymentMethodAttached,
+  handlePaymentMethodUpdated,
+  handlePaymentMethodDetached,
+  handleCustomerUpdated,
 
   // Persistence API for other contexts.
   createTransaction,

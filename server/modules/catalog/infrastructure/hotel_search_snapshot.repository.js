@@ -13,11 +13,27 @@ const {
   hotel_rating_summaries,
   hotel_cancellation_rules,
 } = require('@platform/database');
+const { normalizeText, compactKey } = require('@utils/placeName');
 
 /**
  * HotelSearchSnapshot Repository - Contains all database operations for hotel search snapshots
  * Only repositories may import Sequelize models
  */
+
+/**
+ * Derive the normalized/compact hotel-name columns from a display name. Kept in
+ * one place so every snapshot write path stays consistent with the migration
+ * backfill and with MySQL name matching.
+ */
+function withSearchNames(data) {
+  if (!data || typeof data.hotel_name !== 'string') return data;
+
+  return {
+    ...data,
+    hotel_name_normalized: normalizeText(data.hotel_name),
+    hotel_name_compact: compactKey(data.hotel_name),
+  };
+}
 
 class HotelSearchSnapshotRepository {
   /**
@@ -26,7 +42,7 @@ class HotelSearchSnapshotRepository {
   async upsertSnapshot(hotelId, data) {
     return await hotel_search_snapshots.upsert({
       hotel_id: hotelId,
-      ...data,
+      ...withSearchNames(data),
     });
   }
 
@@ -36,7 +52,7 @@ class HotelSearchSnapshotRepository {
   async createInitialSnapshot(hotelId, hotelData) {
     return await hotel_search_snapshots.create({
       hotel_id: hotelId,
-      hotel_name: hotelData.name,
+      ...withSearchNames({ hotel_name: hotelData.name }),
       city_id: hotelData.city_id || null,
       country_id: hotelData.country_id || null,
       city: hotelData.city || hotelData.city_name || null,
@@ -265,9 +281,21 @@ class HotelSearchSnapshotRepository {
    * Partial update - only update specific fields
    */
   async partialUpdate(hotelId, fields) {
-    return await hotel_search_snapshots.update(fields, {
+    return await hotel_search_snapshots.update(withSearchNames(fields), {
       where: { hotel_id: hotelId },
     });
+  }
+
+  /**
+   * Recompute the normalized hotel-name columns from the hotels table. Used by
+   * the snapshot maintenance path after a hotel rename or a normalization
+   * change, so MySQL name matching never drifts from the display name.
+   */
+  async refreshSearchNames(hotelId) {
+    const hotel = await hotels.findByPk(hotelId, { attributes: ['id', 'name'], raw: true });
+    if (!hotel) return null;
+
+    return await this.partialUpdate(hotelId, { hotel_name: hotel.name });
   }
 
   /**

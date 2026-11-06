@@ -1,0 +1,247 @@
+# Reusable image publisher (called by the per-component image workflows).
+#
+# Builds one multi-arch image as two *native* legs — `linux/amd64` on
+# `ubuntu-latest` and `linux/arm64` on `ubuntu-24.04-arm` — then stitches the two
+# by-digest images into a single manifest list, tags it, and (on master) writes
+# the immutable `sha-*` tag into the prod overlay so Argo CD rolls it out.
+#
+# Why one leg per architecture instead of the old single-job
+# `platforms: linux/amd64,linux/arm64`: that ran the arm64 leg under QEMU
+# emulation on an x86 runner, and emulated Node/native builds abort with
+#
+#     qemu: uncaught target signal 4 (Illegal instruction) - core dumped
+#
+# BuildKit does not surface that as an error, so the step sat wedged until the
+# 6h job timeout (or until the next push cancelled it through the workflow's
+# `concurrency`), and promotion never ran. Native arm64 runners are free for
+# public repositories, so there is nothing to emulate:
+# https://docs.github.com/actions/reference/runners/github-hosted-runners
+#
+# Failures are loud on purpose: each leg and the publish job carry a
+# `timeout-minutes` ceiling so a stuck build fails instead of hanging for hours.
+name: Publish image
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: Image repository under the Docker Hub account (e.g. travelnest-api)
+        required: true
+        type: string
+      context:
+        description: Docker build context, relative to the repository root
+        required: true
+        type: string
+      dockerfile:
+        description: Dockerfile path, relative to the repository root
+        required: true
+        type: string
+      summary_title:
+        description: Heading used for the job summary
+        required: true
+        type: string
+      build_args:
+        description: Newline-separated KEY=VALUE build arguments
+        required: false
+        default: ""
+        type: string
+      promote_targets:
+        description: >
+          Newline-separated `app:path` pairs. Each `path` is a kustomization whose
+          `app` image newTag is set to the new sha-* tag; leave empty to publish
+          without promoting.
+        required: false
+        default: ""
+        type: string
+
+env:
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.image }}
+
+jobs:
+  build:
+    name: Build ${{ matrix.arch }}
+    # A wedged build must fail, not hang. 30m is ~4x the slowest observed cold
+    # native build; QEMU emulation is what used to blow past it.
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Native runners only — the arm64 image is a first-class build target.
+          - arch: amd64
+            platform: linux/amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+        with:
+          # Pull public base images via Google's Docker Hub mirror so we stay
+          # under Docker Hub's authenticated pull-rate limit (200/6h). Mirrors
+          # only affect pulls; pushes and cache still go to docker.io.
+          buildkitd-config-inline: |
+            [registry."docker.io"]
+              mirrors = ["mirror.gcr.io"]
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Labels are baked into the image, so they are extracted in each leg; the
+      # tags themselves are applied to the manifest list by the publish job.
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push ${{ matrix.arch }} by digest
+        id: build
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          platforms: ${{ matrix.platform }}
+          build-args: ${{ inputs.build_args }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Per-architecture cache tags: the two legs run concurrently, so a
+          # single shared `buildcache` tag would have them clobber each other.
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache-${{ matrix.arch }}
+          cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache-${{ matrix.arch }},mode=max
+          # Untagged, digest-addressed push: the publish job turns the two
+          # digests into the real tags on one manifest list.
+          outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest
+        run: |
+          set -euo pipefail
+          mkdir -p "${{ runner.temp }}/digests"
+          # File name is the bare hex digest; `imagetools create` re-adds the
+          # `sha256:` prefix when it globs this directory.
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: digests-${{ inputs.image }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Publish manifest list
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [build]
+    # The promotion commit writes back to master.
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          # Pushes the promoted tag back to master. Falls back to the default
+          # token; set a PROMOTION_TOKEN repo secret (PAT with contents: write)
+          # if master's protection blocks the actions token.
+          token: ${{ secrets.PROMOTION_TOKEN || github.token }}
+
+      - name: Download digests
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-${{ inputs.image }}-*
+          merge-multiple: true
+
+      # Selected so `docker buildx imagetools` is the pinned buildx version.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Create and push manifest list
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.IMAGE_NAME }}@sha256:%s ' *)
+
+      - name: Inspect published image
+        run: |
+          set -euo pipefail
+          docker buildx imagetools inspect "$(jq -r '.tags[0]' <<< "$DOCKER_METADATA_OUTPUT_JSON")"
+
+      - name: Promote image to prod overlay
+        if: github.ref == 'refs/heads/master' && inputs.promote_targets != ''
+        env:
+          PROMOTE_TARGETS: ${{ inputs.promote_targets }}
+        run: |
+          set -euo pipefail
+          TAG="sha-${GITHUB_SHA::7}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          while IFS= read -r target; do
+            [ -z "$target" ] && continue
+            deploy/scripts/ci/update-image-tag.sh "${target#*:}" "${target%%:*}" "$TAG"
+          done <<< "$PROMOTE_TARGETS"
+          if git diff --quiet -- deploy/k8s; then
+            echo "prod overlay already at $TAG"
+            exit 0
+          fi
+          git add deploy/k8s
+          git commit -m "chore(deploy): promote ${{ inputs.image }} to $TAG"
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:master; then
+              echo "promoted $TAG"
+              exit 0
+            fi
+            echo "push rejected (attempt $attempt); rebasing on origin/master"
+            git fetch origin master
+            git rebase origin/master
+            sleep 5
+          done
+          echo "error: could not push $TAG after retries" >&2
+          exit 1
+
+      - name: Build summary
+        run: |
+          {
+            echo "## ${{ inputs.summary_title }}"
+            echo ""
+            echo "- Image: \`${{ env.IMAGE_NAME }}\`"
+            echo "- Tags: \`${{ steps.meta.outputs.tags }}\`"
+            echo "- Platforms: \`linux/amd64\` (native), \`linux/arm64\` (native)"
+            echo "- CI promotes the immutable \`sha-*\` tag into the prod overlay on master; Argo CD auto-syncs the rollout."
+          } >> "$GITHUB_STEP_SUMMARY"

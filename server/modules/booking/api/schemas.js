@@ -72,6 +72,40 @@ const cancelBooking = {
   }).required(),
 };
 
+const createBooking = {
+  body: Joi.object({
+    roomId: uuid.required(),
+    checkInDate: isoDate.required(),
+    checkOutDate: isoDate.required(),
+    quantity: Joi.number().integer().min(1).default(1),
+    numberOfGuests: Joi.number().integer().min(1).default(1),
+    buyerId: uuid,
+    guestEmail: Joi.string()
+      .email({ tlds: { allow: false } })
+      .max(255),
+    specialRequests: Joi.string().max(2000).allow('', null),
+    guestDetails: Joi.object().unknown(true),
+    totalPrice: Joi.number().min(0),
+  })
+    .xor('buyerId', 'guestEmail')
+    .required(),
+};
+
+const getReservationCalendar = {
+  params: Joi.object({ hotelId: uuid.required() }).required(),
+  query: Joi.object({
+    startDate: isoDate.required(),
+    endDate: isoDate.required(),
+  }).unknown(false),
+};
+
+const getReservationBoard = {
+  params: Joi.object({ hotelId: uuid.required() }).required(),
+  query: Joi.object({
+    date: isoDate,
+  }).unknown(false),
+};
+
 module.exports = {
   listBookings,
   getBooking,
@@ -79,4 +113,7 @@ module.exports = {
   getBookingTrend,
   updateBookingStatus,
   cancelBooking,
+  createBooking,
+  getReservationCalendar,
+  getReservationBoard,
 };

@@ -15,7 +15,7 @@ async function getRecentlyViewedHotels(userId, limit = 10) {
   // node-redis v4 uses zRange with { REV: true } instead of zRevRange
   const hotelIds = await redisClient.zRange(key, 0, safeLimit - 1, { REV: true });
 
-  return enrichHotelCardsByIds(hotelIds);
+  return enrichHotelCardsByIds(hotelIds, userId);
 }
 
 module.exports = { getRecentlyViewedHotels };

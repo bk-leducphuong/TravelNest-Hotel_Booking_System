@@ -1,50 +1,55 @@
 const ApiError = require('@utils/ApiError');
+
 const searchRepository = require('../infrastructure/search.repository');
+const { selectOffer, sumAvailableRooms } = require('../domain/offers');
+const { buildStay, groupOffers } = require('./search-pipeline');
 
 /**
- * Availability + room pricing for a single hotel on a date range.
+ * Availability + room offers for a single hotel on a date range.
+ *
+ * Uses exactly the same batched offer query and eligibility rules as hotel
+ * search, so a hotel shown in search is always bookable from this endpoint
+ * (subject to the atomic re-check performed when the booking holds inventory).
  */
 async function getHotelAvailability(hotelId, params) {
-  const { checkIn, checkOut, rooms, adults, children } = params;
-  const totalGuests = adults + (children || 0);
+  const stay = buildStay(params);
+  const rooms = Number(params.rooms) || 1;
+  const totalGuests = (Number(params.adults) || 0) + (Number(params.children) || 0);
 
-  const availability = await searchRepository.checkDateRangeAvailability({
+  const rows = await searchRepository.findOffersForHotels({
     hotelIds: [hotelId],
-    checkIn,
-    checkOut,
-    requiredRooms: rooms,
+    checkIn: stay.checkIn,
+    checkOut: stay.checkOut,
+    nights: stay.nights,
+    rooms,
     totalGuests,
   });
 
-  if (availability.length === 0) {
+  const offers = groupOffers(rows, { nights: stay.nights, rooms }).get(hotelId) || [];
+
+  if (offers.length === 0) {
     throw new ApiError(404, 'NOT_AVAILABLE', 'Hotel not available for selected dates');
   }
 
-  const roomDetails = await searchRepository.getAvailableRoomsForHotel({
-    hotelId,
-    checkIn,
-    checkOut,
-    requiredRooms: rooms,
-    totalGuests,
-  });
-
-  const hotelDetails = await searchRepository.getHotelDetailsByIds([hotelId]);
+  const selectedOffer = selectOffer(offers);
+  const snapshots = await searchRepository.getSnapshotsByIds([hotelId]);
 
   return {
     success: true,
     data: {
-      hotel: hotelDetails[0],
+      hotel: snapshots[0] || null,
       availability: {
         is_available: true,
-        available_rooms: roomDetails,
-        total_available_rooms: availability[0].total_available_rooms,
+        available_rooms: offers,
+        total_available_rooms: sumAvailableRooms(offers),
+        selected_offer: selectedOffer,
       },
       search_params: {
-        checkIn,
-        checkOut,
-        nights: Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)),
-        adults,
-        children,
+        checkIn: stay.checkIn,
+        checkOut: stay.checkOut,
+        nights: stay.nights,
+        adults: params.adults,
+        children: params.children,
         rooms,
       },
     },

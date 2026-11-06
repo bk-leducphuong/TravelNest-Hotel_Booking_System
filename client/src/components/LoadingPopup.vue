@@ -25,7 +25,7 @@
       ></i>
       <div class="title" v-if="isLoading && !fail">{{ startTitle }}</div>
       <div class="title" v-if="isLoaded && !fail">{{ endTitle }}</div>
-      <div class="title" v-if="fail">Process failed! Please try again later.</div>
+      <div class="title" v-if="fail">{{ $t('misc.processFailed') }}</div>
     </div>
   </div>
 </template>

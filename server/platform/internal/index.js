@@ -1,17 +1,10 @@
-const {
-  DATABASE_SEEDERS,
-  ELASTICSEARCH_SETUP,
-  ELASTICSEARCH_SEEDERS,
-  MONGODB_SEEDERS,
-} = require('./registries');
+const { DATABASE_SEEDERS, MONGODB_SEEDERS } = require('./registries');
 const {
   assertKnownTask,
   buildDatabaseSeedArgs,
   buildImageSeedArgs,
   buildImageSeedEnv,
   buildCityImageSeedArgs,
-  buildElasticsearchSetupArgs,
-  buildElasticsearchSeedArgs,
   buildMongodbSeedArgs,
 } = require('./args');
 const { runScript, runningTasks } = require('./runner');
@@ -19,7 +12,7 @@ const { runScript, runningTasks } = require('./runner');
 /**
  * Internal maintenance tooling (superadmin API).
  *
- * Migrations, database/Elasticsearch/MongoDB seeders, run as child processes so
+ * Migrations and database/MongoDB seeders, run as child processes so
  * a long job can't take down the API process. Each task is guarded against
  * concurrent runs. Not a domain module - operational plumbing.
  */
@@ -60,24 +53,6 @@ async function runCityImageSeeder(body = {}) {
   });
 }
 
-async function setupElasticsearch(target, body = {}) {
-  const script = assertKnownTask(ELASTICSEARCH_SETUP, target, 'Elasticsearch setup task');
-  const args = buildElasticsearchSetupArgs(target, body);
-
-  return runScript(`elasticsearch:setup:${target}`, script, args, {
-    timeoutMs: body.timeoutMs,
-  });
-}
-
-async function runElasticsearchSeeder(target, body = {}) {
-  const script = assertKnownTask(ELASTICSEARCH_SEEDERS, target, 'Elasticsearch seeder');
-  const args = buildElasticsearchSeedArgs(target, body);
-
-  return runScript(`elasticsearch:seed:${target}`, script, args, {
-    timeoutMs: body.timeoutMs,
-  });
-}
-
 async function runMongodbSeeder(target, body = {}) {
   const script = assertKnownTask(MONGODB_SEEDERS, target, 'MongoDB seeder');
   const args = buildMongodbSeedArgs(target, body);
@@ -90,8 +65,6 @@ async function runMongodbSeeder(target, body = {}) {
 function listTasks() {
   return {
     databaseSeeders: Object.keys(DATABASE_SEEDERS),
-    elasticsearchSetup: Object.keys(ELASTICSEARCH_SETUP),
-    elasticsearchSeeders: Object.keys(ELASTICSEARCH_SEEDERS),
     mongodbSeeders: Object.keys(MONGODB_SEEDERS),
     runningTasks: Array.from(runningTasks.keys()),
   };
@@ -102,8 +75,6 @@ module.exports = {
   runDatabaseSeeder,
   runImageSeeder,
   runCityImageSeeder,
-  setupElasticsearch,
-  runElasticsearchSeeder,
   runMongodbSeeder,
   listTasks,
 };

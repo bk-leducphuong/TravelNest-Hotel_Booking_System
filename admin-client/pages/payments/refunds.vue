@@ -1,13 +1,24 @@
 <script setup lang="ts">
-import { fetchRefunds, retryRefund, type RefundListItem } from "~/services/api/payments";
+import {
+  fetchRefunds,
+  retryRefund,
+  type RefundListItem,
+} from "~/services/api/payments";
 import { formatDateTime, formatMoney } from "~/utils/format";
-import { REFUND_STATUSES, humanize, isRetryableRefund, refundStatusTagType } from "~/utils/payments";
+import {
+  REFUND_STATUSES,
+  isRetryableRefund,
+  refundStatusTagType,
+} from "~/utils/payments";
 
 const auth = useAuthStore();
 const router = useRouter();
 const { can } = usePermissions();
+const { t } = useI18n();
 
 const loading = ref(false);
+const listError = ref("");
+const listRequests = useRequestVersion();
 const retryingId = ref<string | null>(null);
 const refunds = ref<RefundListItem[]>([]);
 const total = ref(0);
@@ -20,7 +31,12 @@ const filters = reactive({
   limit: 20,
 });
 
-const statusOptions = REFUND_STATUSES.map((status) => ({ value: status, label: humanize(status) }));
+const statusOptions = computed(() =>
+  REFUND_STATUSES.map((status) => ({
+    value: status,
+    label: t(`payments.refundStatus.${status}`),
+  }))
+);
 
 const buyerLabel = (row: RefundListItem) => {
   const buyer = row.buyer;
@@ -32,18 +48,24 @@ const buyerLabel = (row: RefundListItem) => {
 };
 
 const load = async () => {
-  if (!auth.activeHotelId) {
+  const current = listRequests.begin();
+  listError.value = "";
+  refunds.value = [];
+  total.value = 0;
+  loading.value = false;
+  if (!auth.activeHotelId || !can("payment.read")) {
     return;
   }
   loading.value = true;
   try {
     const result = await fetchRefunds({ ...filters });
+    if (!current()) return;
     refunds.value = result.data;
     total.value = result.meta.total;
   } catch (error) {
-    ElMessage.error((error as Error).message);
+    if (current()) listError.value = (error as Error).message;
   } finally {
-    loading.value = false;
+    if (current()) loading.value = false;
   }
 };
 
@@ -70,10 +92,15 @@ const openTransaction = (row: RefundListItem) => {
 };
 
 const retry = async (row: RefundListItem) => {
+  if (retryingId.value || !can("payment.refund")) return;
   retryingId.value = row.id;
   try {
     const result = await retryRefund(row.id);
-    ElMessage.success(`Refund retry ${result.status}`);
+    ElMessage.success(
+      t("payments.refunds.toast.retry", {
+        status: t(`payments.refundStatus.${result.status}`),
+      })
+    );
     await load();
   } catch (error) {
     ElMessage.error((error as Error).message);
@@ -82,8 +109,14 @@ const retry = async (row: RefundListItem) => {
   }
 };
 
+useEditorGuard(
+  "refund-retry",
+  computed(() => false),
+  computed(() => !!retryingId.value)
+);
+
 watch(
-  () => auth.activeHotelId,
+  [() => auth.activeHotelId, () => can("payment.read")],
   () => {
     filters.page = 1;
     load();
@@ -94,70 +127,164 @@ watch(
 
 <template>
   <section class="space-y-6">
-    <div class="flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Refunds</h2>
-        <p class="mt-1 text-sm text-slate-500">{{ auth.activeHotel?.name || "No hotel selected" }}</p>
-      </div>
-      <div class="flex items-center gap-2">
-        <NuxtLink to="/payments"><el-button>Transactions</el-button></NuxtLink>
-        <el-button :loading="loading" :disabled="!auth.activeHotelId" @click="load">Refresh</el-button>
-      </div>
-    </div>
+    <UiPageHeader
+      :title="$t('payments.refunds.title')"
+      :subtitle="auth.activeHotel?.name || $t('dashboard.noHotelSelected')"
+      ><template #actions
+        ><div class="flex flex-wrap items-center gap-2">
+          <NuxtLink to="/payments">
+            <el-button>{{ $t("payments.transactionsLink") }}</el-button>
+          </NuxtLink>
+          <el-button
+            :loading="loading"
+            :disabled="!auth.activeHotelId"
+            @click="load"
+          >
+            {{ $t("common.refresh") }}
+          </el-button>
+        </div></template
+      ></UiPageHeader
+    >
 
-    <el-empty v-if="!auth.activeHotelId" description="Select a hotel to view refunds." />
+    <UiEmptyState v-if="!can('payment.read')" :title="$t('editor.forbidden')" />
+    <el-empty
+      v-else-if="!auth.activeHotelId"
+      :description="$t('payments.refunds.empty.selectHotel')"
+    />
 
     <template v-else>
-      <el-card class="shadow-sm">
-        <div class="flex flex-wrap items-end gap-3">
-          <el-select v-model="filters.status" placeholder="All statuses" clearable class="w-48">
-            <el-option v-for="option in statusOptions" :key="option.value" :label="option.label" :value="option.value" />
-          </el-select>
-          <el-date-picker v-model="filters.dateFrom" type="date" placeholder="From" value-format="YYYY-MM-DD" />
-          <el-date-picker v-model="filters.dateTo" type="date" placeholder="To" value-format="YYYY-MM-DD" />
-          <el-button type="primary" @click="applyFilters">Apply</el-button>
-          <el-button @click="resetFilters">Reset</el-button>
-        </div>
-      </el-card>
+      <el-alert
+        v-if="listError"
+        :title="listError"
+        type="error"
+        :closable="false"
+        show-icon
+      />
 
-      <el-card class="shadow-sm">
-        <el-table v-loading="loading" :data="refunds" row-key="id">
-          <el-table-column label="Requested" width="180">
-            <template #default="{ row }">{{ formatDateTime(row.requested_at) }}</template>
-          </el-table-column>
-          <el-table-column label="Amount" width="140" align="right">
-            <template #default="{ row }">{{ formatMoney(row.amount, row.currency) }}</template>
-          </el-table-column>
-          <el-table-column label="Status" width="130">
-            <template #default="{ row }">
-              <el-tag :type="refundStatusTagType(row.status)" effect="light">{{ humanize(row.status) }}</el-tag>
+      <UiFilterBar>
+        <div class="flex flex-wrap items-end gap-3">
+          <el-select
+            v-model="filters.status"
+            :aria-label="$t('payments.filter.allStatuses')"
+            :placeholder="$t('payments.filter.allStatuses')"
+            clearable
+            class="w-48"
+          >
+            <el-option
+              v-for="option in statusOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
+          <el-date-picker
+            v-model="filters.dateFrom"
+            type="date"
+            :aria-label="$t('payments.filter.from')"
+            :placeholder="$t('payments.filter.from')"
+            value-format="YYYY-MM-DD"
+          />
+          <el-date-picker
+            v-model="filters.dateTo"
+            type="date"
+            :aria-label="$t('payments.filter.to')"
+            :placeholder="$t('payments.filter.to')"
+            value-format="YYYY-MM-DD"
+          />
+          <el-button type="primary" @click="applyFilters">
+            {{ $t("payments.filter.apply") }}
+          </el-button>
+          <el-button @click="resetFilters">{{
+            $t("payments.filter.reset")
+          }}</el-button>
+        </div>
+      </UiFilterBar>
+
+      <UiSectionCard>
+        <div
+          class="tn-table-region"
+          role="region"
+          :aria-label="$t('common.details')"
+          tabindex="0"
+        >
+          <el-table v-loading="loading" :data="refunds" row-key="id">
+            <el-table-column
+              :label="$t('payments.refunds.col.requested')"
+              width="180"
+            >
+              <template #default="{ row }">{{
+                formatDateTime(row.requested_at)
+              }}</template>
+            </el-table-column>
+            <el-table-column
+              :label="$t('payments.col.amount')"
+              width="140"
+              align="right"
+            >
+              <template #default="{ row }">{{
+                formatMoney(row.amount, row.currency)
+              }}</template>
+            </el-table-column>
+            <el-table-column :label="$t('common.status')" width="130">
+              <template #default="{ row }">
+                <el-tag :type="refundStatusTagType(row.status)" effect="light">
+                  {{ $t(`payments.refundStatus.${row.status}`) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column
+              :label="$t('payments.refunds.col.reason')"
+              width="150"
+            >
+              <template #default="{ row }">
+                {{ $t(`payments.refundReason.${row.reason}`) }}
+              </template>
+            </el-table-column>
+            <el-table-column :label="$t('payments.col.booking')" width="140">
+              <template #default="{ row }">{{
+                row.booking?.booking_code || "—"
+              }}</template>
+            </el-table-column>
+            <el-table-column
+              :label="$t('payments.refunds.col.buyer')"
+              min-width="160"
+            >
+              <template #default="{ row }">{{
+                buyerLabel(row as RefundListItem)
+              }}</template>
+            </el-table-column>
+            <el-table-column
+              :label="$t('common.actions')"
+              width="190"
+              align="right"
+            >
+              <template #default="{ row }">
+                <el-button
+                  link
+                  type="primary"
+                  @click="openTransaction(row as RefundListItem)"
+                >
+                  {{ $t("payments.refunds.action.transaction") }}
+                </el-button>
+                <el-button
+                  v-if="can('payment.refund') && isRetryableRefund(row.status)"
+                  link
+                  type="danger"
+                  :loading="retryingId === row.id"
+                  @click="retry(row as RefundListItem)"
+                >
+                  {{ $t("payments.refunds.action.retry") }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <template #empty>
+              <el-empty
+                :description="$t('payments.refunds.empty.list')"
+                :image-size="60"
+              />
             </template>
-          </el-table-column>
-          <el-table-column label="Reason" width="150">
-            <template #default="{ row }">{{ humanize(row.reason) }}</template>
-          </el-table-column>
-          <el-table-column label="Booking" width="140">
-            <template #default="{ row }">{{ row.booking?.booking_code || "—" }}</template>
-          </el-table-column>
-          <el-table-column label="Buyer" min-width="160">
-            <template #default="{ row }">{{ buyerLabel(row) }}</template>
-          </el-table-column>
-          <el-table-column label="" width="190" align="right">
-            <template #default="{ row }">
-              <el-button link type="primary" @click="openTransaction(row)">Transaction</el-button>
-              <el-button
-                v-if="can('payment.refund') && isRetryableRefund(row.status)"
-                link
-                type="danger"
-                :loading="retryingId === row.id"
-                @click="retry(row)"
-              >
-                Retry
-              </el-button>
-            </template>
-          </el-table-column>
-          <template #empty><el-empty description="No refunds found" :image-size="60" /></template>
-        </el-table>
+          </el-table>
+        </div>
 
         <div class="mt-4 flex justify-end">
           <el-pagination
@@ -168,7 +295,7 @@ watch(
             @current-change="onPageChange"
           />
         </div>
-      </el-card>
+      </UiSectionCard>
     </template>
   </section>
 </template>

@@ -94,6 +94,64 @@ class UserRepository {
   }
 
   /**
+   * Read the Stripe customer id mapped to a user.
+   */
+  async findStripeCustomerIdById(userId) {
+    const user = await Users.findOne({
+      where: { id: userId },
+      attributes: ['stripe_customer_id'],
+      raw: true,
+    });
+
+    return user?.stripe_customer_id || null;
+  }
+
+  /**
+   * Persist the Stripe customer id mapped to a user.
+   */
+  async setStripeCustomerId(userId, customerId) {
+    return await Users.update({ stripe_customer_id: customerId }, { where: { id: userId } });
+  }
+
+  /**
+   * Resolve the local user that owns a Stripe customer.
+   */
+  async findUserIdByStripeCustomerId(customerId) {
+    if (!customerId) {
+      return null;
+    }
+
+    const user = await Users.findOne({
+      where: { stripe_customer_id: customerId },
+      attributes: ['id'],
+      raw: true,
+    });
+
+    return user?.id || null;
+  }
+
+  /**
+   * Minimal contact details used when provisioning a Stripe customer.
+   */
+  async findContactById(userId) {
+    const user = await Users.findOne({
+      where: { id: userId },
+      attributes: ['id', 'email', 'first_name', 'last_name'],
+      raw: true,
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || undefined,
+    };
+  }
+
+  /**
    * Find all favorite hotels for a user
    */
   async findFavoriteHotelsByUserId(userId) {

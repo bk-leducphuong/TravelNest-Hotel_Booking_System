@@ -7,41 +7,47 @@
     popper-class="notification-popover"
   >
     <template #reference>
-      <li style="position: relative; cursor: pointer">
-        <ElBadge :value="numberOfNewNotifications" :hidden="numberOfNewNotifications === 0">
-          <ElIcon :size="20">
-            <Bell />
-          </ElIcon>
-        </ElBadge>
+      <li style="position: relative">
+        <button
+          type="button"
+          class="guest-notification-trigger"
+          :aria-label="$t('misc.notifications.title')"
+        >
+          <ElBadge :value="numberOfNewNotifications" :hidden="numberOfNewNotifications === 0">
+            <ElIcon :size="20"><Bell /></ElIcon>
+          </ElBadge>
+        </button>
       </li>
     </template>
 
     <template #default>
       <div class="notification-container">
+        <FeedbackMessage v-if="feedback" v-bind="feedback" @dismiss="clearFeedback" />
         <!-- Notification Header -->
         <div class="notification-header">
           <div class="notification-title">
-            <span>Notifications</span>
+            <span>{{ $t('misc.notifications.title') }}</span>
           </div>
-          <div class="mark-all-read-btn" @click="markAllRead()" v-if="numberOfNewNotifications > 0">
-            <span>Mark all as read</span>
+          <div v-if="numberOfNewNotifications > 0" class="mark-all-read-btn" @click="markAllRead()">
+            <span>{{ $t('misc.notifications.markAllRead') }}</span>
           </div>
         </div>
 
         <!-- Notification Content -->
         <div class="notification-content">
+          <FeedbackMessage v-if="loadError" retryable @retry="getNotifiactions" />
           <!-- Empty state -->
           <ElEmpty
-            v-if="notifications.length === 0"
-            description="You have no notifications"
+            v-if="!loadError && notifications.length === 0"
+            :description="$t('misc.notifications.empty')"
             :image-size="80"
           />
 
           <!-- Notification items -->
           <div
-            class="notification-item"
             v-for="notification in notifications"
             :key="notification.id"
+            class="notification-item"
             @click="viewDetails(notification)"
           >
             <div class="notification-icon">
@@ -59,7 +65,6 @@
             </div>
           </div>
         </div>
-
       </div>
     </template>
   </ElPopover>
@@ -69,22 +74,18 @@
   import { mapGetters } from 'vuex';
   import { getUserSocket } from '@/services/userSocket';
   import { NotificationService } from '@/services/notification.service';
-  import { useToast } from 'vue-toastification';
+  import sectionFeedback from '@/mixins/sectionFeedback';
   import { Bell } from '@element-plus/icons-vue';
 
   export default {
+    mixins: [sectionFeedback],
     components: {
       Bell,
-    },
-    setup() {
-      const toast = useToast();
-      return {
-        toast,
-      };
     },
     data() {
       return {
         isNotificationPopupVisible: false,
+        loadError: false,
         notifications: [],
         numberOfNewNotifications: 0,
         userSocket: null,
@@ -100,6 +101,12 @@
         },
         deep: true,
       },
+    },
+    async mounted() {
+      if (this.isUserAuthenticated) {
+        await this.getNotifiactions();
+        await this.connectNotificationSocket();
+      }
     },
     methods: {
       async connectNotificationSocket() {
@@ -127,11 +134,12 @@
         }
       },
       async getNotifiactions() {
+        this.loadError = false;
         try {
           const response = await NotificationService.getNotifications();
           this.notifications = response.data || [];
         } catch (error) {
-          console.error('Error fetching notifications:', error);
+          this.loadError = true;
         }
       },
       calculateNumerOfNewNotifications() {
@@ -143,17 +151,17 @@
         });
       },
       async markAllRead() {
+        this.clearFeedback();
         try {
+          await NotificationService.markAllAsRead();
           this.notifications.forEach((notification) => {
             notification.is_read = true;
           });
           this.numberOfNewNotifications = 0;
 
-          await NotificationService.markAllAsRead();
-          
-          this.toast.success('All notifications marked as read');
+          this.showSuccess(this.$t('misc.notifications.allMarkedRead'));
         } catch (error) {
-          this.toast.error('Error marking notifications as read');
+          this.showError(this.$t('misc.notifications.markReadError'));
           console.error(error);
         }
       },
@@ -164,12 +172,21 @@
 
         const diffMs = Date.now() - date.getTime();
         const minutes = Math.round(diffMs / 60000);
-        if (minutes < 1) return 'just now';
-        if (minutes < 60) return `${minutes} min ago`;
+        if (minutes < 1) return this.$t('misc.notifications.justNow');
+        if (minutes < 60) return this.$t('misc.notifications.minutesAgo', { count: minutes });
         const hours = Math.round(minutes / 60);
-        if (hours < 24) return `${hours} hr${hours === 1 ? '' : 's'} ago`;
+        if (hours < 24) {
+          return this.$t(
+            hours === 1 ? 'misc.notifications.hourAgo' : 'misc.notifications.hoursAgo',
+            { count: hours }
+          );
+        }
         const days = Math.round(hours / 24);
-        if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`;
+        if (days < 30) {
+          return this.$t(days === 1 ? 'misc.notifications.dayAgo' : 'misc.notifications.daysAgo', {
+            count: days,
+          });
+        }
         return date.toLocaleDateString();
       },
       async viewDetails(notification) {
@@ -189,12 +206,6 @@
         // Close popover
         this.isNotificationPopupVisible = false;
       },
-    },
-    async mounted() {
-      if (this.isUserAuthenticated) {
-        await this.getNotifiactions();
-        await this.connectNotificationSocket();
-      }
     },
     beforeUnmount() {
       if (this.userSocket) {
@@ -338,9 +349,24 @@
 
   .notification-popover {
     padding: 0 !important;
-    
+
     .el-popover__title {
       display: none;
     }
+  }
+</style>
+
+<style scoped>
+  .guest-notification-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    background: transparent;
+    color: var(--tn-muted);
+    border: 0;
+    border-radius: 10px;
+    cursor: pointer;
   }
 </style>

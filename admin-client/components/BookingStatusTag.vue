@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { bookingStatusLabel, bookingStatusTagType } from "~/utils/bookings";
+import { bookingStatusTagType } from "~/utils/bookings";
 
 const props = defineProps<{ status: string }>();
+const tone = computed(() => {
+  const type = bookingStatusTagType(props.status);
+  return type === "primary" ? "info" : type;
+});
 </script>
 
 <template>
-  <el-tag :type="bookingStatusTagType(props.status)" effect="light">
-    {{ bookingStatusLabel(props.status) }}
-  </el-tag>
+  <UiStatusPill :tone="tone">
+    {{ $t(`bookings.status.${props.status}`) }}
+  </UiStatusPill>
 </template>

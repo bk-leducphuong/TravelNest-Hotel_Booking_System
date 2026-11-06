@@ -18,6 +18,7 @@ async function createRoom(hotelId, payload = {}, { actorUserId, requestId } = {}
     hotelId,
     roomName: payload.roomName,
     roomType: payload.roomType,
+    bedType: payload.bedType,
     maxGuests: payload.maxGuests,
     quantity: payload.quantity,
     roomSize: payload.roomSize,

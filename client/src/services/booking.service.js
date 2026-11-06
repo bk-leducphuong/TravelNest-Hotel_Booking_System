@@ -33,6 +33,13 @@ export const BookingService = {
     })
   },
 
+  // Completed trips the user can still review (paginated server-side).
+  getReviewableBookings(params = {}) {
+    return http.get('/bookings/reviewable', {
+      params
+    })
+  },
+
   getBookingById(bookingId) {
     return http.get(`/bookings/${bookingId}`)
   },

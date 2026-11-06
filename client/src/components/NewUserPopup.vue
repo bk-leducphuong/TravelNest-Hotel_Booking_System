@@ -7,9 +7,9 @@ export default {
   <div class="new-user-popup-overlay">
     <div class="new-user-popup">
       <i class="fa-solid fa-xmark close-button" @click="this.$emit('close')"></i>
-      <h2>Genius</h2>
-      <p>Sign in to <strong>save 10% or more</strong> with a free TravelNest membership</p>
-      <button @click="this.$router.push('/login')" class="sign-in-button">Sign in or register</button>
+      <h2>{{ $t('misc.newUser.title') }}</h2>
+      <p>{{ $t('misc.newUser.messagePrefix') }}<strong>{{ $t('misc.newUser.messageHighlight') }}</strong>{{ $t('misc.newUser.messageSuffix') }}</p>
+      <button @click="this.$router.push('/login')" class="sign-in-button">{{ $t('misc.newUser.signInOrRegister') }}</button>
     </div>
   </div>
 </template>

@@ -5,6 +5,12 @@ export default defineNuxtConfig({
   // served statically. This avoids SSR/Keycloak pitfalls.
   ssr: false,
   devtools: { enabled: true },
+  css: [
+    "@fontsource/poppins/400.css",
+    "@fontsource/poppins/500.css",
+    "@fontsource/poppins/600.css",
+    "~/assets/css/main.css",
+  ],
   runtimeConfig: {
     public: {
       apiBase:
@@ -22,8 +28,23 @@ export default defineNuxtConfig({
     "@nuxt/eslint",
     "@pinia/nuxt",
     "@nuxtjs/tailwindcss",
+    "@nuxtjs/i18n",
     "@nuxt/test-utils/module",
   ],
+  i18n: {
+    strategy: "no_prefix",
+    defaultLocale: "en",
+    langDir: "locales",
+    locales: [
+      { code: "en", name: "English", file: "en.json" },
+      { code: "vi", name: "Tiếng Việt", file: "vi.json" },
+    ],
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: "tn_platform_locale",
+      redirectOn: "root",
+    },
+  },
   elementPlus: {
     /** Options */
   },
@@ -38,7 +59,7 @@ export default defineNuxtConfig({
     server: {
       watch: {
         usePolling: false,
-        ignored: ["**/!(.gitignore)", "**/@(.output|node_modules|.nuxt|dist)"],
+        ignored: ["**/{.git,.output,node_modules,.nuxt,dist}/**"],
       },
     },
   },

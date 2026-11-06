@@ -5,6 +5,13 @@ resources:
   - ../../base
   - ingress.yaml
 
+# Same theme-baked image as prod. Local docker-compose mounts
+# server/infra/keycloak/themes directly, but the k3d overlay does not.
+images:
+  - name: quay.io/keycloak/keycloak
+    newName: docker.io/leducphuong/travelnest-keycloak
+    newTag: latest
+
 generators:
   - secret-generator.yaml
 

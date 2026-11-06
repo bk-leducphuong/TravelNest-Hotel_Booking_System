@@ -57,6 +57,11 @@ async function findReviewableByBuyerId(buyerId, { limit = 20, offset = 0 } = {})
       'currency',
       'created_at',
     ],
+    // `limit` + a hasMany include makes Sequelize wrap the select in a subquery.
+    // The `$reviews.id$` filter would then live inside that subquery, where the
+    // reviews join doesn't exist yet (MySQL: Unknown column 'reviews.id').
+    // `reviews.booking_id` is UNIQUE, so a flat join cannot duplicate bookings.
+    subQuery: false,
     order: [['created_at', 'DESC']],
     limit,
     offset,

@@ -1,14 +1,14 @@
 <template>
   <div v-if="totalPages > 1" class="pagination-wrapper">
     <p v-if="summaryText" class="pagination-summary">{{ summaryText }}</p>
-    <nav class="pagination" aria-label="Pagination">
+    <nav class="pagination" :aria-label="$t('misc.pagination.ariaLabel')">
       <button
         type="button"
         class="pagination-button"
         :disabled="page <= 1 || isLoading"
         @click="go(page - 1)"
       >
-        {{ prevLabel }}
+        {{ prevButtonLabel }}
       </button>
 
       <template v-for="item in pageNumbers" :key="item">
@@ -32,7 +32,7 @@
         :disabled="page >= totalPages || isLoading"
         @click="go(page + 1)"
       >
-        {{ nextLabel }}
+        {{ nextButtonLabel }}
       </button>
     </nav>
   </div>
@@ -49,14 +49,20 @@
       total: { type: Number, default: 0 },
       limit: { type: Number, default: 20 },
       isLoading: { type: Boolean, default: false },
-      prevLabel: { type: String, default: 'Previous' },
-      nextLabel: { type: String, default: 'Next' },
-      // Optional pre-built summary. When empty, an English "Showing X–Y of N"
+      prevLabel: { type: String, default: '' },
+      nextLabel: { type: String, default: '' },
+      // Optional pre-built summary. When empty, a localized "Showing X–Y of N"
       // summary is rendered automatically.
       summary: { type: String, default: '' },
     },
     emits: ['change'],
     computed: {
+      prevButtonLabel() {
+        return this.prevLabel || this.$t('misc.pagination.previous')
+      },
+      nextButtonLabel() {
+        return this.nextLabel || this.$t('misc.pagination.next')
+      },
       pageNumbers() {
         return buildPageNumbers(this.page, this.totalPages)
       },
@@ -69,7 +75,11 @@
       summaryText() {
         if (this.summary) return this.summary
         if (this.total <= 0) return ''
-        return `Showing ${this.currentResultStart}-${this.currentResultEnd} of ${this.total}`
+        return this.$t('misc.pagination.summary', {
+          start: this.currentResultStart,
+          end: this.currentResultEnd,
+          total: this.total,
+        })
       },
     },
     methods: {

@@ -16,6 +16,7 @@ exports.searchHotels = {
     // Location (at least one required)
     city: Joi.string().trim().min(2).max(100),
     country: Joi.string().trim().min(2).max(100),
+    destinationId: Joi.string().uuid(),
     latitude: Joi.number().min(-90).max(90),
     longitude: Joi.number().min(-180).max(180),
     radius: Joi.number().min(1).max(100).default(10), // km
@@ -70,10 +71,10 @@ exports.searchHotels = {
         'number.base': 'maxPrice must be a number',
         'number.greater': 'maxPrice must be greater than minPrice',
       }),
-    minRating: Joi.number().min(0).max(5).messages({
+    minRating: Joi.number().min(0).max(10).messages({
       'number.base': 'minRating must be a number',
       'number.min': 'minRating must be at least 0',
-      'number.max': 'minRating cannot exceed 5',
+      'number.max': 'minRating cannot exceed 10',
     }),
     hotelClass: Joi.alternatives()
       .try(
@@ -104,7 +105,7 @@ exports.searchHotels = {
     location: Joi.string().trim().min(2).max(100),
     numberOfDays: Joi.number().integer().positive(),
   })
-    .or('city', 'country', 'latitude', 'location') // At least one location param
+    .or('city', 'country', 'destinationId', 'latitude', 'location') // At least one location param
     .and('latitude', 'longitude') // If latitude, longitude is also required
     .custom((value, helpers) => {
       // Support legacy checkInDate/checkOutDate
@@ -282,4 +283,42 @@ exports.getTrendingDestinations = {
     limit: Joi.number().integer().min(1).max(20).default(5),
     days: Joi.number().integer().min(1).max(365).default(30),
   }),
+};
+
+// Reuse booking/filter validation without destination or list-pagination dependencies.
+exports.searchMapHotels = {
+  query: Joi.object(
+    Object.fromEntries(
+      [
+        'checkIn',
+        'checkOut',
+        'adults',
+        'children',
+        'rooms',
+        'minPrice',
+        'maxPrice',
+        'minRating',
+        'hotelClass',
+        'amenities',
+        'freeCancellation',
+        'sortBy',
+      ].map((key) => [key, exports.searchHotels.query.extract(key)])
+    )
+  )
+    .keys({
+      north: Joi.number().min(-90).max(90).required(),
+      south: Joi.number().min(-90).max(90).less(Joi.ref('north')).required(),
+      east: Joi.number().min(-180).max(180).required(),
+      west: Joi.number().min(-180).max(180).required(),
+    })
+    .custom((value, helpers) => {
+      const width = (value.east - value.west + 360) % 360;
+      if (!width || width > 2 || value.north - value.south > 2) {
+        return helpers.error('any.custom', { message: 'Zoom in to search a smaller area' });
+      }
+      if ((new Date(value.checkOut) - new Date(value.checkIn)) / 86400000 > 30) {
+        return helpers.error('any.custom', { message: 'Maximum stay duration is 30 nights' });
+      }
+      return value;
+    }),
 };

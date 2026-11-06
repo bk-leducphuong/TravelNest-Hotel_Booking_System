@@ -74,18 +74,15 @@ exports.submitJoinForm = {
         .messages({
           'any.required': 'coordinates are required',
         }),
-      rating: Joi.number().min(0).max(5).optional().messages({
+      rating: Joi.number().min(1).max(5).allow(null).optional().messages({
         'number.base': 'rating must be a number',
-        'number.min': 'rating must be between 0 and 5',
-        'number.max': 'rating must be between 0 and 5',
+        'number.min': 'rating must be between 1 and 5',
+        'number.max': 'rating must be between 1 and 5',
       }),
       checkInFrom: timeSchema,
       checkInTo: timeSchema,
       checkOutFrom: timeSchema,
       checkOutTo: timeSchema,
-      services: Joi.array().items(Joi.string()).optional().messages({
-        'array.base': 'services must be an array',
-      }),
       roomDetails: Joi.object({
         roomType: Joi.string().min(1).max(255).trim().required().messages({
           'string.base': 'roomType must be a string',
@@ -161,7 +158,6 @@ exports.submitJoinForm = {
             checkInTo: value.checkInTo,
             checkOutFrom: value.checkOutFrom,
             checkOutTo: value.checkOutTo,
-            services: value.services,
             roomDetails: value.roomDetails,
           };
         }

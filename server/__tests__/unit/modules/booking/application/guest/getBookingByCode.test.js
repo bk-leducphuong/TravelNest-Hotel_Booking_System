@@ -30,4 +30,26 @@ describe('booking/application/guest/getBookingByCode', () => {
 
     await expect(getBookingByCode('PLAIN', 5)).resolves.toBe(plain);
   });
+
+  it('maps the hotel images to image_urls, primary first (#106)', async () => {
+    bookingRepository.findDetailedByBookingCodeAndBuyerId.mockResolvedValue({
+      toJSON: () => ({
+        booking_code: 'ABC123',
+        hotel: {
+          id: 'h1',
+          name: 'Hotel',
+          images: [
+            { object_key: 'second.jpg', is_primary: false, display_order: 2 },
+            { object_key: 'primary.jpg', is_primary: true, display_order: 1 },
+            { object_key: null, is_primary: false, display_order: 3 },
+          ],
+        },
+      }),
+    });
+
+    const result = await getBookingByCode('ABC123', 5);
+
+    expect(result.hotel.image_urls).toEqual(['primary.jpg', 'second.jpg']);
+    expect(result.hotel.images).toBeUndefined();
+  });
 });

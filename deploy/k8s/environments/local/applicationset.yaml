@@ -1,8 +1,8 @@
 # Local (k3d) cluster entrypoint. Rendered by bootstrap/argocd/root-application-local.yaml
 # and reconciled by the application-set controller.
 #
-# Uses the exact same mechanism as prod, plus two dev-only data stores
-# (mongodb, elasticsearch) that stand in for the managed services in prod.
+# Uses the exact same mechanism as prod, plus a dev-only MongoDB instance that
+# stands in for the managed service in prod.
 # Local dev tracks the CI-built 'develop' image tag.
 #
 # The child Applications sync concurrently (ApplicationSet does not order by
@@ -34,9 +34,6 @@ spec:
             wave: "10"
           - name: travelnest-mongodb
             path: deploy/k8s/infra/mongodb/overlays/local
-            wave: "10"
-          - name: travelnest-elasticsearch
-            path: deploy/k8s/local/elasticsearch
             wave: "10"
           - name: travelnest-reloader
             path: deploy/k8s/infra/reloader

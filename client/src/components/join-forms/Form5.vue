@@ -12,9 +12,7 @@ export default {
       return this.getJoinFormData.checkInFrom &&
         this.getJoinFormData.checkInTo &&
         this.getJoinFormData.checkOutFrom &&
-        this.getJoinFormData.checkOutTo &&
-        this.getJoinFormData.haveChildren &&
-        this.getJoinFormData.havePet
+        this.getJoinFormData.checkOutTo
         ? true
         : false
     }
@@ -31,79 +29,45 @@ export default {
   <form class="multi-step-form">
     <!--  form-5  -->
     <div class="card">
-      <h2 class="title">Quy định chung</h2>
+      <h2 class="title">{{ $t('join.form.policiesTitle') }}</h2>
 
       <div class="form-section">
-        <h3 class="step-title">Giờ nhận/trả phòng của Quý vị là khi nào?</h3>
+        <h3 class="step-title">{{ $t('join.form.checkTimesQuestion') }}</h3>
         <div class="time-group">
           <div class="check-time">
-            <label>Nhận phòng</label>
+            <label>{{ $t('join.form.checkInLabel') }}</label>
             <div class="time-inputs">
               <div class="time-input">
                 <input type="time" class="time-select" id="checkInFrom" v-model="getJoinFormData.checkInFrom">
-                <label class="sub-label" for="checkInFrom">Từ</label>
+                <label class="sub-label" for="checkInFrom">{{ $t('join.form.timeFrom') }}</label>
               </div>
               <div class="time-input">
                 <input type="time" class="time-select" id="checkInTo" v-model="getJoinFormData.checkInTo">
                   
-                <label class="sub-label" for="checkInTo">Đến</label>
+                <label class="sub-label" for="checkInTo">{{ $t('join.form.timeTo') }}</label>
               </div>
             </div>
           </div>
           <div class="check-time">
-            <label>Trả phòng</label>
+            <label>{{ $t('join.form.checkOutLabel') }}</label>
             <div class="time-inputs">
               <div class="time-input">
                 <input type="time" class="time-select" id="checkOutFrom" v-model="getJoinFormData.checkOutFrom">
-                <label class="sub-label" for="checkOutFrom">Từ</label>
+                <label class="sub-label" for="checkOutFrom">{{ $t('join.form.timeFrom') }}</label>
               </div>
               <div class="time-input">
                 <input type="time" class="time-select" id="checkOutTo" v-model="getJoinFormData.checkOutTo">
-                <label class="sub-label" for="checkOutTo">Đến</label>
+                <label class="sub-label" for="checkOutTo">{{ $t('join.form.timeTo') }}</label>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- <hr style="border: 1px solid #ddd; margin: 20px 0;"> -->
-      <hr style="border-top: 1px solid #e7e7e7; margin: 16px 0" />
-
-      <div class="form-section">
-        <h3 class="sub-title">Quý vị có tiếp đón trẻ em không?</h3>
-        <div class="radio-group">
-          <label class="radio-option">
-            <input type="radio" name="children" value="true" v-model="getJoinFormData.haveChildren" />
-            <span class="radio-custom"></span>
-            <span>Có</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="children" value="false" v-model="getJoinFormData.haveChildren" />
-            <span class="radio-custom"></span>
-            <span>Không</span>
-          </label>
-        </div>
-      </div>
-
-      <div class="form-section">
-        <h3 class="sub-title">Quý vị có cho phép vật nuôi không?</h3>
-        <div class="radio-group">
-          <label class="radio-option">
-            <input type="radio" name="pets" value="true" v-model="getJoinFormData.havePet" />
-            <span class="radio-custom"></span>
-            <span>Có</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="pets" value="false" v-model="getJoinFormData.havePet" />
-            <span class="radio-custom"></span>
-            <span>Không</span>
-          </label>
-        </div>
-      </div>
       <div class="form-button-container">
-        <button type="button" class="previous" @click="$emit('previous')">Quay lại</button>
+        <button type="button" class="previous" @click="$emit('previous')">{{ $t('join.form.backButton') }}</button>
         <button type="button" class="next" @click="goNext" :disabled="!checkForNext">
-          Tiếp tục
+          {{ $t('join.form.continueButton') }}
         </button>
       </div>
     </div>
@@ -238,7 +202,7 @@ export default {
   max-width: 600px;
   margin: 0 auto;
   padding: 20px;
-  font-family: Arial, sans-serif;
+  font-family: inherit;
 }
 
 .form-button-container {
@@ -280,7 +244,7 @@ select {
 }
 
 .rating-form {
-  font-family: Arial, sans-serif;
+  font-family: inherit;
   max-width: 500px;
   padding: 20px;
 }

@@ -14,6 +14,7 @@ type Config struct {
 	MinIOSecretKey      string
 	MinIOBucket         string
 	MinIOUseSSL         bool
+	MinIORegion         string
 	PublicObjectBaseURL string
 	NATSURL             string
 	NATSStream          string
@@ -30,6 +31,8 @@ func Load() Config {
 		MinIOSecretKey:      getenv("MINIO_SECRET_KEY", "minioadmin123"),
 		MinIOBucket:         getenv("MINIO_BUCKET", "uploads"),
 		MinIOUseSSL:         getenvBool("MINIO_USE_SSL", false),
+		// R2 requires "auto"; real S3/MinIO use a concrete region.
+		MinIORegion:         getenv("MINIO_REGION", "us-east-1"),
 		PublicObjectBaseURL: strings.TrimRight(getenv("PUBLIC_OBJECT_BASE_URL", "http://localhost:9000/uploads"), "/"),
 		NATSURL:             getenv("NATS_URL", "nats://nats:4222"),
 		NATSStream:          getenv("NATS_STREAM", "TRAVELNEST_MEDIA"),

@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
+  MONTH_KEYS,
+  WEEKDAY_KEYS,
   addMonths,
-  inventoryStatusLabel,
+  inventoryStatusKey,
   inventoryStatusTagType,
   monthBounds,
   monthMatrix,
@@ -30,8 +32,8 @@ describe("inventory helpers", () => {
       weeks.forEach((week) => expect(week).toHaveLength(7));
 
       // 2026-09-01 is a Tuesday -> one leading blank (Monday).
-      expect(weeks[0][0]).toBeNull();
-      expect(weeks[0][1]).toBe("2026-09-01");
+      expect(weeks[0]![0]).toBeNull();
+      expect(weeks[0]![1]).toBe("2026-09-01");
 
       const allDates = weeks.flat().filter(Boolean);
       expect(allDates).toContain("2026-09-30");
@@ -40,9 +42,15 @@ describe("inventory helpers", () => {
   });
 
   describe("status presentation", () => {
-    it("labels statuses", () => {
-      expect(inventoryStatusLabel("close")).toBe("Closed");
-      expect(inventoryStatusLabel("open")).toBe("Open");
+    it("maps statuses to i18n keys", () => {
+      expect(inventoryStatusKey("close")).toBe("inventory.status.close");
+      expect(inventoryStatusKey("open")).toBe("inventory.status.open");
+      expect(inventoryStatusKey("sold_out")).toBe("inventory.status.sold_out");
+      expect(inventoryStatusKey("maintenance")).toBe("inventory.status.maintenance");
+    });
+
+    it("falls back to the raw status for unknown values", () => {
+      expect(inventoryStatusKey("mystery")).toBe("mystery");
     });
 
     it("maps statuses to tag types", () => {
@@ -50,6 +58,16 @@ describe("inventory helpers", () => {
       expect(inventoryStatusTagType("close")).toBe("danger");
       expect(inventoryStatusTagType("sold_out")).toBe("warning");
       expect(inventoryStatusTagType("maintenance")).toBe("info");
+    });
+  });
+
+  describe("calendar labels", () => {
+    it("exposes i18n keys for months and weekdays", () => {
+      expect(MONTH_KEYS).toHaveLength(12);
+      expect(MONTH_KEYS[0]).toBe("inventory.month.1");
+      expect(MONTH_KEYS[11]).toBe("inventory.month.12");
+      expect(WEEKDAY_KEYS).toHaveLength(7);
+      expect(WEEKDAY_KEYS[0]).toBe("inventory.weekday.mon");
     });
   });
 });

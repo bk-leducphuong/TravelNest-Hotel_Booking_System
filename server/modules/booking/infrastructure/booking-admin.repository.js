@@ -27,6 +27,10 @@ const LIST_INCLUDE = [
   { model: Hotels, as: 'hotel', attributes: ['id', 'name'], required: false },
 ];
 
+// Statuses that still hold rooms (used by the calendar/board).
+const BOARD_STATUSES = ['pending', 'pending_payment', 'confirmed', 'checked_in'];
+const CALENDAR_STATUSES = [...BOARD_STATUSES, 'completed'];
+
 const DETAIL_INCLUDE = [
   ...LIST_INCLUDE,
   {
@@ -148,6 +152,62 @@ class BookingAdminRepository {
 
   async countWhere(hotelId, where = {}, options = {}) {
     return await Bookings.count({ where: { hotel_id: hotelId, ...where }, ...options });
+  }
+
+  /**
+   * Bookings overlapping a date range, for the reservations calendar grid.
+   * Uses the half-open rule: check_in < endDate && check_out > startDate.
+   */
+  async findCalendar({ hotelId, startDate, endDate }) {
+    return await Bookings.findAll({
+      where: {
+        hotel_id: hotelId,
+        status: { [Op.in]: CALENDAR_STATUSES },
+        check_in_date: { [Op.lt]: endDate },
+        check_out_date: { [Op.gt]: startDate },
+      },
+      include: LIST_INCLUDE,
+      order: [
+        ['check_in_date', 'ASC'],
+        ['created_at', 'ASC'],
+      ],
+    });
+  }
+
+  /** Arrivals / departures / in-house for a single day (front-desk board). */
+  async findBoard({ hotelId, date }) {
+    const [arrivals, departures, inHouse] = await Promise.all([
+      Bookings.findAll({
+        where: {
+          hotel_id: hotelId,
+          check_in_date: date,
+          status: { [Op.in]: BOARD_STATUSES },
+        },
+        include: LIST_INCLUDE,
+        order: [['created_at', 'ASC']],
+      }),
+      Bookings.findAll({
+        where: {
+          hotel_id: hotelId,
+          check_out_date: date,
+          status: { [Op.in]: [...BOARD_STATUSES, 'completed'] },
+        },
+        include: LIST_INCLUDE,
+        order: [['created_at', 'ASC']],
+      }),
+      Bookings.findAll({
+        where: {
+          hotel_id: hotelId,
+          check_in_date: { [Op.lte]: date },
+          check_out_date: { [Op.gt]: date },
+          status: { [Op.in]: BOARD_STATUSES },
+        },
+        include: LIST_INCLUDE,
+        order: [['check_in_date', 'ASC']],
+      }),
+    ]);
+
+    return { arrivals, departures, inHouse };
   }
 }
 

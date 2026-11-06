@@ -1,56 +1,22 @@
-<template>
-  <div class="popular-container container" v-if="popularPlaces.length > 0">
-    <div class="popular-header">
-      <h2 class="h2">{{ $t('userHome.popularPlaces') }}</h2>
-      <h4 class="h4">{{ $t('userHome.popularPlaces_1') }}</h4>
-    </div>
-    <Loading
-      v-model:active="isPopularPlacesLoading"
-      :can-cancel="true"
-      :color="`#003b95`"
-      :is-full-page="false"
-    />
-    <div class="popular-place-card-up-grid popular-place-card-grid">
-      <div
-        class="popular-place-card"
-        v-for="(place, index) in popularPlaces.slice(0, 2)"
-        :key="place.id || index"
-        @click="redirectToSearchResults(place)"
-      >
-        <img :src="getPlaceImage(place)" :alt="displayName(place)" />
-      </div>
-    </div>
-    <div
-      class="popular-place-card-bottom-grid popular-place-card-grid"
-      v-if="popularPlaces.length > 2"
-    >
-      <div
-        class="popular-place-card"
-        v-for="(place, index) in popularPlaces.slice(2, 5)"
-        :key="place.id || index"
-        @click="redirectToSearchResults(place)"
-      >
-        <img :src="getPlaceImage(place)" :alt="displayName(place)" />
-      </div>
-    </div>
-  </div>
-</template>
-
 <script>
-  import Loading from 'vue-loading-overlay';
+  import DiscoverySection from './DiscoverySection.vue';
+  import MediaImage from '@/components/ui/MediaImage.vue';
   import 'vue-loading-overlay/dist/css/index.css';
   import { SearchService } from '@/services/search.service';
-  import errorHandler from '@/request/errorHandler.js';
+  import ErrorState from '@/components/common/ErrorState.vue';
   import { getImageUrl } from '@/utils/images';
 
   export default {
     name: 'PopularPlaces',
     components: {
-      Loading,
+      DiscoverySection,
+      ErrorState,
+      MediaImage,
     },
     data() {
       return {
         isPopularPlacesLoading: false,
+        loadError: false,
         popularPlaces: [],
       };
     },
@@ -66,20 +32,29 @@
         return getImageUrl(place?.images?.primary?.objectKey);
       },
       redirectToSearchResults(place) {
+        const stored = this.$store.getters['search/getSearchData'];
+        const today = new Date();
+        today.setDate(today.getDate() + 1);
+        const next = new Date(today);
+        next.setDate(next.getDate() + 1);
+        const day = (date) =>
+          `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
         const location = place?.displayName ?? place?.city ?? place?.location ?? '';
         this.$router.push({
           name: 'SearchResults',
           query: {
             location,
-            checkInDate: '',
-            checkOutDate: '',
-            adults: '',
-            children: '',
-            rooms: '',
+            checkInDate: stored.checkInDate || day(today),
+            checkOutDate: stored.checkOutDate || day(next),
+            adults: stored.adults || 2,
+            children: stored.children || 0,
+            rooms: stored.rooms || 1,
           },
         });
       },
       async loadPopularPlaces() {
+        this.loadError = false;
         try {
           this.isPopularPlacesLoading = true;
           // GET /api/v1/search/destinations/trending
@@ -87,7 +62,7 @@
           const list = response?.data?.destinations ?? response?.destinations ?? [];
           this.popularPlaces = Array.isArray(list) ? list : [];
         } catch (error) {
-          errorHandler(error);
+          this.loadError = true;
           this.popularPlaces = [];
         } finally {
           this.isPopularPlacesLoading = false;
@@ -96,82 +71,51 @@
     },
   };
 </script>
-
-<style lang="scss" scoped>
-  @import '@/assets/styles/index.scss';
-
-  .popular-container {
-    margin-bottom: 30px;
-    margin-top: 30px;
-    position: relative;
-  }
-
-  .popular-header {
-    margin-bottom: $spacing-lg;
-  }
-
-  .h2 {
-    font-weight: bolder;
-    display: block;
-    font-size: 28px;
-  }
-
-  .h4 {
-    font-weight: lighter;
-    font-size: $font-size-sm;
-  }
-
-  .popular-place-card-grid {
-    display: grid;
-    gap: 8px;
-    grid-template-rows: 270px;
-  }
-
-  .popular-place-card {
-    cursor: pointer;
-    border-radius: 14px;
+<template>
+  <DiscoverySection
+    v-if="isPopularPlacesLoading || loadError || popularPlaces.length"
+    :title="$t('userHome.popularPlaces')"
+    section-key="popular-places"
+    :items="popularPlaces"
+    :busy="isPopularPlacesLoading"
+  >
+    <template #status>
+      <ErrorState v-if="loadError" @retry="loadPopularPlaces" />
+    </template>
+    <template #default="{ items: visibleItems }">
+      <button
+        v-for="(place, index) in visibleItems"
+        :key="place.id || index"
+        type="button"
+        class="destination-card"
+        @click="redirectToSearchResults(place)"
+      >
+        <MediaImage :src="getPlaceImage(place)" :alt="displayName(place)" /><strong>{{
+          displayName(place)
+        }}</strong>
+      </button>
+    </template>
+  </DiscoverySection>
+</template>
+<style scoped>
+  .destination-card {
+    background: white;
+    border: 0;
+    border-radius: 20px;
+    text-align: left;
     overflow: hidden;
-    transition: transform 0.3s ease;
-
-    &:hover {
-      transform: scale(1.02);
-      background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
-    }
-
-    img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      margin: 0;
-      border-radius: 14px;
-    }
+    cursor: pointer;
+    padding: 0;
+    color: var(--tn-brand);
   }
-
-  .popular-place-card-up-grid {
-    max-width: 550px;
-    max-height: 270px;
-    grid-template-columns: repeat(2, 550px);
+  .destination-card .guest-media {
+    height: 180px;
+    border-radius: 0;
   }
-
-  .popular-place-card-bottom-grid {
-    margin-top: 16px;
-    grid-template-columns: repeat(3, 366px);
-  }
-
-  @media (max-width: 768px) {
-    .popular-place-card-up-grid,
-    .popular-place-card-bottom-grid {
-      grid-template-columns: 1fr;
-      max-width: 100%;
-    }
-
-    .popular-place-card-up-grid {
-      max-height: none;
-    }
-
-    .popular-place-card-grid {
-      grid-template-rows: 200px;
-    }
+  .destination-card strong {
+    display: block;
+    padding: 20px;
+    font-size: 17px;
+    font-weight: 500;
   }
 </style>

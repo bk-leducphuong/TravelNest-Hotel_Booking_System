@@ -10,6 +10,7 @@ const userRepository = require('./infrastructure/user.repository');
 const keycloakUserInfoService = require('./infrastructure/keycloak-userinfo.client');
 const authRoutes = require('./api/auth.routes');
 const userRoutes = require('./api/user.routes');
+const hotelStaffAdminRoutes = require('./api/hotel-staff.routes');
 
 /**
  * Identity module - public interface.
@@ -33,10 +34,27 @@ async function assignHotelOwner(userId, hotelId, options = {}) {
   return await identityService.assignHotelOwner(userId, hotelId, options);
 }
 
+/** The hotel a user primarily owns, or null (used by partner onboarding). */
+async function getPrimaryHotelIdForUser(userId) {
+  return await identityService.getPrimaryHotelIdForUser(userId);
+}
+
+/** Whether a user has any membership on a hotel (used to gate join photo uploads). */
+async function userHasHotelAccess(userId, hotelId) {
+  return await identityService.userHasHotelAccess(userId, hotelId);
+}
+
+/** Look up a user by email (used to attach an existing guest to a manual booking). */
+async function findUserByEmail(email) {
+  return await userRepository.findByEmail(email);
+}
+
 module.exports = {
   // HTTP edge (mounted by routes/v1/index.js).
   authRoutes,
   userRoutes,
+  // Admin BFF edge (mounted by bff/admin/index.js).
+  hotelStaffAdminRoutes,
 
   getFavoriteHotelIds,
 
@@ -57,4 +75,9 @@ module.exports = {
 
   // Hotel ownership (used by partner onboarding).
   assignHotelOwner,
+  getPrimaryHotelIdForUser,
+  userHasHotelAccess,
+
+  // User lookup (used by manual booking creation).
+  findUserByEmail,
 };

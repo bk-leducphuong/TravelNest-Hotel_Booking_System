@@ -58,6 +58,7 @@ const searchHotels = asyncHandler(async (req, res) => {
     // Location
     city: req.query.city,
     country: req.query.country,
+    destinationId: req.query.destinationId,
     latitude: parseNumber(req.query.latitude),
     longitude: parseNumber(req.query.longitude),
     radius: parseNumber(req.query.radius),
@@ -97,10 +98,13 @@ const searchHotels = asyncHandler(async (req, res) => {
     ...searchParams,
     cityId: destination?.city_id ?? null,
     countryId: destination?.country_id ?? null,
-    city: destination?.type === 'city' ? destination.display_name : searchParams.city,
+    city:
+      destination?.type === 'city'
+        ? destination?.display_name || searchParams.city
+        : searchParams.city,
     country:
       destination?.type === 'country'
-        ? destination.display_name
+        ? destination?.display_name || searchParams.country
         : destination?.country_name || searchParams.country,
   };
 
@@ -254,7 +258,33 @@ const getRecentSearches = asyncHandler(async (req, res) => {
   });
 });
 
+const searchMapHotels = asyncHandler(async (req, res) => {
+  const params = {
+    ...req.query,
+    mapSearch: true,
+    page: 1,
+    limit: 200,
+    bounds: Object.fromEntries(
+      ['north', 'south', 'east', 'west'].map((key) => [key, Number(req.query[key])])
+    ),
+    hotelClass: parseList(req.query.hotelClass, parseInteger),
+    amenities: parseList(req.query.amenities, (item) => item.toUpperCase()),
+  };
+  const { searchResults } = await searchUseCases.searchHotels(params, getAuthenticatedUserId(req));
+  const { hotels, pagination } = searchResults.data;
+  res.json({
+    success: true,
+    data: {
+      hotels: hotels.map(({ available_rooms, selected_offer, ...hotel }) => hotel),
+      total: pagination.total,
+      hasMore: pagination.hasNextPage,
+      limit: 200,
+    },
+  });
+});
+
 module.exports = {
+  searchMapHotels,
   searchHotels,
   getHotelAvailability,
   getAutocompleteSuggestions,
