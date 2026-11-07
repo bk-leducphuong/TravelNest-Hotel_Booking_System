@@ -147,6 +147,12 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.JSON,
         allowNull: true,
       },
+      payment_policy: {
+        type: DataTypes.ENUM('prepay', 'pay_at_property'),
+        allowNull: false,
+        defaultValue: 'prepay',
+        comment: 'Payment condition snapshotted at booking time',
+      },
       payment_due_at: {
         type: DataTypes.DATE,
         allowNull: true,

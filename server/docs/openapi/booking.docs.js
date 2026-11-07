@@ -85,6 +85,10 @@
  *           type: object
  *           nullable: true
  *           description: Cancellation policy snapshot stored at booking creation
+ *         payment_policy:
+ *           type: string
+ *           enum: [prepay, pay_at_property]
+ *           description: Payment condition snapshotted at booking creation
  *         payment_due_at:
  *           type: string
  *           format: date-time
@@ -515,6 +519,13 @@
  *         status:
  *           type: string
  *           enum: [pending, pending_payment, confirmed, payment_failed, expired, checked_in, completed, cancelled, no_show]
+ *         paymentPolicy:
+ *           type: string
+ *           enum: [prepay, pay_at_property]
+ *           description: Resolved payment condition for this booking
+ *         requiresPayment:
+ *           type: boolean
+ *           description: False when the booking is paid at the property
  *         paymentDueAt:
  *           type: string
  *           format: date-time
@@ -529,6 +540,10 @@
  *             $ref: '#/components/schemas/BookingCreationRoom'
  *         cancellationPolicy:
  *           $ref: '#/components/schemas/BookingPolicySnapshot'
+ *         paymentPolicySnapshot:
+ *           type: object
+ *           nullable: true
+ *           description: Per-room payment-condition snapshot captured with the quote
  *         idempotentReplay:
  *           type: boolean
  *           description: Present and true only when the response was replayed from a prior request with the same Idempotency-Key

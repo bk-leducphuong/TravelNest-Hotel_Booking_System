@@ -1,7 +1,7 @@
 const Joi = require('joi');
 
 const { POLICY_TYPES, IANA_TIMEZONES, HOTEL_STATUSES } = require('@constants/hotels');
-const { ROOM_STATUSES, BED_TYPES } = require('@constants/rooms');
+const { ROOM_TYPES, ROOM_STATUSES, BED_TYPES } = require('@constants/rooms');
 const { AMENITY_CATEGORIES, APPLICABLE_TO } = require('@constants/amenities');
 
 /**
@@ -82,7 +82,10 @@ const updateHotel = {
 
 const ROOM_BODY_FIELDS = {
   roomName: Joi.string().max(255),
-  roomType: Joi.string().max(100),
+  // `rooms.room_type` is a MySQL ENUM: a free-text value reaches the database and
+  // fails with "Data truncated for column 'room_type'" (500). Validate against the
+  // canonical list so the API answers 400 instead.
+  roomType: Joi.string().valid(...ROOM_TYPES),
   bedType: Joi.string().valid(...BED_TYPES),
   maxGuests: Joi.number().integer().min(1),
   quantity: Joi.number().integer().min(0),
@@ -169,6 +172,7 @@ const CANCELLATION_RULE_BODY_FIELDS = {
   refundPercentAfterDeadline: Joi.number().min(0).max(100),
   cancellationFeeType: Joi.string().valid('none', 'percentage'),
   cancellationFeeValue: Joi.number().min(0).allow(null),
+  paymentPolicy: Joi.string().valid('prepay', 'pay_at_property'),
   isActive: Joi.boolean(),
 };
 

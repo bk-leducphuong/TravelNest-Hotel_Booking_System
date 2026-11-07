@@ -38,6 +38,8 @@ export function normalizeBooking(raw) {
     // Existing public booking pricing is USD; retain an explicit currency if returned.
     currency: raw.currency || 'USD',
     numberOfGuests: raw.number_of_guests ?? raw.numberOfGuests,
+    paymentPolicy: raw.payment_policy ?? raw.paymentPolicy ?? 'prepay',
+    paymentDueAt: raw.payment_due_at ?? raw.paymentDueAt ?? null,
     hotel: raw.hotel || {},
     rooms: rows.map((row) => ({
       roomId: row.room_id || row.roomId || row.room?.id,

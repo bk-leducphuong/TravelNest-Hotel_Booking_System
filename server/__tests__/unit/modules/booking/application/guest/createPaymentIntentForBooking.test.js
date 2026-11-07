@@ -52,6 +52,17 @@ describe('booking/application/guest/createPaymentIntentForBooking', () => {
     });
   });
 
+  it('rejects pay-at-property bookings', async () => {
+    bookingRepository.findPaymentContextByIdAndBuyerId.mockResolvedValue(
+      mockBooking({ payment_policy: 'pay_at_property' })
+    );
+
+    await expect(createPaymentIntentForBooking(5, 1)).rejects.toMatchObject({
+      statusCode: 400,
+      code: 'BOOKING_PAY_AT_PROPERTY',
+    });
+  });
+
   it('rejects an expired payment window', async () => {
     bookingRepository.findPaymentContextByIdAndBuyerId.mockResolvedValue(
       mockBooking({ payment_due_at: '2000-01-01T00:00:00Z' })

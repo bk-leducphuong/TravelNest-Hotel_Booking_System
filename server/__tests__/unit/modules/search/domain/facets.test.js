@@ -22,7 +22,7 @@ describe('search/domain/facets', () => {
     expect(result.amenities).toEqual({ wifi: 2, pool: 1 });
     expect(result.hotelClass).toEqual({ 4: 2 });
     expect(result.reviewScores).toEqual({ 9: 1, 8: 1, 7: 2, 6: 2 });
-    expect(result.popular).toEqual({ freeCancellation: 1 });
+    expect(result.popular).toEqual({ freeCancellation: 1, payAtProperty: 0 });
   });
 
   it('returns empty facets for an empty result set', () => {
@@ -30,6 +30,6 @@ describe('search/domain/facets', () => {
 
     expect(result.budget).toEqual({ min: null, max: null });
     expect(result.reviewScores).toEqual({ 9: 0, 8: 0, 7: 0, 6: 0 });
-    expect(result.popular).toEqual({ freeCancellation: 0 });
+    expect(result.popular).toEqual({ freeCancellation: 0, payAtProperty: 0 });
   });
 });

@@ -440,6 +440,7 @@ export interface CancellationRule {
   refund_percent_after_deadline: string | number;
   cancellation_fee_type: string;
   cancellation_fee_value?: string | number | null;
+  payment_policy?: "prepay" | "pay_at_property";
   is_active: boolean;
 }
 
@@ -451,6 +452,7 @@ export interface CancellationRulePayload {
   refundPercentAfterDeadline?: number;
   cancellationFeeType?: string;
   cancellationFeeValue?: number | null;
+  paymentPolicy?: "prepay" | "pay_at_property";
   isActive?: boolean;
 }
 

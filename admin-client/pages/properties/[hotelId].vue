@@ -96,6 +96,7 @@ const ruleForm = reactive({
   refundPercentAfterDeadline: 0,
   cancellationFeeType: "none" as string,
   cancellationFeeValue: undefined as number | undefined,
+  paymentPolicy: "prepay" as "prepay" | "pay_at_property",
   isActive: true,
 });
 
@@ -278,6 +279,7 @@ const openCreateRule = () => {
     refundPercentAfterDeadline: 0,
     cancellationFeeType: "none",
     cancellationFeeValue: undefined,
+    paymentPolicy: "prepay",
     isActive: true,
   });
   ruleDialog.value = true;
@@ -297,6 +299,7 @@ const openEditRule = (rule: CancellationRule) => {
     refundPercentAfterDeadline: Number(rule.refund_percent_after_deadline ?? 0),
     cancellationFeeType: rule.cancellation_fee_type ?? "none",
     cancellationFeeValue: toNumberOrUndefined(rule.cancellation_fee_value),
+    paymentPolicy: rule.payment_policy ?? "prepay",
     isActive: rule.is_active,
   });
   ruleDialog.value = true;
@@ -315,6 +318,7 @@ const submitRule = async () => {
       refundPercentAfterDeadline: ruleForm.refundPercentAfterDeadline,
       cancellationFeeType: ruleForm.cancellationFeeType,
       cancellationFeeValue: ruleForm.cancellationFeeValue ?? null,
+      paymentPolicy: ruleForm.paymentPolicy,
       isActive: ruleForm.isActive,
     };
     if (editingRuleId.value) {
@@ -1263,6 +1267,22 @@ watch(
                   </el-tag>
                 </template>
               </el-table-column>
+              <el-table-column :label="$t('properties.paymentPolicy')" width="170">
+                <template #default="{ row }">
+                  <el-tag
+                    :type="
+                      row.payment_policy === 'pay_at_property' ? 'success' : 'info'
+                    "
+                    size="small"
+                  >
+                    {{
+                      row.payment_policy === "pay_at_property"
+                        ? $t("properties.payAtProperty")
+                        : $t("properties.prepay")
+                    }}
+                  </el-tag>
+                </template>
+              </el-table-column>
               <el-table-column
                 :label="$t('properties.refundBefore')"
                 width="150"
@@ -1463,6 +1483,15 @@ watch(
           </el-select>
         </el-form-item>
         <div class="grid grid-cols-2 gap-3">
+          <el-form-item :label="$t('properties.paymentPolicy')">
+            <el-select v-model="ruleForm.paymentPolicy" class="w-full">
+              <el-option :label="$t('properties.prepay')" value="prepay" />
+              <el-option
+                :label="$t('properties.payAtProperty')"
+                value="pay_at_property"
+              />
+            </el-select>
+          </el-form-item>
           <el-form-item :label="$t('properties.refundable')">
             <el-switch v-model="ruleForm.isRefundable" />
           </el-form-item>

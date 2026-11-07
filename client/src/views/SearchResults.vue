@@ -56,6 +56,7 @@
           amenities: [],
           mealPlans: [],
           freeCancellation: false,
+          payAtProperty: false,
           hotelClass: [],
           minRating: null,
           radius: null,
@@ -175,6 +176,7 @@
           amenities: [],
           mealPlans: [],
           freeCancellation: false,
+          payAtProperty: false,
           hotelClass: [],
           minRating: null,
           radius: null,
@@ -260,6 +262,7 @@
           amenities: this.parseArrayParam(query.amenities),
           mealPlans: this.parseArrayParam(query.mealPlans),
           freeCancellation: query.freeCancellation === true || query.freeCancellation === 'true',
+          payAtProperty: query.payAtProperty === true || query.payAtProperty === 'true',
           hotelClass: this.parseArrayParam(query.hotelClass, (item) => {
             const star = parseInt(item, 10);
             return Number.isInteger(star) && star >= 1 && star <= 5 ? star : null;
@@ -279,6 +282,7 @@
         if (this.filters.maxPrice) params.maxPrice = this.filters.maxPrice;
         if (this.filters.minRating) params.minRating = this.filters.minRating;
         if (this.filters.freeCancellation) params.freeCancellation = true;
+        if (this.filters.payAtProperty) params.payAtProperty = true;
         if (this.filters.hotelClass.length) params.hotelClass = this.filters.hotelClass.join(',');
         if (amenities.length) params.amenities = amenities.join(',');
         if (this.filters.radius && this.hasCoordinates) params.radius = this.filters.radius;
@@ -293,6 +297,7 @@
           'amenities',
           'mealPlans',
           'freeCancellation',
+          'payAtProperty',
           'hotelClass',
           'minRating',
           'radius',
@@ -307,6 +312,7 @@
         if (filters.amenities?.length) nextQuery.amenities = filters.amenities.join(',');
         if (filters.mealPlans?.length) nextQuery.mealPlans = filters.mealPlans.join(',');
         if (filters.freeCancellation) nextQuery.freeCancellation = 'true';
+        if (filters.payAtProperty) nextQuery.payAtProperty = 'true';
         if (filters.hotelClass?.length) nextQuery.hotelClass = filters.hotelClass.join(',');
         if (filters.minRating) nextQuery.minRating = String(filters.minRating);
         if (filters.radius && this.hasCoordinates) nextQuery.radius = String(filters.radius);
@@ -638,6 +644,9 @@
               </p>
               <p v-if="hotel.has_free_cancellation" class="result-policy">
                 {{ $t('guest.cancellationAvailable') }}
+              </p>
+              <p v-if="hotel.has_pay_at_property" class="result-policy">
+                {{ $t('searchResults.noPrepayment') }} {{ $t('searchResults.payAtProperty') }}
               </p>
               <p v-if="hotel.avg_rating > 0" class="result-rating">
                 <span class="guest-score">{{ hotel.avg_rating }}<small>/10</small></span

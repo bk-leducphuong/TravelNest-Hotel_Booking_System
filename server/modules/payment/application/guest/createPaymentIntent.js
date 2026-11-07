@@ -75,6 +75,15 @@ async function createPaymentIntent(userId, paymentData) {
     );
   }
 
+  // A pay-at-property stay must not be charged through the legacy prepay path.
+  if (holdBreakdown.paymentPolicy?.mode === 'pay_at_property') {
+    throw new ApiError(
+      409,
+      'PAY_AT_PROPERTY',
+      'This stay does not require prepayment. Please complete checkout from the booking page.'
+    );
+  }
+
   const bookingCode = bookingModule.generateBookingCode();
   const holdCurrency = 'USD';
   const amount = parseFloat(holdData.total_price);

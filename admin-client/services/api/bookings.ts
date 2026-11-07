@@ -85,6 +85,8 @@ export interface BookingDetail extends BookingListItem {
   special_requests?: string | null;
   guest_details?: Record<string, unknown> | null;
   price_breakdown?: Record<string, unknown> | null;
+  payment_policy?: "prepay" | "pay_at_property";
+  payment_due_at?: string | null;
   bookingRooms?: BookingRoomLine[];
   transaction?: BookingTransaction | null;
 }

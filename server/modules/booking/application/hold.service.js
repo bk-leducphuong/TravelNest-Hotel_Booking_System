@@ -148,6 +148,9 @@ class HoldService {
         promotion: quote.promotion,
         codeOutcome: quote.codeOutcome,
         cancellationPolicy: quote.cancellationPolicy,
+        paymentPolicy: quote.paymentPolicy,
+        paymentDueAt:
+          quote.paymentPolicy?.mode === 'pay_at_property' ? quote.paymentPolicy.checkInAt : null,
         status: hold.status,
         expiresAt: hold.expires_at,
         rooms: holdRooms.map((hr) => ({

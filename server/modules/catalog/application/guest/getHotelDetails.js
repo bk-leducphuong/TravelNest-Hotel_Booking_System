@@ -86,6 +86,12 @@ async function getHotelDetails(hotelId, options = {}) {
     reviews: formatReviews(reviewsResult.rows || []),
     nearbyPlaces: formatNearbyPlaces(nearbyPlaces),
     policies: formatPolicies(policies),
+    // Hotel-level summary: pay-at-property only when every bookable room is.
+    paymentPolicy:
+      pricedRooms.length > 0 &&
+      pricedRooms.every((room) => room.payment_policy === 'pay_at_property')
+        ? 'pay_at_property'
+        : 'prepay',
     rooms: formatRooms(pricedRooms, numberOfNights),
     meta: {
       totalReviews: reviewsResult.count || 0,

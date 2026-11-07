@@ -26,6 +26,33 @@ const FREE_CANCELLATION_EXISTS = `EXISTS (
   )`;
 
 /**
+ * Payment condition for one room, using the same precedence as the booking
+ * module: the room-specific active rule wins, otherwise the hotel-wide default,
+ * otherwise prepay.
+ */
+const PAYMENT_POLICY_EXPRESSION = `COALESCE(
+    (
+      SELECT hcr.payment_policy
+        FROM hotel_cancellation_rules hcr
+       WHERE hcr.hotel_id = r.hotel_id
+         AND hcr.room_id = r.id
+         AND hcr.is_active = 1
+       ORDER BY hcr.updated_at DESC
+       LIMIT 1
+    ),
+    (
+      SELECT hcr.payment_policy
+        FROM hotel_cancellation_rules hcr
+       WHERE hcr.hotel_id = r.hotel_id
+         AND hcr.room_id IS NULL
+         AND hcr.is_active = 1
+       ORDER BY hcr.updated_at DESC
+       LIMIT 1
+    ),
+    'prepay'
+  )`;
+
+/**
  * @param {object} params
  * @param {string[]} params.hotelIds
  * @param {string} params.checkIn date-only string
@@ -77,7 +104,8 @@ function buildOffersQuery(params) {
       AVG(ri.price_per_night) AS avg_price_per_night,
       MIN(ri.currency) AS currency,
       COUNT(DISTINCT ri.currency) AS currency_count,
-      ${FREE_CANCELLATION_EXISTS} AS has_free_cancellation
+      ${FREE_CANCELLATION_EXISTS} AS has_free_cancellation,
+      ${PAYMENT_POLICY_EXPRESSION} AS payment_policy
     FROM rooms r
     JOIN room_inventory ri ON ri.room_id = r.id
     WHERE r.hotel_id IN (${hotelPlaceholders.join(', ')})

@@ -67,6 +67,16 @@
       policyRooms() {
         return this.getBookingInfor?.cancellationPolicy?.rooms || [];
       },
+      payAtProperty() {
+        return this.getBookingInfor?.paymentPolicy?.mode === 'pay_at_property';
+      },
+      paymentDueAt() {
+        return (
+          this.getBookingInfor?.paymentPolicy?.checkInAt ||
+          this.getBookingInfor?.paymentDueAt ||
+          null
+        );
+      },
       created() {
         return Boolean(this.getBookingInfor?.checkoutBooking);
       },
@@ -420,6 +430,16 @@
               <dd>{{ guestMoney(priceSummary.total, priceSummary.currency, $i18n.locale) }}</dd>
             </div>
           </dl>
+          <p v-if="payAtProperty" class="checkout-pay-at-property" role="note">
+            <strong>{{ $t('bookingFlow.payAtPropertyNotice') }}</strong>
+            <span v-if="paymentDueAt">
+              {{
+                $t('bookingFlow.paymentDueOnArrival', {
+                  date: formatStayDate(paymentDueAt, $i18n.locale),
+                })
+              }}
+            </span>
+          </p>
           <p class="guest-subtitle">{{ $t('guest.checkout.quoteNote') }}</p>
         </aside>
       </div>
@@ -430,6 +450,14 @@
 <style scoped>
   .checkout-heading {
     margin-bottom: 24px;
+  }
+  .checkout-pay-at-property {
+    display: grid;
+    gap: 4px;
+    padding: 12px;
+    border: 1px solid var(--tn-border);
+    border-radius: 10px;
+    background: #f2f8f2;
   }
   .checkout-grid {
     display: grid;

@@ -31,6 +31,7 @@ function buildFiltersApplied(params) {
     hotelClass: params.hotelClass,
     amenities: params.amenities,
     freeCancellation: params.freeCancellation,
+    payAtProperty: params.payAtProperty,
     sortBy: params.sortBy,
   };
 }

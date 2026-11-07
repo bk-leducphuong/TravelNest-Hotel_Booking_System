@@ -16,7 +16,10 @@ jest.mock('@modules/booking/infrastructure/booking.repository', () => ({
 jest.mock('@modules/booking/application/hold.service', () => ({ releaseHold: jest.fn() }));
 jest.mock('@modules/booking/application/pricing.service', () => ({ quote: jest.fn() }));
 jest.mock('@modules/inventory', () => ({ reserveRooms: jest.fn() }));
-jest.mock('@modules/promotion', () => ({ reservePromotion: jest.fn() }));
+jest.mock('@modules/promotion', () => ({
+  reservePromotion: jest.fn(),
+  redeemPromotion: jest.fn(),
+}));
 jest.mock('@config/database.config', () => ({ transaction: jest.fn() }));
 jest.mock('@modules/booking/domain/booking-code', () => ({ generateBookingCode: () => 'CODE1' }));
 
@@ -46,6 +49,11 @@ const quote = {
   currency: 'USD',
   rooms: [{ roomId: 5, quantity: 1, nightly: 100, subtotal: 200, totalPrice: 200 }],
   cancellationPolicy: { isRefundable: true },
+  paymentPolicy: {
+    mode: 'prepay',
+    checkInAt: '2999-02-01T14:00:00.000Z',
+    rooms: [{ roomId: 5, policy: 'prepay', ruleId: 1 }],
+  },
 };
 
 const booking = {
@@ -198,6 +206,7 @@ describe('booking/application/guest/createBookingFromHold', () => {
         room_id: 5,
         booking_code: 'CODE1',
         status: 'pending_payment',
+        payment_policy: 'prepay',
         special_requests: 'late check-in',
         guest_details: { name: 'A' },
       }),
@@ -220,6 +229,8 @@ describe('booking/application/guest/createBookingFromHold', () => {
       bookingId: 50,
       bookingCode: 'CODE1',
       status: 'pending_payment',
+      paymentPolicy: 'prepay',
+      requiresPayment: true,
       paymentDueAt: booking.payment_due_at,
       transactionId: 70,
       price: {
@@ -239,6 +250,7 @@ describe('booking/application/guest/createBookingFromHold', () => {
       promotion: undefined,
       priceFingerprint: undefined,
       cancellationPolicy: quote.cancellationPolicy,
+      paymentPolicySnapshot: quote.paymentPolicy,
     };
     expect(result).toEqual(expected);
     expect(paymentModule.completeIdempotencyRecord).toHaveBeenCalledWith(
@@ -247,6 +259,51 @@ describe('booking/application/guest/createBookingFromHold', () => {
       { transaction: {} }
     );
     expect(paymentModule.failIdempotencyRecord).not.toHaveBeenCalled();
+  });
+
+  it('confirms pay-at-property bookings without a payment window', async () => {
+    primeHappyPath();
+    const payAtPropertyQuote = {
+      ...quote,
+      paymentPolicy: {
+        mode: 'pay_at_property',
+        checkInAt: '2999-02-01T14:00:00.000Z',
+        rooms: [{ roomId: 5, policy: 'pay_at_property', ruleId: 1 }],
+      },
+    };
+    const confirmedBooking = {
+      ...booking,
+      status: 'confirmed',
+      payment_policy: 'pay_at_property',
+      payment_due_at: new Date('2999-02-01T14:00:00.000Z'),
+    };
+    pricingService.quote.mockResolvedValue(payAtPropertyQuote);
+    bookingRepository.create.mockResolvedValue(confirmedBooking);
+
+    const result = await createBookingFromHold(USER_ID, data, IDEMPOTENCY_KEY);
+
+    expect(bookingRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'confirmed',
+        payment_policy: 'pay_at_property',
+        expires_at: null,
+        payment_due_at: new Date('2999-02-01T14:00:00.000Z'),
+      }),
+      { transaction: {} }
+    );
+    expect(paymentModule.createTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ paymentMethod: 'pay_at_property' }),
+      { transaction: {} }
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        status: 'confirmed',
+        paymentPolicy: 'pay_at_property',
+        requiresPayment: false,
+        paymentDueAt: confirmedBooking.payment_due_at,
+        paymentPolicySnapshot: payAtPropertyQuote.paymentPolicy,
+      })
+    );
   });
 
   it('rejects a stale accepted quote with PRICE_CHANGED', async () => {

@@ -34,6 +34,8 @@ function formatBookingResponse({ booking, transaction, quote }) {
     bookingId: booking.id,
     bookingCode: booking.booking_code,
     status: booking.status,
+    paymentPolicy: booking.payment_policy || quote.paymentPolicy?.mode || 'prepay',
+    requiresPayment: (booking.payment_policy || quote.paymentPolicy?.mode) !== 'pay_at_property',
     paymentDueAt: booking.payment_due_at,
     transactionId: transaction.id,
     price: {
@@ -53,6 +55,7 @@ function formatBookingResponse({ booking, transaction, quote }) {
     promotion: quote.promotion,
     priceFingerprint: quote.priceFingerprint,
     cancellationPolicy: quote.cancellationPolicy,
+    paymentPolicySnapshot: quote.paymentPolicy || null,
   };
 }
 

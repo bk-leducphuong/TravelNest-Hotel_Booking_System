@@ -62,6 +62,18 @@
         </span>
         <small>{{ getCount('freeCancellation') }}</small>
       </label>
+      <label class="filter-option">
+        <span>
+          <input
+            type="checkbox"
+            :checked="filters.payAtProperty"
+            :disabled="isLoading"
+            @change="updateBoolean('payAtProperty', $event.target.checked)"
+          />
+          {{ $t('filters.payAtProperty') }}
+        </span>
+        <small>{{ getCount('payAtProperty') }}</small>
+      </label>
       <label v-for="option in popularOptions" :key="option.key" class="filter-option">
         <span>
           <input
@@ -251,6 +263,7 @@
           this.filters.minPrice ||
           this.filters.maxPrice ||
           this.filters.freeCancellation ||
+          this.filters.payAtProperty ||
           this.filters.minRating ||
           this.filters.radius ||
           this.filters.amenities.length ||

@@ -179,6 +179,12 @@
  *           type: boolean
  *         description: Filter hotels with free cancellation
  *         example: true
+ *       - in: query
+ *         name: payAtProperty
+ *         schema:
+ *           type: boolean
+ *         description: Filter hotels that offer a no-prepayment (pay at property) offer
+ *         example: true
  *
  *       # Sorting parameters
  *       - in: query
@@ -255,6 +261,11 @@
  *                               type: string
  *                           has_free_cancellation:
  *                             type: boolean
+ *                           has_pay_at_property:
+ *                             type: boolean
+ *                           payment_policy:
+ *                             type: string
+ *                             enum: [prepay, pay_at_property]
  *                           primary_image_url:
  *                             type: string
  *                             nullable: true
@@ -287,6 +298,9 @@
  *                                   type: number
  *                                 available_rooms:
  *                                   type: integer
+ *                                 payment_policy:
+ *                                   type: string
+ *                                   enum: [prepay, pay_at_property]
  *                     pagination:
  *                       type: object
  *                       properties:

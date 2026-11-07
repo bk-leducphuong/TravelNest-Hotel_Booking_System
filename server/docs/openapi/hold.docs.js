@@ -125,6 +125,14 @@
  *                       type: object
  *                       nullable: true
  *                       description: Cancellation policy snapshot captured with the quote
+ *                     paymentPolicy:
+ *                       type: object
+ *                       description: Payment-condition snapshot captured with the quote
+ *                     paymentDueAt:
+ *                       type: string
+ *                       format: date-time
+ *                       nullable: true
+ *                       description: Payment deadline; check-in time for pay-at-property
  *                     status:
  *                       type: string
  *                       enum: [active]

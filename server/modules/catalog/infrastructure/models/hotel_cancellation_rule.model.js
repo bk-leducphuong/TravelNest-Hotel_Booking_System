@@ -57,6 +57,13 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: true,
       },
+      // Booking terms also carry the payment condition (see domain/payment-policy).
+      payment_policy: {
+        type: DataTypes.ENUM('prepay', 'pay_at_property'),
+        allowNull: false,
+        defaultValue: 'prepay',
+        comment: 'Payment condition for this room/rate: prepay or pay at property',
+      },
       is_active: {
         type: DataTypes.BOOLEAN,
         allowNull: false,

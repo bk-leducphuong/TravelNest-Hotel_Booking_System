@@ -20,6 +20,13 @@ async function createPaymentIntentForBooking(bookingId, userId, data = {}) {
   }
 
   const bookingData = booking.toJSON ? booking.toJSON() : booking;
+  if (bookingData.payment_policy === 'pay_at_property') {
+    throw new ApiError(
+      400,
+      'BOOKING_PAY_AT_PROPERTY',
+      'This booking is paid at the property and does not require online payment'
+    );
+  }
   if (bookingData.status !== 'pending_payment') {
     throw new ApiError(
       400,

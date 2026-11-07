@@ -100,6 +100,24 @@ describe('search.controller.searchHotels', () => {
     );
   });
 
+  it('passes the pay-at-property filter through to the search use case', async () => {
+    searchUseCases.searchHotels.mockResolvedValue({
+      destination: null,
+      searchResults: { data: { pagination: { total: 0 }, search_metadata: {} } },
+    });
+
+    const req = {
+      query: { ...baseQuery, freeCancellation: 'true', payAtProperty: 'true' },
+      user: { id: 'user-3' },
+    };
+    await searchHotels(req, mockRes(), jest.fn());
+
+    expect(searchUseCases.searchHotels).toHaveBeenCalledWith(
+      expect.objectContaining({ freeCancellation: true, payAtProperty: true }),
+      'user-3'
+    );
+  });
+
   it('does not record a recent search for anonymous users', async () => {
     searchUseCases.searchHotels.mockResolvedValue({
       destination: null,

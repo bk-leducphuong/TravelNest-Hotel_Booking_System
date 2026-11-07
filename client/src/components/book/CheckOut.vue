@@ -15,6 +15,7 @@
     emits: ['booking-created', 'busy', 'price-changed'],
     data() {
       return {
+        paymentRequiredByServer: false,
         stripe: null,
         card: null,
         processing: false,
@@ -29,9 +30,17 @@
         disposed: false,
       };
     },
+    computed: {
+      requiresPayment() {
+        return (
+          this.paymentRequiredByServer ||
+          this.bookingInfor?.paymentPolicy?.mode !== 'pay_at_property'
+        );
+      },
+    },
     mounted() {
       this.persistProgress();
-      this.initialize();
+      if (this.requiresPayment) this.initialize();
     },
     beforeUnmount() {
       this.disposed = true;
@@ -84,7 +93,7 @@
         }
       },
       async handleSubmit() {
-        if (this.processing || !this.stripe || this.initError) return;
+        if (this.processing) return;
         this.processing = true;
         this.$emit('busy', true);
         this.paymentStatus = null;
@@ -109,6 +118,30 @@
           this.persistProgress();
           this.$emit('booking-created', response.data);
           const booking = response.data;
+          const code = booking.bookingCode;
+          if (!code) throw new Error(this.$t('guest.checkout.paymentIncomplete'));
+
+          // No prepayment: the server already confirmed the booking. Go straight
+          // to the confirmation page without creating a Stripe intent.
+          if (booking.requiresPayment === false || booking.paymentPolicy === 'pay_at_property') {
+            this.processing = false;
+            this.$emit('busy', false);
+            await this.$router.replace({ path: '/book/complete', query: { bookingCode: code } });
+            return;
+          }
+
+          // The policy can flip between the hold and booking creation; reveal
+          // the payment form and initialise Stripe lazily when the final booking
+          // requires payment.
+          if (!this.requiresPayment) {
+            this.paymentRequiredByServer = true;
+            await this.$nextTick();
+          }
+          if (!this.stripe) await this.initialize();
+          if (!this.stripe || this.initError) {
+            throw new Error(this.initError || this.$t('guest.checkout.paymentUnavailable'));
+          }
+
           const saved = this.selectedMethodId !== 'new';
           const intent = await BookingService.createBookingPaymentIntent(
             booking.bookingId,
@@ -139,11 +172,13 @@
             if (!['succeeded', 'processing'].includes(confirmation.paymentIntent?.status))
               throw new Error(this.$t('guest.checkout.paymentIncomplete'));
           }
-          const code = result.bookingCode || booking.bookingCode;
-          if (!code) throw new Error(this.$t('guest.checkout.paymentIncomplete'));
+          const confirmedCode = result.bookingCode || code;
           this.processing = false;
           this.$emit('busy', false);
-          await this.$router.replace({ path: '/book/complete', query: { bookingCode: code } });
+          await this.$router.replace({
+            path: '/book/complete',
+            query: { bookingCode: confirmedCode },
+          });
         } catch (error) {
           const apiError = error.response?.data?.error;
           if (apiError?.code === 'PRICE_CHANGED') {
@@ -171,8 +206,15 @@
       retryable
       @retry="initialize"
     />
+    <p v-if="!requiresPayment" class="pay-at-property-note" role="note">
+      <strong>{{ $t('bookingFlow.payAtPropertyNotice') }}</strong>
+      <span>{{ $t('bookingFlow.payAtPropertyCheckoutNote') }}</span>
+    </p>
     <form class="guest-form" @submit.prevent="handleSubmit">
-      <fieldset v-if="savedMethods.length" :disabled="processing || initializing">
+      <fieldset
+        v-if="requiresPayment && savedMethods.length"
+        :disabled="processing || initializing"
+      >
         <legend>{{ $t('bookingFlow.paymentMethod') }}</legend>
         <label class="method-option"
           ><input v-model="selectedMethodId" type="radio" value="new" />{{
@@ -188,7 +230,7 @@
           ></label
         >
       </fieldset>
-      <div v-show="selectedMethodId === 'new' && !initError">
+      <div v-show="requiresPayment && selectedMethodId === 'new' && !initError">
         <p id="payment-card-label">{{ $t('bookingFlow.paymentMethod') }}</p>
         <div
           ref="cardElement"
@@ -198,13 +240,23 @@
         ></div>
       </div>
       <FeedbackMessage v-if="paymentStatus" :message="paymentStatus.message" />
-      <p class="guest-subtitle">{{ $t('guest.checkout.paymentNote') }}</p>
+      <p v-if="requiresPayment" class="guest-subtitle">
+        {{ $t('guest.checkout.paymentNote') }}
+      </p>
       <button
         class="guest-button"
         type="submit"
-        :disabled="processing || initializing || !stripe || !!initError"
+        :disabled="
+          processing || initializing || (requiresPayment && (!stripe || !!initError))
+        "
       >
-        {{ processing ? $t('bookingFlow.processing') : $t('bookingFlow.pay') }}
+        {{
+          processing
+            ? $t('bookingFlow.processing')
+            : requiresPayment
+              ? $t('bookingFlow.pay')
+              : $t('bookingFlow.confirmBooking')
+        }}
       </button>
     </form>
   </div>
@@ -241,6 +293,15 @@
     border: 1px solid var(--tn-border);
     border-radius: 10px;
     background: #f8f8f8;
+  }
+  .pay-at-property-note {
+    display: grid;
+    gap: 4px;
+    padding: 14px;
+    border: 1px solid var(--tn-border);
+    border-radius: 10px;
+    background: #f2f8f2;
+    margin-bottom: 16px;
   }
   .payment-error {
     color: #b3261e;

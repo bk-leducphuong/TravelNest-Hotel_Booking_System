@@ -3,6 +3,7 @@ const promotionModule = require('@modules/promotion');
 const ApiError = require('@utils/ApiError');
 const bookingRepository = require('../infrastructure/booking.repository');
 const { getHotelCheckInDateTime } = require('../domain/check-in-time');
+const { normalizePaymentPolicy, resolvePaymentPolicy } = require('../domain/payment-policy');
 
 const PRICING_VERSION = 1;
 
@@ -111,12 +112,13 @@ class PricingService {
       room.totalPrice = room.discountedSubtotal;
     }
 
-    const cancellationPolicy = await this.getCancellationPolicySnapshot(hotelId, roomIds, {
+    const bookingTerms = await this.getBookingTermsSnapshot(hotelId, roomIds, {
       rooms: roomBreakdown,
       subtotal,
       totalPrice,
       checkInDate,
     });
+    const cancellationPolicy = bookingTerms.cancellationPolicy;
 
     const quote = {
       version: PRICING_VERSION,
@@ -137,6 +139,7 @@ class PricingService {
       codeOutcome: promotionQuote.codeOutcome || null,
       discountAllocation: selected?.allocationByRoom || [],
       cancellationPolicy,
+      paymentPolicy: bookingTerms.paymentPolicy,
     };
 
     quote.priceFingerprint = this.fingerprint(quote, {
@@ -196,8 +199,17 @@ class PricingService {
     });
   }
 
-  async getCancellationPolicySnapshot(hotelId, roomIds, pricing) {
-    const snapshots = [];
+  /**
+   * Snapshot the booking terms (cancellation + payment) for the quoted stay.
+   *
+   * Both are resolved per room from the same active rule, with the room-specific
+   * rule taking precedence over the hotel-wide default (see
+   * `findCancellationRule`). The resolved payment policy is conservative:
+   * if any room requires prepayment, the booking does too.
+   */
+  async getBookingTermsSnapshot(hotelId, roomIds, pricing) {
+    const cancellationRooms = [];
+    const paymentRooms = [];
     const hotel = await bookingRepository.findCancellationHotel(hotelId);
     const checkInAt = getHotelCheckInDateTime(
       pricing.checkInDate,
@@ -209,7 +221,7 @@ class PricingService {
     for (const roomId of roomIds) {
       const rule = await bookingRepository.findCancellationRule(hotelId, roomId);
       const data = rule?.toJSON ? rule.toJSON() : rule;
-      const index = snapshots.length;
+      const index = cancellationRooms.length;
       const roomPayable = pricing.rooms[index].discountedSubtotal ?? pricing.rooms[index].subtotal;
       const amountMinor =
         index === roomIds.length - 1
@@ -220,7 +232,8 @@ class PricingService {
             );
       allocated += amountMinor;
       const hours = data?.free_cancellation_until_hours_before_checkin;
-      snapshots.push({
+
+      cancellationRooms.push({
         amountMinor,
         freeCancellationDeadline:
           hours === null || hours === undefined
@@ -238,14 +251,32 @@ class PricingService {
           ? parseFloat(data.refund_percent_after_deadline)
           : 0,
       });
+
+      paymentRooms.push({
+        roomId,
+        policy: normalizePaymentPolicy(data?.payment_policy),
+        ruleId: data?.id || null,
+      });
     }
 
     return {
-      version: 2,
-      checkInAt: checkInAt.toISOString(),
-      timezone: hotel.timezone || 'UTC',
-      rooms: snapshots,
+      cancellationPolicy: {
+        version: 2,
+        checkInAt: checkInAt.toISOString(),
+        timezone: hotel.timezone || 'UTC',
+        rooms: cancellationRooms,
+      },
+      paymentPolicy: {
+        mode: resolvePaymentPolicy(paymentRooms.map((room) => room.policy)),
+        checkInAt: checkInAt.toISOString(),
+        rooms: paymentRooms,
+      },
     };
+  }
+
+  async getCancellationPolicySnapshot(hotelId, roomIds, pricing) {
+    const terms = await this.getBookingTermsSnapshot(hotelId, roomIds, pricing);
+    return terms.cancellationPolicy;
   }
 
   getNights(checkInDate, checkOutDate) {

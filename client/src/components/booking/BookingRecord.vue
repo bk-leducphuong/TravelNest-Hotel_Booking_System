@@ -24,6 +24,9 @@
         const label = this.$t(key);
         return label === key ? this.$t('guest.bookingStatus') : label;
       },
+      payAtProperty() {
+        return this.booking?.paymentPolicy === 'pay_at_property';
+      },
       nights() {
         return stayNights(this.booking?.checkInDate, this.booking?.checkOutDate);
       },
@@ -96,6 +99,9 @@
           </p>
           <h1 class="guest-page-title">{{ statusText }}</h1>
           <p>{{ booking.hotel.name }}</p>
+          <p v-if="payAtProperty" class="record-payment-policy">
+            {{ $t('bookingFlow.payAtPropertyNotice') }}
+          </p>
         </div>
         <button
           type="button"

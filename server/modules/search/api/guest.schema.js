@@ -87,6 +87,7 @@ exports.searchHotels = {
       }),
     amenities: Joi.alternatives().try(Joi.string(), Joi.array().items(Joi.string())),
     freeCancellation: Joi.boolean(),
+    payAtProperty: Joi.boolean(),
 
     // Sorting
     sortBy: Joi.string()
@@ -301,6 +302,7 @@ exports.searchMapHotels = {
         'hotelClass',
         'amenities',
         'freeCancellation',
+        'payAtProperty',
         'sortBy',
       ].map((key) => [key, exports.searchHotels.query.extract(key)])
     )

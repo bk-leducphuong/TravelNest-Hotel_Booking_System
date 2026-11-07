@@ -106,6 +106,10 @@ async function createManualBooking(hotelId, payload = {}, { actorUserId, request
         guest_details: guestDetails || null,
         price_breakdown: { ...quote, manual: true, overrideTotalPrice: hasOverride },
         cancellation_policy_snapshot: quote.cancellationPolicy,
+        // Phone/walk-in bookings are collected out of band, so they behave like
+        // a pay-at-property booking even when the hotel's default is prepay.
+        payment_policy: 'pay_at_property',
+        payment_due_at: new Date(quote.paymentPolicy?.checkInAt || Date.now()),
         confirmed_at: new Date(),
       },
       { transaction }

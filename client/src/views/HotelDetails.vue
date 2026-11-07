@@ -42,6 +42,7 @@
         roomSearchScope: '',
         hotelAmenities: [],
         hotelPolicies: [],
+        hotelPaymentPolicy: 'prepay',
         checkInOut: {},
         bookingPending: false,
         voteError: '',
@@ -417,6 +418,7 @@
           this.checkInOut = details.checkInOut || {};
           this.hotelAmenities = details.amenities || [];
           this.hotelPolicies = details.policies || [];
+          this.hotelPaymentPolicy = details.paymentPolicy || 'prepay';
           if (roomVersion === this.roomVersion) {
             this.room_list = (details.rooms || []).map(this.normalizeRoom);
             this.roomSearchScope = scope;
@@ -721,6 +723,8 @@
               pricingFingerprint: holdResponse.data.priceFingerprint || null,
               promotionCode: null,
               cancellationPolicy: holdResponse.data.cancellationPolicy,
+              paymentPolicy: holdResponse.data.paymentPolicy,
+              paymentDueAt: holdResponse.data.paymentDueAt,
             });
 
             this.$router.push('/book');
@@ -886,6 +890,9 @@
                         {{ amenity }}
                       </li>
                     </ul>
+                    <p v-if="room.paymentPolicy === 'pay_at_property'" class="room-policy">
+                      {{ $t('hotelDetails.table.noPrepayment') }}
+                    </p>
                     <p v-if="room.available_rooms === 0">{{ $t('guest.soldOut') }}</p>
                   </div>
                   <div class="room-card-price">
@@ -941,6 +948,9 @@
               </dl>
               <p v-if="checkInOut.checkInPolicy">{{ checkInOut.checkInPolicy }}</p>
               <p v-if="checkInOut.checkOutPolicy">{{ checkInOut.checkOutPolicy }}</p>
+              <p v-if="hotelPaymentPolicy === 'pay_at_property'" class="room-policy">
+                {{ $t('hotelDetails.table.noPrepayment') }}
+              </p>
               <article v-for="policy in hotelPolicies" :key="policy.id">
                 <h3>{{ policy.title }}</h3>
                 <p>{{ policy.description }}</p>

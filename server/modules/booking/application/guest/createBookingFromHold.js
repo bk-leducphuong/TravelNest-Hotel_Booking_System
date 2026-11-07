@@ -184,6 +184,12 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
         { transaction }
       );
 
+      // `quote` re-reads live booking terms; never trust the hold snapshot here.
+      const paymentPolicy = quote.paymentPolicy?.mode || 'prepay';
+      const payAtProperty = paymentPolicy === 'pay_at_property';
+      const prepayDueAt = new Date(Date.now() + PAYMENT_WINDOW_MINUTES * 60 * 1000);
+      const paymentDueAt = payAtProperty ? new Date(quote.paymentPolicy.checkInAt) : prepayDueAt;
+
       const booking = await bookingRepository.create(
         {
           buyer_id: userId,
@@ -204,13 +210,15 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
           pricing_fingerprint: quote.priceFingerprint,
           total_price: quote.totalPrice,
           currency: quote.currency,
-          status: 'pending_payment',
+          status: payAtProperty ? 'confirmed' : 'pending_payment',
+          confirmed_at: payAtProperty ? new Date() : null,
           special_requests: data.specialRequests || null,
           guest_details: data.guestDetails || null,
           price_breakdown: quote,
           cancellation_policy_snapshot: quote.cancellationPolicy,
-          payment_due_at: new Date(Date.now() + PAYMENT_WINDOW_MINUTES * 60 * 1000),
-          expires_at: new Date(Date.now() + PAYMENT_WINDOW_MINUTES * 60 * 1000),
+          payment_policy: paymentPolicy,
+          payment_due_at: paymentDueAt,
+          expires_at: payAtProperty ? null : prepayDueAt,
         },
         { transaction }
       );
@@ -237,7 +245,9 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
             hotelId: hold.hotel_id,
             discountAmount: quote.discountAmount,
             currency: quote.currency,
-            reservationExpiresAt: booking.expires_at,
+            reservationExpiresAt: payAtProperty
+              ? new Date(quote.paymentPolicy.checkInAt)
+              : booking.expires_at,
             promotionSnapshot: {
               ...quote.promotion,
               subtotal: quote.subtotal,
@@ -248,6 +258,13 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
           },
           { transaction }
         );
+
+        // A pay-at-property booking is confirmed immediately, so redeem the
+        // promotion now instead of waiting for a payment webhook that never
+        // arrives.
+        if (payAtProperty) {
+          await promotionModule.redeemPromotion(booking.id, { transaction });
+        }
       }
 
       const dbTransaction = await paymentModule().createTransaction(
@@ -259,9 +276,11 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
           currency: quote.currency,
           status: 'pending',
           transactionType: 'payment',
+          paymentMethod: payAtProperty ? 'pay_at_property' : undefined,
           metadata: {
             booking_code: booking.booking_code,
             hold_id: hold.id,
+            payment_policy: paymentPolicy,
           },
         },
         { transaction }

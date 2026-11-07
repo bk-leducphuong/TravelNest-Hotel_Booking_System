@@ -49,7 +49,7 @@ function parseBoolean(value) {
  * - Location: city, country, latitude, longitude, radius
  * - Dates: checkIn, checkOut (ISO format, required)
  * - Guests: adults (required), children, rooms
- * - Filters: minPrice, maxPrice, minRating, hotelClass, amenities, freeCancellation
+ * - Filters: minPrice, maxPrice, minRating, hotelClass, amenities, freeCancellation, payAtProperty
  * - Sorting: sortBy (relevance, price_asc, price_desc, rating, distance, popularity)
  * - Pagination: page, limit
  */
@@ -79,6 +79,7 @@ const searchHotels = asyncHandler(async (req, res) => {
     hotelClass: parseList(req.query.hotelClass, (item) => parseInteger(item)),
     amenities: parseList(req.query.amenities, (item) => item.toUpperCase()),
     freeCancellation: parseBoolean(req.query.freeCancellation),
+    payAtProperty: parseBoolean(req.query.payAtProperty),
 
     // Sorting
     sortBy: req.query.sortBy || 'relevance',

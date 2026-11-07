@@ -237,6 +237,19 @@ watch(
           <el-descriptions-item :label="$t('bookings.col.currency')">
             {{ booking.currency }}
           </el-descriptions-item>
+          <el-descriptions-item :label="$t('bookings.col.paymentPolicy')">
+            {{
+              booking.payment_policy === "pay_at_property"
+                ? $t("bookings.paymentPolicy.payAtProperty")
+                : $t("bookings.paymentPolicy.prepay")
+            }}
+          </el-descriptions-item>
+          <el-descriptions-item
+            v-if="booking.payment_policy === 'pay_at_property' && booking.payment_due_at"
+            :label="$t('bookings.col.paymentDue')"
+          >
+            {{ new Date(booking.payment_due_at).toLocaleString() }}
+          </el-descriptions-item>
           <el-descriptions-item :label="$t('bookings.col.specialRequests')">
             {{ booking.special_requests || "—" }}
           </el-descriptions-item>

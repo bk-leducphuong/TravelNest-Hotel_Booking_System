@@ -190,6 +190,7 @@ function formatRooms(rooms = [], numberOfNights) {
       promotion: room.promotion || null,
       hasSale: Boolean(room.has_sale),
       availableRooms: room.available_rooms || 0,
+      paymentPolicy: room.payment_policy === 'pay_at_property' ? 'pay_at_property' : 'prepay',
       totalPrice,
     };
   });
