@@ -28,10 +28,11 @@ function getSessionUserId(req) {
  */
 const getUserBookings = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
-  const { includeCancelled, reviewed, bookedAfter, page, limit } = req.query;
+  const { includeCancelled, status, reviewed, bookedAfter, page, limit } = req.query;
 
   const result = await bookingUseCases.getUserBookings(userId, {
     includeCancelled: includeCancelled === true,
+    status,
     reviewed,
     bookedAfter,
     page,
@@ -124,13 +125,21 @@ const getBookingByCode = asyncHandler(async (req, res) => {
  * DELETE /api/bookings/:bookingId
  * Cancel a booking
  */
+const cancellationQuote = asyncHandler(async (req, res) => {
+  const { cancellationQuote: quote } = require('../application/guest/cancellationQuote');
+  res.status(200).json({ data: await quote(req.params.bookingId, getSessionUserId(req)) });
+});
+const cancellationStatus = asyncHandler(async (req, res) => {
+  const { cancellationStatus: status } = require('../application/guest/cancellationQuote');
+  res.status(200).json({ data: await status(req.params.bookingId, getSessionUserId(req)) });
+});
+
 const cancelBooking = asyncHandler(async (req, res) => {
   const userId = getSessionUserId(req);
   const { bookingId } = req.params;
-  const { processRefund } = req.query;
-
   const result = await bookingUseCases.cancelBooking(bookingId, userId, {
-    processRefund: processRefund === 'true',
+    quoteId: req.body.quoteId,
+    requestId: req.id,
   });
 
   res.status(200).json({
@@ -139,6 +148,8 @@ const cancelBooking = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  cancellationQuote,
+  cancellationStatus,
   getUserBookings,
   getReviewableBookings,
   createBooking,

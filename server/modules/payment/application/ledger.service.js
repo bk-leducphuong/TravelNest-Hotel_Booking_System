@@ -18,7 +18,9 @@ class LedgerService {
       ownerId ||
       (hotelId ? await ledgerRepository.findPrimaryOwnerByHotelId(hotelId, options) : null);
     const feeRate = this.normalizeFeeRate(platformFeeRate);
-    const platformFeeAmount = this.roundMoney(amount * feeRate);
+    const platformFeeAmount = this.roundMoney(
+      bookingData?.platform_commission_amount ?? amount * feeRate
+    );
     const payableAmount = this.roundMoney(amount - platformFeeAmount);
     const entryGroupKey = `payment_succeeded:${tx.id}`;
 
@@ -67,19 +69,34 @@ class LedgerService {
     );
   }
 
-  async recordRefundSucceeded({ refund, transaction, platformFeeRate }, options = {}) {
+  async recordRefundSucceeded({ refund, transaction }, options = {}) {
     const refundData = refund.toJSON ? refund.toJSON() : refund;
     const tx = transaction?.toJSON ? transaction.toJSON() : transaction;
     const amount = this.roundMoney(refundData.amount);
     const currency = (refundData.currency || tx?.currency || 'USD').toUpperCase();
     const hotelId = refundData.hotel_id || tx?.hotel_id;
-    const ownerId = hotelId
-      ? await ledgerRepository.findPrimaryOwnerByHotelId(hotelId, options)
-      : null;
-    const feeRate = this.normalizeFeeRate(platformFeeRate);
-    const platformFeeReversal = this.roundMoney(amount * feeRate);
-    const payableReversal = this.roundMoney(amount - platformFeeReversal);
     const entryGroupKey = `refund_succeeded:${refundData.id}`;
+    const existing = await ledgerRepository.findByEntryGroupKey(entryGroupKey, options);
+    if (existing.length) return existing;
+    await ledgerRepository.lockHotelBalance(hotelId, currency, options);
+    const original = await ledgerRepository.findByEntryGroupKey(
+      `payment_succeeded:${tx.id}`,
+      options
+    );
+    if (!original.length)
+      throw new Error('Original payment ledger missing; accounting review required');
+    const ownerId = original[0].owner_id;
+    const originalMetadata = original[0].metadata || {};
+    const originalFee = Math.round(Number(originalMetadata.platform_fee_amount || 0) * 100);
+    const posted = await ledgerRepository.getRefundPostingTotals(tx.id, options);
+    const grossMinor = Math.round(Number(tx.amount) * 100);
+    const cumulativeMinor = Math.round(Number(posted.gross) * 100) + Math.round(amount * 100);
+    const reversalMinor =
+      Math.round((originalFee * cumulativeMinor) / grossMinor) -
+      Math.round(Number(posted.fee) * 100);
+    const platformFeeReversal = reversalMinor / 100;
+    const payableReversal = this.roundMoney(amount - platformFeeReversal);
+    const feeRate = originalMetadata.platform_fee_rate || 0;
 
     return await this.postBalancedEntries(
       {
@@ -121,6 +138,48 @@ class LedgerService {
             description: 'Customer refund paid',
           },
         ],
+      },
+      options
+    );
+  }
+
+  async recordRefundFailed({ refund, transaction }, options) {
+    const data = refund.toJSON ? refund.toJSON() : refund;
+    const original = await ledgerRepository.findWithAccounts(
+      `refund_succeeded:${data.id}`,
+      options
+    );
+    if (!original.length) return [];
+    await ledgerRepository.lockHotelBalance(data.hotel_id, data.currency, options);
+    return this.postBalancedEntries(
+      {
+        entryGroupKey: `refund_failed:${data.id}`,
+        eventType: 'manual_adjustment',
+        currency: data.currency,
+        context: {
+          refund_id: data.id,
+          transaction_id: transaction.id,
+          booking_id: data.booking_id,
+          hotel_id: data.hotel_id,
+          buyer_id: data.buyer_id,
+          owner_id: original[0].owner_id,
+          provider: 'stripe',
+          provider_event_id: data.provider_refund_id,
+          metadata: { kind: 'refund_failure_reversal' },
+        },
+        lines: original.map((entry) => ({
+          account: {
+            accountKey: entry.ledger_account.account_key,
+            accountType: entry.ledger_account.account_type,
+            ownerType: entry.ledger_account.owner_type,
+            ownerId: entry.ledger_account.owner_id,
+            currency: entry.ledger_account.currency,
+            name: entry.ledger_account.name,
+          },
+          direction: entry.direction === 'debit' ? 'credit' : 'debit',
+          amount: Number(entry.amount),
+          description: 'Refund returned by provider; original posting reversed',
+        })),
       },
       options
     );

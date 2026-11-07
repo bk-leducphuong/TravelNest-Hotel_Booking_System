@@ -844,7 +844,7 @@
  *   post:
  *     summary: Initiate a refund (admin)
  *     description: |
- *       Creates a Stripe refund (full or partial) for a payment transaction and records it.
+ *       Records a durable refund (full or partial) and queues Stripe execution after commit.
  *       This is a financial operation only — it does not cancel the booking or release
  *       inventory. When `amount` is omitted the full remaining refundable balance is used.
  *
@@ -858,6 +858,11 @@
  *         name: transactionId
  *         required: true
  *         schema: { type: string, format: uuid }
+ *       - in: header
+ *         name: Idempotency-Key
+ *         required: true
+ *         schema: { type: string, minLength: 1, maxLength: 200 }
+ *         description: Reuse the same key when retrying the same refund request.
  *     requestBody:
  *       required: true
  *       content:
@@ -1095,10 +1100,11 @@
  * @swagger
  * /admin/payments/refunds/{refundId}/retry:
  *   post:
- *     summary: Retry a failed refund (admin)
+ *     summary: Reconcile an uncertain refund (admin)
  *     description: |
- *       Retries a previously failed refund by creating a fresh Stripe refund attempt on the
- *       same refund record. Only refunds in `failed` status can be retried.
+ *       Queues reconciliation of a processing refund in unknown/needs_attention state.
+ *       Preserves the original provider key and reservation. Provider-confirmed failures
+ *       require a new reviewed operation; they are not blindly retried.
  *
  *       Requires the `payment.refund` permission and hotel context.
  *     tags:
@@ -1166,4 +1172,35 @@
  *         content:
  *           application/json:
  *             schema: { $ref: '#/components/schemas/Error' }
+ */
+
+/**
+ * @swagger
+ * /admin/payments/refunds/{refundId}/review:
+ *   post:
+ *     summary: Resolve a manual cancellation refund review
+ *     description: Requires payment.refund permission and ownership by the active hotel. Positive amounts queue a durable refund; zero rejects the request. The human reason is preserved in the decision history.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: refundId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [amount, reason]
+ *             properties:
+ *               amount: { type: number, minimum: 0 }
+ *               reason: { type: string, minLength: 3, maxLength: 500 }
+ *     responses:
+ *       200:
+ *         description: Persisted review outcome and queued refund if approved.
+ *       409:
+ *         description: Review resolved already or refund exceeds captured remaining balance.
  */

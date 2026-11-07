@@ -25,6 +25,27 @@
     "starttls": "false"
   },
   "bruteForceProtected": true,
+  "identityProviders": [
+    {
+      "alias": "google",
+      "displayName": "Google",
+      "providerId": "google",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "config": {
+        "clientId": "${GOOGLE_CLIENT_ID}",
+        "clientSecret": "${GOOGLE_CLIENT_SECRET}",
+        "defaultScope": "openid email profile",
+        "syncMode": "IMPORT",
+        "useJwksUrl": "true",
+        "jwksUrl": "https://www.googleapis.com/oauth2/v3/certs",
+        "validateSignature": "true"
+      }
+    }
+  ],
   "roles": {
     "realm": [
       {
@@ -85,58 +106,6 @@
         "login_theme": "travelnest-guest",
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "http://localhost:5173/*"
-      },
-      "fullScopeAllowed": true,
-      "defaultClientScopes": [
-        "web-origins",
-        "acr",
-        "profile",
-        "roles",
-        "basic",
-        "email",
-        "travelnest-claims"
-      ],
-      "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"],
-      "protocolMappers": [
-        {
-          "name": "audience-travelnest-web",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-audience-mapper",
-          "consentRequired": false,
-          "config": {
-            "included.client.audience": "travelnest-web",
-            "id.token.claim": "false",
-            "access.token.claim": "true"
-          }
-        }
-      ]
-    },
-    {
-      "clientId": "travelnest-admin",
-      "name": "TravelNest Admin SPA",
-      "description": "Public SPA client for TravelNest admin console",
-      "rootUrl": "http://localhost:8000",
-      "baseUrl": "/",
-      "surrogateAuthRequired": false,
-      "enabled": true,
-      "alwaysDisplayInConsole": false,
-      "clientAuthenticatorType": "client-secret",
-      "redirectUris": ["http://localhost:8000/*", "http://admin.travelnest.local/*"],
-      "webOrigins": ["http://localhost:8000", "http://admin.travelnest.local"],
-      "notBefore": 0,
-      "bearerOnly": false,
-      "consentRequired": false,
-      "standardFlowEnabled": true,
-      "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": false,
-      "publicClient": true,
-      "frontchannelLogout": true,
-      "protocol": "openid-connect",
-      "attributes": {
-        "login_theme": "travelnest-admin",
-        "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:8000/* http://admin.travelnest.local/*"
       },
       "fullScopeAllowed": true,
       "defaultClientScopes": [

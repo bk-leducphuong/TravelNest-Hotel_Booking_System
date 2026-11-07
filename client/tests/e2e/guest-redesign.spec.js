@@ -133,6 +133,16 @@ async function fixtures(page, { authenticated = false, locale = 'en' } = {}) {
       };
     else if (path.endsWith('/reviews/validate')) data = { isValid: true };
     else if (path.endsWith('/reviews/check')) data = { exists: false };
+    else if (path.endsWith('/cancellation-quote'))
+      data = {
+        quoteId: 'quote-confirmation-1',
+        amountPaid: 240.75,
+        refundAmount: 180,
+        cancellationFee: 60.75,
+        currency: 'USD',
+        eligibility: 'eligible',
+        etaDays: { min: 5, max: 10, businessDays: true },
+      };
     else if (path.endsWith('/bookings')) data = [booking];
     else if (path.endsWith('/hotels/12')) data = details;
     else if (path.endsWith('/hotels/12/rooms')) data = [room];
@@ -319,7 +329,9 @@ test('all photos remains available with a full gallery on a phone', async ({ pag
   await expect(page.getByRole('button', { name: 'View all photos', exact: true })).toBeVisible();
 });
 
-test('checkout edits reach payment and cancellation does not invent a fee', async ({ page }) => {
+test('checkout edits reach payment and cancellation confirms the server refund quote', async ({
+  page,
+}) => {
   await fixtures(page, { authenticated: true });
   await page.goto(searchURL);
   await page.locator('.result-info a').click();
@@ -340,20 +352,25 @@ test('checkout edits reach payment and cancellation does not invent a fee', asyn
   await page.goto('/bookings/TN123/cancel');
   await expect(page.locator('.cancel-grid')).toBeVisible();
   await expect(page.locator('main')).not.toContainText(/USD 0|\$0\.00/);
-  await page.route('**/api/v1/bookings/4?*', (route) =>
+  await page.route('**/api/v1/bookings/4', (route) =>
     route.fulfill({
-      json: { data: { refundProcessed: false, cancellationPolicy: { refundAmount: 0 } } },
+      json: {
+        data: {
+          decision: { outcome: 'refund_required' },
+          refund: { amount: 180, currency: 'USD', status: 'pending', workflowState: 'queued' },
+        },
+      },
     })
   );
-  await page.locator('input[type=checkbox]').nth(1).check();
+  await expect(page.locator('main')).toContainText('$180.00');
+  await expect(page.locator('main')).toContainText('$60.75');
+  await page.locator('input[type=checkbox]').check();
   const request = page.waitForRequest(
     (r) => r.method() === 'DELETE' && r.url().includes('/bookings/4')
   );
   await page.locator('.cancel-danger').click();
-  expect((await request).url()).toContain('processRefund=true');
-  await expect(page.locator('[role=status]')).toContainText(
-    'No refund was processed automatically'
-  );
+  expect((await request).postDataJSON()).toEqual({ quoteId: 'quote-confirmation-1' });
+  await expect(page.locator('[role=status]')).toContainText('Refund queued for processing.');
 });
 for (const width of [375, 1440])
   for (const locale of ['en', 'vi']) {
@@ -466,3 +483,27 @@ test('profile and card dialogs support keyboard dismissal', async ({ page }) => 
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).not.toBeVisible();
 });
+
+for (const width of [375, 1440]) {
+  for (const locale of ['en', 'vi']) {
+    test(`refund quote fits ${width}px and is accessible in ${locale}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 1000 });
+      await fixtures(page, { authenticated: true, locale });
+      await page.goto('/bookings/TN123/cancel');
+      await expect(page.locator('.cancel-grid')).toBeVisible();
+      await expect(page.locator('.cancel-danger')).toBeDisabled();
+      await page.locator('input[type=checkbox]').check();
+      await expect(page.locator('.cancel-danger')).toBeEnabled();
+      await page.evaluate(() => document.fonts.ready);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true
+      );
+      await page.addStyleTag({ content: '#__vue-devtools-container__{display:none!important}' });
+      const audit = await new AxeBuilder({ page })
+        .exclude('#__vue-devtools-container__')
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+        .analyze();
+      expect(audit.violations.map((violation) => violation.id)).toEqual([]);
+    });
+  }
+}

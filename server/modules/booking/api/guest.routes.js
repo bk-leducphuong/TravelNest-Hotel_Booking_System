@@ -10,6 +10,8 @@ const {
   getBookingById,
   getBookingByCode,
   cancelBooking,
+  cancellationQuote,
+  cancellationStatus,
 } = require('./booking.controller');
 const router = express.Router();
 
@@ -55,6 +57,13 @@ router.post(
  * GET /api/bookings/:bookingId
  * Get a specific booking by ID
  */
+router.get(
+  '/:bookingId/cancellation-quote',
+  validate(bookingSchema.getBookingById),
+  cancellationQuote
+);
+router.get('/:bookingId/refund', validate(bookingSchema.getBookingById), cancellationStatus);
+
 router.get('/:bookingId', validate(bookingSchema.getBookingById), getBookingById);
 
 /**

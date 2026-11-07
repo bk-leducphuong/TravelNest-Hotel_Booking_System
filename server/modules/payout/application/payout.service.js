@@ -2,8 +2,9 @@ const sequelize = require('@config/database.config');
 const logger = require('@config/logger.config');
 const notificationModule = require('@modules/notification');
 const paymentModule = require('@modules/payment');
-const { ledger: ledgerService } = require('@modules/payment');
 const ApiError = require('@utils/ApiError');
+
+const { settleTransfer } = require('./settleTransfer');
 
 const payoutRepository = require('../infrastructure/payout.repository');
 
@@ -46,17 +47,44 @@ class PayoutService {
 
     const ownerId = payoutData.ownerId || payoutData.owner_id || connectedAccount.user_id;
 
-    return await payoutRepository.create(
-      {
-        ...payoutData,
-        ownerId,
-        amount: payoutAmount,
-        platformFeeAmount,
-        connectedPaymentAccountId: connectedAccount.id,
-        status: payoutData.status || 'pending',
-      },
-      options
-    );
+    const create = async (transaction) => {
+      const txOptions = { ...options, transaction };
+      await paymentModule.lockHotelBalance(
+        connectedAccount.hotel_id || payoutData.hotelId || payoutData.hotel_id,
+        payoutData.currency || 'USD',
+        txOptions
+      );
+      const hotelId = payoutData.hotelId || payoutData.hotel_id;
+      const currency = payoutData.currency || 'USD';
+      const available = await paymentModule.availableHotelBalance(hotelId, currency, txOptions);
+      const reserved = await payoutRepository.sumReserved(hotelId, currency, null, txOptions);
+      const payable = Math.max(0, this.roundMoney(available - reserved));
+      const amount = options.allowBalanceAdjustment
+        ? Math.min(payoutAmount, payable)
+        : payoutAmount;
+      if (!(amount > 0) || amount > payable + 0.001)
+        throw new ApiError(
+          409,
+          'PAYOUT_BALANCE_RESERVED',
+          'Refund obligations or owner debt must be settled before this payout'
+        );
+      return payoutRepository.create(
+        {
+          ...payoutData,
+          ownerId,
+          amount,
+          platformFeeAmount,
+          connectedPaymentAccountId: connectedAccount.id,
+          status: payoutData.status || 'pending',
+          metadata: {
+            ...(payoutData.metadata || {}),
+            owner_debt_deduction: this.roundMoney(payoutAmount - amount),
+          },
+        },
+        txOptions
+      );
+    };
+    return options.transaction ? create(options.transaction) : sequelize.transaction(create);
   }
 
   async createPayoutForTransaction(transactionId, options = {}) {
@@ -76,21 +104,24 @@ class PayoutService {
     );
     const payoutAmount = this.roundMoney(parseFloat(transaction.amount) - platformFeeAmount);
 
-    return await this.createManualPayout({
-      hotelId: transaction.hotel_id,
-      ownerId: options.ownerId,
-      transactionId: transaction.id,
-      amount: payoutAmount,
-      currency: transaction.currency,
-      platformFeeAmount,
-      periodStart: options.periodStart,
-      periodEnd: options.periodEnd,
-      metadata: {
-        ...(options.metadata || {}),
-        source_transaction_id: transaction.id,
-        gross_transaction_amount: transaction.amount,
+    return await this.createManualPayout(
+      {
+        hotelId: transaction.hotel_id,
+        ownerId: options.ownerId,
+        transactionId: transaction.id,
+        amount: payoutAmount,
+        currency: transaction.currency,
+        platformFeeAmount,
+        periodStart: options.periodStart,
+        periodEnd: options.periodEnd,
+        metadata: {
+          ...(options.metadata || {}),
+          source_transaction_id: transaction.id,
+          gross_transaction_amount: transaction.amount,
+        },
       },
-    });
+      { allowBalanceAdjustment: true }
+    );
   }
 
   async createEligiblePayouts(options = {}) {
@@ -142,7 +173,7 @@ class PayoutService {
                 payout_eligibility_cutoff: cutoffDate,
               },
             },
-            { transaction: dbTransaction }
+            { transaction: dbTransaction, allowBalanceAdjustment: true }
           );
 
           await payoutRepository.createItems(
@@ -153,7 +184,7 @@ class PayoutService {
                 transactionId: transaction.id,
                 grossAmount,
                 platformFeeAmount,
-                netAmount,
+                netAmount: Number(createdPayout.amount),
                 currency: bookingData.currency,
               },
             ],
@@ -165,7 +196,13 @@ class PayoutService {
       } catch (error) {
         // Owners without a payout-ready connected account are skipped, not
         // failed — so batch generation is not blocked by onboarding gaps.
-        if (['NO_PAYOUT_READY_ACCOUNT', 'PAYOUT_ACCOUNT_NOT_READY'].includes(error.code)) {
+        if (
+          [
+            'NO_PAYOUT_READY_ACCOUNT',
+            'PAYOUT_ACCOUNT_NOT_READY',
+            'PAYOUT_BALANCE_RESERVED',
+          ].includes(error.code)
+        ) {
           logger.warn('Skipping payout; no ready connected account', {
             bookingId: bookingData.id,
             hotelId: bookingData.hotel_id,
@@ -205,45 +242,55 @@ class PayoutService {
       throw new Error('STRIPE_SECRET_KEY is not configured');
     }
 
-    await payoutRepository.update(payout.id, { status: 'processing' });
+    await sequelize.transaction(async (transaction) => {
+      const options = { transaction };
+      await paymentModule.lockHotelBalance(payout.hotel_id, payout.currency, options);
+      const current = await payoutRepository.findForClaim(payout.id, {
+        ...options,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (current.status !== 'pending')
+        throw new ApiError(409, 'PAYOUT_ALREADY_CLAIMED', 'Payout already claimed');
+      const available = await paymentModule.availableHotelBalance(
+        payout.hotel_id,
+        payout.currency,
+        options
+      );
+      const reserved = await payoutRepository.sumReserved(
+        payout.hotel_id,
+        payout.currency,
+        payout.id,
+        options
+      );
+      if (Number(payout.amount) > available - reserved + 0.001)
+        throw new ApiError(
+          409,
+          'PAYOUT_BALANCE_RESERVED',
+          'Refund obligations or owner debt must be settled before this payout'
+        );
+      await payoutRepository.update(payout.id, { status: 'processing' }, options);
+    });
 
+    let settled = false;
     try {
       const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-      const transfer = await stripe.transfers.create({
-        amount: this.toMinorUnits(payout.amount),
-        currency: payout.currency.toLowerCase(),
-        destination: providerAccountId,
-        metadata: {
-          payout_id: payout.id,
-          hotel_id: payout.hotel_id,
-          owner_id: payout.owner_id,
-          transaction_id: payout.transaction_id || '',
-        },
-      });
-
-      await payoutRepository.update(payout.id, {
-        status: 'paid',
-        providerTransferId: transfer.id,
-        paidAt: new Date(),
-        metadata: {
-          ...(payout.metadata || {}),
-          stripe_transfer: {
-            id: transfer.id,
-            balance_transaction: transfer.balance_transaction,
-            destination: transfer.destination,
+      const transfer = await stripe.transfers.create(
+        {
+          amount: this.toMinorUnits(payout.amount),
+          currency: payout.currency.toLowerCase(),
+          destination: providerAccountId,
+          metadata: {
+            payout_id: payout.id,
+            hotel_id: payout.hotel_id,
+            owner_id: payout.owner_id,
+            transaction_id: payout.transaction_id || '',
           },
         },
-      });
+        { idempotencyKey: `payout-${payout.id}`, timeout: 30000, maxNetworkRetries: 0 }
+      );
 
-      const payoutData = payout.toJSON ? payout.toJSON() : payout;
-      await ledgerService.recordPayoutPaid({
-        payout: {
-          ...payoutData,
-          status: 'paid',
-          provider_transfer_id: transfer.id,
-          paid_at: new Date(),
-        },
-      });
+      await settleTransfer(payout, transfer);
+      settled = true;
 
       await notificationModule.sendPayoutNotification({
         hotelId: payout.hotel_id,
@@ -255,11 +302,18 @@ class PayoutService {
 
       return await payoutRepository.findById(payout.id);
     } catch (error) {
+      if (settled) {
+        logger.error(
+          { payoutId: payout.id, error: error.message },
+          'Payout settled; notification failed'
+        );
+        return payoutRepository.findById(payout.id);
+      }
       logger.error('Stripe transfer failed for payout:', error);
 
       await payoutRepository.update(payout.id, {
-        status: 'failed',
-        failureCode: error.code || error.type || 'stripe_transfer_failed',
+        status: 'processing',
+        failureCode: error.code || error.type || 'stripe_transfer_outcome_unknown',
         failureMessage: error.message,
       });
 
@@ -267,7 +321,7 @@ class PayoutService {
         hotelId: payout.hotel_id,
         ownerId: payout.owner_id,
         payoutId: payout.id,
-        status: 'failed',
+        status: 'processing',
         amount: payout.amount,
       });
 

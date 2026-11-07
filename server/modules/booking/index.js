@@ -62,6 +62,8 @@ module.exports = {
 
   // Persistence API for cross-module callers (payment).
   getBookingsByCode,
+  getBookingForPayment: (id, options) => bookingRepository.findById(id, options),
+  updateBookingForPayment: (id, data, options) => bookingRepository.update(id, data, options),
   findBookingByCode,
   createBooking,
   updateBookingsByCode,

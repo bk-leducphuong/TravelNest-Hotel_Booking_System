@@ -155,15 +155,18 @@ class StripePaymentAdapter extends StripeCustomerAdapter {
    * Preferred for admin-initiated refunds: no extra payment-intent lookup.
    */
   async refundCharge(params) {
-    const { chargeId, amount, reason, metadata } = params;
+    const { chargeId, amount, reason, metadata, idempotencyKey } = params;
 
     try {
-      const refund = await this.stripe.refunds.create({
-        charge: chargeId,
-        amount: amount ? Math.round(amount) : undefined,
-        reason: reason || 'requested_by_customer',
-        metadata: metadata || {},
-      });
+      const refund = await this.stripe.refunds.create(
+        {
+          charge: chargeId,
+          amount: Math.round(amount),
+          reason: reason || 'requested_by_customer',
+          metadata: metadata || {},
+        },
+        { idempotencyKey, timeout: 30000, maxNetworkRetries: 0 }
+      );
 
       return {
         id: refund.id,
@@ -178,6 +181,32 @@ class StripePaymentAdapter extends StripeCustomerAdapter {
       logger.error('Stripe charge refund failed:', error);
       throw normalizeStripeError(error);
     }
+  }
+
+  async listRefundsForCharge(chargeId) {
+    const ids = [];
+    for await (const refund of this.stripe.refunds.list({ charge: chargeId, limit: 100 }))
+      ids.push(refund.id);
+    return ids;
+  }
+
+  async getRefund(refundId) {
+    const refund = await this.stripe.refunds.retrieve(refundId);
+    return { id: refund.id, status: this.normalizeRefundStatus(refund.status), raw: refund };
+  }
+
+  async findRefundForRecord(chargeId, recordId) {
+    let found = null;
+    for await (const refund of this.stripe.refunds.list({ charge: chargeId, limit: 100 })) {
+      if (refund.metadata?.refund_record_id === recordId) {
+        if (found)
+          throw new Error(
+            'Multiple provider refunds match one obligation; manual reconciliation required'
+          );
+        found = { id: refund.id, status: this.normalizeRefundStatus(refund.status), raw: refund };
+      }
+    }
+    return found;
   }
 
   /**
@@ -239,6 +268,7 @@ class StripePaymentAdapter extends StripeCustomerAdapter {
   normalizeRefundStatus(stripeStatus) {
     const statusMap = {
       pending: 'processing',
+      requires_action: 'processing',
       succeeded: 'succeeded',
       failed: 'failed',
       canceled: 'cancelled',

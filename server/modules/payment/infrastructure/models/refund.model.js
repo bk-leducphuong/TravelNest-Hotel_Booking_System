@@ -48,6 +48,13 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
         defaultValue: 'stripe',
       },
+      idempotency_key: { type: DataTypes.STRING(255), allowNull: true },
+      workflow_state: { type: DataTypes.STRING(32), allowNull: true },
+      attempt_count: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      first_attempt_at: { type: DataTypes.DATE, allowNull: true },
+      next_retry_at: { type: DataTypes.DATE, allowNull: true },
+      lease_until: { type: DataTypes.DATE, allowNull: true },
+      lease_token: { type: DataTypes.UUID, allowNull: true },
       provider_refund_id: {
         type: DataTypes.STRING(255),
         allowNull: true,
@@ -161,6 +168,17 @@ module.exports = function (sequelize, DataTypes) {
           name: 'idx_refunds_status',
           using: 'BTREE',
           fields: [{ name: 'status' }],
+        },
+        {
+          name: 'refund_operation_unique',
+          unique: true,
+          using: 'BTREE',
+          fields: [{ name: 'idempotency_key' }],
+        },
+        {
+          name: 'refund_recovery_due',
+          using: 'BTREE',
+          fields: [{ name: 'status' }, { name: 'next_retry_at' }],
         },
       ],
     }

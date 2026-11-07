@@ -88,7 +88,10 @@ const load = async () => {
   }
 };
 
+const refundOperationKey = ref("");
+
 const openRefund = () => {
+  refundOperationKey.value = crypto.randomUUID();
   refundDialog.visible = true;
   refundDialog.amount = undefined;
   refundDialog.reason = "customer_request";
@@ -97,10 +100,14 @@ const openRefund = () => {
 const confirmRefund = async () => {
   submitting.value = true;
   try {
-    const result = await initiateRefund(transactionId.value, {
-      amount: refundDialog.amount,
-      reason: refundDialog.reason,
-    });
+    const result = await initiateRefund(
+      transactionId.value,
+      {
+        amount: refundDialog.amount,
+        reason: refundDialog.reason,
+      },
+      refundOperationKey.value
+    );
     ElMessage.success(
       t("payments.toast.refundIssued", {
         status: t(`payments.refundStatus.${result.status}`),

@@ -3,15 +3,13 @@ const { Transaction } = require('sequelize');
 const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
 const bookingModule = require('@modules/booking');
-const StripePaymentAdapter = require('../../infrastructure/adapters/stripe-payment.adapter');
 const ledgerService = require('../ledger.service');
 
 const transactionRepository = require('../../infrastructure/transaction.repository');
 const paymentRepository = require('../../infrastructure/payment.repository');
 
 const { fromMinorUnits } = require('../../domain/money');
-
-const stripeAdapter = new StripePaymentAdapter();
+const { createObligation } = require('../refund-obligations');
 
 /**
  * Handle a `payment_intent.succeeded` webhook. Idempotent: safe to call more
@@ -37,7 +35,10 @@ async function handlePaymentSucceeded(context) {
 
     // 1. Check if transaction already exists (idempotency)
     let dbTransaction = transactionId
-      ? await transactionRepository.findById(transactionId, { transaction })
+      ? await transactionRepository.findById(transactionId, {
+          transaction,
+          lock: Transaction.LOCK.UPDATE,
+        })
       : null;
 
     if (!dbTransaction) {
@@ -46,59 +47,13 @@ async function handlePaymentSucceeded(context) {
       });
     }
 
-    if (dbTransaction && dbTransaction.status === 'completed') {
+    if (
+      dbTransaction &&
+      ['completed', 'partially_refunded', 'refunded'].includes(dbTransaction.status)
+    ) {
       logger.info('Payment already processed (idempotent)', { paymentIntentId });
       await transaction.commit();
       return { success: true, alreadyProcessed: true };
-    }
-
-    if (existingBookings.some((booking) => booking.status === 'expired')) {
-      let refundResult = null;
-      try {
-        refundResult = await stripeAdapter.refundPayment({
-          paymentId: paymentIntentId,
-          reason: 'requested_by_customer',
-        });
-      } catch (refundError) {
-        logger.error('Failed to refund payment for expired booking', {
-          paymentIntentId,
-          bookingCode,
-          error: refundError.message,
-        });
-      }
-
-      if (dbTransaction) {
-        await transactionRepository.update(
-          dbTransaction.id,
-          {
-            status: refundResult?.status === 'succeeded' ? 'refunded' : 'processing',
-            chargeId: context.chargeId,
-            completedAt: new Date(),
-            metadata: {
-              ...(dbTransaction.metadata || {}),
-              booking_code: bookingCode,
-              expired_payment_received: true,
-              refund_id: refundResult?.id,
-              refund_status: refundResult?.status,
-            },
-          },
-          { transaction }
-        );
-      }
-
-      await transaction.commit();
-
-      logger.warn('Payment succeeded after booking expired; booking was not confirmed', {
-        paymentIntentId,
-        bookingCode,
-        refunded: refundResult?.status === 'succeeded',
-      });
-
-      return {
-        success: true,
-        expiredBooking: true,
-        refunded: refundResult?.status === 'succeeded',
-      };
     }
 
     // 2. Create or update transaction
@@ -184,6 +139,45 @@ async function handlePaymentSucceeded(context) {
         },
         { transaction }
       );
+    }
+
+    if (
+      existingBookings.some((booking) =>
+        ['expired', 'cancelled', 'no_show', 'completed'].includes(booking.status)
+      )
+    ) {
+      await ledgerService.recordPaymentSucceeded(
+        { transaction: dbTransaction, payment: ledgerPayment, booking: primaryBooking },
+        { transaction }
+      );
+      const refund = await createObligation(
+        dbTransaction,
+        {
+          amount,
+          reason: 'other',
+          key: `late-payment-${dbTransaction.id}`,
+          source: 'late_payment_compensation',
+        },
+        { transaction }
+      );
+      if (primaryBooking?.status === 'cancelled') {
+        await bookingModule.updateBookingsByCode(
+          bookingCode,
+          {
+            cancellation_decision: {
+              ...(primaryBooking.cancellation_decision || {}),
+              refundId: refund.refundId,
+              outcome: 'refund_required',
+              approvedRefundAmount: amount,
+              reason: 'payment_received_after_cancellation',
+              decidedAt: new Date().toISOString(),
+            },
+          },
+          { transaction }
+        );
+      }
+      await transaction.commit();
+      return { success: true, terminalBooking: true, refund };
     }
 
     // 4. Confirm bookings. The new flow creates pending-payment bookings before payment.

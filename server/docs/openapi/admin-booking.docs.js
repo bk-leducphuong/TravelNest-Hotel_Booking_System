@@ -551,8 +551,8 @@
  *     description: |
  *       Releases reserved inventory and cancels the booking, optionally refunding the
  *       attached payment transaction. Inventory release and the status change are one
- *       transaction; the refund is a separate cross-module call and a failure is
- *       reported in `refundError` rather than silently dropped.
+ *       transaction with the refund obligation and outbox. Refund execution is
+ *       asynchronous after commit; refund.status and subsequent reads show progress.
  *
  *       **Requires the `booking.cancel` permission** and hotel context.
  *     tags:

@@ -1,6 +1,7 @@
 const inventoryModule = require('@modules/inventory');
 const ApiError = require('@utils/ApiError');
 const bookingRepository = require('../infrastructure/booking.repository');
+const { getHotelCheckInDateTime } = require('../domain/check-in-time');
 
 class PricingService {
   async quote({ hotelId, rooms, checkInDate, checkOutDate }) {
@@ -59,7 +60,12 @@ class PricingService {
     const serviceFeeAmount = this.roundMoney(subtotal * serviceFeeRate);
     const platformCommissionAmount = this.roundMoney(subtotal * platformCommissionRate);
     const totalPrice = this.roundMoney(subtotal + taxAmount + serviceFeeAmount);
-    const cancellationPolicy = await this.getCancellationPolicySnapshot(hotelId, roomIds);
+    const cancellationPolicy = await this.getCancellationPolicySnapshot(hotelId, roomIds, {
+      rooms: roomBreakdown,
+      subtotal,
+      totalPrice,
+      checkInDate,
+    });
 
     return {
       subtotal,
@@ -76,13 +82,34 @@ class PricingService {
     };
   }
 
-  async getCancellationPolicySnapshot(hotelId, roomIds) {
+  async getCancellationPolicySnapshot(hotelId, roomIds, pricing) {
     const snapshots = [];
+    const hotel = await bookingRepository.findCancellationHotel(hotelId);
+    const checkInAt = getHotelCheckInDateTime(
+      pricing.checkInDate,
+      hotel.check_in_time,
+      hotel.timezone || 'UTC'
+    );
+    let allocated = 0;
 
     for (const roomId of roomIds) {
       const rule = await bookingRepository.findCancellationRule(hotelId, roomId);
       const data = rule?.toJSON ? rule.toJSON() : rule;
+      const index = snapshots.length;
+      const amountMinor =
+        index === roomIds.length - 1
+          ? Math.round(pricing.totalPrice * 100) - allocated
+          : Math.round(
+              (pricing.totalPrice * 100 * pricing.rooms[index].subtotal) / (pricing.subtotal || 1)
+            );
+      allocated += amountMinor;
+      const hours = data?.free_cancellation_until_hours_before_checkin;
       snapshots.push({
+        amountMinor,
+        freeCancellationDeadline:
+          hours === null || hours === undefined
+            ? null
+            : new Date(checkInAt.getTime() - hours * 3600000).toISOString(),
         roomId,
         ruleId: data?.id || null,
         isRefundable: data ? !!data.is_refundable : false,
@@ -97,7 +124,12 @@ class PricingService {
       });
     }
 
-    return { rooms: snapshots };
+    return {
+      version: 2,
+      checkInAt: checkInAt.toISOString(),
+      timezone: hotel.timezone || 'UTC',
+      rooms: snapshots,
+    };
   }
 
   getNights(checkInDate, checkOutDate) {

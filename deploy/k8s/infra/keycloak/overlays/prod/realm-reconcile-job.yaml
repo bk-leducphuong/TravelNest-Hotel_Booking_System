@@ -56,6 +56,43 @@ spec:
                 -f /realm/travelnest-realm.json \
                 -s ifResourceExists=OVERWRITE
               echo "Realm reconciled."
+
+              # Google identity provider. The client secret must not live in
+              # travelnest-realm.json (which is committed), and partialImport
+              # does not expand env-var placeholders, so upsert it here from the
+              # sealed keycloak-secret instead. Skips cleanly when unset.
+              if [ -n "${GOOGLE_CLIENT_ID:-}" ] && [ -n "${GOOGLE_CLIENT_SECRET:-}" ]; then
+                echo "Reconciling Google identity provider..."
+                cat > /tmp/google-idp.json <<EOF
+              {
+                "alias": "google",
+                "displayName": "Google",
+                "providerId": "google",
+                "enabled": true,
+                "trustEmail": true,
+                "storeToken": false,
+                "firstBrokerLoginFlowAlias": "first broker login",
+                "config": {
+                  "clientId": "${GOOGLE_CLIENT_ID}",
+                  "clientSecret": "${GOOGLE_CLIENT_SECRET}",
+                  "defaultScope": "openid email profile",
+                  "syncMode": "IMPORT",
+                  "useJwksUrl": "true",
+                  "jwksUrl": "https://www.googleapis.com/oauth2/v3/certs",
+                  "validateSignature": "true"
+                }
+              }
+              EOF
+                if "$KC" get identity-provider/instances/google -r travelnest >/dev/null 2>&1; then
+                  "$KC" update identity-provider/instances/google -r travelnest -f /tmp/google-idp.json
+                  echo "  updated."
+                else
+                  "$KC" create identity-provider/instances -r travelnest -f /tmp/google-idp.json
+                  echo "  created."
+                fi
+              else
+                echo "GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET not set; skipping Google identity provider."
+              fi
           envFrom:
             - configMapRef:
                 name: keycloak-config

@@ -42,6 +42,34 @@ describe('bookingRepository.findByBuyerId', () => {
     });
   });
 
+  it('returns only cancelled bookings for the cancelled view', async () => {
+    await bookingRepository.findByBuyerId('user-1', { status: 'cancelled' });
+
+    expect(Bookings.findAll).toHaveBeenCalledWith({
+      where: { buyer_id: 'user-1', status: 'cancelled' },
+      order: [['created_at', 'DESC']],
+    });
+  });
+
+  it('returns both cancelled and active bookings for the all view', async () => {
+    await bookingRepository.findByBuyerId('user-1', { status: 'all' });
+
+    expect(Bookings.findAll).toHaveBeenCalledWith({
+      where: { buyer_id: 'user-1' },
+      order: [['created_at', 'DESC']],
+    });
+  });
+
+  it('lets the explicit status win over the legacy includeCancelled alias', async () => {
+    await bookingRepository.findByBuyerId('user-1', {
+      status: 'cancelled',
+      excludeCancelled: false,
+    });
+
+    const [query] = Bookings.findAll.mock.calls[0];
+    expect(query.where.status).toBe('cancelled');
+  });
+
   it('filters to unreviewed bookings with a LEFT JOIN on reviews', async () => {
     await bookingRepository.findByBuyerId('user-1', { reviewed: false });
 

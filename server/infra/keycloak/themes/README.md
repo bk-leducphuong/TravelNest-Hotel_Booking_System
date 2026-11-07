@@ -5,6 +5,13 @@ security behavior come from Keycloak's `keycloak` parent theme; only CSS and
 localized headings are overridden. This also styles reset-password, verification,
 required-action and MFA pages without maintaining copies of security templates.
 
+The one template override is `travelnest-guest/login/register.ftl`: Keycloak
+renders identity-provider buttons only on the login page, so this copy of the
+base template adds the same `kc-social-providers` block to registration and
+gives it the localized "Or register with" heading. The admin and platform themes
+inherit it through `parent=travelnest-guest`. Re-sync the file from the base
+theme when upgrading Keycloak.
+
 | Client                  | Login theme           | Appearance                                               |
 | ----------------------- | --------------------- | -------------------------------------------------------- |
 | `travelnest-web`        | `travelnest-guest`    | Pale blue canvas, desktop resort photo panel, white card |
