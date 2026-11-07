@@ -33,6 +33,9 @@ for (const width of [375, 768, 1440]) {
           id,
           name: `Hotel ${id}`,
           address: 'Hanoi',
+          minPrice: 100 + id,
+          currency: 'USD',
+          ratingSummary: { overallRating: 8.5, totalReviews: 12 },
         }));
       } else if (path.endsWith('/search/destinations/trending')) {
         data = {
@@ -47,6 +50,7 @@ for (const width of [375, 768, 1440]) {
     await page.goto('/');
     const trending = page.getByRole('region', { name: 'Trending Hotels', exact: true });
     await expect(trending.locator('.guest-property')).toHaveCount(10);
+    await expect(trending.locator('.guest-property-price').first()).toContainText('100');
     const track = trending.locator('.discovery-items');
     await expect(
       trending.getByRole('button', { name: 'Next cards in Trending Hotels', exact: true })

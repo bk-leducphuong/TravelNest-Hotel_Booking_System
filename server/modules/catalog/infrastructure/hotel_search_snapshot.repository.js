@@ -130,6 +130,53 @@ class HotelSearchSnapshotRepository {
   }
 
   /**
+   * Batch price + rating facets for the lightweight hotel cards used by the
+   * trending / recently-viewed / batch endpoints.
+   *
+   * Price comes from the search read model (future open inventory). Rating is
+   * read straight from `hotel_rating_summaries` so a new review shows up on a
+   * card without waiting for a snapshot rebuild.
+   */
+  async findCardFacetsByIds(hotelIds = []) {
+    if (!Array.isArray(hotelIds) || hotelIds.length === 0) return [];
+
+    const ids = [...new Set(hotelIds.map(String))];
+
+    const [priceRows, ratingRows] = await Promise.all([
+      hotel_search_snapshots.findAll({
+        where: { hotel_id: { [Op.in]: ids } },
+        attributes: ['hotel_id', 'min_price'],
+        raw: true,
+      }),
+      hotel_rating_summaries.findAll({
+        where: { hotel_id: { [Op.in]: ids } },
+        attributes: ['hotel_id', 'overall_rating', 'total_reviews'],
+        raw: true,
+      }),
+    ]);
+
+    const facetsById = new Map(
+      ids.map((id) => [id, { hotelId: id, minPrice: null, overallRating: 0, totalReviews: 0 }])
+    );
+
+    for (const row of priceRows) {
+      const facet = facetsById.get(String(row.hotel_id));
+      if (!facet) continue;
+      facet.minPrice =
+        row.min_price !== null && row.min_price !== undefined ? parseFloat(row.min_price) : null;
+    }
+
+    for (const row of ratingRows) {
+      const facet = facetsById.get(String(row.hotel_id));
+      if (!facet) continue;
+      facet.overallRating = parseFloat(row.overall_rating) || 0;
+      facet.totalReviews = Number(row.total_reviews) || 0;
+    }
+
+    return [...facetsById.values()];
+  }
+
+  /**
    * Recompute amenities from hotel_amenities junction table
    */
   async recomputeAmenities(hotelId) {

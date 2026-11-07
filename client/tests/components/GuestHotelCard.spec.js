@@ -32,3 +32,39 @@ describe('home hotel favorite status', () => {
     wrapper.unmount();
   });
 });
+
+describe('home hotel card price and rating', () => {
+  const mountCard = (hotel) =>
+    mount(GuestHotelCard, {
+      props: { hotel },
+      global: {
+        mocks: { $t: (key) => key },
+        plugins: [
+          createStore({
+            modules: { auth: { namespaced: true, getters: { isUserAuthenticated: () => true } } },
+          }),
+        ],
+        stubs: { MediaImage: true, ElDialog: true },
+      },
+    });
+
+  it('shows the indicative nightly price and rating when provided', () => {
+    const wrapper = mountCard({
+      id: 'hotel-1',
+      name: 'Hotel',
+      minPrice: 99.5,
+      currency: 'USD',
+      ratingSummary: { overallRating: 8.8, totalReviews: 120 },
+    });
+    expect(wrapper.find('.guest-property-price').text()).toContain('99.50');
+    expect(wrapper.find('.guest-property-price').text()).toContain('guest.perNight');
+    expect(wrapper.find('.guest-property-rating').text()).toContain('8.8');
+    wrapper.unmount();
+  });
+
+  it('omits the price when the card has none', () => {
+    const wrapper = mountCard({ id: 'hotel-1', name: 'Hotel' });
+    expect(wrapper.find('.guest-property-price').exists()).toBe(false);
+    wrapper.unmount();
+  });
+});
