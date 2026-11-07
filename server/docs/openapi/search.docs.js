@@ -779,6 +779,9 @@
  *                             description: Number of searches in the period
  *                           uniqueUsers:
  *                             type: integer
+ *                           hotelCount:
+ *                             type: integer
+ *                             description: Number of active hotels in the destination
  *                           images:
  *                             type: object
  *                             nullable: true

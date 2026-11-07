@@ -90,9 +90,13 @@
         class="destination-card"
         @click="redirectToSearchResults(place)"
       >
-        <MediaImage :src="getPlaceImage(place)" :alt="displayName(place)" /><strong>{{
-          displayName(place)
-        }}</strong>
+        <MediaImage :src="getPlaceImage(place)" :alt="displayName(place)" />
+        <span class="destination-card-copy">
+          <strong>{{ displayName(place) }}</strong>
+          <small v-if="place.hotelCount != null" class="destination-card-count">
+            {{ $t('userHome.hotelCount', { count: place.hotelCount }) }}
+          </small>
+        </span>
       </button>
     </template>
   </DiscoverySection>
@@ -112,10 +116,19 @@
     height: 180px;
     border-radius: 0;
   }
-  .destination-card strong {
+  .destination-card-copy {
     display: block;
     padding: 20px;
+  }
+  .destination-card strong {
+    display: block;
     font-size: 17px;
     font-weight: 500;
+  }
+  .destination-card-count {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--tn-muted);
   }
 </style>
