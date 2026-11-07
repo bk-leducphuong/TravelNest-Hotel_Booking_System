@@ -2,6 +2,7 @@ const ApiError = require('@utils/ApiError');
 
 const sequelize = require('@config/database.config');
 const inventoryModule = require('@modules/inventory');
+const promotionModule = require('@modules/promotion');
 const { generateBookingCode } = require('../../domain/booking-code');
 const holdService = require('../hold.service');
 const pricingService = require('../pricing.service');
@@ -126,7 +127,10 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
 
   try {
     return await sequelize.transaction(async (transaction) => {
-      const hold = await holdRepository.findByIdWithRooms(data.holdId, { transaction });
+      const hold = await holdRepository.findByIdWithRooms(data.holdId, {
+        transaction,
+        lock: transaction.LOCK?.UPDATE,
+      });
 
       if (!hold) {
         throw new ApiError(404, 'HOLD_NOT_FOUND', 'Hold not found');
@@ -151,7 +155,20 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
         rooms: holdRooms,
         checkInDate: hold.check_in_date,
         checkOutDate: hold.check_out_date,
+        promotionCode: data.promotionCode || null,
+        buyerId: userId,
       });
+
+      // The accepted fingerprint lets us detect a changed sale/code price and
+      // force a review instead of silently charging a different total.
+      if (data.pricingFingerprint && data.pricingFingerprint !== quote.priceFingerprint) {
+        throw new ApiError(
+          409,
+          'PRICE_CHANGED',
+          'The price or applied offer changed. Please review the updated quote.',
+          { quote, priceFingerprint: quote.priceFingerprint }
+        );
+      }
 
       await holdService.releaseHold(hold.id, userId, 'completed', { transaction });
 
@@ -182,6 +199,9 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
           tax_amount: quote.taxAmount,
           service_fee_amount: quote.serviceFeeAmount,
           platform_commission_amount: quote.platformCommissionAmount,
+          discount_amount: quote.discountAmount,
+          promotion_id: quote.promotion?.id || null,
+          pricing_fingerprint: quote.priceFingerprint,
           total_price: quote.totalPrice,
           currency: quote.currency,
           status: 'pending_payment',
@@ -206,6 +226,29 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
         })),
         { transaction }
       );
+
+      if (quote.promotion?.id) {
+        await promotionModule.reservePromotion(
+          {
+            promotion: quote.promotion,
+            promotionId: quote.promotion.id,
+            bookingId: booking.id,
+            buyerId: userId,
+            hotelId: hold.hotel_id,
+            discountAmount: quote.discountAmount,
+            currency: quote.currency,
+            reservationExpiresAt: booking.expires_at,
+            promotionSnapshot: {
+              ...quote.promotion,
+              subtotal: quote.subtotal,
+              discountedSubtotal: quote.discountedSubtotal,
+              discountAmount: quote.discountAmount,
+              allocation: quote.discountAllocation,
+            },
+          },
+          { transaction }
+        );
+      }
 
       const dbTransaction = await paymentModule().createTransaction(
         {

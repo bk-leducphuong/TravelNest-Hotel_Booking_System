@@ -1,5 +1,6 @@
 const ApiError = require('@utils/ApiError');
 
+const promotionModule = require('@modules/promotion');
 const searchRepository = require('../infrastructure/search.repository');
 const { selectOffer, sumAvailableRooms } = require('../domain/offers');
 const { buildStay, groupOffers } = require('./search-pipeline');
@@ -25,7 +26,16 @@ async function getHotelAvailability(hotelId, params) {
     totalGuests,
   });
 
-  const offers = groupOffers(rows, { nights: stay.nights, rooms }).get(hotelId) || [];
+  const grouped = groupOffers(rows, { nights: stay.nights, rooms });
+  const priced = await promotionModule.applyAutomaticOffersToHotelOffers({
+    offersByHotel: grouped,
+    checkIn: stay.checkIn,
+    checkOut: stay.checkOut,
+    nights: stay.nights,
+    rooms,
+    currency: 'USD',
+  });
+  const offers = priced.get(hotelId) || [];
 
   if (offers.length === 0) {
     throw new ApiError(404, 'NOT_AVAILABLE', 'Hotel not available for selected dates');

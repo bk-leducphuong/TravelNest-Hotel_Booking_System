@@ -63,6 +63,8 @@ describe('HoldRepository', () => {
           tax_amount: 0,
           service_fee_amount: 0,
           platform_commission_amount: 0,
+          discount_amount: 0,
+          pricing_fingerprint: null,
           currency: data.currency,
           price_breakdown: undefined,
           cancellation_policy_snapshot: undefined,

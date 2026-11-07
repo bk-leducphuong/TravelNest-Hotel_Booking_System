@@ -68,6 +68,7 @@ async function createManualBooking(hotelId, payload = {}, { actorUserId, request
     rooms: [{ roomId, quantity }],
     checkInDate,
     checkOutDate,
+    applyPromotions: false,
   });
 
   const hasOverride = totalPrice !== undefined && totalPrice !== null;

@@ -8,8 +8,12 @@ jest.mock('@modules/search/infrastructure/search.repository', () => ({
   findCandidateHotels: jest.fn(),
   findOffersForHotels: jest.fn(),
 }));
+jest.mock('@modules/promotion', () => ({
+  applyAutomaticOffersToHotelOffers: jest.fn(async ({ offersByHotel }) => offersByHotel),
+}));
 
 const searchRepository = require('@modules/search/infrastructure/search.repository');
+const promotionModule = require('@modules/promotion');
 const {
   findCandidates,
   getOffers,
@@ -61,6 +65,9 @@ describe('search-pipeline.findCandidates', () => {
 describe('search-pipeline.getOffers', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    promotionModule.applyAutomaticOffersToHotelOffers.mockImplementation(
+      async ({ offersByHotel }) => offersByHotel
+    );
   });
 
   it('runs one batched query for every candidate hotel', async () => {

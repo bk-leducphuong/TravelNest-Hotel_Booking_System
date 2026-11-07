@@ -62,11 +62,13 @@ describe('room-offers query builder', () => {
     expect(sql).toContain('currency_count = 1');
   });
 
-  it('evaluates budget on the average nightly price before selection', () => {
+  it('leaves budget filtering to the promotion-aware domain layer', () => {
     const { sql } = buildOffersQuery({ ...BASE, minPrice: 50, maxPrice: 150 });
 
-    expect(sql).toContain('avg_price_per_night >= :minPrice');
-    expect(sql).toContain('avg_price_per_night <= :maxPrice');
+    // An undiscounted room above the budget must be allowed to qualify after
+    // its automatic sale, so SQL cannot reject it.
+    expect(sql).not.toContain('avg_price_per_night >= :minPrice');
+    expect(sql).not.toContain('avg_price_per_night <= :maxPrice');
   });
 
   it('exposes offer-level free cancellation via EXISTS (no row multiplication)', () => {

@@ -912,7 +912,23 @@
       "quoteNote": "This total comes from your room reservation quote.",
       "paymentUnavailable": "The payment form is unavailable. Try again to load it.",
       "paymentIncomplete": "Payment has not completed. Review your payment method and try again.",
-      "paymentNote": "Submitting payment creates your reservation. If payment fails, you can retry the same reservation."
+      "paymentNote": "Submitting payment creates your reservation. If payment fails, you can retry the same reservation.",
+      "promoCode": "Promo code",
+      "promoPlaceholder": "Enter a promo code",
+      "applyCode": "Apply",
+      "removeCode": "Remove",
+      "saleBadge": "Sale",
+      "discount": "Discount {name}",
+      "promotionApplied": "{name} applied.",
+      "saleIsBetter": "The current sale already gives you a better price than this code.",
+      "noPromotion": "No automatic offer applies to this stay.",
+      "priceChanged": "The price or applied offer changed. Review the updated total before paying.",
+      "errors": {
+        "notAvailable": "This promo code is not available for this hotel.",
+        "notEligible": "This promo code does not apply to the selected stay.",
+        "limitReached": "This promo code has reached its usage limit.",
+        "userLimitReached": "You have already used this promo code the maximum number of times."
+      }
     },
     "cancel": {
       "review": "Review the booking and its cancellation policy before continuing.",

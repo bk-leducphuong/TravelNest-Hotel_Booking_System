@@ -3,6 +3,7 @@
   import TheHeader from '@/components/Header.vue';
   import TheFooter from '@/components/Footer.vue';
   import { HoldService } from '@/services/hold.service';
+  import { PromotionService } from '@/services/promotion.service';
   import { mapGetters } from 'vuex';
   import { getUserSocket } from '@/services/userSocket';
   import { stayNights, formatStayDate } from '@/utils/stay';
@@ -23,6 +24,11 @@
         isReleasingHold: false,
         paymentBusy: false,
         expiredByEvent: false,
+        promoCode: '',
+        promoBusy: false,
+        promoError: '',
+        promoNotice: '',
+        currentQuote: null,
       };
     },
     computed: {
@@ -36,15 +42,26 @@
         const end = Date.parse(this.getBookingInfor?.hold?.expiresAt);
         return !this.isHoldConvertedToBooking && Number.isFinite(end) && end <= this.now;
       },
+      hasAppliedCode() {
+        return Boolean(
+          this.getBookingInfor?.promotionCode ||
+            (this.priceSummary.promotion?.mode === 'code' && this.priceSummary.promotion?.code)
+        );
+      },
       priceSummary() {
         const b = this.getBookingInfor;
-        const p = b?.priceBreakdown || {};
+        const p = this.currentQuote || b?.priceBreakdown || {};
         return {
           currency: p.currency || 'USD',
           subtotal: p.subtotal,
+          discount: p.discountAmount,
+          discountedSubtotal: p.discountedSubtotal,
           tax: p.taxAmount,
           fee: p.serviceFeeAmount,
           total: p.totalPrice ?? b?.totalPrice,
+          promotion: p.promotion || b?.promotion || null,
+          codeOutcome: p.codeOutcome || b?.codeOutcome || null,
+          priceFingerprint: p.priceFingerprint || b?.pricingFingerprint || null,
         };
       },
       policyRooms() {
@@ -73,6 +90,8 @@
         this.phoneNumber = contact.phoneNumber;
       }
       this.isHoldConvertedToBooking = this.created;
+      this.currentQuote = this.getBookingInfor?.priceBreakdown || null;
+      this.promoCode = this.getBookingInfor?.promotionCode || this.getBookingInfor?.promotion?.code || '';
       this.timer = setInterval(() => {
         this.now = Date.now();
       }, 1000);
@@ -91,6 +110,64 @@
     methods: {
       guestMoney,
       formatStayDate,
+      applyQuote(data) {
+        this.currentQuote = data?.priceBreakdown || null;
+        this.$store.dispatch('book/booking', {
+          ...this.getBookingInfor,
+          totalPrice: data?.totalPrice ?? this.getBookingInfor.totalPrice,
+          priceBreakdown: data?.priceBreakdown || this.getBookingInfor.priceBreakdown,
+          pricingFingerprint: data?.priceFingerprint || this.getBookingInfor.pricingFingerprint,
+          promotion: data?.promotion || null,
+          promotionCode: this.promoCode.trim() || null,
+        });
+      },
+      async applyPromoCode() {
+        if (this.promoBusy || !this.getBookingInfor?.holdId) return;
+        this.promoBusy = true;
+        this.promoError = '';
+        this.promoNotice = '';
+        try {
+          const response = await PromotionService.preview({
+            holdId: this.getBookingInfor.holdId,
+            code: this.promoCode.trim() || null,
+          });
+          const data = response.data;
+          this.applyQuote(data);
+          if (data.codeOutcome?.status === 'automatic_better') {
+            this.promoNotice = this.$t('guest.checkout.saleIsBetter');
+          } else if (!data.promotion) {
+            this.promoNotice = this.$t('guest.checkout.noPromotion');
+          } else {
+            this.promoNotice = this.$t('guest.checkout.promotionApplied', {
+              name: data.promotion.name,
+            });
+          }
+        } catch (error) {
+          const apiError = error.response?.data?.error;
+          const keyByCode = {
+            PROMOTION_NOT_AVAILABLE: 'guest.checkout.errors.notAvailable',
+            PROMOTION_NOT_ELIGIBLE: 'guest.checkout.errors.notEligible',
+            PROMOTION_LIMIT_REACHED: 'guest.checkout.errors.limitReached',
+            PROMOTION_USER_LIMIT_REACHED: 'guest.checkout.errors.userLimitReached',
+            PRICE_CHANGED: 'guest.checkout.priceChanged',
+          };
+          const key = keyByCode[apiError?.code];
+          this.promoError = key
+            ? this.$t(key)
+            : apiError?.message || this.$t('guest.loadFailed');
+        } finally {
+          this.promoBusy = false;
+        }
+      },
+      async removePromoCode() {
+        if (this.promoBusy) return;
+        this.promoCode = '';
+        await this.applyPromoCode();
+      },
+      handlePriceChanged(quote) {
+        if (quote) this.applyQuote({ priceBreakdown: quote, totalPrice: quote.totalPrice, priceFingerprint: quote.priceFingerprint, promotion: quote.promotion });
+        this.promoNotice = this.$t('guest.checkout.priceChanged');
+      },
       nextStep() {
         if (this.holdExpired) return;
         this.currentStep = 2;
@@ -218,6 +295,7 @@
               :user-infor="{ fullName, email, phoneNumber }"
               @booking-created="handleBookingCreated"
               @busy="paymentBusy = $event"
+              @price-changed="handlePriceChanged"
             />
           </section>
           <section class="guest-section">
@@ -274,11 +352,56 @@
             </li>
           </ul>
           <hr />
+          <form class="promo-form" @submit.prevent="applyPromoCode">
+            <label for="checkout-promo">{{ $t('guest.checkout.promoCode') }}</label>
+            <div class="promo-row">
+              <input
+                id="checkout-promo"
+                v-model.trim="promoCode"
+                name="promoCode"
+                autocomplete="off"
+                maxlength="64"
+                :placeholder="$t('guest.checkout.promoPlaceholder')"
+                :disabled="promoBusy || created"
+              />
+              <button
+                type="submit"
+                class="guest-button"
+                :disabled="promoBusy || created || !promoCode.trim()"
+              >
+                {{ $t('guest.checkout.applyCode') }}
+              </button>
+              <button
+                v-if="hasAppliedCode"
+                type="button"
+                class="guest-button guest-button-secondary"
+                :disabled="promoBusy || created"
+                @click="removePromoCode"
+              >
+                {{ $t('guest.checkout.removeCode') }}
+              </button>
+            </div>
+            <p v-if="promoBusy" role="status" class="guest-subtitle">
+              {{ $t('guest.loading') }}
+            </p>
+            <p v-if="promoError" role="alert" class="promo-error">{{ promoError }}</p>
+            <p v-if="promoNotice" role="status" class="guest-subtitle">{{ promoNotice }}</p>
+          </form>
           <h3>{{ $t('bookingFlow.priceSummary') }}</h3>
+          <p v-if="priceSummary.promotion" class="checkout-promotion">
+            <span class="guest-pill">{{ $t('guest.checkout.saleBadge') }}</span>
+            {{ priceSummary.promotion.name }}
+          </p>
           <dl class="checkout-prices">
             <div v-if="priceSummary.subtotal != null">
               <dt>{{ $t('bookingFlow.roomPrice') }}</dt>
               <dd>{{ guestMoney(priceSummary.subtotal, priceSummary.currency, $i18n.locale) }}</dd>
+            </div>
+            <div v-if="Number(priceSummary.discount) > 0" class="checkout-discount">
+              <dt>{{ $t('guest.checkout.discount', { name: priceSummary.promotion?.name || '' }) }}</dt>
+              <dd>
+                −{{ guestMoney(priceSummary.discount, priceSummary.currency, $i18n.locale) }}
+              </dd>
             </div>
             <div v-if="priceSummary.tax != null">
               <dt>{{ $t('bookingFlow.taxesAndCharges') }}</dt>
@@ -345,6 +468,45 @@
     color: var(--tn-brand);
     font-size: 22px;
     font-weight: 500;
+  }
+  .checkout-discount dd {
+    color: #1c7c54;
+    font-weight: 500;
+  }
+  .checkout-promotion {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+  .promo-form {
+    margin: 20px 0;
+  }
+  .promo-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .promo-row {
+    display: flex;
+    gap: 8px;
+  }
+  .promo-row input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--tn-border);
+    border-radius: 8px;
+    font: inherit;
+  }
+  .promo-row .guest-button {
+    width: auto;
+    padding-inline: 16px;
+  }
+  .promo-error {
+    color: #b3261e;
+    font-size: 14px;
   }
   .checkout-contact {
     overflow-wrap: anywhere;

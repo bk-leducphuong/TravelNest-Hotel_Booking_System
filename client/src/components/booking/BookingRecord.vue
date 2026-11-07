@@ -144,6 +144,28 @@
         </section>
         <aside class="guest-section">
           <h2>{{ $t('bookingFlow.priceSummary') }}</h2>
+          <p v-if="booking.promotion" class="checkout-promotion">
+            <span class="guest-pill">{{ $t('guest.checkout.saleBadge') }}</span>
+            {{ booking.promotion.name }}
+          </p>
+          <dl v-if="booking.discountAmount > 0" class="record-price-lines">
+            <div>
+              <dt>{{ $t('bookingFlow.roomPrice') }}</dt>
+              <dd>
+                {{
+                  guestMoney(
+                    booking.priceBreakdown?.subtotal ?? booking.totalPrice + booking.discountAmount,
+                    booking.currency,
+                    $i18n.locale
+                  )
+                }}
+              </dd>
+            </div>
+            <div class="record-discount">
+              <dt>{{ $t('guest.checkout.discount', { name: booking.promotion?.name || '' }) }}</dt>
+              <dd>−{{ guestMoney(booking.discountAmount, booking.currency, $i18n.locale) }}</dd>
+            </div>
+          </dl>
           <p class="record-total">
             {{ guestMoney(booking.totalPrice, booking.currency, $i18n.locale) }}
           </p>
@@ -245,6 +267,30 @@
     font-weight: 500;
     color: var(--tn-brand);
     margin: 20px 0 0;
+  }
+  .record-price-lines > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 12px;
+    font-size: 14px;
+  }
+  .record-price-lines dt {
+    color: var(--tn-muted);
+  }
+  .record-price-lines dd {
+    margin: 0;
+  }
+  .record-discount dd {
+    color: #1c7c54;
+    font-weight: 500;
+  }
+  .checkout-promotion {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    font-size: 14px;
   }
   aside .guest-button {
     margin-top: 24px;

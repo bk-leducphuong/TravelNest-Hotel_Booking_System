@@ -16,10 +16,12 @@ jest.mock('@modules/booking/infrastructure/booking.repository', () => ({
 jest.mock('@modules/booking/application/hold.service', () => ({ releaseHold: jest.fn() }));
 jest.mock('@modules/booking/application/pricing.service', () => ({ quote: jest.fn() }));
 jest.mock('@modules/inventory', () => ({ reserveRooms: jest.fn() }));
+jest.mock('@modules/promotion', () => ({ reservePromotion: jest.fn() }));
 jest.mock('@config/database.config', () => ({ transaction: jest.fn() }));
 jest.mock('@modules/booking/domain/booking-code', () => ({ generateBookingCode: () => 'CODE1' }));
 
 const paymentModule = require('@modules/payment');
+const promotionModule = require('@modules/promotion');
 const holdRepository = require('@modules/booking/infrastructure/hold.repository');
 const bookingRepository = require('@modules/booking/infrastructure/booking.repository');
 const holdService = require('@modules/booking/application/hold.service');
@@ -222,13 +224,20 @@ describe('booking/application/guest/createBookingFromHold', () => {
       transactionId: 70,
       price: {
         subtotal: 200,
+        discountAmount: undefined,
+        discountedSubtotal: undefined,
         taxAmount: 20,
         serviceFeeAmount: 10,
         platformCommissionAmount: 30,
         totalPrice: 230,
         currency: 'USD',
+        promotion: undefined,
+        codeOutcome: undefined,
+        priceFingerprint: undefined,
       },
       rooms: quote.rooms,
+      promotion: undefined,
+      priceFingerprint: undefined,
       cancellationPolicy: quote.cancellationPolicy,
     };
     expect(result).toEqual(expected);
@@ -238,6 +247,48 @@ describe('booking/application/guest/createBookingFromHold', () => {
       { transaction: {} }
     );
     expect(paymentModule.failIdempotencyRecord).not.toHaveBeenCalled();
+  });
+
+  it('rejects a stale accepted quote with PRICE_CHANGED', async () => {
+    primeHappyPath();
+    pricingService.quote.mockResolvedValue({ ...quote, priceFingerprint: 'current' });
+
+    await expect(
+      createBookingFromHold(USER_ID, { ...data, pricingFingerprint: 'stale' }, IDEMPOTENCY_KEY)
+    ).rejects.toMatchObject({ statusCode: 409, code: 'PRICE_CHANGED' });
+    expect(promotionModule.reservePromotion).not.toHaveBeenCalled();
+    expect(paymentModule.failIdempotencyRecord).toHaveBeenCalledWith(99);
+  });
+
+  it('reserves the selected promotion in the booking transaction', async () => {
+    primeHappyPath();
+    promotionModule.reservePromotion.mockResolvedValue({ id: 'redemption-1' });
+    pricingService.quote.mockResolvedValue({
+      ...quote,
+      subtotal: 200,
+      discountAmount: 20,
+      discountedSubtotal: 180,
+      totalPrice: 210,
+      priceFingerprint: 'current',
+      promotion: { id: 'promo-1', version: 2, mode: 'code', name: 'SAVE20', code: 'SAVE20' },
+    });
+
+    await createBookingFromHold(
+      USER_ID,
+      { ...data, promotionCode: 'SAVE20', pricingFingerprint: 'current' },
+      IDEMPOTENCY_KEY
+    );
+
+    expect(promotionModule.reservePromotion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        promotionId: 'promo-1',
+        bookingId: 50,
+        buyerId: USER_ID,
+        hotelId: 10,
+        discountAmount: 20,
+      }),
+      { transaction: {} }
+    );
   });
 
   it('marks the idempotency record failed when booking creation throws', async () => {

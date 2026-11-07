@@ -34,6 +34,8 @@ exports.createBooking = {
       travellingForWork: Joi.boolean().optional(),
     }).optional(),
     specialRequests: Joi.string().allow('', null).max(5000).optional(),
+    promotionCode: Joi.string().trim().max(64).allow('', null).optional(),
+    pricingFingerprint: Joi.string().hex().length(64).allow('', null).optional(),
   }).required(),
 };
 

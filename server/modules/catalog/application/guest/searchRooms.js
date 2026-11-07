@@ -3,6 +3,7 @@ const roomRepository = require('../../infrastructure/room.repository');
 const hotelRepository = require('../../infrastructure/hotel.repository');
 
 const { formatRooms } = require('./formatters');
+const { applyRoomPromotions } = require('./applyRoomPromotions');
 
 /**
  * Search available rooms for a hotel.
@@ -46,8 +47,15 @@ async function searchRooms(hotelId, searchParams) {
     offset,
   });
 
+  const pricedRooms = await applyRoomPromotions(hotelId, rooms, {
+    checkInDate,
+    checkOutDate,
+    numberOfNights,
+    numberOfRooms,
+  });
+
   return {
-    rooms: formatRooms(rooms, numberOfNights),
+    rooms: formatRooms(pricedRooms, numberOfNights),
     page,
     limit: validatedLimit,
     total: rooms.length, // approximate; a full count would need a separate query

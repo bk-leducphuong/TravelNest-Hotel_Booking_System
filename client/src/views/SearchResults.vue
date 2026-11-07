@@ -650,8 +650,21 @@
               </p>
             </div>
             <div class="result-price">
-              <span>{{ $t('guest.stayFrom') }}</span
-              ><strong>{{
+              <span v-if="hotel.has_sale" class="result-sale-badge">{{
+                hotel.promotion?.name || $t('guest.checkout.saleBadge')
+              }}</span>
+              <span v-if="hotel.has_sale">{{ $t('guest.stayFrom') }}</span
+              ><small v-if="hotel.has_sale" class="result-original-price">{{
+                guestMoney(
+                  hotel.original_min_price_for_requested_rooms ??
+                    hotel.original_min_price_for_dates ??
+                    hotel.min_price_for_requested_rooms ??
+                    hotel.min_price_for_dates,
+                  hotel.currency || 'USD',
+                  $i18n.locale
+                )
+              }}</small>
+              <strong :class="{ 'result-sale-price': hotel.has_sale }">{{
                 guestMoney(
                   hotel.min_price_for_requested_rooms ?? hotel.min_price_for_dates,
                   hotel.currency || 'USD',
@@ -901,6 +914,21 @@
   .result-price small {
     color: var(--tn-muted);
     font-size: 11px;
+  }
+  .result-sale-price {
+    color: #1c7c54;
+  }
+  .result-original-price {
+    text-decoration: line-through;
+    font-size: 14px !important;
+  }
+  .result-sale-badge {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #e7f6ee;
+    color: #1c7c54;
+    font-size: 11px;
+    font-weight: 600;
   }
   .mobile-filter {
     display: none;

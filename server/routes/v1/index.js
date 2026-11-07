@@ -24,6 +24,7 @@ const catalogModule = require('@modules/catalog');
 const bookingModule = require('@modules/booking');
 const paymentModule = require('@modules/payment');
 const searchModule = require('@modules/search');
+const promotionModule = require('@modules/promotion');
 const superadminModule = require('@modules/superadmin');
 
 // Mount all routes
@@ -38,6 +39,7 @@ router.use('/user', identityModule.userRoutes);
 router.use('/reviews', reviewModule.guestRoutes);
 router.use('/bookings', writeLimiter, bookingModule.guestRoutes);
 router.use('/hold', writeLimiter, bookingModule.holdRoutes);
+router.use('/promotions', writeLimiter, promotionModule.guestRoutes);
 router.use('/notifications', notificationModule.notificationRoutes);
 router.use('/superadmin', adminReadLimiter, superadminModule.superadminRoutes);
 router.use('/admin', adminBff);

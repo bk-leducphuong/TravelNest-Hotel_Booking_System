@@ -32,6 +32,9 @@ export function normalizeBooking(raw) {
     checkInDate: raw.check_in_date || raw.checkInDate,
     checkOutDate: raw.check_out_date || raw.checkOutDate,
     totalPrice: raw.total_price ?? raw.totalPrice,
+    discountAmount: Number(raw.discount_amount ?? raw.discountAmount ?? 0) || 0,
+    priceBreakdown: raw.price_breakdown ?? raw.priceBreakdown ?? null,
+    promotion: raw.promotion ?? raw.price_breakdown?.promotion ?? null,
     // Existing public booking pricing is USD; retain an explicit currency if returned.
     currency: raw.currency || 'USD',
     numberOfGuests: raw.number_of_guests ?? raw.numberOfGuests,

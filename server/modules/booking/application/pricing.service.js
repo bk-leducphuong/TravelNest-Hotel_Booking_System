@@ -1,10 +1,22 @@
 const inventoryModule = require('@modules/inventory');
+const promotionModule = require('@modules/promotion');
 const ApiError = require('@utils/ApiError');
 const bookingRepository = require('../infrastructure/booking.repository');
 const { getHotelCheckInDateTime } = require('../domain/check-in-time');
 
+const PRICING_VERSION = 1;
+
 class PricingService {
-  async quote({ hotelId, rooms, checkInDate, checkOutDate }) {
+  async quote({
+    hotelId,
+    rooms,
+    checkInDate,
+    checkOutDate,
+    promotionCode = null,
+    buyerId = null,
+    now = new Date(),
+    applyPromotions = true,
+  }) {
     if (!rooms || !Array.isArray(rooms) || rooms.length === 0) {
       throw new ApiError(400, 'INVALID_ROOMS', 'rooms must be a non-empty array');
     }
@@ -49,6 +61,9 @@ class PricingService {
         quantity,
         nightly,
         subtotal: roomSubtotal,
+        originalSubtotal: roomSubtotal,
+        discountAmount: 0,
+        discountedSubtotal: roomSubtotal,
         totalPrice: roomSubtotal,
       });
     }
@@ -56,10 +71,46 @@ class PricingService {
     const taxRate = this.normalizeRate(process.env.BOOKING_TAX_RATE || 0);
     const serviceFeeRate = this.normalizeRate(process.env.BOOKING_SERVICE_FEE_RATE || 0);
     const platformCommissionRate = this.normalizeRate(process.env.PLATFORM_FEE_RATE || 0);
-    const taxAmount = this.roundMoney(subtotal * taxRate);
-    const serviceFeeAmount = this.roundMoney(subtotal * serviceFeeRate);
-    const platformCommissionAmount = this.roundMoney(subtotal * platformCommissionRate);
-    const totalPrice = this.roundMoney(subtotal + taxAmount + serviceFeeAmount);
+
+    // Manual bookings deliberately opt out: a manual total override must never
+    // combine with an automatic promotion or consume a code.
+    const promotionQuote = applyPromotions
+      ? await promotionModule.resolveQuotePromotion({
+          hotelId,
+          rooms: roomBreakdown,
+          checkInDate,
+          checkOutDate,
+          currency: 'USD',
+          code: promotionCode,
+          buyerId,
+          now,
+          taxRate,
+          serviceFeeRate,
+        })
+      : { selected: null, automatic: null, codeOutcome: null };
+
+    const selected = promotionQuote.selected;
+    const discountAmount = selected ? promotionModule.fromMinor(selected.discountAmountMinor) : 0;
+    const discountedSubtotal = this.roundMoney(Math.max(0, subtotal - discountAmount));
+    const taxAmount = this.roundMoney(discountedSubtotal * taxRate);
+    const serviceFeeAmount = this.roundMoney(discountedSubtotal * serviceFeeRate);
+    const platformCommissionAmount = this.roundMoney(discountedSubtotal * platformCommissionRate);
+    const totalPrice = this.roundMoney(discountedSubtotal + taxAmount + serviceFeeAmount);
+
+    const allocationByRoom = new Map(
+      (selected?.allocationByRoom || []).map((line) => [
+        String(line.roomId),
+        promotionModule.fromMinor(line.amountMinor) || 0,
+      ])
+    );
+
+    for (const room of roomBreakdown) {
+      const roomDiscount = allocationByRoom.get(String(room.roomId)) || 0;
+      room.discountAmount = this.roundMoney(roomDiscount);
+      room.discountedSubtotal = this.roundMoney(Math.max(0, room.subtotal - roomDiscount));
+      room.totalPrice = room.discountedSubtotal;
+    }
+
     const cancellationPolicy = await this.getCancellationPolicySnapshot(hotelId, roomIds, {
       rooms: roomBreakdown,
       subtotal,
@@ -67,8 +118,11 @@ class PricingService {
       checkInDate,
     });
 
-    return {
+    const quote = {
+      version: PRICING_VERSION,
       subtotal,
+      discountAmount,
+      discountedSubtotal,
       taxAmount,
       serviceFeeAmount,
       platformCommissionAmount,
@@ -78,8 +132,68 @@ class PricingService {
       serviceFeeRate,
       platformCommissionRate,
       rooms: roomBreakdown,
+      promotion: selected?.promotion || null,
+      automaticPromotion: promotionQuote.automatic?.promotion || null,
+      codeOutcome: promotionQuote.codeOutcome || null,
+      discountAllocation: selected?.allocationByRoom || [],
       cancellationPolicy,
     };
+
+    quote.priceFingerprint = this.fingerprint(quote, {
+      hotelId,
+      checkInDate,
+      checkOutDate,
+      selected,
+    });
+
+    return quote;
+  }
+
+  /**
+   * Stable identity for the quote the guest reviewed. Booking creation compares
+   * this value; it is never trusted as a price source.
+   */
+  fingerprint(quote, context = {}) {
+    return promotionModule.hashPricing({
+      pricingVersion: quote.version,
+      hotelId: context.hotelId,
+      checkInDate: context.checkInDate,
+      checkOutDate: context.checkOutDate,
+      currency: quote.currency,
+      taxRate: quote.taxRate,
+      serviceFeeRate: quote.serviceFeeRate,
+      platformCommissionRate: quote.platformCommissionRate,
+      rooms: (quote.rooms || []).map((room) => ({
+        roomId: room.roomId,
+        quantity: room.quantity,
+        subtotal: room.subtotal,
+        discountAmount: room.discountAmount,
+        discountedSubtotal: room.discountedSubtotal,
+        nightly: (room.nightly || []).map((night) => ({
+          date: night.date,
+          price: night.price,
+          quantity: night.quantity,
+          total: night.total,
+        })),
+      })),
+      promotion: context.selected
+        ? {
+            id: context.selected.promotion?.id,
+            version: context.selected.promotion?.version,
+            mode: context.selected.promotion?.mode,
+            discountType: context.selected.promotion?.discountType,
+            discountValue: context.selected.promotion?.discountValue,
+            discountBasisPoints: context.selected.promotion?.discountBasisPoints,
+            maxDiscountAmount: context.selected.promotion?.maxDiscountAmount,
+          }
+        : null,
+      subtotal: quote.subtotal,
+      discountAmount: quote.discountAmount,
+      discountedSubtotal: quote.discountedSubtotal,
+      taxAmount: quote.taxAmount,
+      serviceFeeAmount: quote.serviceFeeAmount,
+      totalPrice: quote.totalPrice,
+    });
   }
 
   async getCancellationPolicySnapshot(hotelId, roomIds, pricing) {
@@ -96,11 +210,13 @@ class PricingService {
       const rule = await bookingRepository.findCancellationRule(hotelId, roomId);
       const data = rule?.toJSON ? rule.toJSON() : rule;
       const index = snapshots.length;
+      const roomPayable = pricing.rooms[index].discountedSubtotal ?? pricing.rooms[index].subtotal;
       const amountMinor =
         index === roomIds.length - 1
           ? Math.round(pricing.totalPrice * 100) - allocated
           : Math.round(
-              (pricing.totalPrice * 100 * pricing.rooms[index].subtotal) / (pricing.subtotal || 1)
+              (pricing.totalPrice * 100 * roomPayable) /
+                (pricing.discountedSubtotal || pricing.subtotal || 1)
             );
       allocated += amountMinor;
       const hours = data?.free_cancellation_until_hours_before_checkin;

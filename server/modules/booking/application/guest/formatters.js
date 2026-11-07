@@ -38,13 +38,20 @@ function formatBookingResponse({ booking, transaction, quote }) {
     transactionId: transaction.id,
     price: {
       subtotal: quote.subtotal,
+      discountAmount: quote.discountAmount,
+      discountedSubtotal: quote.discountedSubtotal,
       taxAmount: quote.taxAmount,
       serviceFeeAmount: quote.serviceFeeAmount,
       platformCommissionAmount: quote.platformCommissionAmount,
       totalPrice: quote.totalPrice,
       currency: quote.currency,
+      promotion: quote.promotion,
+      codeOutcome: quote.codeOutcome,
+      priceFingerprint: quote.priceFingerprint,
     },
     rooms: quote.rooms,
+    promotion: quote.promotion,
+    priceFingerprint: quote.priceFingerprint,
     cancellationPolicy: quote.cancellationPolicy,
   };
 }

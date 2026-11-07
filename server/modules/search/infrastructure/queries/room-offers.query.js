@@ -33,12 +33,14 @@ const FREE_CANCELLATION_EXISTS = `EXISTS (
  * @param {number} params.nights positive night count
  * @param {number} params.rooms requested room count
  * @param {number} params.totalGuests adults + children
- * @param {number} [params.minPrice] minimum average nightly price
- * @param {number} [params.maxPrice] maximum average nightly price
  * @returns {{ sql: string, replacements: object }|null}
+ *
+ * Budget filtering is deliberately NOT applied here: an undiscounted room can
+ * qualify after its automatic sale, so search applies price constraints to the
+ * effective (promotion-aware) offer in the domain layer.
  */
 function buildOffersQuery(params) {
-  const { hotelIds, checkIn, checkOut, nights, rooms, totalGuests, minPrice, maxPrice } = params;
+  const { hotelIds, checkIn, checkOut, nights, rooms, totalGuests } = params;
 
   if (!Array.isArray(hotelIds) || hotelIds.length === 0) return null;
 
@@ -60,16 +62,6 @@ function buildOffersQuery(params) {
     'min_available_rooms >= :rooms',
     'currency_count = 1',
   ];
-
-  if (Number.isFinite(minPrice)) {
-    having.push('avg_price_per_night >= :minPrice');
-    replacements.minPrice = minPrice;
-  }
-
-  if (Number.isFinite(maxPrice)) {
-    having.push('avg_price_per_night <= :maxPrice');
-    replacements.maxPrice = maxPrice;
-  }
 
   const sql = `
     SELECT

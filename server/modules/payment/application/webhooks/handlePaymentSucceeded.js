@@ -3,6 +3,7 @@ const { Transaction } = require('sequelize');
 const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
 const bookingModule = require('@modules/booking');
+const promotionModule = require('@modules/promotion');
 const ledgerService = require('../ledger.service');
 
 const transactionRepository = require('../../infrastructure/transaction.repository');
@@ -219,6 +220,12 @@ async function handlePaymentSucceeded(context) {
         status: 'confirmed',
         confirmed_at: new Date(),
       };
+    }
+
+    // Redeem the promotion atomically with booking confirmation. A released
+    // redemption is never revived here; late payments were handled above.
+    if (primaryBooking?.id) {
+      await promotionModule.redeemPromotion(primaryBooking.id, { transaction });
     }
 
     await ledgerService.recordPaymentSucceeded(

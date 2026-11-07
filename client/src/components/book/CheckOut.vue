@@ -12,7 +12,7 @@
       searchData: { type: Object, required: true },
       userInfor: { type: Object, required: true },
     },
-    emits: ['booking-created', 'busy'],
+    emits: ['booking-created', 'busy', 'price-changed'],
     data() {
       return {
         stripe: null,
@@ -95,6 +95,8 @@
             (await BookingService.createBooking(
               {
                 holdId: this.bookingInfor.holdId,
+                promotionCode: this.bookingInfor.promotionCode || undefined,
+                pricingFingerprint: this.bookingInfor.pricingFingerprint || undefined,
                 guestDetails: {
                   fullName: this.userInfor.fullName,
                   email: this.userInfor.email,
@@ -143,10 +145,13 @@
           this.$emit('busy', false);
           await this.$router.replace({ path: '/book/complete', query: { bookingCode: code } });
         } catch (error) {
+          const apiError = error.response?.data?.error;
+          if (apiError?.code === 'PRICE_CHANGED') {
+            this.$emit('price-changed', apiError.fields?.quote || null);
+          }
           this.paymentStatus = {
             type: 'error',
-            message:
-              error.response?.data?.error?.message || error.message || this.$t('guest.loadFailed'),
+            message: apiError?.message || error.message || this.$t('guest.loadFailed'),
           };
         } finally {
           this.processing = false;

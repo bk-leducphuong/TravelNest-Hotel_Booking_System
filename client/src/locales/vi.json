@@ -912,7 +912,23 @@
       "quoteNote": "Tổng tiền này được lấy từ báo giá giữ phòng của bạn.",
       "paymentUnavailable": "Chưa tải được biểu mẫu thanh toán. Vui lòng thử lại.",
       "paymentIncomplete": "Thanh toán chưa hoàn tất. Kiểm tra phương thức thanh toán rồi thử lại.",
-      "paymentNote": "Gửi thanh toán sẽ tạo đơn đặt phòng. Nếu thanh toán thất bại, bạn có thể thử lại trên cùng đơn."
+      "paymentNote": "Gửi thanh toán sẽ tạo đơn đặt phòng. Nếu thanh toán thất bại, bạn có thể thử lại trên cùng đơn.",
+      "promoCode": "Mã khuyến mãi",
+      "promoPlaceholder": "Nhập mã khuyến mãi",
+      "applyCode": "Áp dụng",
+      "removeCode": "Xóa mã",
+      "saleBadge": "Ưu đãi",
+      "discount": "Giảm giá {name}",
+      "promotionApplied": "Đã áp dụng {name}.",
+      "saleIsBetter": "Ưu đãi hiện tại đã cho bạn mức giá tốt hơn mã này.",
+      "noPromotion": "Không có ưu đãi tự động cho kỳ lưu trú này.",
+      "priceChanged": "Giá hoặc ưu đãi đã thay đổi. Vui lòng xem lại tổng tiền mới trước khi thanh toán.",
+      "errors": {
+        "notAvailable": "Mã khuyến mãi không khả dụng cho khách sạn này.",
+        "notEligible": "Mã khuyến mãi không áp dụng cho kỳ lưu trú đã chọn.",
+        "limitReached": "Mã khuyến mãi đã hết lượt sử dụng.",
+        "userLimitReached": "Bạn đã dùng mã khuyến mãi này tối đa số lần cho phép."
+      }
     },
     "cancel": {
       "review": "Xem lại đơn đặt phòng và chính sách hủy trước khi tiếp tục.",

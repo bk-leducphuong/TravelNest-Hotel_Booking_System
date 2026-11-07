@@ -32,6 +32,9 @@ export interface BookingListItem {
   number_of_guests: number;
   quantity: number;
   total_price: string;
+  subtotal?: string;
+  discount_amount?: string | number;
+  promotion_id?: string | null;
   currency: string;
   created_at: string;
   room_id?: string | null;

@@ -219,6 +219,18 @@ watch(
           <el-descriptions-item :label="$t('bookings.col.guestsRooms')">
             {{ booking.number_of_guests }} / {{ booking.quantity }}
           </el-descriptions-item>
+          <el-descriptions-item
+            v-if="Number(booking.discount_amount) > 0"
+            :label="$t('bookings.col.discount')"
+          >
+            −{{ money(booking.discount_amount, booking.currency) }}
+          </el-descriptions-item>
+          <el-descriptions-item
+            v-if="Number(booking.discount_amount) > 0"
+            :label="$t('bookings.col.subtotal')"
+          >
+            {{ money(booking.subtotal, booking.currency) }}
+          </el-descriptions-item>
           <el-descriptions-item :label="$t('common.total')">
             {{ money(booking.total_price, booking.currency) }}
           </el-descriptions-item>
