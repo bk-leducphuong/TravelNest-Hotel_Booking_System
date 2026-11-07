@@ -62,6 +62,8 @@
           name: h.name,
           address: h.address,
           primaryImageUrl: imageUrl(h.image_urls),
+          minPrice: h.min_price ?? null,
+          currency: h.currency || 'USD',
           ratingSummary: { overallRating: h.overall_rating },
         };
       },

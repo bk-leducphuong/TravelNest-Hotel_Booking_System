@@ -824,6 +824,7 @@
     "hotelClass": "{count}-star property",
     "cancellationAvailable": "Cancellation options available · check the room policy",
     "stayFrom": "Stay from",
+    "perNight": "per night",
     "oneRoom": "1 room",
     "finalQuote": "Review the full price and policies before payment.",
     "showResults": "Show results",

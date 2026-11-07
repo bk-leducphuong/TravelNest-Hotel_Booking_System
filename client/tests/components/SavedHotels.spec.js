@@ -33,6 +33,7 @@ const makeHotels = (count) =>
       image_urls: ['https://example.com/image.jpg'],
       hotel_class: 3,
       overall_rating: 7.5,
+      min_price: 50 + i,
       address: `Address ${i + 1}`,
     },
   }));
@@ -164,6 +165,13 @@ describe('SavedHotels', () => {
     await wrapper.find('[role=alert] button').trigger('click');
     await flushPromises();
     expect(wrapper.findAll('.hotel-card')).toHaveLength(1);
+    wrapper.unmount();
+  });
+
+  it('shows the saved hotel min price when provided', async () => {
+    const { wrapper } = mountView(makeHotels(1));
+    await flushPromises();
+    expect(wrapper.find('.guest-property-price').text()).toContain('50.00');
     wrapper.unmount();
   });
 

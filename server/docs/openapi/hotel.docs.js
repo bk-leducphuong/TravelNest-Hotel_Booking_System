@@ -57,7 +57,14 @@
  *                       latitude: { type: number, nullable: true }
  *                       longitude: { type: number, nullable: true }
  *                       hotelClass: { type: integer, nullable: true, description: "Star rating 1-5" }
- *                       minPrice: { type: number, nullable: true }
+ *                       minPrice: { type: number, nullable: true, description: "Indicative lowest nightly price in USD" }
+ *                       currency: { type: string, example: USD }
+ *                       ratingSummary:
+ *                         type: object
+ *                         nullable: true
+ *                         properties:
+ *                           overallRating: { type: number }
+ *                           totalReviews: { type: integer }
  *                       primaryImageUrl: { type: string, nullable: true }
  *       401:
  *         description: Unauthorized - authentication required
@@ -128,7 +135,14 @@
  *                       latitude: { type: number, nullable: true }
  *                       longitude: { type: number, nullable: true }
  *                       hotelClass: { type: integer, nullable: true, description: "Star rating 1-5" }
- *                       minPrice: { type: number, nullable: true }
+ *                       minPrice: { type: number, nullable: true, description: "Indicative lowest nightly price in USD" }
+ *                       currency: { type: string, example: USD }
+ *                       ratingSummary:
+ *                         type: object
+ *                         nullable: true
+ *                         properties:
+ *                           overallRating: { type: number }
+ *                           totalReviews: { type: integer }
  *                       primaryImageUrl: { type: string, nullable: true }
  *                       views: { type: integer, description: "Number of views in the period" }
  */
@@ -194,7 +208,14 @@
  *                       latitude: { type: number, nullable: true }
  *                       longitude: { type: number, nullable: true }
  *                       hotelClass: { type: integer, nullable: true, description: "Star rating 1-5" }
- *                       minPrice: { type: number, nullable: true }
+ *                       minPrice: { type: number, nullable: true, description: "Indicative lowest nightly price in USD" }
+ *                       currency: { type: string, example: USD }
+ *                       ratingSummary:
+ *                         type: object
+ *                         nullable: true
+ *                         properties:
+ *                           overallRating: { type: number }
+ *                           totalReviews: { type: integer }
  *                       primaryImageUrl: { type: string, nullable: true }
  */
 

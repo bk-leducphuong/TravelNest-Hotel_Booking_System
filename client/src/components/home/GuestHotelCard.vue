@@ -1,7 +1,7 @@
 <script>
   import MediaImage from '@/components/ui/MediaImage.vue';
   import SavedHotelIcon from '@/components/SavedHotelIcon.vue';
-  import { ratingLabelKey } from '@/utils/guestPresentation';
+  import { guestMoney, ratingLabelKey } from '@/utils/guestPresentation';
   export default {
     components: { MediaImage, SavedHotelIcon },
     props: {
@@ -9,7 +9,12 @@
       showFavorite: { type: Boolean, default: true },
     },
     emits: ['open'],
-    methods: { ratingLabelKey },
+    methods: {
+      ratingLabelKey,
+      formatPrice(hotel) {
+        return guestMoney(hotel.minPrice, hotel.currency || 'USD', this.$i18n?.locale || 'en');
+      },
+    },
   };
 </script>
 <template>
@@ -39,6 +44,11 @@
             $t('userHome.reviewCount', { count: hotel.ratingSummary.totalReviews })
           }}</small></span
         >
+      </p>
+      <p v-if="hotel.minPrice != null" class="guest-property-price">
+        <span>{{ $t('guest.stayFrom') }}</span>
+        <strong>{{ formatPrice(hotel) }}</strong>
+        <span>{{ $t('guest.perNight') }}</span>
       </p>
     </div>
   </article>
@@ -83,5 +93,16 @@
   .guest-score small {
     display: inline;
     font-size: 10px;
+  }
+  .guest-property-price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+    color: var(--tn-ink);
+  }
+  .guest-property-price strong {
+    font-size: 16px;
+    color: var(--tn-brand);
   }
 </style>

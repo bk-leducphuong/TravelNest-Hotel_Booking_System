@@ -1,13 +1,21 @@
 jest.mock('@modules/catalog/infrastructure/hotel.repository', () => ({
   findBasicByIds: jest.fn(),
 }));
+jest.mock('@modules/catalog/infrastructure/hotel_search_snapshot.repository', () => ({
+  findCardFacetsByIds: jest.fn(),
+}));
 jest.mock('@modules/identity', () => ({ getFavoriteHotelIds: jest.fn() }));
 const identity = require('@modules/identity');
 
 const hotelRepository = require('@modules/catalog/infrastructure/hotel.repository');
+const hotelSearchSnapshotRepository = require('@modules/catalog/infrastructure/hotel_search_snapshot.repository');
 const { enrichHotelCardsByIds } = require('@modules/catalog/application/guest/hotel-cards');
 
 describe('catalog/application/guest/hotel-cards', () => {
+  beforeEach(() => {
+    hotelSearchSnapshotRepository.findCardFacetsByIds.mockResolvedValue([]);
+  });
+
   it('returns null primaryImageUrl when a hotel has no images', async () => {
     hotelRepository.findBasicByIds.mockResolvedValue([
       {
@@ -38,9 +46,32 @@ describe('catalog/application/guest/hotel-cards', () => {
         longitude: 20.456,
         hotelClass: 4,
         minPrice: 125.5,
+        currency: 'USD',
+        ratingSummary: null,
         primaryImageUrl: null,
       },
     ]);
+  });
+
+  it('uses the search snapshot price and live rating summary when available', async () => {
+    hotelRepository.findBasicByIds.mockResolvedValue([
+      { id: 'hotel-1', name: 'Hotel', min_price: '150.00', images: [] },
+      { id: 'hotel-2', name: 'No Snapshot Price', min_price: '90.00', images: [] },
+    ]);
+    hotelSearchSnapshotRepository.findCardFacetsByIds.mockResolvedValue([
+      { hotelId: 'hotel-1', minPrice: 120.5, overallRating: 8.8, totalReviews: 42 },
+      { hotelId: 'hotel-2', minPrice: null, overallRating: 0, totalReviews: 0 },
+    ]);
+
+    const result = await enrichHotelCardsByIds(['hotel-1', 'hotel-2']);
+
+    expect(result[0]).toMatchObject({
+      minPrice: 120.5,
+      currency: 'USD',
+      ratingSummary: { overallRating: 8.8, totalReviews: 42 },
+    });
+    // No future inventory in the snapshot: fall back to the hotel column.
+    expect(result[1]).toMatchObject({ minPrice: 90, ratingSummary: null });
   });
 
   it('uses the primary hotel image when one exists', async () => {
