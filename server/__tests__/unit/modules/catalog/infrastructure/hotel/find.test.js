@@ -1,5 +1,7 @@
 jest.mock('@platform/database', () => ({
-  Hotels: {},
+  Hotels: {
+    findAll: jest.fn(),
+  },
   Rooms: {},
   NearbyPlaces: {},
   HotelPolicies: {},
@@ -13,8 +15,11 @@ jest.mock('@platform/database', () => ({
   },
 }));
 
-const { Cities } = require('@platform/database');
-const { findCityIdByName } = require('@modules/catalog/infrastructure/hotel/find');
+const { Cities, Hotels } = require('@platform/database');
+const {
+  findCityIdByName,
+  countActiveHotelsByDestination,
+} = require('@modules/catalog/infrastructure/hotel/find');
 
 describe('catalog findCityIdByName', () => {
   beforeEach(() => {
@@ -61,5 +66,32 @@ describe('catalog findCityIdByName', () => {
     Cities.findAll.mockResolvedValue([{ id: 'city-x', name: 'Da Nang', slug: 'da-nang' }]);
 
     expect(await findCityIdByName('Atlantis')).toBeNull();
+  });
+});
+
+describe('catalog countActiveHotelsByDestination', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('groups active hotel counts by city and country', async () => {
+    Hotels.findAll
+      .mockResolvedValueOnce([{ city_id: 'city-1', hotel_count: '12' }])
+      .mockResolvedValueOnce([{ country_id: 'country-1', hotel_count: 4 }]);
+
+    const result = await countActiveHotelsByDestination({
+      cityIds: ['city-1'],
+      countryIds: ['country-1'],
+    });
+
+    expect(result).toEqual({ byCity: { 'city-1': 12 }, byCountry: { 'country-1': 4 } });
+    expect(Hotels.findAll).toHaveBeenCalledTimes(2);
+  });
+
+  it('skips the queries when no destination ids are provided', async () => {
+    const result = await countActiveHotelsByDestination();
+
+    expect(result).toEqual({ byCity: {}, byCountry: {} });
+    expect(Hotels.findAll).not.toHaveBeenCalled();
   });
 });

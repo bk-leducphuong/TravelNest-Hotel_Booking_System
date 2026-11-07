@@ -88,6 +88,11 @@ async function getCityImagesByCityIds(cityIds, options = {}) {
   return await imageRepository.getCityImagesByCityIds(cityIds, options);
 }
 
+// Active hotel counts for destination cards ("N hotels").
+async function getActiveHotelCountsByDestination(filters = {}) {
+  return await hotelRepository.countActiveHotelsByDestination(filters);
+}
+
 module.exports = {
   guestRoutes,
   adminRoutes,
@@ -113,6 +118,7 @@ module.exports = {
   suggestDestinations,
   invalidateDestinationsCache,
   getCityImagesByCityIds,
+  getActiveHotelCountsByDestination,
 
   // hotel search-snapshot projection (used by the snapshot worker + seeders)
   hotelSnapshot,

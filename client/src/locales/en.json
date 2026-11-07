@@ -37,6 +37,7 @@
   "userHome.nearbyHotels": "Nearby Hotels",
   "userHome.trendingHotels": "Trending Hotels",
   "userHome.popularPlaces": "Popular Places",
+  "userHome.hotelCount": "{count} hotel | {count} hotels",
   "userHome.popularPlaces_1": "The best deals for foreigners from Vietnam",
   "userHome.reviewCount": "{count} reviews",
   "savedHotel.loginRequired": "Please sign in to save hotels",

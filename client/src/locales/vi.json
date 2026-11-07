@@ -37,6 +37,7 @@
   "userHome.nearbyHotels": "Những khách sạn gần đây",
   "userHome.trendingHotels": "Khách sạn đang thịnh hành",
   "userHome.popularPlaces": "Điểm đến đang thịnh hành",
+  "userHome.hotelCount": "{count} chỗ nghỉ",
   "userHome.popularPlaces_1": "Các lựa chọn phổ biến nhất cho du khách từ Việt Nam",
   "userHome.reviewCount": "{count} đánh giá",
   "savedHotel.loginRequired": "Vui lòng đăng nhập để thêm vào danh sách yêu thích",

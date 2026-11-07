@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 
 const { compactKey: compactCityKey, slugify: slugifyCityName } = require('@utils/placeName');
 
@@ -351,6 +351,35 @@ async function findByIdForAdmin(hotelId) {
   return await Hotels.findByPk(hotelId, { attributes: ADMIN_HOTEL_ATTRIBUTES });
 }
 
+/**
+ * Active hotel counts grouped by city and country. Destination cards show a
+ * "N hotels" hint, and this keeps that to two aggregate queries per request
+ * instead of one query per destination.
+ */
+async function countActiveHotelsByDestination({ cityIds = [], countryIds = [] } = {}) {
+  const countBy = async (column, ids) => {
+    if (!Array.isArray(ids) || ids.length === 0) return {};
+
+    const rows = await Hotels.findAll({
+      where: { status: 'active', [column]: { [Op.in]: ids } },
+      attributes: [column, [Sequelize.fn('COUNT', Sequelize.col('id')), 'hotel_count']],
+      group: [column],
+      raw: true,
+    });
+
+    return Object.fromEntries(
+      rows.map((row) => [String(row[column]), Number(row.hotel_count) || 0])
+    );
+  };
+
+  const [byCity, byCountry] = await Promise.all([
+    countBy('city_id', cityIds),
+    countBy('country_id', countryIds),
+  ]);
+
+  return { byCity, byCountry };
+}
+
 module.exports = {
   findById,
   findAllForAdmin,
@@ -364,4 +393,5 @@ module.exports = {
   findPoliciesByHotelId,
   findNearbyPlaceById,
   findBasicByIds,
+  countActiveHotelsByDestination,
 };

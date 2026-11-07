@@ -42,6 +42,7 @@ for (const width of [375, 768, 1440]) {
           destinations: Array.from({ length: 5 }, (_, id) => ({
             id: id + 1,
             displayName: `Destination ${id}`,
+            hotelCount: 10 - id,
           })),
         };
       }
@@ -51,6 +52,8 @@ for (const width of [375, 768, 1440]) {
     const trending = page.getByRole('region', { name: 'Trending Hotels', exact: true });
     await expect(trending.locator('.guest-property')).toHaveCount(10);
     await expect(trending.locator('.guest-property-price').first()).toContainText('100');
+    const popular = page.getByRole('region', { name: 'Popular Places', exact: true });
+    await expect(popular.locator('.destination-card-count').first()).toContainText('10 hotels');
     const track = trending.locator('.discovery-items');
     await expect(
       trending.getByRole('button', { name: 'Next cards in Trending Hotels', exact: true })
