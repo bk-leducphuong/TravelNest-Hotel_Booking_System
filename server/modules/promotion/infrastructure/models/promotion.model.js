@@ -101,6 +101,16 @@ module.exports = function (sequelize, DataTypes) {
             { name: 'booking_ends_at' },
           ],
         },
+        {
+          name: 'promotions_stay_window',
+          using: 'BTREE',
+          fields: [
+            { name: 'hotel_id' },
+            { name: 'status' },
+            { name: 'stay_starts_on' },
+            { name: 'stay_ends_on' },
+          ],
+        },
       ],
     }
   );

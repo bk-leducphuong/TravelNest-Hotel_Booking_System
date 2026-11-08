@@ -81,6 +81,11 @@ module.exports = function (sequelize, DataTypes) {
           using: 'BTREE',
           fields: [{ name: 'status' }, { name: 'reservation_expires_at' }],
         },
+        {
+          name: 'promotion_redemptions_hotel_created',
+          using: 'BTREE',
+          fields: [{ name: 'hotel_id' }, { name: 'created_at' }],
+        },
       ],
     }
   );
