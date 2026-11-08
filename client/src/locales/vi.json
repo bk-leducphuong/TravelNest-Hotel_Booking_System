@@ -1030,5 +1030,12 @@
   "map.yourLocation": "Vị trí của bạn",
   "map.approximateLocation": "Vị trí gần đúng",
   "map.showMyLocation": "Hiện vị trí của tôi",
-  "map.hideMyLocation": "Ẩn vị trí của tôi"
+  "map.hideMyLocation": "Ẩn vị trí của tôi",
+  "directions.getDirections": "Chỉ đường",
+  "directions.modeLabel": "Cách di chuyển",
+  "directions.walking": "Đi bộ",
+  "directions.driving": "Lái xe",
+  "directions.transit": "Phương tiện công cộng",
+  "directions.newTabHint": "Mở trong tab mới",
+  "map.getDirections": "Chỉ đường"
 }

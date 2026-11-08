@@ -8,6 +8,7 @@ const {
   getMySearchSummary,
   getMySearches,
   trackLocationEvent,
+  trackDirectionsClick,
 } = require('./analytics.controller');
 
 const router = express.Router();
@@ -17,6 +18,13 @@ router.post(
   optionalAuthenticate,
   validate(analyticsSchema.trackLocationEvent),
   trackLocationEvent
+);
+
+router.post(
+  '/directions',
+  optionalAuthenticate,
+  validate(analyticsSchema.trackDirectionsClick),
+  trackDirectionsClick
 );
 
 router.get('/search/demand', validate(analyticsSchema.getSearchDemand), getSearchDemand);

@@ -23,8 +23,12 @@ vi.mock('@vue-leaflet/vue-leaflet', () => ({
 }));
 vi.mock('@/components/SavedHotelIcon.vue', () => ({ default: { template: '<span />' } }));
 vi.mock('@/services/search.service', () => ({ SearchService: { searchMapHotels: vi.fn() } }));
+vi.mock('@/services/analytics.service', () => ({
+  AnalyticsService: { trackDirectionsClick: vi.fn().mockResolvedValue({}) },
+}));
 import MapComponent from '@/components/map/MapComponent.vue';
 import { SearchService } from '@/services/search.service';
+import { AnalyticsService } from '@/services/analytics.service';
 
 const hotel = {
   hotel_id: 'h1',
@@ -273,6 +277,45 @@ describe('hotel map', () => {
     expect(wrapper.vm.showSearchRadius).toBe(false);
     expect(wrapper.vm.approximateAreaMeters).toBe(5000);
     expect(wrapper.vm.locationChipLabel).toBe('map.approximateLocation');
+    wrapper.unmount();
+  });
+
+  it('builds directions with a GPS origin and distance-based mode', () => {
+    const wrapper = mountMap({
+      latitude: '21.029',
+      longitude: '105.805',
+      locationSource: 'gps',
+    });
+    const nearby = { ...hotel, hotel_id: 'near', latitude: 21.03, longitude: 105.85, distance_km: 1 };
+    const far = { ...hotel, hotel_id: 'far', latitude: 21.03, longitude: 105.85, distance_km: 6 };
+
+    const nearbyUrl = new URL(wrapper.vm.directionsUrl(nearby));
+    const farUrl = new URL(wrapper.vm.directionsUrl(far));
+
+    expect(nearbyUrl.hostname).toBe('www.google.com');
+    expect(nearbyUrl.searchParams.get('origin')).toBe('21.029,105.805');
+    expect(nearbyUrl.searchParams.get('travelmode')).toBe('walking');
+    expect(farUrl.searchParams.get('travelmode')).toBe('driving');
+
+    wrapper.vm.trackDirections(far);
+    expect(AnalyticsService.trackDirectionsClick).toHaveBeenCalledWith({
+      hotelId: 'far',
+      mode: 'driving',
+      source: 'gps',
+    });
+    wrapper.unmount();
+  });
+
+  it('does not use IP coordinates as a directions origin', () => {
+    const wrapper = mountMap({
+      latitude: '21.029',
+      longitude: '105.805',
+      locationSource: 'ip',
+    });
+    const url = new URL(wrapper.vm.directionsUrl({ ...hotel, distance_km: 1 }));
+
+    expect(url.searchParams.has('origin')).toBe(false);
+    expect(wrapper.vm.directionsOrigin).toBeNull();
     wrapper.unmount();
   });
 

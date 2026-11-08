@@ -1030,5 +1030,12 @@
   "map.yourLocation": "Your location",
   "map.approximateLocation": "Approximate location",
   "map.showMyLocation": "Show my location",
-  "map.hideMyLocation": "Hide my location"
+  "map.hideMyLocation": "Hide my location",
+  "directions.getDirections": "Get directions",
+  "directions.modeLabel": "Travel mode",
+  "directions.walking": "Walking",
+  "directions.driving": "Driving",
+  "directions.transit": "Transit",
+  "directions.newTabHint": "Opens in a new tab",
+  "map.getDirections": "Directions"
 }

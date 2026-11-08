@@ -2,6 +2,7 @@ const asyncHandler = require('@utils/asyncHandler');
 const { getAuthenticatedUserId } = require('@helpers/auth-context.helper');
 const analyticsService = require('../infrastructure/analytics-service.client');
 const { publishLocationEvent } = require('../application/location-event.service');
+const { publishDirectionsClick } = require('../application/directions-event.service');
 
 const getSearchDemand = asyncHandler(async (req, res) => {
   const { nextDays, limit } = req.query;
@@ -47,6 +48,22 @@ const getMySearches = asyncHandler(async (req, res) => {
   });
 });
 
+const trackDirectionsClick = asyncHandler(async (req, res) => {
+  const { hotelId, mode, source } = req.body;
+
+  const result = await publishDirectionsClick({
+    hotelId,
+    mode,
+    source,
+    userId: getAuthenticatedUserId(req),
+  });
+
+  res.status(202).json({
+    success: true,
+    data: { eventId: result?.eventId ?? null },
+  });
+});
+
 const trackLocationEvent = asyncHandler(async (req, res) => {
   const { event, source, errorCode } = req.body;
 
@@ -68,4 +85,5 @@ module.exports = {
   getMySearchSummary,
   getMySearches,
   trackLocationEvent,
+  trackDirectionsClick,
 };

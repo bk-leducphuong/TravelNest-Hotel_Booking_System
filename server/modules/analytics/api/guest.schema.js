@@ -19,6 +19,14 @@ exports.trackLocationEvent = {
   }),
 };
 
+exports.trackDirectionsClick = {
+  body: Joi.object({
+    hotelId: Joi.string().trim().min(1).max(100).required(),
+    mode: Joi.string().valid('walking', 'driving', 'transit').default('walking'),
+    source: Joi.string().valid('gps', 'ip', 'none').default('none'),
+  }),
+};
+
 exports.getSearchDemand = {
   query: Joi.object({
     nextDays: Joi.number().integer().min(1).max(365).default(90),
