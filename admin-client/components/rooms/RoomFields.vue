@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BED_TYPES, ROOM_STATUSES } from "~/services/api/catalog";
+import { BED_TYPES, ROOM_STATUSES, ROOM_TYPES } from "~/services/api/catalog";
 import type { RoomDraft } from "~/utils/rooms";
 const model = defineModel<RoomDraft>({ required: true });
 withDefaults(
@@ -21,11 +21,17 @@ withDefaults(
             maxlength="255"
         /></el-form-item>
         <el-form-item :label="$t('rooms.roomType')"
-          ><el-input
+          ><el-select
             v-model="model.roomType"
-            maxlength="100"
+            :placeholder="$t('common.select')"
             :aria-label="$t('rooms.roomType')"
-        /></el-form-item>
+            class="w-full"
+            ><el-option
+              v-for="type in ROOM_TYPES"
+              :key="type"
+              :label="$t(`rooms.type.${type}`)"
+              :value="type" /></el-select
+        ></el-form-item>
         <el-form-item :label="$t('common.status')"
           ><el-select
             v-model="model.status"

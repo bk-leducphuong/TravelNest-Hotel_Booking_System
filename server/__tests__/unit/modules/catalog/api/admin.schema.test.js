@@ -68,6 +68,23 @@ describe('catalog admin schema', () => {
     });
   });
 
+  describe('room type', () => {
+    it('accepts a canonical room type', () => {
+      ['single', 'deluxe', 'family', 'studio'].forEach((roomType) => {
+        expect(createRoom.body.validate({ roomName: 'Suite', roomType }).error).toBeUndefined();
+      });
+    });
+
+    it('rejects free text that the rooms.room_type ENUM cannot store', () => {
+      // Regression: `"Big Room"` used to pass validation and blow up in MySQL
+      // with "Data truncated for column 'room_type'" (500 instead of 400).
+      expect(
+        createRoom.body.validate({ roomName: 'Big Room', roomType: 'Big Room' }).error
+      ).toBeDefined();
+      expect(updateRoom.body.validate({ roomType: 'Big Room' }).error).toBeDefined();
+    });
+  });
+
   describe('amenities', () => {
     it('accepts an amenity id array (including empty to clear)', () => {
       const id = '4c2c9f7e-1f1a-4a5a-9c3b-2f4d5e6a7b8c';

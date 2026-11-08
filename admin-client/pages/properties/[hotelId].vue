@@ -10,6 +10,7 @@ import {
   HOTEL_STATUSES,
   POLICY_TYPES,
   ROOM_STATUSES,
+  ROOM_TYPES,
   createPolicy,
   createRoom,
   deleteHotelPhoto,
@@ -55,6 +56,7 @@ const inContext = computed(
 );
 const { t } = useI18n();
 const { categoryLabel, amenityLabel } = useAmenityLabels();
+const { roomTypeLabel } = useRoomTypeLabel();
 const hotelId = computed(() => String(route.params.hotelId));
 
 const hotelStatusLabel = (status?: string) =>
@@ -488,7 +490,7 @@ const submitRoom = async () => {
   try {
     const payload = {
       roomName: roomForm.roomName,
-      roomType: roomForm.roomType,
+      roomType: roomForm.roomType || undefined,
       maxGuests: roomForm.maxGuests,
       quantity: roomForm.quantity,
       roomSize: roomForm.roomSize,
@@ -968,7 +970,11 @@ watch(
                 prop="room_type"
                 :label="$t('properties.rooms.col.type')"
                 min-width="120"
-              />
+              >
+                <template #default="{ row }">{{
+                  roomTypeLabel(row.room_type) || "—"
+                }}</template>
+              </el-table-column>
               <el-table-column
                 prop="max_guests"
                 :label="$t('properties.rooms.col.guests')"
@@ -1346,11 +1352,19 @@ watch(
           <el-input v-model="roomForm.roomName" />
         </el-form-item>
         <el-form-item :label="$t('properties.roomDialog.type')">
-          <el-input
+          <el-select
             v-model="roomForm.roomType"
             :aria-label="$t('properties.roomDialog.typePlaceholder')"
             :placeholder="$t('properties.roomDialog.typePlaceholder')"
-          />
+            class="w-full"
+          >
+            <el-option
+              v-for="type in ROOM_TYPES"
+              :key="type"
+              :label="$t(`rooms.type.${type}`)"
+              :value="type"
+            />
+          </el-select>
         </el-form-item>
         <div class="grid grid-cols-2 gap-3">
           <el-form-item :label="$t('properties.roomDialog.maxGuests')">

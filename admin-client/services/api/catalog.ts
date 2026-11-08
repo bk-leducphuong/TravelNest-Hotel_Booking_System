@@ -77,6 +77,16 @@ export const HOTEL_STATUSES = ["active", "inactive", "suspended"] as const;
 
 export const ROOM_STATUSES = ["active", "inactive", "maintenance"] as const;
 
+export const ROOM_TYPES = [
+  "single",
+  "double",
+  "twin",
+  "suite",
+  "deluxe",
+  "family",
+  "studio",
+] as const;
+
 export const BED_TYPES = [
   "single",
   "double",
