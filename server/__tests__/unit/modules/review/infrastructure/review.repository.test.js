@@ -27,7 +27,7 @@ jest.mock('@config/database.config', () => ({
 }));
 
 const reviewRepository = require('@modules/review/infrastructure/review.repository');
-const { reviews: Reviews, images: Images } = require('@models/index.js');
+const { reviews: Reviews, images: Images, users: Users } = require('@models/index.js');
 
 describe('reviewRepository.findByUser', () => {
   beforeEach(() => {
@@ -59,6 +59,26 @@ describe('reviewRepository.findByUser', () => {
 
     const [query] = Reviews.findAndCountAll.mock.calls[0];
     expect(query.where.status).toBe('published');
+  });
+});
+
+describe('reviewRepository.findForModeration', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    Reviews.findAndCountAll.mockResolvedValue({ rows: [], count: 0 });
+  });
+
+  it('joins soft-deleted reviewer accounts so the author is not lost', async () => {
+    await reviewRepository.findForModeration({});
+
+    const [query] = Reviews.findAndCountAll.mock.calls[0];
+    const userInclude = query.include.find((include) => include.as === 'user');
+    expect(userInclude).toMatchObject({
+      model: Users,
+      as: 'user',
+      required: false,
+      paranoid: false,
+    });
   });
 });
 

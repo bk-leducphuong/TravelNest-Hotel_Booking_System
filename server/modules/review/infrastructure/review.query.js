@@ -12,19 +12,34 @@ const {
  * repositories.
  */
 
+const REVIEWER_ATTRIBUTES = ['id', 'first_name', 'last_name', 'profile_picture_url', 'country'];
+
 const PUBLIC_INCLUDE = [
   {
     model: Users,
     as: 'user',
-    attributes: ['id', 'first_name', 'last_name', 'profile_picture_url', 'country'],
+    attributes: REVIEWER_ATTRIBUTES,
     required: false,
+    // `users` is paranoid, so Sequelize would otherwise add
+    // `user.deleted_at IS NULL` to this LEFT JOIN. Reviews outlive the account
+    // that wrote them (accounts get soft-deleted, e.g. by re-seeding), and the
+    // users row still exists, so join it regardless of `deleted_at` instead of
+    // returning a broken `user: null` for published reviews.
+    paranoid: false,
   },
   {
     model: ReviewReplies,
     as: 'reply',
     attributes: ['id', 'reply_text', 'created_at', 'updated_at'],
     required: false,
-    include: [{ model: Users, as: 'user', attributes: ['id', 'first_name', 'last_name'] }],
+    include: [
+      {
+        model: Users,
+        as: 'user',
+        attributes: ['id', 'first_name', 'last_name'],
+        paranoid: false,
+      },
+    ],
   },
   {
     model: ReviewMedia,
