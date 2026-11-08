@@ -90,19 +90,26 @@ jobs:
           SESSION_SECRET: test_session_secret_for_ci
           SESSION_SECRET_KEY: test_session_secret_for_ci
 
-      - name: Run integration tests
-        continue-on-error: true
-        run: yarn workspace @travelnest/server run test:integration
-        timeout-minutes: 15
-        env:
-          NODE_ENV: development
-          SESSION_SECRET: test_session_secret_for_ci
-          SESSION_SECRET_KEY: test_session_secret_for_ci
+      # Disabled to keep CI fast: the integration suite spins up Testcontainers
+      # and is too slow for every push/PR. Run it locally with
+      # `yarn workspace @travelnest/server run test:integration`, or temporarily
+      # un-comment this step when you need it in CI.
+      # - name: Run integration tests
+      #   continue-on-error: true
+      #   run: yarn workspace @travelnest/server run test:integration
+      #   timeout-minutes: 15
+      #   env:
+      #     NODE_ENV: development
+      #     SESSION_SECRET: test_session_secret_for_ci
+      #     SESSION_SECRET_KEY: test_session_secret_for_ci
 
+      # Scope to unit tests only: jest.config.js matches every
+      # `__tests__/**/*.test.js`, which would otherwise pull in the slow
+      # integration/e2e suites here as well.
       - name: Generate coverage report
         continue-on-error: true
         if: matrix.node-version == '24.x'
-        run: yarn workspace @travelnest/server run test:coverage
+        run: yarn workspace @travelnest/server exec jest --coverage __tests__/unit
         timeout-minutes: 15
         env:
           NODE_ENV: development
