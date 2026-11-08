@@ -78,6 +78,12 @@
  *           without a radius, distance is calculated for ranking/display but the
  *           result set is not restricted.
  *         example: 10
+ *       - in: query
+ *         name: locationSource
+ *         schema:
+ *           type: string
+ *           enum: [gps, ip]
+ *         description: How the coordinates were obtained (browser GPS or IP fallback)
  *
  *       # Date parameters (required)
  *       - in: query

@@ -28,6 +28,7 @@ describe('saveSearchLog geolocation fields', () => {
       latitude: 21.028511,
       longitude: 105.804817,
       radius: 5,
+      locationSource: 'gps',
     });
 
     expect(publish).toHaveBeenCalledWith(
@@ -36,6 +37,7 @@ describe('saveSearchLog geolocation fields', () => {
         latitude: 21.029,
         longitude: 105.805,
         radius: 5,
+        locationSource: 'gps',
       }),
       expect.any(Object)
     );

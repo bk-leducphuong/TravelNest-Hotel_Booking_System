@@ -32,6 +32,7 @@ async function saveSearchLog(searchData, userId = null, metadata = {}) {
         latitude: roundCoordinate(searchData.latitude),
         longitude: roundCoordinate(searchData.longitude),
         radius: Number.isFinite(radius) && radius > 0 ? radius : null,
+        locationSource: searchData.locationSource || null,
         checkInDate: searchData.checkIn,
         checkOutDate: searchData.checkOut,
         adults: searchData.adults,

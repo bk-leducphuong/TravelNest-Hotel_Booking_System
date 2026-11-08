@@ -44,6 +44,7 @@ export const SearchService = {
       latitude: searchData.latitude,
       longitude: searchData.longitude,
       radius: searchData.radius,
+      locationSource: searchData.locationSource,
     });
   },
 

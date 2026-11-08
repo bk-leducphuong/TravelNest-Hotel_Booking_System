@@ -8,6 +8,24 @@ const base = {
 
 const validateMap = (query) => schema.searchMapHotels.query.validate({ ...base, ...query });
 
+describe('searchHotels locationSource', () => {
+  it('accepts gps/ip and rejects unknown sources', () => {
+    const valid = schema.searchHotels.query.validate({
+      ...base,
+      city: 'Ha Noi',
+      locationSource: 'gps',
+    });
+    const invalid = schema.searchHotels.query.validate({
+      ...base,
+      city: 'Ha Noi',
+      locationSource: 'wifi',
+    });
+
+    expect(valid.error).toBeUndefined();
+    expect(invalid.error).toBeDefined();
+  });
+});
+
 describe('searchMapHotels schema', () => {
   it('accepts a viewport query', () => {
     const { error } = validateMap({ north: 11, south: 10, east: 107, west: 106 });

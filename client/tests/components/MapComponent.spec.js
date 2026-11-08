@@ -4,7 +4,22 @@ import * as L from 'leaflet/dist/leaflet-src.esm';
 vi.mock('@vue-leaflet/vue-leaflet', () => ({
   LMap: { template: '<div />' },
   LTileLayer: {},
-  LMarker: {},
+  LMarker: { name: 'LMarker', template: '<span />' },
+  LCircle: {
+    name: 'LCircle',
+    props: [
+      'latLng',
+      'radius',
+      'color',
+      'weight',
+      'opacity',
+      'dashArray',
+      'fillColor',
+      'fillOpacity',
+    ],
+    template: '<span />',
+  },
+  LTooltip: { template: '<span><slot /></span>' },
 }));
 vi.mock('@/components/SavedHotelIcon.vue', () => ({ default: { template: '<span />' } }));
 vi.mock('@/services/search.service', () => ({ SearchService: { searchMapHotels: vi.fn() } }));
@@ -20,7 +35,7 @@ const hotel = {
   min_price_for_dates: '50',
   min_price_for_requested_rooms: '100',
 };
-function mountMap() {
+function mountMap(searchParams = {}) {
   return shallowMount(MapComponent, {
     props: {
       hotels: [hotel],
@@ -31,6 +46,7 @@ function mountMap() {
         rooms: 2,
         city: 'Old city',
         radius: 10,
+        ...searchParams,
       },
     },
     global: {
@@ -223,6 +239,57 @@ describe('hotel map', () => {
     const params = SearchService.searchMapHotels.mock.calls.at(-1)[0];
     expect(params).not.toHaveProperty('north');
     expect(params).not.toHaveProperty('bounds');
+    expect(wrapper.vm.radiusCenter).toEqual([21.03, 105.85]);
+    wrapper.unmount();
+  });
+
+  it('shows a precise marker and the search radius for GPS coordinates', () => {
+    const wrapper = mountMap({
+      latitude: '21.03',
+      longitude: '105.85',
+      radius: 5,
+      locationSource: 'gps',
+    });
+
+    expect(wrapper.vm.showUserMarker).toBe(true);
+    expect(wrapper.vm.showSearchRadius).toBe(true);
+    expect(wrapper.vm.showApproximateArea).toBe(false);
+    expect(wrapper.vm.searchRadiusMeters).toBe(5000);
+    expect(wrapper.vm.searchRadiusCenter).toEqual([21.03, 105.85]);
+    expect(wrapper.vm.locationChipLabel).toBe('map.yourLocation');
+    wrapper.unmount();
+  });
+
+  it('uses an approximate area instead of a precise marker for IP coordinates', () => {
+    const wrapper = mountMap({
+      latitude: '21.03',
+      longitude: '105.85',
+      radius: null,
+      locationSource: 'ip',
+    });
+
+    expect(wrapper.vm.showUserMarker).toBe(false);
+    expect(wrapper.vm.showApproximateArea).toBe(true);
+    expect(wrapper.vm.showSearchRadius).toBe(false);
+    expect(wrapper.vm.approximateAreaMeters).toBe(5000);
+    expect(wrapper.vm.locationChipLabel).toBe('map.approximateLocation');
+    wrapper.unmount();
+  });
+
+  it('can hide the location overlay without clearing the search', async () => {
+    const wrapper = mountMap({
+      latitude: '21.03',
+      longitude: '105.85',
+      radius: 5,
+      locationSource: 'gps',
+    });
+
+    wrapper.vm.showLocationOverlay = false;
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.showUserMarker).toBe(false);
+    expect(wrapper.vm.showSearchRadius).toBe(false);
+    expect(wrapper.vm.locationSource).toBe('gps');
     wrapper.unmount();
   });
 

@@ -18,6 +18,7 @@ function buildFiltersApplied(params) {
     latitude: params.latitude ?? null,
     longitude: params.longitude ?? null,
     radius: params.radius ?? null,
+    locationSource: params.locationSource ?? null,
     hotelName: params.nameText || null,
     checkIn: params.checkIn,
     checkOut: params.checkOut,

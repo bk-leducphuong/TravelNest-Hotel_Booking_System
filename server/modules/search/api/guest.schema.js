@@ -20,6 +20,7 @@ exports.searchHotels = {
     latitude: Joi.number().min(-90).max(90),
     longitude: Joi.number().min(-180).max(180),
     radius: Joi.number().min(1).max(100), // km; only applied when coordinates are supplied
+    locationSource: Joi.string().valid('gps', 'ip'), // how the coordinates were obtained
 
     // Dates (REQUIRED)
     checkIn: Joi.date().iso().greater('now').required().messages({
@@ -230,6 +231,7 @@ exports.saveSearchInformation = {
     children: Joi.number().integer().min(0).default(0),
     rooms: Joi.number().integer().min(1).default(1),
     nights: Joi.number().integer().min(1),
+    locationSource: Joi.string().valid('gps', 'ip'),
 
     // Legacy fields
     location: Joi.string().trim().min(2).max(100),

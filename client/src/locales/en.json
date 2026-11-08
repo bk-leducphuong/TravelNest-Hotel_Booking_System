@@ -1026,5 +1026,9 @@
   "map.guestCount": "{count} guest | {count} guests",
   "map.roomCount": "{count} room | {count} rooms",
   "filters.withinDistance": "Within {distance}",
-  "map.radiusScope": "Within {distance} of the map center"
+  "map.radiusScope": "Within {distance} of the map center",
+  "map.yourLocation": "Your location",
+  "map.approximateLocation": "Approximate location",
+  "map.showMyLocation": "Show my location",
+  "map.hideMyLocation": "Hide my location"
 }

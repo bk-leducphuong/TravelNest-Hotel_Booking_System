@@ -14,6 +14,19 @@
       </button>
       <span v-else>{{ $t('map.chooseDates') }}</span>
       <span v-if="areaSearched">{{ areaScopeLabel }}</span>
+      <span v-if="locationChipLabel" class="map-location-chip">{{ locationChipLabel }}</span>
+      <button
+        v-if="hasUserLocation"
+        type="button"
+        :aria-pressed="showLocationOverlay"
+        @click="showLocationOverlay = !showLocationOverlay"
+      >
+        {{
+          showLocationOverlay
+            ? $t('map.hideMyLocation')
+            : $t('map.showMyLocation')
+        }}
+      </button>
     </div>
     <p v-if="error" role="alert" class="map-message">{{ error }}</p>
     <p v-if="hasMore" class="map-message">{{ $t('map.moreResults') }}</p>
@@ -78,6 +91,31 @@
             url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
           />
+          <LCircle
+            v-if="showApproximateArea"
+            v-bind="approximateAreaStyle"
+            :lat-lng="approximateAreaCenter"
+            :radius="approximateAreaMeters"
+          />
+          <LCircle
+            v-if="showSearchRadius"
+            v-bind="searchRadiusStyle"
+            :lat-lng="searchRadiusCenter"
+            :radius="searchRadiusMeters"
+          />
+          <LMarker
+            v-if="showUserMarker"
+            :lat-lng="anchorLatLng"
+            :icon="userLocationIcon"
+            :z-index-offset="2000"
+            :options="{
+              title: $t('map.yourLocation'),
+              alt: $t('map.yourLocation'),
+              keyboard: true,
+            }"
+          >
+            <LTooltip>{{ $t('map.yourLocation') }}</LTooltip>
+          </LMarker>
           <LMarker
             v-for="hotel in mappableHotels"
             :key="hotel.hotel_id"
@@ -101,7 +139,7 @@
 </template>
 
 <script>
-  import { LMap, LTileLayer, LMarker } from '@vue-leaflet/vue-leaflet';
+  import { LCircle, LMap, LTileLayer, LMarker, LTooltip } from '@vue-leaflet/vue-leaflet';
   import * as L from 'leaflet/dist/leaflet-src.esm';
   import 'leaflet/dist/leaflet.css';
   import SavedHotelIcon from '@/components/SavedHotelIcon.vue';
@@ -111,7 +149,7 @@
   import { SearchService } from '@/services/search.service';
 
   export default {
-    components: { LMap, LTileLayer, LMarker, SavedHotelIcon },
+    components: { LCircle, LMap, LTileLayer, LMarker, LTooltip, SavedHotelIcon },
     props: {
       hotels: { type: Array, required: true },
       searchParams: { type: Object, default: () => ({}) },
@@ -135,6 +173,8 @@
         controller: null,
         resizeObserver: null,
         searchedBounds: null,
+        radiusCenter: null,
+        showLocationOverlay: true,
       };
     },
     computed: {
@@ -167,6 +207,83 @@
           });
         }
         return this.$t('map.areaScope');
+      },
+      locationSource() {
+        const source = this.searchParams.locationSource;
+        return source === 'gps' || source === 'ip' ? source : null;
+      },
+      hasUserLocation() {
+        return Boolean(this.locationSource && this.anchorLatLng);
+      },
+      isPreciseLocation() {
+        return this.locationSource === 'gps' && Boolean(this.anchorLatLng);
+      },
+      isApproximateLocation() {
+        return this.locationSource === 'ip';
+      },
+      showUserMarker() {
+        return this.showLocationOverlay && this.isPreciseLocation;
+      },
+      searchRadiusKm() {
+        const radius = Number(this.criteria.radius);
+        return Number.isFinite(radius) && radius > 0 ? radius : null;
+      },
+      searchRadiusMeters() {
+        return this.searchRadiusKm ? this.searchRadiusKm * 1000 : 0;
+      },
+      searchRadiusCenter() {
+        return this.radiusCenter || this.anchorLatLng;
+      },
+      showSearchRadius() {
+        return Boolean(
+          this.showLocationOverlay && this.searchRadiusKm && this.searchRadiusCenter
+        );
+      },
+      showApproximateArea() {
+        return Boolean(
+          this.showLocationOverlay &&
+            this.isApproximateLocation &&
+            this.anchorLatLng &&
+            !this.searchRadiusKm
+        );
+      },
+      approximateAreaCenter() {
+        return this.anchorLatLng;
+      },
+      approximateAreaMeters() {
+        return 5000;
+      },
+      locationChipLabel() {
+        if (this.locationSource === 'gps') return this.$t('map.yourLocation');
+        if (this.locationSource === 'ip') return this.$t('map.approximateLocation');
+        return '';
+      },
+      userLocationIcon() {
+        return L.divIcon({
+          html: '<span class="user-location-dot" aria-hidden="true"></span>',
+          className: 'user-location-marker',
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+        });
+      },
+      searchRadiusStyle() {
+        return {
+          color: '#006ce4',
+          weight: 1,
+          opacity: 0.7,
+          fillColor: '#006ce4',
+          fillOpacity: 0.06,
+        };
+      },
+      approximateAreaStyle() {
+        return {
+          color: '#6b7280',
+          weight: 1,
+          dashArray: '6 6',
+          opacity: 0.7,
+          fillColor: '#6b7280',
+          fillOpacity: 0.04,
+        };
       },
       criteria() {
         const stay = this.$store.getters['search/getSearchData'] || {};
@@ -428,6 +545,7 @@
           const data = response.data ?? response;
           this.results = data.hotels;
           this.hasMore = data.hasMore;
+          if (useRadius) this.radiusCenter = [center.lat, center.lng];
           this.searchedBounds = bounds ? JSON.stringify(bounds) : null;
           this.areaSearched = true;
           this.onMoveEnd();
@@ -466,6 +584,14 @@
   .map-toolbar button:disabled {
     opacity: 0.6;
     cursor: wait;
+  }
+  .map-location-chip {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #e8f1fc;
+    color: #006ce4;
+    font-size: 12px;
+    font-weight: 600;
   }
   .map-layout {
     display: flex;
@@ -622,5 +748,23 @@
   .hotel-map-dialog .leaflet-control-zoom a {
     background: white;
     color: #223;
+  }
+</style>
+
+<style>
+  /* Leaflet markers are created outside the scoped-style tree. */
+  .user-location-marker {
+    background: transparent;
+    border: 0;
+  }
+  .user-location-dot {
+    display: block;
+    width: 18px;
+    height: 18px;
+    margin: 2px;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    background: #006ce4;
+    box-shadow: 0 0 0 5px rgba(0, 108, 228, 0.25);
   }
 </style>

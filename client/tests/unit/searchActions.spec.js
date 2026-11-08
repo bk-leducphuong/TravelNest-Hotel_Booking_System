@@ -30,12 +30,22 @@ describe('search store recent-search persistence', () => {
   it('keeps the coordinates and radius with the recent search', async () => {
     await actions.saveSearchInformation(
       { state },
-      { latitude: '21.029', longitude: '105.805', radius: '5' }
+      { latitude: '21.029', longitude: '105.805', radius: '5', locationSource: 'gps' }
     );
 
-    expect(savedEntry()).toMatchObject({ latitude: 21.029, longitude: 105.805, radius: 5 });
+    expect(savedEntry()).toMatchObject({
+      latitude: 21.029,
+      longitude: 105.805,
+      radius: 5,
+      locationSource: 'gps',
+    });
     expect(SearchService.saveSearch).toHaveBeenCalledWith(
-      expect.objectContaining({ latitude: 21.029, longitude: 105.805, radius: 5 })
+      expect.objectContaining({
+        latitude: 21.029,
+        longitude: 105.805,
+        radius: 5,
+        locationSource: 'gps',
+      })
     );
   });
 
