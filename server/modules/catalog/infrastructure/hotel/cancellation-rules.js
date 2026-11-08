@@ -29,6 +29,7 @@ async function createCancellationRule(data) {
     refund_percent_after_deadline: data.refundPercentAfterDeadline ?? 0,
     cancellation_fee_type: data.cancellationFeeType ?? 'none',
     cancellation_fee_value: data.cancellationFeeValue ?? null,
+    payment_policy: data.paymentPolicy ?? 'prepay',
     is_active: data.isActive ?? true,
     created_at: new Date(),
     updated_at: new Date(),

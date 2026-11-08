@@ -47,17 +47,37 @@ function buildAmenitiesCondition(amenities, where, replacements) {
  * Bounding box reduces the rows the exact spherical-distance predicate has to
  * evaluate. Longitude wrap-around at the antimeridian is handled by dropping the
  * longitude bound and relying on the exact filter.
+ *
+ * Index note (measured on the 5k-row dev snapshot with EXPLAIN ANALYZE):
+ * - City-less geo searches use `idx_coordinates` as a range scan over the
+ *   bounding box (~196 estimated rows, 36 actual, <1 ms).
+ * - Destination-scoped searches use `idx_city_id_hss` (80 rows, <0.2 ms).
+ * A POINT + SPATIAL index is therefore not justified yet; revisit only when the
+ * snapshot table (or p95 geo latency) grows enough that the bbox scan becomes
+ * the bottleneck.
  */
 function buildGeoCondition(params, where, replacements, select) {
   const { latitude, longitude, radius } = params;
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
 
-  const radiusKm = Number.isFinite(radius) && radius > 0 ? radius : 10;
+  replacements.lat = latitude;
+  replacements.lng = longitude;
+
+  const distanceExpression = `(6371 * ACOS(LEAST(1, COS(RADIANS(:lat)) * COS(RADIANS(s.latitude))
+      * COS(RADIANS(s.longitude) - RADIANS(:lng))
+      + SIN(RADIANS(:lat)) * SIN(RADIANS(s.latitude)))))`;
+
+  select.push(`${distanceExpression} AS distance_km`);
+
+  // Coordinates without a radius still expose `distance_km` (for ranking and
+  // display) but do not restrict the result set. The guest UI sends a radius
+  // only when a distance band is selected.
+  const radiusKm = Number(radius);
+  if (!Number.isFinite(radiusKm) || radiusKm <= 0) return;
+
   const latDelta = radiusKm / 111.32;
   const lngDelta = radiusKm / (111.32 * Math.max(Math.cos((latitude * Math.PI) / 180), 0.000001));
 
-  replacements.lat = latitude;
-  replacements.lng = longitude;
   replacements.radiusKm = radiusKm;
   replacements.minLat = latitude - latDelta;
   replacements.maxLat = latitude + latDelta;
@@ -72,11 +92,6 @@ function buildGeoCondition(params, where, replacements, select) {
     where.push('s.longitude BETWEEN :minLng AND :maxLng');
   }
 
-  const distanceExpression = `(6371 * ACOS(LEAST(1, COS(RADIANS(:lat)) * COS(RADIANS(s.latitude))
-      * COS(RADIANS(s.longitude) - RADIANS(:lng))
-      + SIN(RADIANS(:lat)) * SIN(RADIANS(s.latitude)))))`;
-
-  select.push(`${distanceExpression} AS distance_km`);
   where.push(`${distanceExpression} <= :radiusKm`);
 }
 

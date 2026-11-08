@@ -16,6 +16,7 @@ async function getTrendingDestinations({ limit = 5, days = 30 } = {}) {
 
   const destinations = [];
   const cityIdsForImages = new Set();
+  const countryIdsForCounts = new Set();
 
   for (const row of rows) {
     const destination = (await catalog.getActiveDestinationById(row.destinationId)) || null;
@@ -28,6 +29,10 @@ async function getTrendingDestinations({ limit = 5, days = 30 } = {}) {
       cityIdsForImages.add(destination.city_id);
     }
 
+    if (destination.type === 'country' && destination.country_id) {
+      countryIdsForCounts.add(destination.country_id);
+    }
+
     destinations.push({
       id: destination.id,
       type: destination.type,
@@ -37,22 +42,32 @@ async function getTrendingDestinations({ limit = 5, days = 30 } = {}) {
       countryName: destination.country_name,
       searchCount: Number(row.searchCount) || 0,
       uniqueUsers: Number(row.uniqueUsers) || 0,
+      hotelCount: 0,
       images: null,
     });
   }
 
-  if (cityIdsForImages.size > 0) {
-    const imagesByCityId = await catalog.getCityImagesByCityIds(Array.from(cityIdsForImages));
+  const [imagesByCityId, hotelCounts] = await Promise.all([
+    cityIdsForImages.size > 0
+      ? catalog.getCityImagesByCityIds(Array.from(cityIdsForImages))
+      : Promise.resolve(new Map()),
+    catalog.getActiveHotelCountsByDestination({
+      cityIds: Array.from(cityIdsForImages),
+      countryIds: Array.from(countryIdsForCounts),
+    }),
+  ]);
 
-    for (const dest of destinations) {
-      if (dest.type !== 'city' || !dest.cityId) continue;
-
+  for (const dest of destinations) {
+    if (dest.type === 'city' && dest.cityId) {
       const cityImages = imagesByCityId.get(dest.cityId) || [];
       const primaryImage = cityImages.find((img) => img.isPrimary) || cityImages[0] || null;
 
       dest.images = {
         primary: primaryImage,
       };
+      dest.hotelCount = hotelCounts.byCity[String(dest.cityId)] ?? 0;
+    } else if (dest.type === 'country' && dest.countryId) {
+      dest.hotelCount = hotelCounts.byCountry[String(dest.countryId)] ?? 0;
     }
   }
 

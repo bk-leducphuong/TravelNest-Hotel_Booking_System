@@ -65,9 +65,16 @@ async function handlePaymentFailed(context) {
     }
 
     if (bookingCode) {
-      await bookingModule.updateBookingsByCode(bookingCode, {
-        status: 'payment_failed',
-      });
+      // A declined card is a payment-attempt failure, not a terminal booking
+      // failure: the guest can retry until the payment window closes. Only
+      // legacy/non-pending bookings keep the old terminal status.
+      const bookings = await bookingModule.getBookingsByCode(bookingCode);
+      const stillPayable = bookings.some((booking) => booking.status === 'pending_payment');
+      if (!stillPayable) {
+        await bookingModule.updateBookingsByCode(bookingCode, {
+          status: 'payment_failed',
+        });
+      }
     }
 
     logger.info('Payment failed processed successfully', { paymentIntentId });

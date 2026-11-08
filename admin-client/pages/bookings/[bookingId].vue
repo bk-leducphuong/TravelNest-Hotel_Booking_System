@@ -219,11 +219,36 @@ watch(
           <el-descriptions-item :label="$t('bookings.col.guestsRooms')">
             {{ booking.number_of_guests }} / {{ booking.quantity }}
           </el-descriptions-item>
+          <el-descriptions-item
+            v-if="Number(booking.discount_amount) > 0"
+            :label="$t('bookings.col.discount')"
+          >
+            −{{ money(booking.discount_amount, booking.currency) }}
+          </el-descriptions-item>
+          <el-descriptions-item
+            v-if="Number(booking.discount_amount) > 0"
+            :label="$t('bookings.col.subtotal')"
+          >
+            {{ money(booking.subtotal, booking.currency) }}
+          </el-descriptions-item>
           <el-descriptions-item :label="$t('common.total')">
             {{ money(booking.total_price, booking.currency) }}
           </el-descriptions-item>
           <el-descriptions-item :label="$t('bookings.col.currency')">
             {{ booking.currency }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('bookings.col.paymentPolicy')">
+            {{
+              booking.payment_policy === "pay_at_property"
+                ? $t("bookings.paymentPolicy.payAtProperty")
+                : $t("bookings.paymentPolicy.prepay")
+            }}
+          </el-descriptions-item>
+          <el-descriptions-item
+            v-if="booking.payment_policy === 'pay_at_property' && booking.payment_due_at"
+            :label="$t('bookings.col.paymentDue')"
+          >
+            {{ new Date(booking.payment_due_at).toLocaleString() }}
           </el-descriptions-item>
           <el-descriptions-item :label="$t('bookings.col.specialRequests')">
             {{ booking.special_requests || "—" }}

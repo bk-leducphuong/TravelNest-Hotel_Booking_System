@@ -63,6 +63,27 @@ async function createPaymentIntent(userId, paymentData) {
     throw new ApiError(400, 'HOLD_HAS_NO_ROOMS', 'Active hold does not contain any rooms.');
   }
 
+  // Promotions now affect holds even without a code. The legacy /payments
+  // path does not persist the pricing snapshot or a promotion redemption, so
+  // it must never create a discounted booking behind the canonical checkout.
+  const holdBreakdown = holdData.price_breakdown || holdData.priceBreakdown || {};
+  if (holdBreakdown.promotion?.id || Number(holdData.discount_amount) > 0) {
+    throw new ApiError(
+      409,
+      'USE_CANONICAL_CHECKOUT',
+      'This stay has a promotion. Please complete checkout from the booking page.'
+    );
+  }
+
+  // A pay-at-property stay must not be charged through the legacy prepay path.
+  if (holdBreakdown.paymentPolicy?.mode === 'pay_at_property') {
+    throw new ApiError(
+      409,
+      'PAY_AT_PROPERTY',
+      'This stay does not require prepayment. Please complete checkout from the booking page.'
+    );
+  }
+
   const bookingCode = bookingModule.generateBookingCode();
   const holdCurrency = 'USD';
   const amount = parseFloat(holdData.total_price);

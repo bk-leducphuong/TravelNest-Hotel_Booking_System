@@ -3,6 +3,7 @@ const { Transaction } = require('sequelize');
 const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
 const inventoryModule = require('@modules/inventory');
+const promotionModule = require('@modules/promotion');
 const bookingRepository = require('../../infrastructure/booking.repository');
 const { paymentModule } = require('../../infrastructure/payment.client');
 
@@ -71,6 +72,11 @@ async function expireBookingIfDue(bookingId) {
       },
       { transaction }
     );
+
+    await promotionModule.releasePromotionInTransaction(bookingId, {
+      reason: 'booking_expired',
+      transaction,
+    });
 
     const dbTransaction = booking.transaction;
     if (dbTransaction && ['pending', 'processing'].includes(dbTransaction.status)) {

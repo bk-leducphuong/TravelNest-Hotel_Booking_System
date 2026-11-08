@@ -62,6 +62,18 @@
         </span>
         <small>{{ getCount('freeCancellation') }}</small>
       </label>
+      <label class="filter-option">
+        <span>
+          <input
+            type="checkbox"
+            :checked="filters.payAtProperty"
+            :disabled="isLoading"
+            @change="updateBoolean('payAtProperty', $event.target.checked)"
+          />
+          {{ $t('filters.payAtProperty') }}
+        </span>
+        <small>{{ getCount('payAtProperty') }}</small>
+      </label>
       <label v-for="option in popularOptions" :key="option.key" class="filter-option">
         <span>
           <input
@@ -95,7 +107,49 @@
     <section class="filter-section">
       <h3>{{ $t('filters.distance') }}</h3>
       <p v-if="!hasCoordinates" class="hint">{{ $t('filters.distanceHint') }}</p>
-      <label v-for="option in distanceOptions" :key="option.value" class="filter-option">
+      <div class="location-actions">
+        <button
+          v-if="!hasCoordinates"
+          type="button"
+          class="location-button"
+          :disabled="isLoading || isLocating"
+          @click="$emit('use-location')"
+        >
+          {{ isLocating ? $t('filters.locating') : $t('filters.useMyLocation') }}
+        </button>
+        <template v-else>
+          <span class="hint location-active">{{ $t('filters.locationActive') }}</span>
+          <button
+            type="button"
+            class="location-button location-clear"
+            :disabled="isLoading"
+            @click="$emit('clear-location')"
+          >
+            {{ $t('filters.clearLocation') }}
+          </button>
+        </template>
+        <button
+          v-if="!hasCoordinates && locationError"
+          type="button"
+          class="location-button location-approximate"
+          :disabled="isLoading || isLocatingApproximate"
+          @click="$emit('use-approximate-location')"
+        >
+          {{
+            isLocatingApproximate
+              ? $t('filters.locating')
+              : $t('filters.useApproximateLocation')
+          }}
+        </button>
+      </div>
+      <p v-if="locationError" class="hint hint-error" role="alert">
+        {{ $t(locationError) }}
+      </p>
+      <label
+        v-for="option in distanceOptions"
+        :key="String(option.value)"
+        class="filter-option"
+      >
         <span>
           <input
             type="radio"
@@ -104,7 +158,10 @@
             :disabled="isLoading || !hasCoordinates"
             @change="updateValue('radius', option.value)"
           />
-          {{ $t(option.labelKey, { count: option.value }) }}
+          <template v-if="option.value == null">{{ $t(option.labelKey) }}</template>
+          <template v-else>{{
+            $t(option.labelKey, { distance: formatRadius(option.value) })
+          }}</template>
         </span>
       </label>
     </section>
@@ -161,6 +218,8 @@
 </template>
 
 <script>
+  import { formatDistance } from '@/utils/distance';
+
   const MEAL_CODES = ['BREAKFAST_INCLUDED', 'HALF_BOARD', 'FULL_BOARD', 'ALL_INCLUSIVE'];
 
   export default {
@@ -182,12 +241,30 @@
         type: Boolean,
         default: false,
       },
+      isLocating: {
+        type: Boolean,
+        default: false,
+      },
+      isLocatingApproximate: {
+        type: Boolean,
+        default: false,
+      },
+      locationError: {
+        type: String,
+        default: null,
+      },
       currency: {
         type: String,
         default: 'USD',
       },
     },
-    emits: ['update:filters', 'clear-filters'],
+    emits: [
+      'update:filters',
+      'clear-filters',
+      'use-location',
+      'use-approximate-location',
+      'clear-location',
+    ],
     data() {
       return {
         budgetTimer: null,
@@ -215,12 +292,13 @@
           { labelKey: 'filters.allInclusive', value: 'ALL_INCLUSIVE' },
         ],
         distanceOptions: [
-          { labelKey: 'filters.withinKm', value: 1 },
-          { labelKey: 'filters.withinKm', value: 3 },
-          { labelKey: 'filters.withinKm', value: 5 },
-          { labelKey: 'filters.withinKm', value: 10 },
-          { labelKey: 'filters.withinKm', value: 25 },
-          { labelKey: 'filters.withinKm', value: 50 },
+          { labelKey: 'filters.anyDistance', value: null },
+          { labelKey: 'filters.withinDistance', value: 1 },
+          { labelKey: 'filters.withinDistance', value: 3 },
+          { labelKey: 'filters.withinDistance', value: 5 },
+          { labelKey: 'filters.withinDistance', value: 10 },
+          { labelKey: 'filters.withinDistance', value: 25 },
+          { labelKey: 'filters.withinDistance', value: 50 },
         ],
         starOptions: [5, 4, 3, 2, 1],
         reviewScoreOptions: [
@@ -251,6 +329,7 @@
           this.filters.minPrice ||
           this.filters.maxPrice ||
           this.filters.freeCancellation ||
+          this.filters.payAtProperty ||
           this.filters.minRating ||
           this.filters.radius ||
           this.filters.amenities.length ||
@@ -331,6 +410,9 @@
       },
       formatAmount(value) {
         return Number(value || 0).toLocaleString('en-US');
+      },
+      formatRadius(value) {
+        return formatDistance(value, this.$i18n?.locale || 'en');
       },
       getCount(key) {
         const count = this.filterOptions?.amenities?.[key] ?? this.filterOptions?.popular?.[key];
@@ -432,6 +514,46 @@
     margin: 10px 0 0;
     color: #595959;
     font-size: 12px;
+  }
+
+  .hint-error {
+    color: #b3261e;
+  }
+
+  .location-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .location-actions .hint {
+    margin: 0;
+  }
+
+  .location-button {
+    min-height: 36px;
+    padding: 6px 12px;
+    border: 1px solid #006ce4;
+    border-radius: 8px;
+    background: #fff;
+    color: #006ce4;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .location-button:disabled {
+    border-color: #bdbdbd;
+    color: #8f8f8f;
+    cursor: not-allowed;
+  }
+
+  .location-clear,
+  .location-approximate {
+    border-color: #bdbdbd;
+    color: #595959;
   }
 
   .filter-option {

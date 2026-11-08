@@ -4,6 +4,9 @@ jest.mock('@modules/booking/infrastructure/booking.repository', () => ({
   update: jest.fn(),
 }));
 jest.mock('@modules/inventory', () => ({ releaseRooms: jest.fn() }));
+jest.mock('@modules/promotion', () => ({
+  releasePromotionInTransaction: jest.fn(),
+}));
 jest.mock('@modules/payment', () => ({
   cancellationPayment: jest.fn(),
   createCancellationRefund: jest.fn(),

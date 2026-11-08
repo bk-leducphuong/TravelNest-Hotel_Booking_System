@@ -55,6 +55,15 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
         defaultValue: 0,
       },
+      discount_amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0,
+      },
+      pricing_fingerprint: {
+        type: DataTypes.STRING(64),
+        allowNull: true,
+      },
       currency: {
         type: DataTypes.STRING(3),
         allowNull: false,

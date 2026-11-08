@@ -19,6 +19,7 @@ function buildFilterOptions(hotels) {
   };
   const popular = {
     freeCancellation: 0,
+    payAtProperty: 0,
   };
   const prices = [];
 
@@ -30,6 +31,10 @@ function buildFilterOptions(hotels) {
 
     if (hotel.has_free_cancellation) {
       popular.freeCancellation += 1;
+    }
+
+    if (hotel.has_pay_at_property) {
+      popular.payAtProperty += 1;
     }
 
     if (hotel.hotel_class) {

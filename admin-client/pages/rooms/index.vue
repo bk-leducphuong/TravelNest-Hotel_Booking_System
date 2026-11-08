@@ -18,6 +18,7 @@ import {
 const auth = useAuthStore();
 const { can } = usePermissions();
 const { t } = useI18n();
+const { roomTypeLabel } = useRoomTypeLabel();
 const rooms = ref<Room[]>([]);
 const loading = ref(false);
 const error = ref("");
@@ -251,7 +252,10 @@ const deactivate = async (room: Room) => {
                     }}</UiStatusPill>
                   </div>
                   <p class="mt-1 text-sm text-muted">
-                    {{ room.room_type || $t("common.notAvailable") }}
+                    {{
+                      roomTypeLabel(room.room_type) ||
+                      $t("common.notAvailable")
+                    }}
                   </p>
                   <dl
                     class="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-gray-200 pt-3 text-xs text-muted"
@@ -302,7 +306,7 @@ const deactivate = async (room: Room) => {
         <UiSectionCard
           v-if="selected && previewVisible"
           :title="selected.room_name"
-          :description="selected.room_type ?? undefined"
+          :description="roomTypeLabel(selected.room_type) || undefined"
         >
           <p
             v-if="photoLoading"

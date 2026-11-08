@@ -11,6 +11,7 @@ const { getBookingById } = require('./application/guest/getBookingById');
 const { getBookingByCode } = require('./application/guest/getBookingByCode');
 const { cancelBooking } = require('./application/guest/cancelBooking');
 const { createBookingFromHold } = require('./application/guest/createBookingFromHold');
+const { previewPromotion } = require('./application/guest/previewPromotion');
 const {
   createPaymentIntentForBooking,
 } = require('./application/guest/createPaymentIntentForBooking');
@@ -78,6 +79,7 @@ module.exports = {
   getBookingByCode,
   cancelBooking,
   createBookingFromHold,
+  previewPromotion,
   createPaymentIntentForBooking,
 
   // Background expiry (worker entrypoint).

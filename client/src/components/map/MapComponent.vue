@@ -13,7 +13,7 @@
         {{ $t(loading ? 'map.loading' : 'map.searchArea') }}
       </button>
       <span v-else>{{ $t('map.chooseDates') }}</span>
-      <span v-if="areaSearched">{{ $t('map.areaScope') }}</span>
+      <span v-if="areaSearched">{{ areaScopeLabel }}</span>
     </div>
     <p v-if="error" role="alert" class="map-message">{{ error }}</p>
     <p v-if="hasMore" class="map-message">{{ $t('map.moreResults') }}</p>
@@ -107,6 +107,7 @@
   import SavedHotelIcon from '@/components/SavedHotelIcon.vue';
   import { getFirstImageUrl, getImageUrl } from '@/utils/images';
   import { guestMoney } from '@/utils/guestPresentation';
+  import { formatDistance } from '@/utils/distance';
   import { SearchService } from '@/services/search.service';
 
   export default {
@@ -146,9 +147,26 @@
       mappableHotels() {
         return this.displayHotels.filter(this.hasCoords);
       },
+      anchorLatLng() {
+        const latitude = Number(this.searchParams.latitude);
+        const longitude = Number(this.searchParams.longitude);
+        return Number.isFinite(latitude) && Number.isFinite(longitude)
+          ? [latitude, longitude]
+          : null;
+      },
       initialCenter() {
+        if (this.anchorLatLng) return this.anchorLatLng;
         const hotel = this.hotels.find(this.hasCoords);
         return hotel ? this.latLng(hotel) : [10.7769, 106.7009];
+      },
+      areaScopeLabel() {
+        const radius = Number(this.criteria.radius);
+        if (Number.isFinite(radius) && radius > 0) {
+          return this.$t('map.radiusScope', {
+            distance: formatDistance(radius, this.$i18n?.locale || 'en'),
+          });
+        }
+        return this.$t('map.areaScope');
       },
       criteria() {
         const stay = this.$store.getters['search/getSearchData'] || {};
@@ -318,8 +336,10 @@
         if (!map) return;
         map.invalidateSize();
         const points = this.hotels.filter(this.hasCoords).map(this.latLng);
-        // Let the map create bounds with its own Leaflet instance.
-        if (points.length > 1) map.fitBounds(points, { padding: [40, 40], maxZoom: 15 });
+        // A location-aware search anchors on the guest's coordinates; otherwise
+        // frame the hotels returned by the current search.
+        if (this.anchorLatLng) map.setView(this.anchorLatLng, 13);
+        else if (points.length > 1) map.fitBounds(points, { padding: [40, 40], maxZoom: 15 });
         else if (points.length) map.setView(points[0], 14);
         this.ready = true;
         this.resizeObserver = new ResizeObserver(() => map.invalidateSize({ pan: false }));
@@ -359,20 +379,33 @@
           this.areaChanged = JSON.stringify(this.currentBounds()) !== this.searchedBounds;
       },
       async searchArea() {
+        if (!this.canSearch) return;
+
+        const map = this.$refs.map?.leafletObject;
         const bounds = this.currentBounds();
-        if (!bounds || !this.canSearch) return;
-        const width = (bounds.east - bounds.west + 360) % 360;
-        if (!width || width > 2 || bounds.north - bounds.south > 2) {
-          this.error = this.$t('map.zoomIn');
-          return;
+        const center = map?.getCenter();
+        const radiusKm = Number(this.criteria.radius);
+        const useRadius = Boolean(center) && Number.isFinite(radiusKm) && radiusKm > 0;
+
+        if (!useRadius) {
+          if (!bounds) return;
+          const width = (bounds.east - bounds.west + 360) % 360;
+          if (!width || width > 2 || bounds.north - bounds.south > 2) {
+            this.error = this.$t('map.zoomIn');
+            return;
+          }
         }
+
         const version = ++this.requestVersion;
         this.controller?.abort();
         this.controller = new AbortController();
         this.loading = true;
         this.error = null;
-        // Whitelist criteria: area searches intentionally replace destination/radius.
-        const params = { ...bounds };
+        // A selected distance band searches around the map center; otherwise
+        // fall back to the visible viewport.
+        const params = useRadius
+          ? { latitude: center.lat, longitude: center.lng, radius: radiusKm }
+          : { ...bounds };
         for (const key of [
           'checkIn',
           'checkOut',
@@ -395,7 +428,7 @@
           const data = response.data ?? response;
           this.results = data.hotels;
           this.hasMore = data.hasMore;
-          this.searchedBounds = JSON.stringify(bounds);
+          this.searchedBounds = bounds ? JSON.stringify(bounds) : null;
           this.areaSearched = true;
           this.onMoveEnd();
           if (!this.results.some((h) => h.hotel_id === this.selectedHotelId))

@@ -25,6 +25,26 @@ const SearchLogSchema = new Schema(
       default: '',
       index: true,
     },
+    // Rounded coordinates and selected distance band (km) when the guest used
+    // a location-aware search. Null for destination-only searches.
+    latitude: {
+      type: Number,
+      default: null,
+      min: -90,
+      max: 90,
+    },
+    longitude: {
+      type: Number,
+      default: null,
+      min: -180,
+      max: 180,
+    },
+    radius: {
+      type: Number,
+      default: null,
+      min: 1,
+      max: 100,
+    },
     searchTime: {
       type: Date,
       default: Date.now,

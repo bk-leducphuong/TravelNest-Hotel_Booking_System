@@ -26,6 +26,33 @@ const FREE_CANCELLATION_EXISTS = `EXISTS (
   )`;
 
 /**
+ * Payment condition for one room, using the same precedence as the booking
+ * module: the room-specific active rule wins, otherwise the hotel-wide default,
+ * otherwise prepay.
+ */
+const PAYMENT_POLICY_EXPRESSION = `COALESCE(
+    (
+      SELECT hcr.payment_policy
+        FROM hotel_cancellation_rules hcr
+       WHERE hcr.hotel_id = r.hotel_id
+         AND hcr.room_id = r.id
+         AND hcr.is_active = 1
+       ORDER BY hcr.updated_at DESC
+       LIMIT 1
+    ),
+    (
+      SELECT hcr.payment_policy
+        FROM hotel_cancellation_rules hcr
+       WHERE hcr.hotel_id = r.hotel_id
+         AND hcr.room_id IS NULL
+         AND hcr.is_active = 1
+       ORDER BY hcr.updated_at DESC
+       LIMIT 1
+    ),
+    'prepay'
+  )`;
+
+/**
  * @param {object} params
  * @param {string[]} params.hotelIds
  * @param {string} params.checkIn date-only string
@@ -33,12 +60,14 @@ const FREE_CANCELLATION_EXISTS = `EXISTS (
  * @param {number} params.nights positive night count
  * @param {number} params.rooms requested room count
  * @param {number} params.totalGuests adults + children
- * @param {number} [params.minPrice] minimum average nightly price
- * @param {number} [params.maxPrice] maximum average nightly price
  * @returns {{ sql: string, replacements: object }|null}
+ *
+ * Budget filtering is deliberately NOT applied here: an undiscounted room can
+ * qualify after its automatic sale, so search applies price constraints to the
+ * effective (promotion-aware) offer in the domain layer.
  */
 function buildOffersQuery(params) {
-  const { hotelIds, checkIn, checkOut, nights, rooms, totalGuests, minPrice, maxPrice } = params;
+  const { hotelIds, checkIn, checkOut, nights, rooms, totalGuests } = params;
 
   if (!Array.isArray(hotelIds) || hotelIds.length === 0) return null;
 
@@ -61,16 +90,6 @@ function buildOffersQuery(params) {
     'currency_count = 1',
   ];
 
-  if (Number.isFinite(minPrice)) {
-    having.push('avg_price_per_night >= :minPrice');
-    replacements.minPrice = minPrice;
-  }
-
-  if (Number.isFinite(maxPrice)) {
-    having.push('avg_price_per_night <= :maxPrice');
-    replacements.maxPrice = maxPrice;
-  }
-
   const sql = `
     SELECT
       r.hotel_id,
@@ -85,7 +104,8 @@ function buildOffersQuery(params) {
       AVG(ri.price_per_night) AS avg_price_per_night,
       MIN(ri.currency) AS currency,
       COUNT(DISTINCT ri.currency) AS currency_count,
-      ${FREE_CANCELLATION_EXISTS} AS has_free_cancellation
+      ${FREE_CANCELLATION_EXISTS} AS has_free_cancellation,
+      ${PAYMENT_POLICY_EXPRESSION} AS payment_policy
     FROM rooms r
     JOIN room_inventory ri ON ri.room_id = r.id
     WHERE r.hotel_id IN (${hotelPlaceholders.join(', ')})

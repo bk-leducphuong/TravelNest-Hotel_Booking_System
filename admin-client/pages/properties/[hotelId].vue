@@ -10,6 +10,7 @@ import {
   HOTEL_STATUSES,
   POLICY_TYPES,
   ROOM_STATUSES,
+  ROOM_TYPES,
   createPolicy,
   createRoom,
   deleteHotelPhoto,
@@ -55,6 +56,7 @@ const inContext = computed(
 );
 const { t } = useI18n();
 const { categoryLabel, amenityLabel } = useAmenityLabels();
+const { roomTypeLabel } = useRoomTypeLabel();
 const hotelId = computed(() => String(route.params.hotelId));
 
 const hotelStatusLabel = (status?: string) =>
@@ -96,6 +98,7 @@ const ruleForm = reactive({
   refundPercentAfterDeadline: 0,
   cancellationFeeType: "none" as string,
   cancellationFeeValue: undefined as number | undefined,
+  paymentPolicy: "prepay" as "prepay" | "pay_at_property",
   isActive: true,
 });
 
@@ -278,6 +281,7 @@ const openCreateRule = () => {
     refundPercentAfterDeadline: 0,
     cancellationFeeType: "none",
     cancellationFeeValue: undefined,
+    paymentPolicy: "prepay",
     isActive: true,
   });
   ruleDialog.value = true;
@@ -297,6 +301,7 @@ const openEditRule = (rule: CancellationRule) => {
     refundPercentAfterDeadline: Number(rule.refund_percent_after_deadline ?? 0),
     cancellationFeeType: rule.cancellation_fee_type ?? "none",
     cancellationFeeValue: toNumberOrUndefined(rule.cancellation_fee_value),
+    paymentPolicy: rule.payment_policy ?? "prepay",
     isActive: rule.is_active,
   });
   ruleDialog.value = true;
@@ -315,6 +320,7 @@ const submitRule = async () => {
       refundPercentAfterDeadline: ruleForm.refundPercentAfterDeadline,
       cancellationFeeType: ruleForm.cancellationFeeType,
       cancellationFeeValue: ruleForm.cancellationFeeValue ?? null,
+      paymentPolicy: ruleForm.paymentPolicy,
       isActive: ruleForm.isActive,
     };
     if (editingRuleId.value) {
@@ -484,7 +490,7 @@ const submitRoom = async () => {
   try {
     const payload = {
       roomName: roomForm.roomName,
-      roomType: roomForm.roomType,
+      roomType: roomForm.roomType || undefined,
       maxGuests: roomForm.maxGuests,
       quantity: roomForm.quantity,
       roomSize: roomForm.roomSize,
@@ -964,7 +970,11 @@ watch(
                 prop="room_type"
                 :label="$t('properties.rooms.col.type')"
                 min-width="120"
-              />
+              >
+                <template #default="{ row }">{{
+                  roomTypeLabel(row.room_type) || "—"
+                }}</template>
+              </el-table-column>
               <el-table-column
                 prop="max_guests"
                 :label="$t('properties.rooms.col.guests')"
@@ -1263,6 +1273,22 @@ watch(
                   </el-tag>
                 </template>
               </el-table-column>
+              <el-table-column :label="$t('properties.paymentPolicy')" width="170">
+                <template #default="{ row }">
+                  <el-tag
+                    :type="
+                      row.payment_policy === 'pay_at_property' ? 'success' : 'info'
+                    "
+                    size="small"
+                  >
+                    {{
+                      row.payment_policy === "pay_at_property"
+                        ? $t("properties.payAtProperty")
+                        : $t("properties.prepay")
+                    }}
+                  </el-tag>
+                </template>
+              </el-table-column>
               <el-table-column
                 :label="$t('properties.refundBefore')"
                 width="150"
@@ -1326,11 +1352,19 @@ watch(
           <el-input v-model="roomForm.roomName" />
         </el-form-item>
         <el-form-item :label="$t('properties.roomDialog.type')">
-          <el-input
+          <el-select
             v-model="roomForm.roomType"
             :aria-label="$t('properties.roomDialog.typePlaceholder')"
             :placeholder="$t('properties.roomDialog.typePlaceholder')"
-          />
+            class="w-full"
+          >
+            <el-option
+              v-for="type in ROOM_TYPES"
+              :key="type"
+              :label="$t(`rooms.type.${type}`)"
+              :value="type"
+            />
+          </el-select>
         </el-form-item>
         <div class="grid grid-cols-2 gap-3">
           <el-form-item :label="$t('properties.roomDialog.maxGuests')">
@@ -1463,6 +1497,15 @@ watch(
           </el-select>
         </el-form-item>
         <div class="grid grid-cols-2 gap-3">
+          <el-form-item :label="$t('properties.paymentPolicy')">
+            <el-select v-model="ruleForm.paymentPolicy" class="w-full">
+              <el-option :label="$t('properties.prepay')" value="prepay" />
+              <el-option
+                :label="$t('properties.payAtProperty')"
+                value="pay_at_property"
+              />
+            </el-select>
+          </el-form-item>
           <el-form-item :label="$t('properties.refundable')">
             <el-switch v-model="ruleForm.isRefundable" />
           </el-form-item>

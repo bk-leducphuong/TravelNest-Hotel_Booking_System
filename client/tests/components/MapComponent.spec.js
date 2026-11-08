@@ -204,6 +204,28 @@ describe('hotel map', () => {
     expect(SearchService.searchMapHotels.mock.calls.at(-1)[0]).not.toHaveProperty('radius');
     wrapper.unmount();
   });
+  it('searches around the map center when a distance band is selected', async () => {
+    const wrapper = mountMap();
+    wrapper.findComponent({ ref: 'map' }).vm.leafletObject = {
+      getCenter: () => ({ lat: 21.03, lng: 105.85 }),
+    };
+    wrapper.vm.currentBounds = () => ({ north: 22, south: 20, east: 107, west: 105 });
+    SearchService.searchMapHotels.mockResolvedValueOnce({
+      data: { hotels: [{ ...hotel, hotel_id: 'near' }], hasMore: false },
+    });
+
+    await wrapper.vm.searchArea();
+
+    expect(SearchService.searchMapHotels).toHaveBeenCalledWith(
+      expect.objectContaining({ latitude: 21.03, longitude: 105.85, radius: 10 }),
+      expect.anything()
+    );
+    const params = SearchService.searchMapHotels.mock.calls.at(-1)[0];
+    expect(params).not.toHaveProperty('north');
+    expect(params).not.toHaveProperty('bounds');
+    wrapper.unmount();
+  });
+
   it('retains previous results when the network fails', async () => {
     const wrapper = mountMap();
     wrapper.vm.currentBounds = () => ({ north: 11, south: 10, east: 107, west: 106 });

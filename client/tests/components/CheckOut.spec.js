@@ -14,10 +14,10 @@ vi.mock('@/services/payment.service', () => ({
 }));
 const card = { mount: vi.fn(), on: vi.fn(), destroy: vi.fn() };
 let confirm;
-function render() {
+function render(bookingInfor = { holdId: 'hold-1' }) {
   return mount(CheckOut, {
     props: {
-      bookingInfor: { holdId: 'hold-1' },
+      bookingInfor,
       searchData: {},
       userInfor: {
         fullName: 'Test Guest',
@@ -75,6 +75,34 @@ describe('checkout retry and payment status', () => {
     wrapper.unmount();
     expect(card.destroy).toHaveBeenCalled();
   });
+  it('confirms a pay-at-property booking without loading Stripe', async () => {
+    BookingService.createBooking.mockResolvedValue({
+      data: {
+        bookingId: 1,
+        bookingCode: 'TN123',
+        paymentPolicy: 'pay_at_property',
+        requiresPayment: false,
+      },
+    });
+    const wrapper = render({
+      holdId: 'hold-1',
+      paymentPolicy: { mode: 'pay_at_property' },
+    });
+    await flushPromises();
+    expect(loadStripe).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain(en['bookingFlow.confirmBooking']);
+
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+
+    expect(BookingService.createBookingPaymentIntent).not.toHaveBeenCalled();
+    expect(wrapper.vm.$router.replace).toHaveBeenCalledWith({
+      path: '/book/complete',
+      query: { bookingCode: 'TN123' },
+    });
+    wrapper.unmount();
+  });
+
   it('shows recovery when Stripe initialization fails without creating a booking', async () => {
     loadStripe.mockRejectedValueOnce(new Error('offline'));
     const wrapper = render();

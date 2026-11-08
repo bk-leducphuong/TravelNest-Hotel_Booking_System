@@ -1,4 +1,11 @@
-const { Rooms, RoomInventories, Amenities, Images, ImageVariants } = require('@platform/database');
+const {
+  Rooms,
+  RoomInventories,
+  Amenities,
+  Images,
+  ImageVariants,
+  HotelCancellationRules,
+} = require('@platform/database');
 
 /**
  * Room Repository - Contains all database operations for rooms
@@ -109,6 +116,22 @@ class RoomRepository {
       offset: offset || undefined,
     });
 
+    const rules = rooms.length
+      ? await HotelCancellationRules.findAll({
+          where: { hotel_id: hotelId, is_active: true },
+          attributes: ['room_id', 'payment_policy', 'updated_at'],
+          order: [['updated_at', 'DESC']],
+          raw: true,
+        })
+      : [];
+    const hotelDefaultPolicy = rules.find((rule) => !rule.room_id)?.payment_policy || 'prepay';
+    const policyByRoom = new Map();
+    for (const rule of rules) {
+      if (rule.room_id && !policyByRoom.has(String(rule.room_id))) {
+        policyByRoom.set(String(rule.room_id), rule.payment_policy);
+      }
+    }
+
     return rooms.map((room) => {
       const roomData = room.toJSON();
       const prices = roomPriceMap.get(roomData.id) || {};
@@ -121,6 +144,7 @@ class RoomRepository {
         price_per_night: prices.price_per_night,
         total_price: prices.total_price,
         available_rooms: prices.available_rooms,
+        payment_policy: policyByRoom.get(String(roomData.id)) || hotelDefaultPolicy,
         room_amenities: roomData.amenities || [],
         room_image_urls: roomData.images || [],
       };

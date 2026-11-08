@@ -7,6 +7,7 @@ const identityModule = require('@modules/identity');
 const paymentModule = require('@modules/payment');
 const bookingModule = require('@modules/booking');
 const payoutModule = require('@modules/payout');
+const promotionModule = require('@modules/promotion');
 const meRoutes = require('./me.routes');
 
 const router = express.Router();
@@ -22,6 +23,7 @@ const router = express.Router();
 router.use('/me', meRoutes);
 router.use('/hotels', catalogModule.adminRoutes);
 router.use('/hotels', identityModule.hotelStaffAdminRoutes);
+router.use('/hotels', promotionModule.adminRoutes);
 router.use('/locations', catalogModule.locationAdminRoutes);
 router.use('/amenities', catalogModule.amenityAdminRoutes);
 router.use('/reviews', reviewModule.adminRoutes);

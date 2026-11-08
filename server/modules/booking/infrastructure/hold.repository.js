@@ -37,6 +37,8 @@ class HoldRepository {
           tax_amount: data.taxAmount || 0,
           service_fee_amount: data.serviceFeeAmount || 0,
           platform_commission_amount: data.platformCommissionAmount || 0,
+          discount_amount: data.discountAmount || 0,
+          pricing_fingerprint: data.pricingFingerprint || null,
           currency: data.currency || 'USD',
           price_breakdown: data.priceBreakdown,
           cancellation_policy_snapshot: data.cancellationPolicySnapshot,

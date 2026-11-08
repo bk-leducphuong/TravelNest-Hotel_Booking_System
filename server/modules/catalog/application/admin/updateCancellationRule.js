@@ -13,6 +13,7 @@ const EDITABLE_FIELDS = {
   refundPercentAfterDeadline: 'refund_percent_after_deadline',
   cancellationFeeType: 'cancellation_fee_type',
   cancellationFeeValue: 'cancellation_fee_value',
+  paymentPolicy: 'payment_policy',
   isActive: 'is_active',
 };
 

@@ -16,6 +16,16 @@ jest.mock('@modules/inventory', () => ({
   releaseHoldRooms: jest.fn(),
   getInventoryForDateRange: jest.fn(),
 }));
+jest.mock('@modules/promotion', () => ({
+  resolveQuotePromotion: jest.fn(async () => ({
+    selected: null,
+    automatic: null,
+    codeOutcome: null,
+  })),
+  fromMinor: (value) => Number(value) / 100,
+  toMinor: (value) => Math.round(Number(value) * 100),
+  hashPricing: jest.fn(() => 'test-fingerprint'),
+}));
 jest.mock('@config/database.config', () => ({
   transaction: jest.fn(() =>
     Promise.resolve({
@@ -51,6 +61,12 @@ describe('HoldService', () => {
       rollback: jest.fn().mockResolvedValue(undefined),
     };
     sequelize.transaction.mockResolvedValue(mockTransaction);
+    require('@modules/promotion').resolveQuotePromotion.mockResolvedValue({
+      selected: null,
+      automatic: null,
+      codeOutcome: null,
+    });
+    require('@modules/promotion').hashPricing.mockReturnValue('test-fingerprint');
   });
 
   describe('createHold', () => {

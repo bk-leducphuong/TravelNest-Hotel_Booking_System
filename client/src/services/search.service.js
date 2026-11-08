@@ -13,6 +13,15 @@ export const SearchService = {
     return http.get('/search/hotels/map', { params, signal });
   },
 
+  /**
+   * GET /api/v1/search/geo/ip
+   * City-level approximate location for the calling network, when the edge
+   * provides it. Never returns the raw IP.
+   */
+  getIpLocation() {
+    return http.get('/search/geo/ip');
+  },
+
   getHotelAvailability(hotelId, params = {}) {
     return http.get(`/search/hotels/${hotelId}/availability`, { params });
   },
@@ -32,6 +41,9 @@ export const SearchService = {
       children: parseInt(searchData.children, 10) || 0,
       rooms: parseInt(searchData.rooms, 10) || 1,
       nights: parseInt(searchData.nights ?? searchData.numberOfDays, 10) || undefined,
+      latitude: searchData.latitude,
+      longitude: searchData.longitude,
+      radius: searchData.radius,
     });
   },
 

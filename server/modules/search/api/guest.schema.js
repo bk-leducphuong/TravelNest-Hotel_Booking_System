@@ -19,7 +19,7 @@ exports.searchHotels = {
     destinationId: Joi.string().uuid(),
     latitude: Joi.number().min(-90).max(90),
     longitude: Joi.number().min(-180).max(180),
-    radius: Joi.number().min(1).max(100).default(10), // km
+    radius: Joi.number().min(1).max(100), // km; only applied when coordinates are supplied
 
     // Dates (REQUIRED)
     checkIn: Joi.date().iso().greater('now').required().messages({
@@ -87,6 +87,7 @@ exports.searchHotels = {
       }),
     amenities: Joi.alternatives().try(Joi.string(), Joi.array().items(Joi.string())),
     freeCancellation: Joi.boolean(),
+    payAtProperty: Joi.boolean(),
 
     // Sorting
     sortBy: Joi.string()
@@ -301,20 +302,32 @@ exports.searchMapHotels = {
         'hotelClass',
         'amenities',
         'freeCancellation',
+        'payAtProperty',
         'sortBy',
       ].map((key) => [key, exports.searchHotels.query.extract(key)])
     )
   )
     .keys({
-      north: Joi.number().min(-90).max(90).required(),
-      south: Joi.number().min(-90).max(90).less(Joi.ref('north')).required(),
-      east: Joi.number().min(-180).max(180).required(),
-      west: Joi.number().min(-180).max(180).required(),
+      // Viewport search (existing).
+      north: Joi.number().min(-90).max(90),
+      south: Joi.number().min(-90).max(90).less(Joi.ref('north')),
+      east: Joi.number().min(-180).max(180),
+      west: Joi.number().min(-180).max(180),
+      // Center + radius search (used when a distance band is selected).
+      latitude: Joi.number().min(-90).max(90),
+      longitude: Joi.number().min(-180).max(180),
+      radius: Joi.number().min(1).max(100),
     })
+    .or('north', 'latitude')
+    .and('latitude', 'longitude')
+    .and('north', 'south', 'east', 'west')
+    .with('radius', 'latitude')
     .custom((value, helpers) => {
-      const width = (value.east - value.west + 360) % 360;
-      if (!width || width > 2 || value.north - value.south > 2) {
-        return helpers.error('any.custom', { message: 'Zoom in to search a smaller area' });
+      if (value.north !== null && value.north !== undefined) {
+        const width = (value.east - value.west + 360) % 360;
+        if (!width || width > 2 || value.north - value.south > 2) {
+          return helpers.error('any.custom', { message: 'Zoom in to search a smaller area' });
+        }
       }
       if ((new Date(value.checkOut) - new Date(value.checkIn)) / 86400000 > 30) {
         return helpers.error('any.custom', { message: 'Maximum stay duration is 30 nights' });

@@ -18,6 +18,7 @@ function row(overrides = {}) {
     avg_price_per_night: '125.25',
     currency: 'USD',
     has_free_cancellation: 0,
+    payment_policy: 'prepay',
     ...overrides,
   };
 }
@@ -44,7 +45,17 @@ describe('search/domain/offers', () => {
         total_price_for_requested_rooms: 751.5,
         price_per_night: 125.25,
         has_free_cancellation: false,
+        payment_policy: 'prepay',
       });
+    });
+
+    it('normalizes an unknown payment policy to prepay', () => {
+      const offer = normalizeOffer(row({ payment_policy: 'nonsense' }), {
+        nights: 1,
+        rooms: 1,
+      });
+
+      expect(offer.payment_policy).toBe('prepay');
     });
 
     it('rounds half-cent floats deterministically', () => {
@@ -97,6 +108,21 @@ describe('search/domain/offers', () => {
         selectOffer([cheapNoCancel, cheapCancel], { freeCancellationOnly: true }).room_id
       ).toBe('b');
       expect(selectOffer([cheapNoCancel], { freeCancellationOnly: true })).toBeNull();
+    });
+
+    it('restricts to pay-at-property offers when asked', () => {
+      const payAtProperty = {
+        room_id: 'd',
+        total_price: 150,
+        price_per_night: 75,
+        has_free_cancellation: false,
+        payment_policy: 'pay_at_property',
+      };
+
+      expect(selectOffer([cheapNoCancel, payAtProperty], { payAtPropertyOnly: true }).room_id).toBe(
+        'd'
+      );
+      expect(selectOffer([cheapNoCancel], { payAtPropertyOnly: true })).toBeNull();
     });
 
     it('is deterministic for equal prices', () => {

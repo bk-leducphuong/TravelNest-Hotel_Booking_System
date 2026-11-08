@@ -28,6 +28,9 @@
       policyRooms() {
         return this.booking?.cancellation_policy_snapshot?.rooms || [];
       },
+      payAtProperty() {
+        return this.booking?.paymentPolicy === 'pay_at_property';
+      },
     },
     watch: {
       '$route.params.bookingCode': {
@@ -124,6 +127,9 @@
           ><h2>{{ $t('bookingFlow.confirmCancellation') }}</h2>
           <p>{{ $t('guest.cancel.review') }}</p>
           <template v-if="quote">
+            <p v-if="payAtProperty" role="note">
+              {{ $t('guest.cancel.noPrepayment') }}
+            </p>
             <p v-if="quote.eligibility === 'manual_review'" role="status">
               {{ $t('guest.cancel.manualReview') }}
             </p>

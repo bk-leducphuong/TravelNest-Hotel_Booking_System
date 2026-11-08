@@ -178,7 +178,19 @@ function formatRooms(rooms = [], numberOfNights) {
       roomImageUrls: room.room_image_urls,
       roomAmenities: room.room_amenities,
       pricePerNight,
+      originalPricePerNight:
+        room.original_price_per_night === null || room.original_price_per_night === undefined
+          ? pricePerNight
+          : parseFloat(room.original_price_per_night),
+      originalTotalPrice:
+        room.original_total_price === null || room.original_total_price === undefined
+          ? totalPrice
+          : parseFloat(room.original_total_price),
+      discountAmount: parseFloat(room.discount_amount) || 0,
+      promotion: room.promotion || null,
+      hasSale: Boolean(room.has_sale),
       availableRooms: room.available_rooms || 0,
+      paymentPolicy: room.payment_policy === 'pay_at_property' ? 'pay_at_property' : 'prepay',
       totalPrice,
     };
   });

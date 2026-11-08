@@ -77,6 +77,16 @@ export const HOTEL_STATUSES = ["active", "inactive", "suspended"] as const;
 
 export const ROOM_STATUSES = ["active", "inactive", "maintenance"] as const;
 
+export const ROOM_TYPES = [
+  "single",
+  "double",
+  "twin",
+  "suite",
+  "deluxe",
+  "family",
+  "studio",
+] as const;
+
 export const BED_TYPES = [
   "single",
   "double",
@@ -440,6 +450,7 @@ export interface CancellationRule {
   refund_percent_after_deadline: string | number;
   cancellation_fee_type: string;
   cancellation_fee_value?: string | number | null;
+  payment_policy?: "prepay" | "pay_at_property";
   is_active: boolean;
 }
 
@@ -451,6 +462,7 @@ export interface CancellationRulePayload {
   refundPercentAfterDeadline?: number;
   cancellationFeeType?: string;
   cancellationFeeValue?: number | null;
+  paymentPolicy?: "prepay" | "pay_at_property";
   isActive?: boolean;
 }
 

@@ -24,8 +24,14 @@ export default {
   updateRooms({ commit }, rooms) {
     commit('setRooms', rooms);
   },
-  async saveSearchInformation({ state }) {
+  async saveSearchInformation({ state }, extra = {}) {
     try {
+      const latitude = extra.latitude == null || extra.latitude === '' ? NaN : Number(extra.latitude);
+      const longitude =
+        extra.longitude == null || extra.longitude === '' ? NaN : Number(extra.longitude);
+      const radius = extra.radius == null || extra.radius === '' ? NaN : Number(extra.radius);
+      const hasCoordinates = Number.isFinite(latitude) && Number.isFinite(longitude);
+
       const searchData = {
         location: state.searchData.location,
         checkInDate: state.searchData.checkInDate,
@@ -34,6 +40,8 @@ export default {
         children: state.searchData.children,
         rooms: state.searchData.rooms,
         numberOfDays: state.searchData.numberOfDays,
+        ...(hasCoordinates ? { latitude, longitude } : {}),
+        ...(hasCoordinates && Number.isFinite(radius) && radius > 0 ? { radius } : {}),
       };
 
       // save search information to localStorage (newest first, no duplicates)
@@ -49,6 +57,8 @@ export default {
         children: searchData.children,
         rooms: searchData.rooms,
         nights: searchData.numberOfDays,
+        ...(hasCoordinates ? { latitude, longitude } : {}),
+        ...(hasCoordinates && Number.isFinite(radius) && radius > 0 ? { radius } : {}),
       };
 
       localStorage.setItem(

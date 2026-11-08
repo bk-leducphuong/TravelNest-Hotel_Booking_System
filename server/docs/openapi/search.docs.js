@@ -73,8 +73,10 @@
  *           type: number
  *           minimum: 1
  *           maximum: 100
- *           default: 10
- *         description: Search radius in kilometers (used with lat/lon)
+ *         description: >-
+ *           Optional search radius in kilometers. When coordinates are supplied
+ *           without a radius, distance is calculated for ranking/display but the
+ *           result set is not restricted.
  *         example: 10
  *
  *       # Date parameters (required)
@@ -179,6 +181,12 @@
  *           type: boolean
  *         description: Filter hotels with free cancellation
  *         example: true
+ *       - in: query
+ *         name: payAtProperty
+ *         schema:
+ *           type: boolean
+ *         description: Filter hotels that offer a no-prepayment (pay at property) offer
+ *         example: true
  *
  *       # Sorting parameters
  *       - in: query
@@ -255,6 +263,11 @@
  *                               type: string
  *                           has_free_cancellation:
  *                             type: boolean
+ *                           has_pay_at_property:
+ *                             type: boolean
+ *                           payment_policy:
+ *                             type: string
+ *                             enum: [prepay, pay_at_property]
  *                           primary_image_url:
  *                             type: string
  *                             nullable: true
@@ -287,6 +300,9 @@
  *                                   type: number
  *                                 available_rooms:
  *                                   type: integer
+ *                                 payment_policy:
+ *                                   type: string
+ *                                   enum: [prepay, pay_at_property]
  *                     pagination:
  *                       type: object
  *                       properties:
@@ -779,6 +795,9 @@
  *                             description: Number of searches in the period
  *                           uniqueUsers:
  *                             type: integer
+ *                           hotelCount:
+ *                             type: integer
+ *                             description: Number of active hotels in the destination
  *                           images:
  *                             type: object
  *                             nullable: true
@@ -802,4 +821,117 @@
  *                                     type: boolean
  *       400:
  *         description: Validation error
+ */
+
+/**
+ * @swagger
+ * /search/geo/ip:
+ *   get:
+ *     summary: Approximate location for the calling network
+ *     description: >
+ *       City/country-level hint derived from Cloudflare visitor-location
+ *       headers. The raw IP is never returned. `available` is false when the
+ *       edge did not provide geo headers (for example, local development).
+ *     tags:
+ *       - Search
+ *     responses:
+ *       200:
+ *         description: Approximate location
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     available:
+ *                       type: boolean
+ *                     country:
+ *                       type: string
+ *                       nullable: true
+ *                     region:
+ *                       type: string
+ *                       nullable: true
+ *                     city:
+ *                       type: string
+ *                       nullable: true
+ *                     latitude:
+ *                       type: number
+ *                       nullable: true
+ *                     longitude:
+ *                       type: number
+ *                       nullable: true
+ *                     source:
+ *                       type: string
+ *                       enum: [cloudflare, unavailable]
+ */
+
+/**
+ * @swagger
+ * /search/hotels/map:
+ *   get:
+ *     summary: Search hotels on the map
+ *     description: >
+ *       Searches either the visible viewport (`north`/`south`/`east`/`west`)
+ *       or a circle around the map center (`latitude`/`longitude`/`radius`).
+ *       Supply one of the two location shapes.
+ *     tags:
+ *       - Search
+ *     parameters:
+ *       - in: query
+ *         name: checkIn
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: checkOut
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: adults
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: north
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: south
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: east
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: west
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: latitude
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: longitude
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: radius
+ *         schema:
+ *           type: number
+ *           minimum: 1
+ *           maximum: 100
+ *         description: Radius in kilometers around the map center
+ *     responses:
+ *       200:
+ *         description: Map search results
+ *       400:
+ *         description: Validation error (invalid area or stay dates)
  */

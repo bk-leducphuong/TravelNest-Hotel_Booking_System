@@ -42,6 +42,7 @@
         roomSearchScope: '',
         hotelAmenities: [],
         hotelPolicies: [],
+        hotelPaymentPolicy: 'prepay',
         checkInOut: {},
         bookingPending: false,
         voteError: '',
@@ -288,6 +289,11 @@
           room_image_urls: JSON.stringify(roomImageUrls),
           max_guests: room.maxGuests ?? room.max_guests,
           price_per_night: room.pricePerNight ?? room.price_per_night,
+          original_price_per_night:
+            room.originalPricePerNight ?? room.original_price_per_night ?? null,
+          discount_amount: room.discountAmount ?? room.discount_amount ?? 0,
+          promotion: room.promotion || null,
+          has_sale: Boolean(room.hasSale ?? room.has_sale),
           available_rooms: room.availableRooms ?? room.available_rooms,
         };
       },
@@ -412,6 +418,7 @@
           this.checkInOut = details.checkInOut || {};
           this.hotelAmenities = details.amenities || [];
           this.hotelPolicies = details.policies || [];
+          this.hotelPaymentPolicy = details.paymentPolicy || 'prepay';
           if (roomVersion === this.roomVersion) {
             this.room_list = (details.rooms || []).map(this.normalizeRoom);
             this.roomSearchScope = scope;
@@ -712,7 +719,12 @@
               holdId: holdResponse.data.holdId,
               totalPrice: holdResponse.data.totalPrice,
               priceBreakdown: holdResponse.data.priceBreakdown,
+              promotion: holdResponse.data.promotion || null,
+              pricingFingerprint: holdResponse.data.priceFingerprint || null,
+              promotionCode: null,
               cancellationPolicy: holdResponse.data.cancellationPolicy,
+              paymentPolicy: holdResponse.data.paymentPolicy,
+              paymentDueAt: holdResponse.data.paymentDueAt,
             });
 
             this.$router.push('/book');
@@ -878,9 +890,18 @@
                         {{ amenity }}
                       </li>
                     </ul>
+                    <p v-if="room.paymentPolicy === 'pay_at_property'" class="room-policy">
+                      {{ $t('hotelDetails.table.noPrepayment') }}
+                    </p>
                     <p v-if="room.available_rooms === 0">{{ $t('guest.soldOut') }}</p>
                   </div>
                   <div class="room-card-price">
+                    <span v-if="room.has_sale" class="room-sale-badge">{{
+                      room.promotion?.name || $t('guest.checkout.saleBadge')
+                    }}</span>
+                    <small v-if="room.has_sale && room.original_price_per_night">
+                      {{ guestMoney(room.original_price_per_night, 'USD', $i18n.locale) }}
+                    </small>
                     <strong>{{ guestMoney(room.price_per_night, 'USD', $i18n.locale) }}</strong
                     ><span>{{ $t('filters.perNight') }}</span
                     ><label
@@ -927,6 +948,9 @@
               </dl>
               <p v-if="checkInOut.checkInPolicy">{{ checkInOut.checkInPolicy }}</p>
               <p v-if="checkInOut.checkOutPolicy">{{ checkInOut.checkOutPolicy }}</p>
+              <p v-if="hotelPaymentPolicy === 'pay_at_property'" class="room-policy">
+                {{ $t('hotelDetails.table.noPrepayment') }}
+              </p>
               <article v-for="policy in hotelPolicies" :key="policy.id">
                 <h3>{{ policy.title }}</h3>
                 <p>{{ policy.description }}</p>
@@ -1331,6 +1355,20 @@
   }
   .room-card-price strong {
     font-size: 22px;
+  }
+  .room-sale-badge {
+    display: inline-block;
+    width: fit-content;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #e7f6ee;
+    color: #1c7c54;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .room-card-price small {
+    color: var(--tn-muted);
+    text-decoration: line-through;
   }
   .room-card-price span,
   .room-card-price label {

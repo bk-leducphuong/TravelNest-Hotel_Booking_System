@@ -32,6 +32,9 @@ export interface BookingListItem {
   number_of_guests: number;
   quantity: number;
   total_price: string;
+  subtotal?: string;
+  discount_amount?: string | number;
+  promotion_id?: string | null;
   currency: string;
   created_at: string;
   room_id?: string | null;
@@ -82,6 +85,8 @@ export interface BookingDetail extends BookingListItem {
   special_requests?: string | null;
   guest_details?: Record<string, unknown> | null;
   price_breakdown?: Record<string, unknown> | null;
+  payment_policy?: "prepay" | "pay_at_property";
+  payment_due_at?: string | null;
   bookingRooms?: BookingRoomLine[];
   transaction?: BookingTransaction | null;
 }

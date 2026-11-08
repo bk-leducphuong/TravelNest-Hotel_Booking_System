@@ -58,8 +58,6 @@
       <form @submit.prevent="validateUser">
         <label for="room-number">{{ $t('reviewsPage.validation.bookingCode') }}</label>
         <input type="text" id="room-number" name="room-number" v-model="bookingCode" />
-        <label for="pin">{{ $t('reviewsPage.validation.pin') }}</label>
-        <input type="text" id="pin" name="pin" />
         <button type="submit">{{ $t('reviewsPage.validation.submit') }}</button>
       </form>
     </div>

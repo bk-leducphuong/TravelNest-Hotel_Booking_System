@@ -15,6 +15,9 @@ function buildFiltersApplied(params) {
     countryId: params.countryId,
     city: params.city,
     country: params.country,
+    latitude: params.latitude ?? null,
+    longitude: params.longitude ?? null,
+    radius: params.radius ?? null,
     hotelName: params.nameText || null,
     checkIn: params.checkIn,
     checkOut: params.checkOut,
@@ -31,6 +34,7 @@ function buildFiltersApplied(params) {
     hotelClass: params.hotelClass,
     amenities: params.amenities,
     freeCancellation: params.freeCancellation,
+    payAtProperty: params.payAtProperty,
     sortBy: params.sortBy,
   };
 }

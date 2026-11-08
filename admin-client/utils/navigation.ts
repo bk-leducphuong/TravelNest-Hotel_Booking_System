@@ -1,6 +1,7 @@
 export type NavGroup =
   | "reservations"
   | "rooms"
+  | "marketing"
   | "finance"
   | "reviews"
   | "settings";
@@ -49,6 +50,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     permission: "room.read",
     group: "rooms",
     icon: "availability",
+  },
+  {
+    labelKey: "nav.promotions",
+    to: "/promotions",
+    permission: "promotion.read",
+    group: "marketing",
+    icon: "promotions",
   },
   {
     labelKey: "nav.property",

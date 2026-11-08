@@ -92,6 +92,23 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
         defaultValue: 0,
       },
+      discount_amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0,
+      },
+      promotion_id: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+          model: 'promotions',
+          key: 'id',
+        },
+      },
+      pricing_fingerprint: {
+        type: DataTypes.STRING(64),
+        allowNull: true,
+      },
       currency: {
         type: DataTypes.STRING(3),
         allowNull: false,
@@ -129,6 +146,12 @@ module.exports = function (sequelize, DataTypes) {
       cancellation_policy_snapshot: {
         type: DataTypes.JSON,
         allowNull: true,
+      },
+      payment_policy: {
+        type: DataTypes.ENUM('prepay', 'pay_at_property'),
+        allowNull: false,
+        defaultValue: 'prepay',
+        comment: 'Payment condition snapshotted at booking time',
       },
       payment_due_at: {
         type: DataTypes.DATE,
@@ -254,6 +277,14 @@ module.exports = function (sequelize, DataTypes) {
     Booking.hasOne(models.payout_items, {
       foreignKey: 'booking_id',
       as: 'payout_item',
+    });
+    Booking.belongsTo(models.promotions, {
+      foreignKey: 'promotion_id',
+      as: 'promotion',
+    });
+    Booking.hasOne(models.promotion_redemptions, {
+      foreignKey: 'booking_id',
+      as: 'promotionRedemption',
     });
   };
 

@@ -58,6 +58,10 @@ async function findReviewsByHotelId(hotelId, options = {}) {
         model: Users,
         as: 'user',
         attributes: ['id', 'first_name', 'country'],
+        // `users` is paranoid: without this, the INNER JOIN adds
+        // `user.deleted_at IS NULL` and silently drops every review written by
+        // an account that has since been soft-deleted.
+        paranoid: false,
       },
       {
         model: ReviewReplies,

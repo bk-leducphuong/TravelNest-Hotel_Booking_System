@@ -1,6 +1,7 @@
 const ApiError = require('@utils/ApiError');
 const roomRepository = require('../../infrastructure/room.repository');
 const hotelRepository = require('../../infrastructure/hotel.repository');
+const { applyRoomPromotions } = require('./applyRoomPromotions');
 
 const {
   formatImages,
@@ -47,6 +48,14 @@ async function getHotelDetails(hotelId, options = {}) {
 
   const hotelData = hotel.toJSON ? hotel.toJSON() : hotel;
   const hasSearchParams = !!(checkInDate && checkOutDate && numberOfNights);
+  const pricedRooms = hasSearchParams
+    ? await applyRoomPromotions(hotelId, rooms, {
+        checkInDate,
+        checkOutDate,
+        numberOfNights,
+        numberOfRooms: numberOfRooms || 1,
+      })
+    : rooms;
 
   return {
     hotel: {
@@ -77,7 +86,13 @@ async function getHotelDetails(hotelId, options = {}) {
     reviews: formatReviews(reviewsResult.rows || []),
     nearbyPlaces: formatNearbyPlaces(nearbyPlaces),
     policies: formatPolicies(policies),
-    rooms: formatRooms(rooms, numberOfNights),
+    // Hotel-level summary: pay-at-property only when every bookable room is.
+    paymentPolicy:
+      pricedRooms.length > 0 &&
+      pricedRooms.every((room) => room.payment_policy === 'pay_at_property')
+        ? 'pay_at_property'
+        : 'prepay',
+    rooms: formatRooms(pricedRooms, numberOfNights),
     meta: {
       totalReviews: reviewsResult.count || 0,
       hasSearchParams,

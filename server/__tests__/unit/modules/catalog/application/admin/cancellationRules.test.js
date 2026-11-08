@@ -98,11 +98,13 @@ describe('catalog/application/admin cancellation rules', () => {
     const result = await updateCancellationRule('h1', 'rule1', {
       isActive: false,
       refundPercentAfterDeadline: 50,
+      paymentPolicy: 'pay_at_property',
     });
 
     expect(hotelRepository.updateCancellationRule).toHaveBeenCalledWith('rule1', {
       is_active: false,
       refund_percent_after_deadline: 50,
+      payment_policy: 'pay_at_property',
     });
     expect(result).toEqual({ rule: { id: 'rule1', is_active: false } });
   });

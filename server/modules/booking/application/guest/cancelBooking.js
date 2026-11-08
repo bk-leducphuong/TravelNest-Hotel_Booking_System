@@ -1,6 +1,7 @@
 const ApiError = require('@utils/ApiError');
 const sequelize = require('@config/database.config');
 const inventory = require('@modules/inventory');
+const promotionModule = require('@modules/promotion');
 const bookings = require('../../infrastructure/booking.repository');
 const { paymentModule } = require('../../infrastructure/payment.client');
 const { assertTransition, requiresInventoryRelease } = require('../../domain/booking-status');
@@ -125,6 +126,10 @@ async function cancelBooking(
           { transaction }
         );
     }
+    await promotionModule.releasePromotionInTransaction(bookingId, {
+      reason: 'booking_cancelled',
+      transaction,
+    });
     await paymentModule().recordCancellationEvent(
       { bookingId, hotelId: booking.hotel_id, buyerId: userId, decision },
       { transaction }

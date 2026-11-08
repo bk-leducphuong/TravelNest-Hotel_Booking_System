@@ -25,12 +25,21 @@ function calculateNights(checkInDate, checkOutDate) {
   return Math.max(0, Math.round((toStartOfDay(checkOutDate) - toStartOfDay(checkInDate)) / DAY_MS));
 }
 
+function toNumberOrNull(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 class SearchLogMongoRepository {
   async createSearchLog(searchData) {
     const {
       destinationId,
       destinationType,
       userId,
+      latitude,
+      longitude,
+      radius,
       checkInDate,
       checkOutDate,
       adults,
@@ -49,6 +58,9 @@ class SearchLogMongoRepository {
         userId: userId || null,
         destinationId: destinationId || null,
         destinationType: destinationType || '',
+        latitude: toNumberOrNull(latitude),
+        longitude: toNumberOrNull(longitude),
+        radius: toNumberOrNull(radius),
         searchTime: toDate(searchTime) || new Date(),
         adults,
         children,
@@ -80,6 +92,9 @@ class SearchLogMongoRepository {
         destinationId,
         destinationType,
         userId,
+        latitude,
+        longitude,
+        radius,
         checkInDate,
         checkOutDate,
         adults,
@@ -95,6 +110,9 @@ class SearchLogMongoRepository {
         userId: userId || null,
         destinationId: destinationId || null,
         destinationType: destinationType || '',
+        latitude: toNumberOrNull(latitude),
+        longitude: toNumberOrNull(longitude),
+        radius: toNumberOrNull(radius),
         searchTime: toDate(searchTime) || new Date(),
         adults,
         children,

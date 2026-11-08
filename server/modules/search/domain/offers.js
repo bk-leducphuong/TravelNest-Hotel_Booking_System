@@ -48,6 +48,7 @@ function normalizeOffer(row, { nights, rooms }) {
     ),
     price_per_night: fromMinorUnits(perNightMinor),
     has_free_cancellation: Boolean(Number(row.has_free_cancellation)),
+    payment_policy: row.payment_policy === 'pay_at_property' ? 'pay_at_property' : 'prepay',
   };
 }
 
@@ -65,6 +66,7 @@ function byPriceThenRoom(a, b) {
  * @param {Array<object>} offers normalized offers for one hotel
  * @param {object} params
  * @param {boolean} [params.freeCancellationOnly]
+ * @param {boolean} [params.payAtPropertyOnly]
  * @param {number} [params.minPrice] minimum average nightly price
  * @param {number} [params.maxPrice] maximum average nightly price
  * @returns {object|null}
@@ -72,10 +74,11 @@ function byPriceThenRoom(a, b) {
 function selectOffer(offers, params = {}) {
   if (!Array.isArray(offers) || offers.length === 0) return null;
 
-  const { freeCancellationOnly, minPrice, maxPrice } = params;
+  const { freeCancellationOnly, payAtPropertyOnly, minPrice, maxPrice } = params;
 
   const eligible = offers.filter((offer) => {
     if (freeCancellationOnly && !offer.has_free_cancellation) return false;
+    if (payAtPropertyOnly && offer.payment_policy !== 'pay_at_property') return false;
 
     if (offer.price_per_night === null || offer.price_per_night === undefined) return false;
 

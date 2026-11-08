@@ -1,5 +1,6 @@
 const analyticsService = require('./infrastructure/analytics-service.client');
 const hotelViewEvents = require('./application/hotel-view-event.service');
+const locationEvents = require('./application/location-event.service');
 const analyticsRoutes = require('./api/analytics.routes');
 
 /**
@@ -19,4 +20,7 @@ module.exports = {
 
   // Hotel view event recorder (hotel-view-event.service.js).
   hotelViewEvents,
+
+  // Geolocation funnel event recorder (location-event.service.js).
+  locationEvents,
 };
