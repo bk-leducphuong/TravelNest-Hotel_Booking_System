@@ -114,6 +114,9 @@
           query.longitude = String(longitude);
           if (search.radius != null) query.radius = String(search.radius);
         }
+        if (search.locationSource === 'gps' || search.locationSource === 'ip') {
+          query.locationSource = search.locationSource;
+        }
 
         this.$router.push({
           name: 'SearchResults',

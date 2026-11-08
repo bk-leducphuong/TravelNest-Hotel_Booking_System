@@ -1026,5 +1026,9 @@
   "map.guestCount": "{count} khách",
   "map.roomCount": "{count} phòng",
   "filters.withinDistance": "Trong vòng {distance}",
-  "map.radiusScope": "Trong vòng {distance} quanh tâm bản đồ"
+  "map.radiusScope": "Trong vòng {distance} quanh tâm bản đồ",
+  "map.yourLocation": "Vị trí của bạn",
+  "map.approximateLocation": "Vị trí gần đúng",
+  "map.showMyLocation": "Hiện vị trí của tôi",
+  "map.hideMyLocation": "Ẩn vị trí của tôi"
 }

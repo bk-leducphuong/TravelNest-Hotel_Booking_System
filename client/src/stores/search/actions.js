@@ -30,6 +30,10 @@ export default {
       const longitude =
         extra.longitude == null || extra.longitude === '' ? NaN : Number(extra.longitude);
       const radius = extra.radius == null || extra.radius === '' ? NaN : Number(extra.radius);
+      const locationSource =
+        extra.locationSource === 'gps' || extra.locationSource === 'ip'
+          ? extra.locationSource
+          : null;
       const hasCoordinates = Number.isFinite(latitude) && Number.isFinite(longitude);
 
       const searchData = {
@@ -42,6 +46,7 @@ export default {
         numberOfDays: state.searchData.numberOfDays,
         ...(hasCoordinates ? { latitude, longitude } : {}),
         ...(hasCoordinates && Number.isFinite(radius) && radius > 0 ? { radius } : {}),
+        ...(locationSource ? { locationSource } : {}),
       };
 
       // save search information to localStorage (newest first, no duplicates)
@@ -59,6 +64,7 @@ export default {
         nights: searchData.numberOfDays,
         ...(hasCoordinates ? { latitude, longitude } : {}),
         ...(hasCoordinates && Number.isFinite(radius) && radius > 0 ? { radius } : {}),
+        ...(locationSource ? { locationSource } : {}),
       };
 
       localStorage.setItem(

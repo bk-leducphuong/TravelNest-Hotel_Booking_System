@@ -88,6 +88,7 @@
           params.latitude = this.$route.query.latitude;
           params.longitude = this.$route.query.longitude;
         }
+        if (this.locationSource) params.locationSource = this.locationSource;
         return params;
       },
       totalResults() {
@@ -120,6 +121,10 @@
       },
       hasCoordinates() {
         return Boolean(this.$route.query.latitude && this.$route.query.longitude);
+      },
+      locationSource() {
+        const value = this.$route.query.locationSource;
+        return value === 'gps' || value === 'ip' ? value : null;
       },
       // The stay length is derived from the dates when the URL omits
       // `numberOfDays` (e.g. a shared link), instead of silently failing.
@@ -243,6 +248,7 @@
           latitude,
           longitude,
           radius,
+          locationSource,
         } = this.$route.query;
 
         return JSON.stringify({
@@ -256,6 +262,7 @@
           latitude,
           longitude,
           radius,
+          locationSource,
         });
       },
       async saveSearchInformationOnce() {
@@ -267,6 +274,7 @@
           latitude: this.$route.query.latitude,
           longitude: this.$route.query.longitude,
           radius: this.filters.radius,
+          locationSource: this.locationSource,
         });
       },
       syncPaginationFromRoute() {
@@ -389,6 +397,7 @@
             params.latitude = this.$route.query.latitude;
             params.longitude = this.$route.query.longitude;
           }
+          if (this.locationSource) params.locationSource = this.locationSource;
 
           if (this.$route.query.destinationId) {
             params.destinationId = this.$route.query.destinationId;
@@ -502,6 +511,7 @@
               ...this.$route.query,
               latitude: String(latitude),
               longitude: String(longitude),
+              locationSource: 'gps',
               page: 1,
             },
           });
@@ -521,6 +531,7 @@
         delete nextQuery.latitude;
         delete nextQuery.longitude;
         delete nextQuery.radius;
+        delete nextQuery.locationSource;
         if (nextQuery.sort === 'distanceLowToHigh') delete nextQuery.sort;
         this.locationError = null;
         this.$router.push({ query: nextQuery });
@@ -550,6 +561,7 @@
                 ...this.$route.query,
                 latitude: String(roundCoordinate(latitude)),
                 longitude: String(roundCoordinate(longitude)),
+                locationSource: 'ip',
                 page: 1,
               },
             });
@@ -561,7 +573,12 @@
           const location = data.city || data.region || data.country;
           if (location) {
             this.trackLocation('approximate_used', { source: 'ip' });
-            const nextQuery = { ...this.$route.query, location, page: 1 };
+            const nextQuery = {
+              ...this.$route.query,
+              location,
+              locationSource: 'ip',
+              page: 1,
+            };
             delete nextQuery.destinationId;
             delete nextQuery.latitude;
             delete nextQuery.longitude;

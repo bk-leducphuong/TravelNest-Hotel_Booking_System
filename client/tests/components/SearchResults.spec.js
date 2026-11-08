@@ -308,8 +308,10 @@ describe('SearchResults', () => {
 
     expect(router.currentRoute.value.query.latitude).toBe('21.029');
     expect(router.currentRoute.value.query.longitude).toBe('105.805');
+    expect(router.currentRoute.value.query.locationSource).toBe('gps');
     expect(lastSearchParams().latitude).toBe('21.029');
     expect(lastSearchParams().longitude).toBe('105.805');
+    expect(lastSearchParams().locationSource).toBe('gps');
     expect(AnalyticsService.trackLocationEvent).toHaveBeenCalledWith('granted', {
       source: 'browser',
     });
@@ -335,6 +337,7 @@ describe('SearchResults', () => {
       latitude: '21.029',
       longitude: '105.805',
       radius: '5',
+      locationSource: 'gps',
       sort: 'distanceLowToHigh',
     });
 
@@ -344,7 +347,18 @@ describe('SearchResults', () => {
     expect(router.currentRoute.value.query.latitude).toBeUndefined();
     expect(router.currentRoute.value.query.longitude).toBeUndefined();
     expect(router.currentRoute.value.query.radius).toBeUndefined();
+    expect(router.currentRoute.value.query.locationSource).toBeUndefined();
     expect(router.currentRoute.value.query.sort).toBeUndefined();
+  });
+
+  it('passes the location source to the map', async () => {
+    const { wrapper } = await mountView({
+      latitude: '21.029',
+      longitude: '105.805',
+      locationSource: 'gps',
+    });
+
+    expect(wrapper.vm.mapSearchParams.locationSource).toBe('gps');
   });
 
   it('ignores distance sorting when there are no coordinates', async () => {
@@ -371,6 +385,7 @@ describe('SearchResults', () => {
 
     expect(router.currentRoute.value.query.latitude).toBe('21.029');
     expect(router.currentRoute.value.query.longitude).toBe('105.805');
+    expect(router.currentRoute.value.query.locationSource).toBe('ip');
     expect(AnalyticsService.trackLocationEvent).toHaveBeenCalledWith('approximate_used', {
       source: 'ip',
     });
@@ -387,6 +402,7 @@ describe('SearchResults', () => {
 
     expect(router.currentRoute.value.query.location).toBe('Hanoi');
     expect(router.currentRoute.value.query.destinationId).toBeUndefined();
+    expect(router.currentRoute.value.query.locationSource).toBe('ip');
   });
 
   it('explains when approximate location is unavailable', async () => {
