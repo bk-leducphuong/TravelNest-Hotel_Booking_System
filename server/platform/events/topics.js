@@ -20,6 +20,7 @@ const INTEGRATION_EVENTS = {
   BOOKING_EXPIRED: 'booking.booking.expired.v1',
   SEARCH_PERFORMED: 'analytics.search.performed.v1',
   HOTEL_VIEWED: 'analytics.hotel.viewed.v1',
+  LOCATION_PERMISSION: 'analytics.location.permission.v1',
 };
 
 /** Fast lookup for the NATS adapter deciding whether it owns a topic. */

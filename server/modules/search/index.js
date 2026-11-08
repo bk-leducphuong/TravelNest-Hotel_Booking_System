@@ -7,6 +7,7 @@ const {
   getDestinationAutocomplete,
 } = require('./application/autocomplete');
 const { saveSearchLog } = require('./application/saveSearchLog');
+const { getIpLocation } = require('./application/ipLocation');
 const guestRoutes = require('./api/guest.routes');
 
 /**
@@ -29,4 +30,5 @@ module.exports = {
   getAutocompleteSuggestions,
   getDestinationAutocomplete,
   saveSearchLog,
+  getIpLocation,
 };

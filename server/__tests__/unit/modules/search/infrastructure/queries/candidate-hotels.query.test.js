@@ -86,6 +86,20 @@ describe('candidate-hotels query builder', () => {
     expect(replacements.radiusKm).toBe(5);
   });
 
+  it('computes distance without restricting the result set when radius is absent', () => {
+    const { sql, replacements } = buildCandidateQuery({
+      latitude: 21.03,
+      longitude: 105.85,
+    });
+
+    expect(sql).toContain('ACOS(LEAST(1');
+    expect(sql).toContain('AS distance_km');
+    expect(sql).not.toContain('s.latitude BETWEEN');
+    expect(sql).not.toContain('s.longitude BETWEEN');
+    expect(sql).not.toContain('<= :radiusKm');
+    expect(replacements).not.toHaveProperty('radiusKm');
+  });
+
   it('does not treat stale availability flags as authoritative', () => {
     const { sql } = buildCandidateQuery({ cityId: 'c' });
 

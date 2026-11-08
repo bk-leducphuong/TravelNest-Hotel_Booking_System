@@ -261,3 +261,47 @@
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
+
+/**
+ * @swagger
+ * /analytics/location-events:
+ *   post:
+ *     summary: Record a geolocation funnel event
+ *     description: >
+ *       Records the browser permission lifecycle and the IP-based fallback.
+ *       Authentication is optional; events are attributed when a bearer token
+ *       is supplied.
+ *     tags:
+ *       - Analytics
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - event
+ *             properties:
+ *               event:
+ *                 type: string
+ *                 enum:
+ *                   - permission_prompted
+ *                   - granted
+ *                   - denied
+ *                   - error
+ *                   - approximate_used
+ *                   - approximate_unavailable
+ *               source:
+ *                 type: string
+ *                 enum: [browser, ip]
+ *                 default: browser
+ *               errorCode:
+ *                 type: string
+ *                 nullable: true
+ *                 enum: [denied, unavailable, timeout, insecure, unsupported]
+ *     responses:
+ *       202:
+ *         description: Event accepted
+ *       400:
+ *         description: Validation error
+ */

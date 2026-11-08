@@ -1,11 +1,23 @@
 const express = require('express');
 
-const { authenticate } = require('@middlewares/auth.middleware');
+const { authenticate, optionalAuthenticate } = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
 const analyticsSchema = require('./guest.schema');
-const { getSearchDemand, getMySearchSummary, getMySearches } = require('./analytics.controller');
+const {
+  getSearchDemand,
+  getMySearchSummary,
+  getMySearches,
+  trackLocationEvent,
+} = require('./analytics.controller');
 
 const router = express.Router();
+
+router.post(
+  '/location-events',
+  optionalAuthenticate,
+  validate(analyticsSchema.trackLocationEvent),
+  trackLocationEvent
+);
 
 router.get('/search/demand', validate(analyticsSchema.getSearchDemand), getSearchDemand);
 router.get('/users/me/search-summary', authenticate, getMySearchSummary);

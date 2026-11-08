@@ -8,6 +8,7 @@ const searchUseCases = {
   getAutocompleteSuggestions: require('../application/autocomplete').getAutocompleteSuggestions,
   getDestinationAutocomplete: require('../application/autocomplete').getDestinationAutocomplete,
   saveSearchLog: require('../application/saveSearchLog').saveSearchLog,
+  getIpLocation: require('../application/ipLocation').getIpLocation,
 };
 const logger = require('@config/logger.config');
 const asyncHandler = require('@utils/asyncHandler');
@@ -147,6 +148,23 @@ const searchHotels = asyncHandler(async (req, res) => {
 });
 
 /**
+ * GET /api/v1/search/geo/ip
+ * Approximate location for the calling network.
+ *
+ * Prefers Cloudflare visitor-location headers and never returns the raw IP.
+ * City-level at best; callers must treat it as a hint, not a precise fix.
+ */
+const getIpLocation = asyncHandler(async (req, res) => {
+  const ip = req.ip || req.connection?.remoteAddress || '';
+  const location = await searchUseCases.getIpLocation(ip, req.headers);
+
+  // Private: the hint is derived from the caller's network, so shared caches
+  // must not reuse it across visitors.
+  res.set?.('Cache-Control', 'private, max-age=3600');
+  res.status(200).json({ success: true, data: location });
+});
+
+/**
  * GET /api/v1/search/hotels/:hotelId/availability
  * Check availability for a specific hotel
  *
@@ -260,14 +278,25 @@ const getRecentSearches = asyncHandler(async (req, res) => {
 });
 
 const searchMapHotels = asyncHandler(async (req, res) => {
+  const boundsKeys = ['north', 'south', 'east', 'west'];
+  const hasBounds = boundsKeys.every((key) => {
+    const value = req.query[key];
+    return value !== undefined && value !== null && value !== '' && Number.isFinite(Number(value));
+  });
+
   const params = {
     ...req.query,
     mapSearch: true,
     page: 1,
     limit: 200,
-    bounds: Object.fromEntries(
-      ['north', 'south', 'east', 'west'].map((key) => [key, Number(req.query[key])])
-    ),
+    ...(hasBounds
+      ? {
+          bounds: Object.fromEntries(boundsKeys.map((key) => [key, Number(req.query[key])])),
+        }
+      : {}),
+    latitude: parseNumber(req.query.latitude),
+    longitude: parseNumber(req.query.longitude),
+    radius: parseNumber(req.query.radius),
     hotelClass: parseList(req.query.hotelClass, parseInteger),
     amenities: parseList(req.query.amenities, (item) => item.toUpperCase()),
   };
@@ -287,6 +316,7 @@ const searchMapHotels = asyncHandler(async (req, res) => {
 module.exports = {
   searchMapHotels,
   searchHotels,
+  getIpLocation,
   getHotelAvailability,
   getAutocompleteSuggestions,
   getDestinationAutocomplete,

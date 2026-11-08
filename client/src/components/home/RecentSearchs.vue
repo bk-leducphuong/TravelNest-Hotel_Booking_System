@@ -97,17 +97,27 @@
           const b = new Date(checkOut);
           numberOfDays = Math.max(1, Math.round((b - a) / (24 * 60 * 60 * 1000)));
         }
+        const query = {
+          location,
+          checkInDate: checkIn,
+          checkOutDate: checkOut,
+          adults: search.adults ?? 1,
+          children: search.children ?? 0,
+          rooms: search.rooms ?? 1,
+          numberOfDays: numberOfDays ?? 1,
+        };
+
+        const latitude = search.latitude ?? search.lat;
+        const longitude = search.longitude ?? search.lng;
+        if (latitude != null && longitude != null) {
+          query.latitude = String(latitude);
+          query.longitude = String(longitude);
+          if (search.radius != null) query.radius = String(search.radius);
+        }
+
         this.$router.push({
           name: 'SearchResults',
-          query: {
-            location,
-            checkInDate: checkIn,
-            checkOutDate: checkOut,
-            adults: search.adults ?? 1,
-            children: search.children ?? 0,
-            rooms: search.rooms ?? 1,
-            numberOfDays: numberOfDays ?? 1,
-          },
+          query,
         });
       },
       removeSearch(_removedSearch, searchIndex) {

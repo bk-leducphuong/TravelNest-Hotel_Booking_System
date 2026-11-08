@@ -150,6 +150,25 @@ cf tunnels get f3cf83fa-a17c-4e1e-ae43-8c2774b0def8   # status: healthy
 Note: until **k3s + Traefik** are installed, requests return **502 Bad Gateway**
 (there is nothing listening on `localhost:80` yet). That is expected.
 
+## Visitor location headers
+
+The zone-level **Add visitor location headers** managed transform is enabled for
+`deployserver.work`, so requests forwarded to the origin include:
+
+`cf-ipcountry`, `cf-ipcity`, `cf-region`, `cf-region-code`,
+`cf-iplatitude`, `cf-iplongitude`, `cf-ipcontinent`, `cf-timezone`.
+
+`GET /api/v1/search/geo/ip` reads these (requires `CF-Ray` to be present) and
+returns a city-level hint; it never returns the raw IP.
+
+Check or re-apply:
+
+```bash
+cf managed-transforms list -z deployserver.work
+cf managed-transforms update -z deployserver.work \
+  --managed-request-headers '[{"id":"add_visitor_location_headers","enabled":true}]'
+```
+
 ## Caveats
 
 - The app Ingresses in `deploy/k8s/apps/*/overlays/prod` still carry

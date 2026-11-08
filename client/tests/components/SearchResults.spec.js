@@ -7,7 +7,16 @@ import { createRouter, createMemoryHistory } from 'vue-router';
 vi.mock('@/utils/images', () => ({ getImageUrl: (path) => path }));
 
 vi.mock('@/services/search.service', () => ({
-  SearchService: { searchHotels: vi.fn() },
+  SearchService: { searchHotels: vi.fn(), getIpLocation: vi.fn() },
+}));
+
+vi.mock('@/utils/geolocation', async (importOriginal) => ({
+  ...(await importOriginal()),
+  getCurrentPosition: vi.fn(),
+}));
+
+vi.mock('@/services/analytics.service', () => ({
+  AnalyticsService: { trackLocationEvent: vi.fn().mockResolvedValue({}) },
 }));
 
 // Stub the heavy/irrelevant children so the view mounts in isolation.
@@ -28,6 +37,8 @@ vi.mock('@/components/common/SkeletonGrid.vue', () => ({
 
 import SearchResults from '@/views/SearchResults.vue';
 import { SearchService } from '@/services/search.service';
+import { AnalyticsService } from '@/services/analytics.service';
+import { getCurrentPosition } from '@/utils/geolocation';
 
 const VALID_QUERY = {
   location: 'ha-noi',
@@ -106,6 +117,11 @@ function lastSearchParams() {
 beforeEach(() => {
   vi.restoreAllMocks();
   localStorage.clear();
+  getCurrentPosition.mockReset();
+  getCurrentPosition.mockResolvedValue({ latitude: 21.029, longitude: 105.805 });
+  SearchService.getIpLocation.mockReset();
+  SearchService.getIpLocation.mockResolvedValue({ data: { available: false } });
+  AnalyticsService.trackLocationEvent.mockClear();
   SearchService.searchHotels.mockReset();
   SearchService.searchHotels.mockResolvedValue({
     success: true,
@@ -282,5 +298,146 @@ describe('SearchResults', () => {
 
     expect(lastSearchParams().sortBy).toBe('relevance');
     expect(router.currentRoute.value.query.sort).toBeUndefined();
+  });
+
+  it('adds rounded coordinates to the URL after the guest shares their location', async () => {
+    const { wrapper, router } = await mountView();
+
+    await wrapper.vm.useMyLocation();
+    await flushPromises();
+
+    expect(router.currentRoute.value.query.latitude).toBe('21.029');
+    expect(router.currentRoute.value.query.longitude).toBe('105.805');
+    expect(lastSearchParams().latitude).toBe('21.029');
+    expect(lastSearchParams().longitude).toBe('105.805');
+    expect(AnalyticsService.trackLocationEvent).toHaveBeenCalledWith('granted', {
+      source: 'browser',
+    });
+  });
+
+  it('shows a translated message when location permission is denied', async () => {
+    getCurrentPosition.mockRejectedValueOnce({ code: 'denied' });
+    const { wrapper, router } = await mountView();
+    const before = { ...router.currentRoute.value.query };
+
+    await wrapper.vm.useMyLocation();
+
+    expect(wrapper.vm.locationError).toBe('filters.locationDenied');
+    expect(router.currentRoute.value.query).toEqual(before);
+    expect(AnalyticsService.trackLocationEvent).toHaveBeenCalledWith('denied', {
+      source: 'browser',
+      errorCode: 'denied',
+    });
+  });
+
+  it('clears the location and the distance filter together', async () => {
+    const { wrapper, router } = await mountView({
+      latitude: '21.029',
+      longitude: '105.805',
+      radius: '5',
+      sort: 'distanceLowToHigh',
+    });
+
+    await wrapper.vm.clearLocation();
+    await flushPromises();
+
+    expect(router.currentRoute.value.query.latitude).toBeUndefined();
+    expect(router.currentRoute.value.query.longitude).toBeUndefined();
+    expect(router.currentRoute.value.query.radius).toBeUndefined();
+    expect(router.currentRoute.value.query.sort).toBeUndefined();
+  });
+
+  it('ignores distance sorting when there are no coordinates', async () => {
+    const { wrapper } = await mountView({ sort: 'distanceLowToHigh' });
+
+    expect(lastSearchParams().sortBy).toBe('relevance');
+    expect(wrapper.find('select').element.value).toBe('');
+  });
+
+  it('ignores a radius in the URL when there are no coordinates', async () => {
+    await mountView({ radius: '5' });
+
+    expect(lastSearchParams().radius).toBeUndefined();
+  });
+
+  it('falls back to IP coordinates when approximate location is available', async () => {
+    SearchService.getIpLocation.mockResolvedValueOnce({
+      data: { available: true, latitude: 21.028511, longitude: 105.804817 },
+    });
+    const { wrapper, router } = await mountView();
+
+    await wrapper.vm.useApproximateLocation();
+    await flushPromises();
+
+    expect(router.currentRoute.value.query.latitude).toBe('21.029');
+    expect(router.currentRoute.value.query.longitude).toBe('105.805');
+    expect(AnalyticsService.trackLocationEvent).toHaveBeenCalledWith('approximate_used', {
+      source: 'ip',
+    });
+  });
+
+  it('uses a city-only IP result as the destination and clears destinationId', async () => {
+    SearchService.getIpLocation.mockResolvedValueOnce({
+      data: { available: true, country: 'VN', city: 'Hanoi' },
+    });
+    const { wrapper, router } = await mountView({ destinationId: 'dest-1' });
+
+    await wrapper.vm.useApproximateLocation();
+    await flushPromises();
+
+    expect(router.currentRoute.value.query.location).toBe('Hanoi');
+    expect(router.currentRoute.value.query.destinationId).toBeUndefined();
+  });
+
+  it('explains when approximate location is unavailable', async () => {
+    SearchService.getIpLocation.mockResolvedValueOnce({ data: { available: false } });
+    const { wrapper } = await mountView();
+
+    await wrapper.vm.useApproximateLocation();
+
+    expect(wrapper.vm.locationError).toBe('filters.locationUnavailable');
+    expect(AnalyticsService.trackLocationEvent).toHaveBeenCalledWith('approximate_unavailable', {
+      source: 'ip',
+    });
+  });
+
+  it('sorts by distance through the API when coordinates are present', async () => {
+    const { wrapper, router } = await mountView({
+      latitude: '21.029',
+      longitude: '105.805',
+    });
+    SearchService.searchHotels.mockClear();
+
+    await wrapper.find('select').setValue('distanceLowToHigh');
+    await flushPromises();
+
+    expect(lastSearchParams().sortBy).toBe('distance');
+    expect(router.currentRoute.value.query.sort).toBe('distanceLowToHigh');
+  });
+
+  it('renders the distance returned by the API on each hotel', async () => {
+    SearchService.searchHotels.mockResolvedValueOnce({
+      data: {
+        hotels: [
+          {
+            hotel_id: 'h1',
+            hotel_name: 'Alpha',
+            city: 'Ha Noi',
+            country: 'Vietnam',
+            distance_km: 1.5,
+            min_price_for_dates: 300,
+          },
+        ],
+        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+        filter_options: {},
+      },
+    });
+
+    const { wrapper } = await mountView({
+      latitude: '21.029',
+      longitude: '105.805',
+    });
+
+    expect(wrapper.find('.result-distance').text()).toBe('searchResults.distanceAway');
   });
 });

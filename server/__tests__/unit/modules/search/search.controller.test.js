@@ -21,10 +21,14 @@ jest.mock('@modules/search/application/autocomplete', () => ({
 jest.mock('@modules/search/application/saveSearchLog', () => ({
   saveSearchLog: jest.fn().mockResolvedValue({ eventId: 'e1' }),
 }));
+jest.mock('@modules/search/application/ipLocation', () => ({
+  getIpLocation: jest.fn(),
+}));
 
-const { searchHotels } = require('@modules/search/api/search.controller');
+const { searchHotels, getIpLocation } = require('@modules/search/api/search.controller');
 const searchUseCases = require('@modules/search/application/searchHotels');
 const { recordRecentSearch } = require('@modules/search/application/recentSearches');
+const { getIpLocation: getIpLocationUseCase } = require('@modules/search/application/ipLocation');
 
 function mockRes() {
   return { status: jest.fn().mockReturnThis(), json: jest.fn() };
@@ -185,5 +189,62 @@ describe('search.controller.searchMapHotels', () => {
       },
     });
     expect(recordRecentSearch).not.toHaveBeenCalled();
+  });
+
+  it('searches around a map center and radius when no bounds are supplied', async () => {
+    searchUseCases.searchHotels.mockResolvedValue({
+      searchResults: { data: { hotels: [], pagination: { total: 0, hasNextPage: false } } },
+    });
+    const req = {
+      query: {
+        checkIn: '2099-01-01',
+        checkOut: '2099-01-03',
+        adults: 2,
+        latitude: '21.03',
+        longitude: '105.85',
+        radius: '5',
+      },
+    };
+    const res = mockRes();
+
+    await require('@modules/search/api/search.controller').searchMapHotels(req, res, jest.fn());
+
+    const params = searchUseCases.searchHotels.mock.calls.at(-1)[0];
+    expect(params).toEqual(
+      expect.objectContaining({
+        mapSearch: true,
+        latitude: 21.03,
+        longitude: 105.85,
+        radius: 5,
+      })
+    );
+    expect(params).not.toHaveProperty('bounds');
+  });
+});
+
+describe('search.controller.getIpLocation', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('returns the approximate location and never the raw IP', async () => {
+    const location = {
+      available: true,
+      country: 'VN',
+      city: 'Hanoi',
+      latitude: 21.03,
+      longitude: 105.85,
+      source: 'cloudflare',
+    };
+    getIpLocationUseCase.mockResolvedValue(location);
+    const req = { ip: '203.0.113.4', headers: { 'cf-ray': 'ray-1' }, connection: {} };
+    const res = mockRes();
+
+    await getIpLocation(req, res, jest.fn());
+
+    expect(getIpLocationUseCase).toHaveBeenCalledWith('203.0.113.4', req.headers);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ success: true, data: location });
+    expect(JSON.stringify(res.json.mock.calls[0][0])).not.toContain('203.0.113.4');
   });
 });

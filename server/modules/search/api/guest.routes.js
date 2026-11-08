@@ -5,6 +5,7 @@ const searchSchema = require('./guest.schema');
 const {
   searchHotels,
   searchMapHotels,
+  getIpLocation,
   getHotelAvailability,
   getAutocompleteSuggestions,
   getDestinationAutocomplete,
@@ -20,6 +21,8 @@ router.get(
   validate(searchSchema.searchMapHotels),
   searchMapHotels
 );
+
+router.get('/geo/ip', getIpLocation);
 
 router.get('/hotels', optionalAuthenticate, validate(searchSchema.searchHotels), searchHotels);
 

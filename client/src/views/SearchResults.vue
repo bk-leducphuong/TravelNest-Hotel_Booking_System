@@ -6,12 +6,15 @@
   import { mapActions, mapGetters } from 'vuex';
   import SavedHotelIcon from '@/components/SavedHotelIcon.vue';
   import { SearchService } from '@/services/search.service';
+  import { AnalyticsService } from '@/services/analytics.service';
   import SkeletonGrid from '@/components/common/SkeletonGrid.vue';
   import EmptyState from '@/components/common/EmptyState.vue';
   import PaginationControls from '@/components/common/PaginationControls.vue';
   import { getImageUrl } from '@/utils/images';
   import { resultRange } from '@/utils/pagination';
   import { stayNights } from '@/utils/stay';
+  import { getCurrentPosition, roundCoordinate } from '@/utils/geolocation';
+  import { formatDistance as formatDistanceValue } from '@/utils/distance';
   import { guestMoney, ratingLabelKey } from '@/utils/guestPresentation';
   import MediaImage from '@/components/ui/MediaImage.vue';
   import { CircleAlert, SearchX, Star, LayoutGrid, List } from 'lucide-vue-next';
@@ -38,6 +41,9 @@
         noResultsFound: false,
         openMapPopup: false,
         openFilters: false,
+        isLocating: false,
+        isLocatingApproximate: false,
+        locationError: null,
         searchVersion: 0,
         queryVersion: 0,
         hotels: [],
@@ -69,7 +75,7 @@
       ...mapGetters('auth', ['isUserAuthenticated']),
       mapSearchParams() {
         const stay = this.getSearchData;
-        return {
+        const params = {
           checkIn: stay.checkInDate,
           checkOut: stay.checkOutDate,
           adults: Number(stay.adults) || 2,
@@ -78,6 +84,11 @@
           sortBy: this.sortByParam,
           ...this.buildFilterParams(),
         };
+        if (this.$route.query.latitude && this.$route.query.longitude) {
+          params.latitude = this.$route.query.latitude;
+          params.longitude = this.$route.query.longitude;
+        }
+        return params;
       },
       totalResults() {
         return this.pagination.total || this.hotels.length;
@@ -103,6 +114,7 @@
           priceLowToHigh: 'price_asc',
           priceHighToLow: 'price_desc',
           ratingHighToLow: 'rating',
+          distanceLowToHigh: 'distance',
         };
         return map[this.sortCriteria] || 'relevance';
       },
@@ -121,6 +133,7 @@
       '$route.query': {
         async handler() {
           const version = ++this.queryVersion;
+          this.locationError = null;
           if (this.isSearchUrlValid()) {
             this.isLoading = true;
             this.syncPaginationFromRoute();
@@ -219,8 +232,18 @@
         this.updateChildren(this.$route.query.children);
       },
       getSearchCriteriaKey() {
-        const { location, checkInDate, checkOutDate, adults, children, rooms, numberOfDays } =
-          this.$route.query;
+        const {
+          location,
+          checkInDate,
+          checkOutDate,
+          adults,
+          children,
+          rooms,
+          numberOfDays,
+          latitude,
+          longitude,
+          radius,
+        } = this.$route.query;
 
         return JSON.stringify({
           location,
@@ -230,6 +253,9 @@
           children,
           rooms,
           numberOfDays,
+          latitude,
+          longitude,
+          radius,
         });
       },
       async saveSearchInformationOnce() {
@@ -237,7 +263,11 @@
         if (searchKey === this.lastSavedSearchKey) return;
 
         this.lastSavedSearchKey = searchKey;
-        await this.saveSearchInformation();
+        await this.saveSearchInformation({
+          latitude: this.$route.query.latitude,
+          longitude: this.$route.query.longitude,
+          radius: this.filters.radius,
+        });
       },
       syncPaginationFromRoute() {
         const page = parseInt(this.$route.query.page, 10);
@@ -268,7 +298,7 @@
             return Number.isInteger(star) && star >= 1 && star <= 5 ? star : null;
           }),
           minRating: this.parseNumber(query.minRating),
-          radius: this.parseNumber(query.radius),
+          radius: this.hasCoordinates ? this.parseNumber(query.radius) : null,
         };
       },
       getMergedAmenities(filters = this.filters) {
@@ -413,8 +443,14 @@
       // back/forward and shared links keep the selected order. Changing it
       // resets to page 1 and lets the `$route.query` watcher run the search.
       getValidSortCriteria(value) {
-        const allowed = ['priceLowToHigh', 'priceHighToLow', 'ratingHighToLow'];
+        const allowed = [
+          'priceLowToHigh',
+          'priceHighToLow',
+          'ratingHighToLow',
+          'distanceLowToHigh',
+        ];
         const raw = Array.isArray(value) ? value[0] : value;
+        if (raw === 'distanceLowToHigh' && !this.hasCoordinates) return '';
         return allowed.includes(raw) ? raw : '';
       },
       syncSortFromRoute() {
@@ -432,6 +468,120 @@
         }
 
         this.$router.push({ query: nextQuery });
+      },
+      trackLocation(event, payload = {}) {
+        // Analytics must never block or break a search.
+        AnalyticsService.trackLocationEvent(event, payload).catch(() => {});
+      },
+      locationErrorKey(code) {
+        switch (code) {
+          case 'denied':
+            return 'filters.locationDenied';
+          case 'timeout':
+            return 'filters.locationTimeout';
+          case 'insecure':
+            return 'filters.locationInsecure';
+          case 'unsupported':
+            return 'filters.locationUnsupported';
+          default:
+            return 'filters.locationUnavailable';
+        }
+      },
+      async useMyLocation() {
+        if (this.isLocating) return;
+
+        this.locationError = null;
+        this.isLocating = true;
+        this.trackLocation('permission_prompted', { source: 'browser' });
+        try {
+          // Coordinates are rounded inside the helper before they reach the URL.
+          const { latitude, longitude } = await getCurrentPosition();
+          this.trackLocation('granted', { source: 'browser' });
+          await this.$router.push({
+            query: {
+              ...this.$route.query,
+              latitude: String(latitude),
+              longitude: String(longitude),
+              page: 1,
+            },
+          });
+        } catch (error) {
+          const code = error?.code || 'unavailable';
+          this.trackLocation(code === 'denied' ? 'denied' : 'error', {
+            source: 'browser',
+            errorCode: code,
+          });
+          this.locationError = this.locationErrorKey(code);
+        } finally {
+          this.isLocating = false;
+        }
+      },
+      clearLocation() {
+        const nextQuery = { ...this.$route.query, page: 1 };
+        delete nextQuery.latitude;
+        delete nextQuery.longitude;
+        delete nextQuery.radius;
+        if (nextQuery.sort === 'distanceLowToHigh') delete nextQuery.sort;
+        this.locationError = null;
+        this.$router.push({ query: nextQuery });
+      },
+      async useApproximateLocation() {
+        if (this.isLocatingApproximate) return;
+
+        this.locationError = null;
+        this.isLocatingApproximate = true;
+        this.trackLocation('permission_prompted', { source: 'ip' });
+        try {
+          const response = await SearchService.getIpLocation();
+          const data = response?.data ?? response;
+
+          if (!data?.available) {
+            this.trackLocation('approximate_unavailable', { source: 'ip' });
+            this.locationError = 'filters.locationUnavailable';
+            return;
+          }
+
+          const latitude = Number(data.latitude);
+          const longitude = Number(data.longitude);
+          if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+            this.trackLocation('approximate_used', { source: 'ip' });
+            await this.$router.push({
+              query: {
+                ...this.$route.query,
+                latitude: String(roundCoordinate(latitude)),
+                longitude: String(roundCoordinate(longitude)),
+                page: 1,
+              },
+            });
+            return;
+          }
+
+          // Country/city-only responses can still narrow the destination. The
+          // explicit destinationId would otherwise win over the text location.
+          const location = data.city || data.region || data.country;
+          if (location) {
+            this.trackLocation('approximate_used', { source: 'ip' });
+            const nextQuery = { ...this.$route.query, location, page: 1 };
+            delete nextQuery.destinationId;
+            delete nextQuery.latitude;
+            delete nextQuery.longitude;
+            delete nextQuery.radius;
+            await this.$router.push({ query: nextQuery });
+            return;
+          }
+
+          this.trackLocation('approximate_unavailable', { source: 'ip' });
+          this.locationError = 'filters.locationUnavailable';
+        } catch (error) {
+          this.trackLocation('error', { source: 'ip', errorCode: 'unavailable' });
+          this.locationError = 'filters.locationUnavailable';
+        } finally {
+          this.isLocatingApproximate = false;
+        }
+      },
+      formatDistance(distanceKm) {
+        const distance = formatDistanceValue(distanceKm, this.$i18n?.locale || 'en');
+        return distance ? this.$t('searchResults.distanceAway', { distance }) : '';
       },
       updateRoutePage(page) {
         const nextPage = Math.min(Math.max(page, 1), this.pagination.totalPages || page);
@@ -533,6 +683,9 @@
           <option value="priceLowToHigh">{{ $t('searchResults.sortPriceAsc') }}</option>
           <option value="priceHighToLow">{{ $t('searchResults.sortPriceDesc') }}</option>
           <option value="ratingHighToLow">{{ $t('searchResults.sortRating') }}</option>
+          <option v-if="hasCoordinates" value="distanceLowToHigh">
+            {{ $t('searchResults.sortDistance') }}
+          </option>
         </select></label
       >
       <div
@@ -570,8 +723,14 @@
           :filter-options="filterOptions"
           :is-loading="isLoading"
           :has-coordinates="hasCoordinates"
+          :is-locating="isLocating"
+          :is-locating-approximate="isLocatingApproximate"
+          :location-error="locationError"
           @update:filters="handleFilterChange"
           @clear-filters="clearFilters"
+          @use-location="useMyLocation"
+          @use-approximate-location="useApproximateLocation"
+          @clear-location="clearLocation"
         />
       </aside>
       <section class="search-results" :aria-label="$t('guest.page.search')" :aria-busy="isLoading">
@@ -626,7 +785,10 @@
                 >
               </h2>
               <p class="result-location">
-                {{ [hotel.city, hotel.country].filter(Boolean).join(', ') }}
+                <span>{{ [hotel.city, hotel.country].filter(Boolean).join(', ') }}</span>
+                <span v-if="hotel.distance_km != null" class="result-distance">{{
+                  formatDistance(hotel.distance_km)
+                }}</span>
               </p>
               <p
                 v-if="hotel.hotel_class"
@@ -735,8 +897,14 @@
       :filter-options="filterOptions"
       :is-loading="isLoading"
       :has-coordinates="hasCoordinates"
+      :is-locating="isLocating"
+      :is-locating-approximate="isLocatingApproximate"
+      :location-error="locationError"
       @update:filters="handleFilterChange"
       @clear-filters="clearFilters"
+      @use-location="useMyLocation"
+      @use-approximate-location="useApproximateLocation"
+      @clear-location="clearLocation"
     />
     <template #footer
       ><button type="button" class="guest-button" @click="openFilters = false">
@@ -884,7 +1052,15 @@
     margin: 8px 0;
   }
   .result-location {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
     color: var(--tn-muted);
+  }
+  .result-distance {
+    color: var(--tn-brand);
+    font-weight: 600;
   }
   .result-class {
     display: flex;
