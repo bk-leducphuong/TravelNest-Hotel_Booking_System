@@ -22,6 +22,12 @@ const DATABASE_TABLES = [
   'image_variants',
   'images',
 
+  // Promotions (children first)
+  'promotion_redemptions',
+  'promotion_user_usage',
+  'promotion_rooms',
+  'promotions',
+
   // Booking / payment flow
   'hold_rooms',
   'holds',

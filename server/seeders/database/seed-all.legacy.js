@@ -20,6 +20,7 @@ const { seedRoomInventory } = require('./room_inventory.seed');
 const { seedReviews } = require('./review.seed');
 const { seedNotifications } = require('./notification.seed');
 const { seedPermissions } = require('./permission.seed');
+const { seedPromotions } = require('./promotion.seed');
 const { seedHotelStaff } = require('./hotel_staff.seed');
 const { rebuildAllSnapshots } = require('./hotel_search_snapshot.seed');
 const { seedCountries } = require('./country.seed');
@@ -34,6 +35,7 @@ function parseArgs() {
     clearExisting: args.includes('--clear'),
     skipImages: args.includes('--skip-images'),
     skipSnapshots: args.includes('--skip-snapshots'),
+    skipPromotions: args.includes('--skip-promotions'),
     skipKeycloak: args.includes('--skip-keycloak'),
     quick: args.includes('--quick'), // Reduced counts for faster seeding
   };
@@ -276,6 +278,18 @@ async function seedAll() {
         clearExisting: options.clearExisting,
       })
     );
+
+    // 15b. Seed demo promotions (depends on hotels, rooms and permissions)
+    if (!options.skipPromotions) {
+      results.push(
+        await executeSeed('Promotions', seedPromotions, {
+          clearExisting: options.clearExisting,
+        })
+      );
+    } else {
+      console.log('\n⚠️  Skipping demo promotions as per --skip-promotions flag');
+      results.push({ name: 'Promotions', success: true, duration: 0, skipped: true });
+    }
 
     // 16. Seed Hotel Search Snapshots (depends on hotels)
     if (!options.skipSnapshots) {
