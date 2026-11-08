@@ -119,9 +119,9 @@ describe('search/domain/offers', () => {
         payment_policy: 'pay_at_property',
       };
 
-      expect(
-        selectOffer([cheapNoCancel, payAtProperty], { payAtPropertyOnly: true }).room_id
-      ).toBe('d');
+      expect(selectOffer([cheapNoCancel, payAtProperty], { payAtPropertyOnly: true }).room_id).toBe(
+        'd'
+      );
       expect(selectOffer([cheapNoCancel], { payAtPropertyOnly: true })).toBeNull();
     });
 
