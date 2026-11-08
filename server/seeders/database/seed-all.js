@@ -25,6 +25,7 @@ const pipeline = require('../lib/pipeline');
 const { seedUsers } = require('./user.seed');
 const { seedAmenities } = require('./amenity.seed');
 const { seedPermissions } = require('./permission.seed');
+const { seedPromotions } = require('./promotion.seed');
 const { seedHotelStaff } = require('./hotel_staff.seed');
 const { seedCountries } = require('./country.seed');
 const { seedCities } = require('./city.seed');
@@ -41,6 +42,7 @@ Usage: npm run seed:all -- [options]
   --skip-images            Skip the MinIO image upload step
   --skip-mongo             Skip MongoDB analytics seeding
   --skip-snapshots         Skip hotel_search_snapshots rebuild
+  --skip-promotions        Do not seed demo promotions
   --skip-keycloak          Do not provision Keycloak accounts
   --images-concurrency=N   MinIO upload concurrency (default 32)
   --keep-indexes           Do not drop/rebuild secondary indexes
@@ -66,6 +68,7 @@ function parseArgs() {
     skipImages: args.includes('--skip-images'),
     skipMongo: args.includes('--skip-mongo'),
     skipSnapshots: args.includes('--skip-snapshots'),
+    skipPromotions: args.includes('--skip-promotions'),
     skipKeycloak: args.includes('--skip-keycloak'),
     keepIndexes: args.includes('--keep-indexes'),
     refreshManifests: args.includes('--refresh-manifests'),
@@ -318,6 +321,18 @@ async function seedAll() {
     results.push(
       await executeSeed('Permissions', seedPermissions, { clearExisting: options.clearExisting })
     );
+
+    // ── Demo promotions (depends on hotels, rooms and permissions) ────────
+    if (!options.skipPromotions) {
+      results.push(
+        await executeSeed('Promotions', seedPromotions, {
+          clearExisting: options.clearExisting,
+        })
+      );
+    } else {
+      console.log('\n⚠️  Skipping demo promotions as per --skip-promotions flag');
+      results.push({ name: 'Promotions', success: true, duration: 0, skipped: true });
+    }
 
     // ── MongoDB analytics (depends on destinations + hotels) ──────────────
     if (!options.skipMongo) {
