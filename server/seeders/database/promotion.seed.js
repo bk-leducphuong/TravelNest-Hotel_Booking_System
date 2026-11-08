@@ -3,12 +3,15 @@ require('dotenv').config({
 });
 
 const { Op } = require('sequelize');
+const { uuidv7 } = require('uuidv7');
 
 const db = require('../../models');
 const sequelize = require('../../config/database.config');
 const { normalizeCode } = require('../../modules/promotion/domain/promotion');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const COVERAGE_NAME = '[Seed] Coverage Sale — 20% Off';
+const DEFAULT_ROOM_COVERAGE = 0.6;
 
 function addDays(date, days) {
   return new Date(date.getTime() + days * DAY_MS);
@@ -421,6 +424,221 @@ async function upsertPromotion(context, preset, now) {
   return { status: action, name: promotion.name, hotel: hotel.name };
 }
 
+function chunk(items, size) {
+  const chunks = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
+
+/**
+ * Cover the requested share of all active rooms with active automatic sales.
+ *
+ * Existing `[Seed]` automatic promotions count toward coverage first. The
+ * remaining rooms are filled deterministically, largest hotels first, so a
+ * single seed row can cover many rooms while selected-room promotions only
+ * target the rooms that are still uncovered.
+ */
+async function seedRoomCoverage(context, now) {
+  const requested = Number(process.env.SEED_PROMOTION_ROOM_COVERAGE ?? DEFAULT_ROOM_COVERAGE);
+  const rate = Number.isFinite(requested) ? Math.min(Math.max(requested, 0), 1) : 0;
+  if (rate <= 0) return { rate, totalRooms: 0, coveredRooms: 0, created: 0, updated: 0 };
+
+  const hotelRows = await db.sequelize.query(
+    `SELECT id, name
+       FROM hotels
+      WHERE status = 'active'`,
+    { type: db.Sequelize.QueryTypes.SELECT }
+  );
+  const hotelNames = new Map(hotelRows.map((hotel) => [String(hotel.id), hotel.name]));
+  const activeHotelIds = new Set(hotelNames.keys());
+
+  const roomRows = await db.sequelize.query(
+    `SELECT id, hotel_id
+       FROM rooms
+      WHERE status = 'active'`,
+    { type: db.Sequelize.QueryTypes.SELECT }
+  );
+
+  const activeRoomsByHotel = new Map();
+  for (const room of roomRows) {
+    const key = String(room.hotel_id);
+    if (!activeHotelIds.has(key)) continue;
+    const rooms = activeRoomsByHotel.get(key) || [];
+    rooms.push(String(room.id));
+    activeRoomsByHotel.set(key, rooms);
+  }
+  for (const rooms of activeRoomsByHotel.values()) rooms.sort();
+
+  const totalRooms = [...activeRoomsByHotel.values()].reduce((sum, rooms) => sum + rooms.length, 0);
+  const targetRooms = Math.ceil(totalRooms * rate);
+
+  const activeSeedPromotions = await db.promotions.findAll({
+    where: {
+      status: 'active',
+      mode: 'automatic',
+      name: { [Op.like]: '[Seed]%' },
+    },
+    attributes: ['id', 'hotel_id', 'room_scope'],
+    include: [
+      {
+        model: db.promotion_rooms,
+        as: 'promotionRooms',
+        attributes: ['room_id'],
+        required: false,
+      },
+    ],
+  });
+
+  const covered = new Set();
+  for (const promotion of activeSeedPromotions) {
+    const hotelRooms = activeRoomsByHotel.get(String(promotion.hotel_id)) || [];
+    if (promotion.room_scope === 'all') {
+      hotelRooms.forEach((roomId) => covered.add(roomId));
+    } else {
+      (promotion.promotionRooms || []).forEach((target) => {
+        if (hotelRooms.includes(String(target.room_id))) covered.add(String(target.room_id));
+      });
+    }
+  }
+
+  // First run: no coverage rows exist. Reruns should converge on the same
+  // hotels/rooms without creating duplicates.
+  const existingCoverage = await db.promotions.findAll({
+    where: { name: COVERAGE_NAME },
+    attributes: ['id', 'hotel_id', 'version', 'status'],
+  });
+  const existingByHotel = new Map(
+    existingCoverage.map((promotion) => [String(promotion.hotel_id), promotion])
+  );
+
+  const hotelIds = [...activeRoomsByHotel.keys()];
+
+  const uncovered = hotelIds
+    .map((hotelId) => ({
+      hotelId,
+      hotelName: hotelNames.get(hotelId) || hotelId,
+      rooms: (activeRoomsByHotel.get(hotelId) || []).filter((roomId) => !covered.has(roomId)),
+    }))
+    .filter((entry) => entry.rooms.length > 0)
+    .sort((a, b) => b.rooms.length - a.rooms.length || a.hotelId.localeCompare(b.hotelId));
+
+  let needed = Math.max(0, targetRooms - covered.size);
+  const plan = [];
+
+  for (const hotel of uncovered) {
+    if (needed <= 0) break;
+    const take = Math.min(hotel.rooms.length, needed);
+    const roomIds = hotel.rooms.slice(0, take);
+    roomIds.forEach((roomId) => covered.add(roomId));
+    needed -= take;
+    plan.push({
+      hotelId: hotel.hotelId,
+      hotelName: hotel.hotelName,
+      roomIds,
+      roomScope:
+        roomIds.length === (activeRoomsByHotel.get(hotel.hotelId) || []).length
+          ? 'all'
+          : 'selected',
+    });
+  }
+
+  if (plan.length === 0) {
+    console.log(
+      `\n✅ Room coverage already satisfies ${(rate * 100).toFixed(0)}% (${covered.size}/${totalRooms} rooms).`
+    );
+    return { rate, totalRooms, coveredRooms: covered.size, created: 0, updated: 0 };
+  }
+
+  const coveragePreset = {
+    name: COVERAGE_NAME,
+    mode: 'automatic',
+    discountType: 'percentage',
+    percentage: 20,
+    roomScope: 'all',
+    bookingStartOffsetDays: -30,
+    bookingEndOffsetDays: 120,
+    status: 'active',
+  };
+
+  const newPromotions = [];
+  const newTargets = [];
+  const updates = [];
+
+  for (const entry of plan) {
+    const values = buildValues(entry.hotelId, coveragePreset, now);
+    values.room_scope = entry.roomScope;
+
+    const existing = existingByHotel.get(String(entry.hotelId));
+    if (existing) {
+      updates.push({ promotion: existing, values, roomIds: entry.roomIds });
+      continue;
+    }
+
+    const id = uuidv7();
+    newPromotions.push({
+      ...values,
+      id,
+      hotel_id: entry.hotelId,
+      status: 'active',
+      reserved_count: 0,
+      redeemed_count: 0,
+      version: 1,
+      created_by: context.ownerUserId,
+      updated_by: context.ownerUserId,
+    });
+    if (entry.roomScope === 'selected') {
+      newTargets.push(
+        ...entry.roomIds.map((roomId) => ({
+          promotion_id: id,
+          room_id: roomId,
+        }))
+      );
+    }
+  }
+
+  for (const batch of chunk(newPromotions, 500)) {
+    await db.promotions.bulkCreate(batch);
+  }
+  for (const batch of chunk(newTargets, 1000)) {
+    await db.promotion_rooms.bulkCreate(batch);
+  }
+
+  for (const update of updates) {
+    await db.promotions.update(
+      {
+        ...update.values,
+        version: Number(update.promotion.version) + 1,
+        updated_by: context.ownerUserId,
+      },
+      { where: { id: update.promotion.id } }
+    );
+    await db.promotion_rooms.destroy({ where: { promotion_id: update.promotion.id } });
+    if (update.values.room_scope === 'selected') {
+      await db.promotion_rooms.bulkCreate(
+        update.roomIds.map((roomId) => ({
+          promotion_id: update.promotion.id,
+          room_id: roomId,
+        }))
+      );
+    }
+  }
+
+  console.log(
+    `\n✅ Room coverage seeded: ${newPromotions.length} created, ${updates.length} updated — ` +
+      `${covered.size}/${totalRooms} active rooms (${((covered.size / totalRooms) * 100).toFixed(1)}%), target ${(rate * 100).toFixed(0)}%.`
+  );
+
+  return {
+    rate,
+    totalRooms,
+    coveredRooms: covered.size,
+    created: newPromotions.length,
+    updated: updates.length,
+  };
+}
+
 async function seedPromotions() {
   const now = new Date();
   const context = await loadSeedContext();
@@ -443,6 +661,8 @@ async function seedPromotions() {
       console.log(`  ✅ ${result.status}: ${result.name} (${result.hotel})`);
     }
   }
+
+  summary.coverage = await seedRoomCoverage(context, now);
 
   console.log(
     `\n✅ Promotions seeded: ${summary.created} created, ${summary.updated} updated, ${summary.skipped} skipped`
