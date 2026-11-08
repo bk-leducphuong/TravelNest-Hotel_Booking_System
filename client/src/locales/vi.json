@@ -212,6 +212,7 @@
   "join.form.backButton": "Quay lại",
   "join.form.mapTitle": "Ghim vị trí chỗ nghỉ quý vị",
   "join.form.mapSubtitle": "Đây là vị trí mà khách sẽ thấy trên trang web của chúng tôi. Di chuyển bản đồ để tìm vị trí chính xác của chỗ nghỉ, sau đó nhấn để thả ghim.",
+  "join.form.mapPinned": "Đã ghim vị trí tại {lat}, {lng}",
   "join.form.aboutHotelTitle": "Cho chúng tôi biết thêm về khách sạn của quý vị",
   "join.form.hotelNameQuestion": "Khách sạn của Quý vị tên gì?",
   "join.form.hotelNameLabel": "Tên chỗ nghỉ",

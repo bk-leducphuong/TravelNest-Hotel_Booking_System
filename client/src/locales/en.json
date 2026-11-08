@@ -212,6 +212,7 @@
   "join.form.backButton": "Back",
   "join.form.mapTitle": "Pin your property's location",
   "join.form.mapSubtitle": "This is the location guests will see on our website. Move the map to find the exact location of the property, then click to drop the pin.",
+  "join.form.mapPinned": "Location pinned at {lat}, {lng}",
   "join.form.aboutHotelTitle": "Tell us more about your hotel",
   "join.form.hotelNameQuestion": "What is your hotel called?",
   "join.form.hotelNameLabel": "Property name",
