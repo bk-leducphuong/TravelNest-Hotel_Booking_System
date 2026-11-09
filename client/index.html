@@ -1,25 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8">
-    <link rel="icon" href="/favicon.ico">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.min.css"
-        integrity="sha512-yHknP1/AwR+yx26cB1y0cjvQUMvEa2PFzt1c9LlS4pRQ5NOTZFWbhBig+X9G9eYW/8m0/4OXNx8pxJ6z57x0dw=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick-theme.min.css"
-        integrity="sha512-17EgCFERpgZKcm0j0fEq1YCJuyAWdz9KUtv1EjVuaOz8pDnh/0nZxmU6BBXwaaxqoi9PQXnRWqlcDB027hgv9A=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
-        integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
-        integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <title>Trestay — Hotel Booking</title>
+    <title>Trestay — Hotel Booking Platform (Open Source Demo)</title>
+    <meta
+      name="description"
+      content="Trestay is an open-source hotel booking platform demo built with Vue 3, Express and Kubernetes. Search stays, compare rooms and manage bookings end to end."
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://trestay.com/" />
+    <link rel="alternate" hreflang="en" href="https://trestay.com/" />
+    <link rel="alternate" hreflang="vi" href="https://trestay.com/vi" />
+    <link rel="alternate" hreflang="x-default" href="https://trestay.com/" />
+    <meta name="theme-color" content="#003b95" />
+    <link rel="icon" href="/favicon.ico" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Trestay" />
+    <meta property="og:title" content="Trestay — Hotel Booking Platform" />
+    <meta
+      property="og:description"
+      content="An open-source hotel booking platform demo built with Vue 3, Express and Kubernetes. Search stays, compare rooms and manage bookings end to end."
+    />
+    <meta property="og:url" content="https://trestay.com/" />
+    <meta property="og:image" content="https://trestay.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Trestay — hotel booking platform" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="vi_VN" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Trestay — Hotel Booking Platform" />
+    <meta
+      name="twitter:description"
+      content="An open-source hotel booking platform demo built with Vue 3, Express and Kubernetes."
+    />
+    <meta name="twitter:image" content="https://trestay.com/og-image.png" />
+
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+      integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://trestay.com/#organization",
+            "name": "Trestay",
+            "url": "https://trestay.com/",
+            "logo": "https://trestay.com/og-image.png"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://trestay.com/#website",
+            "url": "https://trestay.com/",
+            "name": "Trestay",
+            "description": "Open-source hotel booking platform demo.",
+            "publisher": { "@id": "https://trestay.com/#organization" },
+            "inLanguage": ["en", "vi"]
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "Trestay",
+            "applicationCategory": "TravelApplication",
+            "operatingSystem": "Web",
+            "url": "https://trestay.com/",
+            "description": "Hotel booking platform demo with guest, admin and superadmin consoles.",
+            "isAccessibleForFree": true,
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="app"></div>
+    <noscript>
+      <h1>Trestay — Hotel Booking Platform</h1>
+      <p>
+        Trestay is an open-source hotel booking platform demo built with Vue 3,
+        Express and Kubernetes. This application requires JavaScript. Please
+        enable JavaScript to search stays and manage bookings.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

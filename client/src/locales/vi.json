@@ -1075,5 +1075,12 @@
   "partners.unavailable": "Dịch vụ này chưa khả dụng. Vui lòng quay lại sau.",
   "partners.error": "Không thể mở trang tìm kiếm của đối tác. Vui lòng thử lại.",
   "partners.popupBlocked": "Trình duyệt đã chặn thẻ mới. Hãy dùng nút bên dưới để tiếp tục.",
-  "footer.airportTransfers": "Đưa đón sân bay"
+  "footer.airportTransfers": "Đưa đón sân bay",
+  "seo.default": "Trestay là dự án mã nguồn mở về nền tảng đặt phòng khách sạn, xây dựng bằng Vue 3, Express và Kubernetes.",
+  "seo.Home": "Tìm kiếm và so sánh khách sạn, xem ưu đãi và đặt phòng trên Trestay — nền tảng đặt phòng khách sạn mã nguồn mở.",
+  "seo.SearchResults": "Xem kết quả tìm kiếm khách sạn trên Trestay: lọc theo giá, đánh giá và tiện nghi.",
+  "seo.HotelDetails": "Xem thông tin khách sạn, loại phòng, tiện nghi và đánh giá của khách trên Trestay.",
+  "seo.Reviews": "Đọc đánh giá của khách về các khách sạn trên Trestay.",
+  "seo.Join": "Đăng cơ sở lưu trú trên Trestay và quản lý tình trạng phòng, giá và đặt phòng.",
+  "seo.JoinForm": "Đăng ký cơ sở lưu trú trở thành đối tác của Trestay."
 }

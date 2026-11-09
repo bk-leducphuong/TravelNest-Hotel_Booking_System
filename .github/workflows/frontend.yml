@@ -151,6 +151,7 @@ jobs:
         VITE_KEYCLOAK_URL=${{ vars.VITE_KEYCLOAK_URL || 'https://keycloak.deployserver.work' }}
         VITE_KEYCLOAK_REALM=${{ vars.VITE_KEYCLOAK_REALM || 'travelnest' }}
         VITE_KEYCLOAK_CLIENT_ID=${{ vars.VITE_KEYCLOAK_CLIENT_ID || 'travelnest-web' }}
+        PRERENDER_API_BASE=${{ vars.PRERENDER_API_BASE || vars.VITE_SERVER_HOST || 'https://api.deployserver.work' }}
         VITE_STRIPE_PUBLIC_KEY=${{ vars.VITE_STRIPE_PUBLIC_KEY || 'pk_test_51T4DQCC8yETwFKHFA9dsnMKy9rJmWzBLTvvDViuizhwPUrGCgbn5GvuqzSAJjqBl3pWarb8XF4rDFhrdeteJ31PP00EfeNIVyd' }}
       promote_targets: |
         travelnest-frontend:deploy/k8s/apps/frontend/overlays/prod/kustomization.yaml

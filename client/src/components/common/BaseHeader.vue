@@ -1,4 +1,6 @@
 <script>
+  import { localizePath } from '@/utils/locale';
+
   export default {
     name: 'BaseHeader',
     props: {
@@ -11,6 +13,15 @@
         localStorage.setItem('language', language);
         this.$i18n.locale = language;
         this.$store.dispatch('user/updateUserLanguage', language);
+
+        const target = localizePath(this.$route.path, language);
+        if (this.$route.path !== target) {
+          this.$router.push({
+            path: target,
+            query: this.$route.query,
+            hash: this.$route.hash,
+          });
+        }
       },
     },
   };

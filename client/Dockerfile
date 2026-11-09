@@ -32,6 +32,13 @@ ENV VITE_STRIPE_PUBLIC_KEY=${VITE_STRIPE_PUBLIC_KEY}
 
 RUN yarn workspace @travelnest/client run build
 
+# Optional: prerender hotel detail pages with per-hotel SEO metadata.
+# No-ops when PRERENDER_API_BASE is empty or the API is unreachable, so the
+# image build never fails because of it.
+ARG PRERENDER_API_BASE=
+ENV PRERENDER_API_BASE=${PRERENDER_API_BASE}
+RUN yarn workspace @travelnest/client run prerender:hotels
+
 # Production stage with nginx
 FROM nginx:alpine
 

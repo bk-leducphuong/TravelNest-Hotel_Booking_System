@@ -1,0 +1,48 @@
+---
+title: "TravelNest: target MySQL-only hotel search (issue 153)"
+---
+flowchart TB
+    web["Vue 3 guest app
+SearchBar, SearchResults, Router and Vuex"]
+    subgraph local ["Backend and MySQL on the same VPS / cluster"]
+        subgraph backend ["Express application"]
+            api["Search routes and controller
+Joi validation and optional authentication"]
+            search["Search application
+Normalize and resolve destination
+Filter, build offers, rank and paginate"]
+            repo["Repositories
+Catalog, batched search and identity"]
+            effects["History writer and event publisher"]
+            api -->|"Autocomplete and search"| search
+            search -->|"Set-based queries"| repo
+            api -.->|"Explicit log and post-search effects"| effects
+        end
+        mysql[("MySQL
+Destinations and hotel snapshots
+Rooms, daily inventory, policies
+Reviews, popularity and favorites")]
+        redis[("Redis
+Signed-in recent search history")]
+        repo -->|"Local SQL: candidates, valid offers and page data"| mysql
+        effects -.->|"Best effort"| redis
+    end
+    subgraph analyticsPath ["Background analytics"]
+        nats["NATS JetStream"]
+        analytics["Go analytics service"]
+        mongo[("MongoDB
+search_logs")]
+        nats -.->|"Consume search event"| analytics
+        analytics -->|"Persist"| mongo
+    end
+    web -->|"GET autocomplete, GET hotels, POST log
+under /api/v1/search"| api
+    effects -.->|"analytics.search.performed.v1"| nats
+    classDef client fill:#dbeafe,stroke:#2563eb,color:#172554
+    classDef app fill:#e0e7ff,stroke:#6366f1,color:#1e1b4b
+    classDef data fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef background fill:#fff7ed,stroke:#ea580c,color:#7c2d12
+    class web client
+    class api,search,repo app
+    class mysql,redis,mongo data
+    class effects,nats,analytics background

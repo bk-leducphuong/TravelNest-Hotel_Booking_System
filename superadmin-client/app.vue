@@ -6,6 +6,7 @@ const { titleKey } = usePlatformNavigation();
 useHead(() => ({
   title: `${t(titleKey.value)} · Trestay Platform`,
   htmlAttrs: { lang: locale.value },
+  meta: [{ name: "robots", content: "noindex, nofollow" }],
 }));
 </script>
 

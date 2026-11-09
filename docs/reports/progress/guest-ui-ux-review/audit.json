@@ -1,0 +1,1351 @@
+{
+  "results": [
+    {
+      "screen": "home",
+      "width": 1440,
+      "url": "http://127.0.0.1:5173/",
+      "layout": {
+        "width": 1440,
+        "pageWidth": 1440,
+        "appWidth": 1440,
+        "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+        "lang": "en",
+        "headings": [],
+        "offscreen": []
+      },
+      "violations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".panel-entry-btn"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+            }
+          ]
+        },
+        {
+          "id": "aria-valid-attr-value",
+          "impact": "critical",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                "#el-id-1929-5"
+              ],
+              "summary": "Fix all of the following:\n  Invalid ARIA attribute value: aria-activedescendant=\"el-id-1929-2-item--1\""
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 36,
+          "nodes": [
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(1) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(2) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(3) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(4) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(2) > ul > li:nth-child(1) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        },
+        {
+          "id": "nested-interactive",
+          "impact": "serious",
+          "count": 3,
+          "nodes": [
+            {
+              "target": [
+                ".hotel-card[role=\"button\"][data-v-4dbfc5e1=\"\"]:nth-child(1)"
+              ],
+              "summary": "Fix any of the following:\n  Element has focusable descendants. Move them outside of the element, or remove them."
+            },
+            {
+              "target": [
+                ".hotel-card[role=\"button\"][data-v-4dbfc5e1=\"\"]:nth-child(2)"
+              ],
+              "summary": "Fix any of the following:\n  Element has focusable descendants. Move them outside of the element, or remove them."
+            },
+            {
+              "target": [
+                ".hotel-card[role=\"button\"][data-v-4dbfc5e1=\"\"]:nth-child(3)"
+              ],
+              "summary": "Fix any of the following:\n  Element has focusable descendants. Move them outside of the element, or remove them."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "home",
+      "width": 375,
+      "url": "http://127.0.0.1:5173/",
+      "layout": {
+        "width": 375,
+        "pageWidth": 375,
+        "appWidth": 738,
+        "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+        "lang": "en",
+        "headings": [],
+        "offscreen": [
+          {
+            "tag": "INPUT",
+            "text": "Where are you going?"
+          },
+          {
+            "tag": "INPUT",
+            "text": "Guests and rooms"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Search"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Save to saved hotels"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Save to saved hotels"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Save to saved hotels"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Save to saved hotels"
+          }
+        ]
+      },
+      "violations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".panel-entry-btn"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+            }
+          ]
+        },
+        {
+          "id": "aria-valid-attr-value",
+          "impact": "critical",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                "#el-id-1929-5"
+              ],
+              "summary": "Fix all of the following:\n  Invalid ARIA attribute value: aria-activedescendant=\"el-id-1929-2-item--1\""
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 29,
+          "nodes": [
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(1) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(2) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(3) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(4) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(2) > ul > li:nth-child(1) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        },
+        {
+          "id": "nested-interactive",
+          "impact": "serious",
+          "count": 6,
+          "nodes": [
+            {
+              "target": [
+                ".is-active > .hotel-group[data-v-4dbfc5e1=\"\"] > .hotel-card[role=\"button\"][data-v-4dbfc5e1=\"\"]:nth-child(1)"
+              ],
+              "summary": "Fix any of the following:\n  Element has focusable descendants. Move them outside of the element, or remove them."
+            },
+            {
+              "target": [
+                ".is-active > .hotel-group[data-v-4dbfc5e1=\"\"] > .hotel-card[role=\"button\"][data-v-4dbfc5e1=\"\"]:nth-child(2)"
+              ],
+              "summary": "Fix any of the following:\n  Element has focusable descendants. Move them outside of the element, or remove them."
+            },
+            {
+              "target": [
+                ".el-carousel__item[data-v-4dbfc5e1=\"\"]:nth-child(2) > .hotel-group[data-v-4dbfc5e1=\"\"] > .hotel-card[role=\"button\"][data-v-4dbfc5e1=\"\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has focusable descendants. Move them outside of the element, or remove them."
+            },
+            {
+              "target": [
+                ".el-carousel__item[data-v-4dbfc5e1=\"\"]:nth-child(3) > .hotel-group[data-v-4dbfc5e1=\"\"] > .hotel-card[role=\"button\"][data-v-4dbfc5e1=\"\"]:nth-child(1)"
+              ],
+              "summary": "Fix any of the following:\n  Element has focusable descendants. Move them outside of the element, or remove them."
+            },
+            {
+              "target": [
+                ".el-carousel__item[data-v-4dbfc5e1=\"\"]:nth-child(3) > .hotel-group[data-v-4dbfc5e1=\"\"] > .hotel-card[role=\"button\"][data-v-4dbfc5e1=\"\"]:nth-child(2)"
+              ],
+              "summary": "Fix any of the following:\n  Element has focusable descendants. Move them outside of the element, or remove them."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "search",
+      "width": 1440,
+      "url": "http://127.0.0.1:5173/search?location=ha-noi&checkInDate=2026-11-10&checkOutDate=2026-11-13&adults=2&children=0&rooms=1&numberOfDays=3",
+      "layout": {
+        "width": 1440,
+        "pageWidth": 1440,
+        "appWidth": 1440,
+        "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+        "lang": "en",
+        "headings": [],
+        "offscreen": []
+      },
+      "violations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".panel-entry-btn"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+            }
+          ]
+        },
+        {
+          "id": "aria-valid-attr-value",
+          "impact": "critical",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                "#el-id-1929-12"
+              ],
+              "summary": "Fix all of the following:\n  Invalid ARIA attribute value: aria-activedescendant=\"el-id-1929-9-item--1\""
+            }
+          ]
+        },
+        {
+          "id": "button-name",
+          "impact": "critical",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".type-search > button"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have inner text that is visible to screen readers\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 41,
+          "nodes": [
+            {
+              "target": [
+                ".room-infor[data-v-844dedb4=\"\"]:nth-child(3) > .inner-show[data-v-844dedb4=\"\"] > .inner-infor[data-v-844dedb4=\"\"] > .information[data-v-844dedb4=\"\"] > .last"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.66 (foreground color: #ff0000, background color: #f5f5f5, font size: 9.8pt (13px), font weight: bold). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".room-infor[data-v-844dedb4=\"\"]:nth-child(3) > .inner-show[data-v-844dedb4=\"\"] > .inner-infor[data-v-844dedb4=\"\"] > .price[data-v-844dedb4=\"\"] > button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".room-infor[data-v-844dedb4=\"\"]:nth-child(4) > .inner-show[data-v-844dedb4=\"\"] > .inner-infor[data-v-844dedb4=\"\"] > .information[data-v-844dedb4=\"\"] > .last"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.66 (foreground color: #ff0000, background color: #f5f5f5, font size: 9.8pt (13px), font weight: bold). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".room-infor[data-v-844dedb4=\"\"]:nth-child(4) > .inner-show[data-v-844dedb4=\"\"] > .inner-infor[data-v-844dedb4=\"\"] > .price[data-v-844dedb4=\"\"] > button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".room-infor[data-v-844dedb4=\"\"]:nth-child(5) > .inner-show[data-v-844dedb4=\"\"] > .inner-infor[data-v-844dedb4=\"\"] > .price[data-v-844dedb4=\"\"] > button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "search",
+      "width": 375,
+      "url": "http://127.0.0.1:5173/search?location=ha-noi&checkInDate=2026-11-10&checkOutDate=2026-11-13&adults=2&children=0&rooms=1&numberOfDays=3",
+      "layout": {
+        "width": 375,
+        "pageWidth": 375,
+        "appWidth": 738,
+        "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+        "lang": "en",
+        "headings": [],
+        "offscreen": [
+          {
+            "tag": "INPUT",
+            "text": "Where are you going?"
+          },
+          {
+            "tag": "INPUT",
+            "text": "Guests and rooms"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Search"
+          }
+        ]
+      },
+      "violations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".panel-entry-btn"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+            }
+          ]
+        },
+        {
+          "id": "aria-valid-attr-value",
+          "impact": "critical",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                "#el-id-1929-12"
+              ],
+              "summary": "Fix all of the following:\n  Invalid ARIA attribute value: aria-activedescendant=\"el-id-1929-9-item--1\""
+            }
+          ]
+        },
+        {
+          "id": "button-name",
+          "impact": "critical",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".type-search > button"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have inner text that is visible to screen readers\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 32,
+          "nodes": [
+            {
+              "target": [
+                ".room-infor[data-v-844dedb4=\"\"]:nth-child(3) > .inner-show[data-v-844dedb4=\"\"] > .inner-infor[data-v-844dedb4=\"\"] > .price[data-v-844dedb4=\"\"] > button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".room-infor[data-v-844dedb4=\"\"]:nth-child(4) > .inner-show[data-v-844dedb4=\"\"] > .inner-infor[data-v-844dedb4=\"\"] > .price[data-v-844dedb4=\"\"] > button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".room-infor[data-v-844dedb4=\"\"]:nth-child(5) > .inner-show[data-v-844dedb4=\"\"] > .inner-infor[data-v-844dedb4=\"\"] > .price[data-v-844dedb4=\"\"] > button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(1) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(2) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "hotel",
+      "width": 1440,
+      "url": "http://127.0.0.1:5173/hotels/h1",
+      "layout": {
+        "width": 1440,
+        "pageWidth": 1440,
+        "appWidth": 1440,
+        "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+        "lang": "en",
+        "headings": [],
+        "offscreen": []
+      },
+      "violations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".panel-entry-btn"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+            }
+          ]
+        },
+        {
+          "id": "aria-valid-attr-value",
+          "impact": "critical",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                "#el-id-1929-20"
+              ],
+              "summary": "Fix all of the following:\n  Invalid ARIA attribute value: aria-activedescendant=\"el-id-1929-16-item--1\""
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 41,
+          "nodes": [
+            {
+              "target": [
+                ".search-bar[data-v-50b85eeb=\"\"] > .search-button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.49 (foreground color: #ffffff, background color: #3576d2, font size: 13.5pt (18px), font weight: bold). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".price__content > button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".review__point--right > button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".sur__button > button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".policy__button > button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        },
+        {
+          "id": "frame-title",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                "iframe[allowfullscreen=\"\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has no title attribute\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "hotel",
+      "width": 375,
+      "url": "http://127.0.0.1:5173/hotels/h1",
+      "layout": {
+        "width": 375,
+        "pageWidth": 375,
+        "appWidth": 375,
+        "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+        "lang": "en",
+        "headings": [],
+        "offscreen": [
+          {
+            "tag": "INPUT",
+            "text": "Where are you going?"
+          },
+          {
+            "tag": "INPUT",
+            "text": "Guests and rooms"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Search"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Show on map"
+          },
+          {
+            "tag": "SELECT",
+            "text": "0\n1 (USD 145)\n2 (USD 290)\n3 (USD 435)\n4 (USD 580)"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "I'll book it"
+          }
+        ]
+      },
+      "violations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".panel-entry-btn"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+            }
+          ]
+        },
+        {
+          "id": "aria-valid-attr-value",
+          "impact": "critical",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                "#el-id-1929-20"
+              ],
+              "summary": "Fix all of the following:\n  Invalid ARIA attribute value: aria-activedescendant=\"el-id-1929-16-item--1\""
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 33,
+          "nodes": [
+            {
+              "target": [
+                ".price__content > button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".review__point--right > button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".sur__button > button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".policy__button > button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(1) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        },
+        {
+          "id": "frame-title",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                "iframe[allowfullscreen=\"\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has no title attribute\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "bookings",
+      "width": 1440,
+      "url": "http://127.0.0.1:5173/bookings",
+      "layout": {
+        "width": 1440,
+        "pageWidth": 1440,
+        "appWidth": 1440,
+        "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+        "lang": "en",
+        "headings": [],
+        "offscreen": []
+      },
+      "violations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".panel-entry-btn"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 37,
+          "nodes": [
+            {
+              "target": [
+                ".content[data-v-9476cf39=\"\"]:nth-child(1) > .active"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 1.37 (foreground color: #00ff00, background color: #ffffff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(1) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(2) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(3) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(4) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "bookings",
+      "width": 375,
+      "url": "http://127.0.0.1:5173/bookings",
+      "layout": {
+        "width": 375,
+        "pageWidth": 375,
+        "appWidth": 601,
+        "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+        "lang": "en",
+        "headings": [],
+        "offscreen": [
+          {
+            "tag": "BUTTON",
+            "text": "Guest Example\nGenius Level ?"
+          }
+        ]
+      },
+      "violations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".panel-entry-btn"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 30,
+          "nodes": [
+            {
+              "target": [
+                ".content[data-v-9476cf39=\"\"]:nth-child(1) > .active"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 1.37 (foreground color: #00ff00, background color: #ffffff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(1) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(2) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(3) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column[data-v-4896eafd=\"\"]:nth-child(1) > ul > li:nth-child(4) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "booking-detail",
+      "width": 1440,
+      "url": "http://127.0.0.1:5173/bookings/TN-1042",
+      "layout": {
+        "width": 1440,
+        "pageWidth": 1440,
+        "appWidth": 1440,
+        "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+        "lang": "en",
+        "headings": [
+          "Thanks, Guest Example!",
+          "Check Your Details"
+        ],
+        "offscreen": []
+      },
+      "violations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".panel-entry-btn"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 44,
+          "nodes": [
+            {
+              "target": [
+                ".edit-link"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #007bff, background color: #ffffff, font size: 10.8pt (14.4px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                "li:nth-child(2) > .highlight-link[href=\"#\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #007bff, background color: #ffffff, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                "li:nth-child(4) > .highlight-link[href=\"#\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #007bff, background color: #ffffff, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                "li:nth-child(5) > .highlight-link[href=\"#\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #007bff, background color: #ffffff, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".save-btn"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "booking-detail",
+      "width": 375,
+      "url": "http://127.0.0.1:5173/bookings/TN-1042",
+      "layout": {
+        "width": 375,
+        "pageWidth": 375,
+        "appWidth": 601,
+        "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+        "lang": "en",
+        "headings": [
+          "Thanks, Guest Example!",
+          "Check Your Details"
+        ],
+        "offscreen": [
+          {
+            "tag": "BUTTON",
+            "text": "Guest Example\nGenius Level ?"
+          },
+          {
+            "tag": "A",
+            "text": "Edit"
+          },
+          {
+            "tag": "A",
+            "text": " Cancel your booking"
+          },
+          {
+            "tag": "A",
+            "text": " Book another room"
+          }
+        ]
+      },
+      "violations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".panel-entry-btn"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 34,
+          "nodes": [
+            {
+              "target": [
+                "li:nth-child(2) > .highlight-link[href=\"#\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #007bff, background color: #ffffff, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                "li:nth-child(4) > .highlight-link[href=\"#\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #007bff, background color: #ffffff, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                "li:nth-child(5) > .highlight-link[href=\"#\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #007bff, background color: #ffffff, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".save-btn"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".badge"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.97 (foreground color: #ffffff, background color: #007bff, font size: 9.6pt (12.8px), font weight: bold). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "saved",
+      "width": 1440,
+      "url": "http://127.0.0.1:5173/saved-hotels",
+      "layout": {
+        "width": 1440,
+        "pageWidth": 1440,
+        "appWidth": 1440,
+        "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+        "lang": "en",
+        "headings": [],
+        "offscreen": []
+      },
+      "violations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".panel-entry-btn"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 36,
+          "nodes": [
+            {
+              "target": [
+                ".footer-column:nth-child(1) > ul > li:nth-child(1) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column:nth-child(1) > ul > li:nth-child(2) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column:nth-child(1) > ul > li:nth-child(3) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column:nth-child(1) > ul > li:nth-child(4) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column:nth-child(2) > ul > li:nth-child(1) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "saved",
+      "width": 375,
+      "url": "http://127.0.0.1:5173/saved-hotels",
+      "layout": {
+        "width": 375,
+        "pageWidth": 375,
+        "appWidth": 601,
+        "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+        "lang": "en",
+        "headings": [],
+        "offscreen": [
+          {
+            "tag": "BUTTON",
+            "text": "Guest Example\nGenius Level ?"
+          }
+        ]
+      },
+      "violations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".panel-entry-btn"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 29,
+          "nodes": [
+            {
+              "target": [
+                ".footer-column:nth-child(1) > ul > li:nth-child(1) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column:nth-child(1) > ul > li:nth-child(2) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column:nth-child(1) > ul > li:nth-child(3) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column:nth-child(1) > ul > li:nth-child(4) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                ".footer-column:nth-child(2) > ul > li:nth-child(1) > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.95 (foreground color: #0071c2, background color: #e3e3e3, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "account",
+      "width": 1440,
+      "url": "http://127.0.0.1:5173/account-settings",
+      "layout": {
+        "width": 1440,
+        "pageWidth": 1440,
+        "appWidth": 1440,
+        "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+        "lang": "en",
+        "headings": [
+          "Manage your account"
+        ],
+        "offscreen": []
+      },
+      "violations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".panel-entry-btn"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "account",
+      "width": 375,
+      "url": "http://127.0.0.1:5173/account-settings",
+      "layout": {
+        "width": 375,
+        "pageWidth": 375,
+        "appWidth": 601,
+        "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+        "lang": "en",
+        "headings": [
+          "Manage your account"
+        ],
+        "offscreen": [
+          {
+            "tag": "BUTTON",
+            "text": "Guest Example\nGenius Level ?"
+          }
+        ]
+      },
+      "violations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".panel-entry-btn"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "checkout",
+      "width": 1440,
+      "url": "http://127.0.0.1:5173/book",
+      "layout": {
+        "width": 1440,
+        "pageWidth": 1440,
+        "appWidth": 1440,
+        "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+        "lang": "en",
+        "headings": [
+          "Check your details",
+          "Special requests",
+          "Your arrival time"
+        ],
+        "offscreen": []
+      },
+      "violations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".panel-entry-btn"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".info-banner > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.38 (foreground color: #006aff, background color: #f5f8ff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        },
+        {
+          "id": "label",
+          "impact": "critical",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                "textarea"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            }
+          ]
+        },
+        {
+          "id": "select-name",
+          "impact": "critical",
+          "count": 2,
+          "nodes": [
+            {
+              "target": [
+                ".phone-code"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            },
+            {
+              "target": [
+                ".arrival-select > select"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "checkout",
+      "width": 375,
+      "url": "http://127.0.0.1:5173/book",
+      "layout": {
+        "width": 375,
+        "pageWidth": 375,
+        "appWidth": 601,
+        "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Liberation Sans\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+        "lang": "en",
+        "headings": [
+          "Check your details",
+          "Special requests",
+          "Your arrival time"
+        ],
+        "offscreen": [
+          {
+            "tag": "BUTTON",
+            "text": "Guest Example\nGenius Level ?"
+          }
+        ]
+      },
+      "violations": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".panel-entry-btn"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on \"div\" elements with no valid role attribute."
+            }
+          ]
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                ".info-banner > a"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.38 (foreground color: #006aff, background color: #f5f8ff, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        },
+        {
+          "id": "label",
+          "impact": "critical",
+          "count": 1,
+          "nodes": [
+            {
+              "target": [
+                "textarea"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            }
+          ]
+        },
+        {
+          "id": "select-name",
+          "impact": "critical",
+          "count": 2,
+          "nodes": [
+            {
+              "target": [
+                ".phone-code"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            },
+            {
+              "target": [
+                ".arrival-select > select"
+              ],
+              "summary": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "failed": [
+    {
+      "url": "https://flagcdn.com/w40/en.png",
+      "reason": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "https://flagcdn.com/w40/en.png",
+      "reason": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "https://flagcdn.com/w40/en.png",
+      "reason": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "https://flagcdn.com/w40/en.png",
+      "reason": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "https://flagcdn.com/w40/en.png",
+      "reason": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "https://flagcdn.com/w40/en.png",
+      "reason": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "https://flagcdn.com/w40/en.png",
+      "reason": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "https://flagcdn.com/w40/en.png",
+      "reason": "net::ERR_BLOCKED_BY_ORB"
+    }
+  ]
+}
