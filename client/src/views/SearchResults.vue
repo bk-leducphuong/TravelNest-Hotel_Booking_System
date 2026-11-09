@@ -15,7 +15,7 @@
   import { stayNights } from '@/utils/stay';
   import { getCurrentPosition, roundCoordinate } from '@/utils/geolocation';
   import { formatDistance as formatDistanceValue } from '@/utils/distance';
-  import { guestMoney, ratingLabelKey } from '@/utils/guestPresentation';
+  import { guestMoney, promotionBadgeDescriptor, promotionDisplayName, ratingLabelKey } from '@/utils/guestPresentation';
   import MediaImage from '@/components/ui/MediaImage.vue';
   import { CircleAlert, SearchX, Star, LayoutGrid, List } from 'lucide-vue-next';
 
@@ -177,6 +177,12 @@
       getImageUrl,
       guestMoney,
       ratingLabelKey,
+      promotionLabel(promotion) {
+        const name = promotionDisplayName(promotion);
+        if (name) return name;
+        const descriptor = promotionBadgeDescriptor(promotion);
+        return this.$t(descriptor.key, descriptor.params);
+      },
       ...mapActions('search', [
         'updateLocation',
         'updateCheckInDate',
@@ -839,7 +845,7 @@
             </div>
             <div class="result-price">
               <span v-if="hotel.has_sale" class="result-sale-badge">{{
-                hotel.promotion?.name || $t('guest.checkout.saleBadge')
+                promotionLabel(hotel.promotion)
               }}</span>
               <span v-if="hotel.has_sale">{{ $t('guest.stayFrom') }}</span
               ><small v-if="hotel.has_sale" class="result-original-price">{{

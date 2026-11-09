@@ -7,7 +7,7 @@
   import { mapGetters } from 'vuex';
   import { getUserSocket } from '@/services/userSocket';
   import { stayNights, formatStayDate } from '@/utils/stay';
-  import { guestMoney } from '@/utils/guestPresentation';
+  import { guestMoney, promotionBadgeDescriptor, promotionDisplayName } from '@/utils/guestPresentation';
 
   export default {
     components: { CheckOut, TheHeader, TheFooter },
@@ -120,6 +120,12 @@
     methods: {
       guestMoney,
       formatStayDate,
+      promotionLabel(promotion) {
+        const name = promotionDisplayName(promotion);
+        if (name) return name;
+        const descriptor = promotionBadgeDescriptor(promotion);
+        return this.$t(descriptor.key, descriptor.params);
+      },
       applyQuote(data) {
         this.currentQuote = data?.priceBreakdown || null;
         this.$store.dispatch('book/booking', {
@@ -149,7 +155,7 @@
             this.promoNotice = this.$t('guest.checkout.noPromotion');
           } else {
             this.promoNotice = this.$t('guest.checkout.promotionApplied', {
-              name: data.promotion.name,
+              name: this.promotionLabel(data.promotion),
             });
           }
         } catch (error) {
@@ -400,7 +406,7 @@
           <h3>{{ $t('bookingFlow.priceSummary') }}</h3>
           <p v-if="priceSummary.promotion" class="checkout-promotion">
             <span class="guest-pill">{{ $t('guest.checkout.saleBadge') }}</span>
-            {{ priceSummary.promotion.name }}
+            {{ promotionLabel(priceSummary.promotion) }}
           </p>
           <dl class="checkout-prices">
             <div v-if="priceSummary.subtotal != null">
@@ -408,7 +414,7 @@
               <dd>{{ guestMoney(priceSummary.subtotal, priceSummary.currency, $i18n.locale) }}</dd>
             </div>
             <div v-if="Number(priceSummary.discount) > 0" class="checkout-discount">
-              <dt>{{ $t('guest.checkout.discount', { name: priceSummary.promotion?.name || '' }) }}</dt>
+              <dt>{{ $t('guest.checkout.discount', { name: promotionLabel(priceSummary.promotion) }) }}</dt>
               <dd>
                 −{{ guestMoney(priceSummary.discount, priceSummary.currency, $i18n.locale) }}
               </dd>

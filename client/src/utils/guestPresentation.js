@@ -23,6 +23,41 @@ export function guestMoney(value, currency = 'USD', locale = 'en') {
     return '—';
   }
 }
+
+function promotionDiscountType(promotion) {
+  return promotion?.discountType ?? promotion?.discount_type ?? null;
+}
+
+function promotionBasisPoints(promotion) {
+  return promotion?.discountBasisPoints ?? promotion?.discount_basis_points ?? null;
+}
+
+/**
+ * Guest-facing label for a promotion badge. Internal `[Seed]` names are never
+ * rendered; percentage offers become "N% off" and everything else uses the
+ * generic localized "Sale" label.
+ */
+export function promotionBadgeDescriptor(promotion) {
+  const basisPoints = Number(promotionBasisPoints(promotion));
+  if (
+    promotionDiscountType(promotion) === 'percentage' &&
+    Number.isFinite(basisPoints) &&
+    basisPoints > 0
+  ) {
+    return { key: 'userHome.dealBadge', params: { percent: Math.round(basisPoints / 100) } };
+  }
+
+  return { key: 'guest.checkout.saleBadge', params: {} };
+}
+
+/**
+ * Real campaign names are safe to show. Seed/admin placeholder names are not.
+ * Returns null when the caller should fall back to a badge label.
+ */
+export function promotionDisplayName(promotion) {
+  const name = String(promotion?.name || '').trim();
+  return name && !name.startsWith('[Seed]') ? name : null;
+}
 export function normalizeBooking(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const rows = raw.bookingRooms || raw.rooms || (raw.room_id || raw.room ? [raw] : []);

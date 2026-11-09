@@ -1,5 +1,6 @@
 const { searchHotels } = require('./application/searchHotels');
 const { getHotelAvailability } = require('./application/getHotelAvailability');
+const { getHotelDeals } = require('./application/getHotelDeals');
 const { recordRecentSearch, getRecentSearches } = require('./application/recentSearches');
 const { getTrendingDestinations } = require('./application/getTrendingDestinations');
 const {
@@ -24,6 +25,7 @@ module.exports = {
   guestRoutes,
   searchHotels,
   getHotelAvailability,
+  getHotelDeals,
   recordRecentSearch,
   getRecentSearches,
   getTrendingDestinations,

@@ -1,7 +1,7 @@
 <script>
   import MediaImage from '@/components/ui/MediaImage.vue';
   import SavedHotelIcon from '@/components/SavedHotelIcon.vue';
-  import { guestMoney, ratingLabelKey } from '@/utils/guestPresentation';
+  import { guestMoney, promotionBadgeDescriptor, ratingLabelKey } from '@/utils/guestPresentation';
   export default {
     components: { MediaImage, SavedHotelIcon },
     props: {
@@ -11,8 +11,57 @@
     emits: ['open'],
     methods: {
       ratingLabelKey,
-      formatPrice(hotel) {
-        return guestMoney(hotel.minPrice, hotel.currency || 'USD', this.$i18n?.locale || 'en');
+      hotelId(hotel) {
+        return hotel.id ?? hotel.hotel_id;
+      },
+      hotelName(hotel) {
+        return hotel.name ?? hotel.hotel_name ?? '';
+      },
+      hotelImage(hotel) {
+        return hotel.primaryImageUrl ?? hotel.primary_image_url ?? '';
+      },
+      hotelLocation(hotel) {
+        if (hotel.address) return hotel.address;
+        const city = typeof hotel.city === 'string' ? hotel.city : hotel.city?.name;
+        const country = typeof hotel.country === 'string' ? hotel.country : hotel.country?.name;
+        return [city, country].filter(Boolean).join(', ');
+      },
+      ratingFor(hotel) {
+        const value = hotel.ratingSummary?.overallRating ?? hotel.avg_rating;
+        return Number.isFinite(Number(value)) ? Number(value) : 0;
+      },
+      reviewCountFor(hotel) {
+        return hotel.ratingSummary?.totalReviews ?? hotel.review_count ?? null;
+      },
+      priceFor(hotel) {
+        if (hotel.has_sale && hotel.min_price_per_night != null) {
+          return {
+            hasSale: true,
+            amount: hotel.min_price_per_night,
+            original: hotel.original_min_price_per_night ?? null,
+            currency: hotel.currency || 'USD',
+          };
+        }
+
+        const amount = hotel.minPrice ?? hotel.min_price_per_night;
+        if (amount === null || amount === undefined) return null;
+
+        return {
+          hasSale: false,
+          amount,
+          original: null,
+          currency: hotel.currency || 'USD',
+        };
+      },
+      formatMoney(value, hotel) {
+        return guestMoney(value, hotel.currency || 'USD', this.$i18n?.locale || 'en');
+      },
+      saleLabel(hotel) {
+        const percent = Number(hotel.discount_percent);
+        if (percent > 0) return this.$t('userHome.dealBadge', { percent });
+
+        const descriptor = promotionBadgeDescriptor(hotel.promotion);
+        return this.$t(descriptor.key, descriptor.params);
       },
     },
   };
@@ -20,9 +69,9 @@
 <template>
   <article class="guest-property">
     <div class="guest-property-photo">
-      <MediaImage :src="hotel.primaryImageUrl || ''" :alt="hotel.name || ''" /><SavedHotelIcon
+      <MediaImage :src="hotelImage(hotel)" :alt="hotelName(hotel)" /><SavedHotelIcon
         v-if="showFavorite"
-        :hotel-id="String(hotel.id)"
+        :hotel-id="String(hotelId(hotel))"
         :initial-is-favorite="hotel.is_favorite ?? false"
         use-initial-favorite-status
       /><slot name="action" />
@@ -30,24 +79,34 @@
     <div class="guest-property-copy">
       <h3>
         <a
-          :href="`/hotels/${encodeURIComponent(hotel.id)}`"
+          :href="`/hotels/${encodeURIComponent(hotelId(hotel))}`"
           @click.prevent="$emit('open', hotel)"
-          >{{ hotel.name }}</a
+          >{{ hotelName(hotel) }}</a
         >
       </h3>
-      <p>{{ hotel.address }}</p>
-      <p v-if="hotel.ratingSummary?.overallRating > 0" class="guest-property-rating">
-        <span class="guest-score">{{ hotel.ratingSummary.overallRating }}<small>/10</small></span
+      <p v-if="hotelLocation(hotel)">{{ hotelLocation(hotel) }}</p>
+      <p v-if="ratingFor(hotel) > 0" class="guest-property-rating">
+        <span class="guest-score">{{ ratingFor(hotel) }}<small>/10</small></span
         ><span
-          >{{ $t(ratingLabelKey(hotel.ratingSummary.overallRating))
-          }}<small v-if="hotel.ratingSummary.totalReviews != null">{{
-            $t('userHome.reviewCount', { count: hotel.ratingSummary.totalReviews })
+          >{{ $t(ratingLabelKey(ratingFor(hotel)))
+          }}<small v-if="reviewCountFor(hotel) != null">{{
+            $t('userHome.reviewCount', { count: reviewCountFor(hotel) })
           }}</small></span
         >
       </p>
-      <p v-if="hotel.minPrice != null" class="guest-property-price">
+      <p v-if="priceFor(hotel)" class="guest-property-price">
+        <span v-if="priceFor(hotel).hasSale" class="guest-property-sale-badge">{{
+          saleLabel(hotel)
+        }}</span>
+        <small
+          v-if="priceFor(hotel).hasSale && priceFor(hotel).original != null"
+          class="guest-property-original"
+          >{{ formatMoney(priceFor(hotel).original, hotel) }}</small
+        >
         <span>{{ $t('guest.stayFrom') }}</span>
-        <strong>{{ formatPrice(hotel) }}</strong>
+        <strong :class="{ 'guest-property-sale-price': priceFor(hotel).hasSale }">{{
+          formatMoney(priceFor(hotel).amount, hotel)
+        }}</strong>
         <span>{{ $t('guest.perNight') }}</span>
       </p>
     </div>
@@ -104,5 +163,22 @@
   .guest-property-price strong {
     font-size: 16px;
     color: var(--tn-brand);
+  }
+  .guest-property-price .guest-property-sale-price {
+    color: #1c7c54;
+  }
+  .guest-property-sale-badge {
+    display: inline-block;
+    width: fit-content;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #e7f6ee;
+    color: #1c7c54;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .guest-property-original {
+    color: var(--tn-muted);
+    text-decoration: line-through;
   }
 </style>

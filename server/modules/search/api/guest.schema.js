@@ -186,6 +186,24 @@ exports.getHotelAvailability = {
 };
 
 /**
+ * GET /api/v1/search/deals
+ * Public home-page deals feed. Dates are optional; the server uses a sample
+ * stay when they are omitted.
+ */
+exports.getHotelDeals = {
+  query: Joi.object({
+    limit: Joi.number().integer().min(1).max(20).default(8),
+    checkIn: Joi.date().iso().greater('now'),
+    checkOut: Joi.date().iso().greater(Joi.ref('checkIn')),
+    adults: Joi.number().integer().min(1).max(20).default(2),
+    children: Joi.number().integer().min(0).max(20).default(0),
+    rooms: Joi.number().integer().min(1).max(10).default(1),
+  })
+    .with('checkIn', 'checkOut')
+    .with('checkOut', 'checkIn'),
+};
+
+/**
  * GET /api/v1/search/autocomplete
  * Get autocomplete suggestions for hotel names
  */

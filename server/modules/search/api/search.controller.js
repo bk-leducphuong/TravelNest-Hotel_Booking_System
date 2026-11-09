@@ -1,6 +1,7 @@
 const searchUseCases = {
   searchHotels: require('../application/searchHotels').searchHotels,
   getHotelAvailability: require('../application/getHotelAvailability').getHotelAvailability,
+  getHotelDeals: require('../application/getHotelDeals').getHotelDeals,
   getRecentSearches: require('../application/recentSearches').getRecentSearches,
   recordRecentSearch: require('../application/recentSearches').recordRecentSearch,
   getTrendingDestinations: require('../application/getTrendingDestinations')
@@ -187,6 +188,27 @@ const getHotelAvailability = asyncHandler(async (req, res) => {
 });
 
 /**
+ * GET /api/v1/search/deals
+ * Public home-page deals feed. Defaults to a sample stay when dates are absent.
+ */
+const getHotelDeals = asyncHandler(async (req, res) => {
+  const result = await searchUseCases.getHotelDeals(
+    {
+      limit: req.query.limit ? parseInt(req.query.limit, 10) : 8,
+      checkIn: req.query.checkIn,
+      checkOut: req.query.checkOut,
+      adults: req.query.adults ? parseInt(req.query.adults, 10) : 2,
+      children: req.query.children ? parseInt(req.query.children, 10) : 0,
+      rooms: req.query.rooms ? parseInt(req.query.rooms, 10) : 1,
+    },
+    getAuthenticatedUserId(req)
+  );
+
+  res.set('Cache-Control', req.user?.id ? 'private, max-age=30' : 'public, max-age=60');
+  res.status(200).json(result);
+});
+
+/**
  * GET /api/v1/search/autocomplete
  * Get autocomplete suggestions for hotel names
  *
@@ -318,6 +340,7 @@ module.exports = {
   searchHotels,
   getIpLocation,
   getHotelAvailability,
+  getHotelDeals,
   getAutocompleteSuggestions,
   getDestinationAutocomplete,
   saveSearchInformation,

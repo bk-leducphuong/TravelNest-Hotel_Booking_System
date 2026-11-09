@@ -16,13 +16,12 @@
   import ReviewValidation from '@/components/review/ReviewValidation.vue';
   import { HoldService } from '@/services/hold.service';
   import { stayNights, formatStayDate } from '@/utils/stay';
-  import { guestMoney } from '@/utils/guestPresentation';
+  import { guestMoney, promotionBadgeDescriptor, promotionDisplayName } from '@/utils/guestPresentation';
   import { getDirectionsUrl } from '@/utils/directions';
   import { AnalyticsService } from '@/services/analytics.service';
   import MediaImage from '@/components/ui/MediaImage.vue';
 
   export default {
-    mixins: [sectionFeedback],
     components: {
       MediaImage,
       TheHeader,
@@ -34,6 +33,7 @@
       // ReviewForm,
       ReviewValidation,
     },
+    mixins: [sectionFeedback],
     data() {
       return {
         hotel_id: null,
@@ -253,6 +253,12 @@
     methods: {
       guestMoney,
       formatStayDate,
+      promotionLabel(promotion) {
+        const name = promotionDisplayName(promotion);
+        if (name) return name;
+        const descriptor = promotionBadgeDescriptor(promotion);
+        return this.$t(descriptor.key, descriptor.params);
+      },
       ...mapActions('book', ['booking', 'checkRoomAvailability']),
       ...mapActions('search', [
         'updateCheckInDate',
@@ -915,7 +921,7 @@
                   </div>
                   <div class="room-card-price">
                     <span v-if="room.has_sale" class="room-sale-badge">{{
-                      room.promotion?.name || $t('guest.checkout.saleBadge')
+                      promotionLabel(room.promotion)
                     }}</span>
                     <small v-if="room.has_sale && room.original_price_per_night">
                       {{ guestMoney(room.original_price_per_night, 'USD', $i18n.locale) }}

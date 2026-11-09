@@ -4,6 +4,7 @@
 
   const props = defineProps({
     title: { type: String, required: true },
+    subtitle: { type: String, default: '' },
     sectionKey: { type: String, required: true },
     items: { type: Array, default: () => [] },
     busy: { type: Boolean, default: false },
@@ -69,7 +70,10 @@
 <template>
   <section class="discovery-section" :aria-label="title" :aria-busy="busy">
     <div class="discovery-heading">
-      <h2>{{ title }}</h2>
+      <div class="discovery-title">
+        <h2>{{ title }}</h2>
+        <p v-if="subtitle" class="discovery-subtitle">{{ subtitle }}</p>
+      </div>
       <div v-if="items.length && !busy" class="discovery-controls">
         <div class="display-toggle" role="group" :aria-label="$t('guest.discovery.displayType')">
           <button type="button" :aria-pressed="mode === 'row'" @click="setMode('row')">
@@ -153,6 +157,11 @@
   }
   .discovery-heading h2 {
     margin: 0;
+  }
+  .discovery-subtitle {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: var(--tn-muted);
   }
   .display-toggle {
     padding: 3px;
