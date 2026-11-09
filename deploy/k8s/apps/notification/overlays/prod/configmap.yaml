@@ -12,5 +12,5 @@ data:
   SMTP_SECURE: "false"
   SMTP_SKIP_VERIFY: "false"
   DEFAULT_FROM_EMAIL: notifications@deployserver.work
-  CLIENT_HOST: https://deployserver.work
+  CLIENT_HOST: https://trestay.com
   LOG_LEVEL: info
