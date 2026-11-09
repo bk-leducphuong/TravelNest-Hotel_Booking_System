@@ -35,9 +35,9 @@ describe("login page (Nuxt runtime)", () => {
     component = await mountSuspended(mod.default);
   });
 
-  it("renders the TravelNest sign-in call to action", () => {
-    expect(component.text()).toContain("TravelNest Admin");
-    expect(component.text()).toContain("Sign in with TravelNest");
+  it("renders the Trestay sign-in call to action", () => {
+    expect(component.text()).toContain("Trestay Admin");
+    expect(component.text()).toContain("Sign in with Trestay");
   });
 
   it("starts the Keycloak login flow when clicked", async () => {

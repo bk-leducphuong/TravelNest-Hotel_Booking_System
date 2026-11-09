@@ -19,8 +19,8 @@
   <header class="guest-header" :class="headerClass">
     <a class="guest-skip" href="#guest-main">{{ $t('guest.skip') }}</a>
     <div class="guest-header-inner">
-      <RouterLink to="/" class="guest-brand" aria-label="TravelNest"
-        ><span class="guest-mark" aria-hidden="true">TN</span><span>TravelNest</span></RouterLink
+      <RouterLink to="/" class="guest-brand" aria-label="Trestay"
+        ><span class="guest-mark" aria-hidden="true">TS</span><span>Trestay</span></RouterLink
       >
       <nav :aria-label="$t('guest.navigation')" class="guest-header-nav">
         <ul>

@@ -1,6 +1,6 @@
 /*
  * Branded overrides for vue-toastification (imported after its stock CSS in
- * main.js so these win). Keeps toasts consistent with the TravelNest palette:
+ * main.js so these win). Keeps toasts consistent with the Trestay palette:
  * primary #003b95, success #137333, error #b3261e, warning #b26a00.
  */
 .Vue-Toastification__container {

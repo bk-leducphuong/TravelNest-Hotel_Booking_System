@@ -13,7 +13,7 @@ export const sampleRoom = {
 };
 export const sampleHotel = {
   id: "hotel-1",
-  name: "TravelNest Riverside",
+  name: "Trestay Riverside",
   address: "12 River Road",
   description: "Riverside hotel",
   status: "active",
@@ -51,7 +51,7 @@ export const sampleBooking = {
     email: "guest@example.test",
   },
   room: { id: "room-1", room_name: "Deluxe Suite" },
-  hotel: { id: "hotel-1", name: "TravelNest Riverside" },
+  hotel: { id: "hotel-1", name: "Trestay Riverside" },
 };
 export const sampleTransaction = {
   id: "transaction-1",

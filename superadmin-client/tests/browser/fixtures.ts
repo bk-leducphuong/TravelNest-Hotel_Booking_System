@@ -9,7 +9,7 @@ export const snapshot = {
 };
 export const hotel = {
   id: "hotel-1",
-  name: "TravelNest Riverside",
+  name: "Trestay Riverside",
   status: "active",
   hotelClass: 4,
   city: { id: "city-1", name: "Hanoi" },
@@ -49,7 +49,7 @@ export const user = {
   memberships: [
     {
       hotelId: "hotel-1",
-      hotelName: "TravelNest Riverside",
+      hotelName: "Trestay Riverside",
       hotelStatus: "active",
       role: "owner",
       isPrimaryOwner: true,

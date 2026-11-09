@@ -1,6 +1,6 @@
-# TravelNest Server (API & Workers)
+# Trestay Server (API & Workers)
 
-The TravelNest server is the backend API and background worker layer for the TravelNest hotel booking platform.
+The Trestay server is the backend API and background worker layer for the Trestay hotel booking platform.
 It powers search, bookings, reviews, notifications, payments, and analytics for both the user-facing and admin applications.
 
 ## Tech Stack
@@ -222,4 +222,4 @@ server/
 
 ---
 
-📖 See the **[Wiki: Backend Development](https://github.com/bk-leducphuong/TravelNest/wiki/Backend-Development)** and **[Wiki: API Reference](https://github.com/bk-leducphuong/TravelNest/wiki/API-Reference)** for more details.
+📖 See the **[Wiki: Backend Development](https://github.com/bk-leducphuong/Trestay/wiki/Backend-Development)** and **[Wiki: API Reference](https://github.com/bk-leducphuong/Trestay/wiki/API-Reference)** for more details.

@@ -1,4 +1,4 @@
-# TravelNest – Hotel Booking Platform
+# Trestay – Hotel Booking Platform
 
 [![Backend CI](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/backend.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/backend.yml)
 [![Frontend CI](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/frontend.yml/badge.svg)](https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System/actions/workflows/frontend.yml)
@@ -11,10 +11,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 <p align="center">
-  <img src="https://github.com/bk-leducphuong/TravelNest/blob/master/docs/images/logo.png" width="260" alt="TravelNest logo">
+  <img src="https://github.com/bk-leducphuong/TravelNest/blob/master/docs/images/logo.png" width="260" alt="Trestay logo">
 </p>
 
-TravelNest is a full-stack hotel booking platform inspired by [booking.com](https://booking.com). Guests can search and book stays, while property owners manage listings, availability, pricing, and analytics through a dedicated admin interface.
+Trestay is a full-stack hotel booking platform inspired by [booking.com](https://booking.com). Guests can search and book stays, while property owners manage listings, availability, pricing, and analytics through a dedicated admin interface.
 
 > **Video demo**: [`YouTube playlist`](https://www.youtube.com/watch?v=-jxhmIJp988&list=PLCt2C1YyUqcCfEhqOXE-Mul8UINudlCse)
 
@@ -210,3 +210,39 @@ Comprehensive documentation lives in the **[GitHub Wiki](https://github.com/bk-l
 - [Testing](https://github.com/bk-leducphuong/TravelNest/wiki/Testing)
 - [Contributing](https://github.com/bk-leducphuong/TravelNest/wiki/Contributing)
 - [Roadmap](https://github.com/bk-leducphuong/TravelNest/wiki/Roadmap)
+
+---
+
+## License
+
+Released under the [MIT License](LICENSE).
+
+```
+MIT License
+
+Copyright (c) 2026 Trestay
+```
+
+You are free to use, copy, modify, merge, publish, distribute, sublicense and
+sell copies of this software, provided the copyright notice and permission
+notice are included. The software is provided "as is", without warranty of any
+kind.
+
+## Disclaimer
+
+**Trestay is a personal learning / portfolio project.** It is not a commercial
+service.
+
+- It is **not affiliated with, endorsed by, or connected to Travelnest Ltd**
+  (travelnest.com), Booking.com, Booking Holdings Inc., or any other commercial
+  booking platform.
+- All product names, logos and brands referenced anywhere in this repository are
+  the property of their respective owners and are used only for descriptive or
+  educational purposes.
+- The demo environment runs on synthetic/seed data. No real bookings, payments
+  or personal data are processed. Do not enter real card details.
+- This project is provided for educational purposes only and comes with **no
+  warranty** of any kind, express or implied.
+
+If you believe any content in this repository infringes your rights, please open
+an issue and it will be removed promptly.

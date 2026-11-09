@@ -208,7 +208,7 @@ describe('Auth Middleware', () => {
         new ApiError(
           403,
           'EMAIL_VERIFICATION_REQUIRED',
-          'Verify your email address in Keycloak before accessing TravelNest.'
+          'Verify your email address in Keycloak before accessing Trestay.'
         )
       );
 

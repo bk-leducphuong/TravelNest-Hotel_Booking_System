@@ -175,7 +175,7 @@ test("property section saves preserve unsaved drafts and protect hotel switching
     page.getByRole("textbox", { name: "Address", exact: true })
   ).toHaveValue("Draft address");
   await page.locator("#desktop-hotel").press("Enter");
-  await page.getByRole("option", { name: "TravelNest Garden" }).click();
+  await page.getByRole("option", { name: "Trestay Garden" }).click();
   await expect(
     page.getByRole("dialog", { name: "Unsaved changes" })
   ).toBeVisible();

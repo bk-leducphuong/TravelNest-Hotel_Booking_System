@@ -90,7 +90,7 @@
     "@bff": "bff"
   },
   "author": "Le Duc Phuong",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@bull-board/api": "^5.23.0",
     "@bull-board/express": "^5.23.0",

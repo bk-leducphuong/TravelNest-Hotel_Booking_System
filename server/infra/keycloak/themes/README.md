@@ -1,4 +1,4 @@
-# TravelNest authentication themes
+# Trestay authentication themes
 
 Native Keycloak 26 login themes for the three application clients. Forms and
 security behavior come from Keycloak's `keycloak` parent theme; only CSS and

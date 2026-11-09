@@ -20,9 +20,9 @@ const onHotelChange = async (hotelId: string) => {
       <NuxtLink to="/" class="flex items-center gap-3 px-5 pb-4 pt-6 text-brand"
         ><span
           class="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-sm font-semibold text-white"
-          >TN</span
+          >TS</span
         ><span class="text-lg font-semibold tracking-tight"
-          >TravelNest</span
+          >Trestay</span
         ></NuxtLink
       >
       <div class="px-4 pb-3">

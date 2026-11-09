@@ -10,10 +10,10 @@ test.describe("Login page", () => {
     await page.goto("/login");
 
     await expect(
-      page.getByRole("heading", { name: "TravelNest Platform" })
+      page.getByRole("heading", { name: "Trestay Platform" })
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Sign in with TravelNest" })
+      page.getByRole("button", { name: "Sign in with Trestay" })
     ).toBeVisible();
   });
 });

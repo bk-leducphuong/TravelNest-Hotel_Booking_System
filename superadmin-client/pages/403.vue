@@ -11,7 +11,7 @@ const destination = computed(() =>
   <main class="flex min-h-screen items-center justify-center px-4 py-10">
     <div class="tn-section w-full max-w-lg space-y-5">
       <div class="flex justify-end"><UiLanguageSelect /></div>
-      <p class="text-sm font-medium text-brand">TravelNest Platform</p>
+      <p class="text-sm font-medium text-brand">Trestay Platform</p>
       <h1 class="tn-page-title">{{ $t("forbidden.title") }}</h1>
       <p class="text-sm text-muted">
         {{

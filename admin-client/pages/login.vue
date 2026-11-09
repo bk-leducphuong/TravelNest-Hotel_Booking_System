@@ -66,7 +66,7 @@ const onSignOut = async () => {
         </span>
         <div>
           <h1 class="text-xl font-semibold tracking-tight text-slate-900">
-            TravelNest Admin
+            Trestay Admin
           </h1>
           <p class="text-sm text-slate-500">
             {{ $t("auth.signInSubtitle") }}

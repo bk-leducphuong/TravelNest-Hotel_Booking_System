@@ -46,8 +46,8 @@ describe("login page (Nuxt runtime)", () => {
   afterEach(() => component.unmount());
 
   it("renders the platform sign-in call to action", () => {
-    expect(component.text()).toContain("TravelNest Platform");
-    expect(component.text()).toContain("Sign in with TravelNest");
+    expect(component.text()).toContain("Trestay Platform");
+    expect(component.text()).toContain("Sign in with Trestay");
   });
 
   it("starts the Keycloak login flow when clicked", async () => {
