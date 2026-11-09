@@ -1,21 +1,15 @@
 // src/router/routes/booking.routes.js
-import Book from '@/views/Book.vue'
-import BookingConfirmation from '@/views/BookingConfirmation.vue'
-import Bookings from '@/views/Bookings.vue'
-import BookingDetails from '@/views/BookingDetails.vue'
-import BookingCancellation from '@/views/BookingCancellation.vue'
-
 export default [
   {
     path: '/book',
     name: 'Book',
-    component: Book,
+    component: () => import('@/views/Book.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/book/complete',
     name: 'BookingConfirmation',
-    component: BookingConfirmation,
+    component: () => import('@/views/BookingConfirmation.vue'),
     props: (route) => ({
       bookingCode: route.query.bookingCode
     }),
@@ -24,19 +18,19 @@ export default [
   {
     path: '/bookings',
     name: 'Bookings',
-    component: Bookings,
+    component: () => import('@/views/Bookings.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/bookings/:bookingCode',
     name: 'BookingDetails',
-    component: BookingDetails,
+    component: () => import('@/views/BookingDetails.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/bookings/:bookingCode/cancel',
     name: 'BookingCancellation',
-    component: BookingCancellation,
+    component: () => import('@/views/BookingCancellation.vue'),
     meta: { requiresAuth: true }
   }
 ]

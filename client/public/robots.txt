@@ -1,0 +1,23 @@
+# https://trestay.com/robots.txt
+User-agent: *
+Allow: /
+
+# Private / authenticated areas (both locales)
+Disallow: /account-settings
+Disallow: /bookings
+Disallow: /book
+Disallow: /login
+Disallow: /saved-hotels
+Disallow: /reviews/review-details
+Disallow: /vi/account-settings
+Disallow: /vi/bookings
+Disallow: /vi/book
+Disallow: /vi/login
+Disallow: /vi/saved-hotels
+Disallow: /vi/reviews/review-details
+
+# Search result pages are crawlable but waste crawl budget
+Disallow: /search
+Disallow: /vi/search
+
+Sitemap: https://trestay.com/sitemap.xml

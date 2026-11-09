@@ -28,7 +28,9 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-  publicDir: 'assets', // Add this line to serve static assets from assets folder
+  publicDir: 'public',
+  // Static files (favicon, robots.txt, sitemap.xml, og-image.png,
+  // silent-check-sso.html) live in client/public and are copied as-is.
   css: {
     preprocessorOptions: {
       scss: {
@@ -39,6 +41,11 @@ export default defineConfig({
       },
     },
   },
+  // NOTE: deliberately no `manualChunks` here.
+  // Splitting vendor packages into a shared chunk hoisted libraries that are
+  // only used by lazy routes (Leaflet, most Element Plus components) into the
+  // entry chunk, inflating the initial payload from ~260 KB to ~456 KB gzip.
+  // Route-level lazy imports plus this default chunking keep the entry minimal.
   test: {
     environment: 'jsdom',
     globals: true,
