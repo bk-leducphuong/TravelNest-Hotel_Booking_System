@@ -1,0 +1,85 @@
+sequenceDiagram
+    autonumber
+    participant Web as Vue guest client
+    participant API as Search routes / controller
+    participant Search as Search application
+    participant ES as Elasticsearch
+    participant DB as MySQL repositories
+    participant Redis as Redis
+    participant Events as Event publisher / NATS
+
+    opt User types a destination
+        Web->>API: GET /api/v1/search/destinations/autocomplete
+        API->>Search: getDestinationAutocomplete(text)
+        Search->>ES: Query destinations suggestions
+        ES-->>Search: Suggestions or no matches
+        opt Elasticsearch unavailable or no suggestions
+            Search->>DB: catalog.suggestDestinations(text)
+            DB-->>Search: Destination suggestions
+        end
+        Search-->>API: Suggestions
+        API-->>Web: 200 destination suggestions
+    end
+
+    Web->>Web: Submit dates and guests, update Router and Vuex
+    opt New base search criteria in this page instance
+        Web->>Web: Save recent search in localStorage
+        Web->>API: POST /api/v1/search/log
+        API->>Events: Publish search-performed event
+        Events-->>API: Publish attempt completed, best effort
+        API-->>Web: 201 log response
+    end
+
+    Web->>API: GET /api/v1/search/hotels with criteria, filters and page
+    API->>API: Optional authentication and Joi validation
+    API->>Search: searchHotels(params, userId)
+    alt Valid explicit destinationId
+        Search->>DB: catalog.getActiveDestinationById(id)
+        DB-->>Search: Destination
+    else Free-text destination or invalid id
+        Search->>ES: Resolve normalized destination text
+        ES-->>Search: Best city or country match
+        opt No match or Elasticsearch error
+            Search->>DB: catalog.findBestMatchDestinationByName(text)
+            DB-->>Search: Destination or null
+        end
+    end
+    Search->>Search: Calculate nights and total guests
+    Search->>ES: Check ES health, search hotels index
+    ES-->>Search: Candidate metadata
+    opt ES unavailable, error, or zero hits for text location
+        Search->>DB: Read hotel_search_snapshots with filters
+        DB-->>Search: Fallback candidates
+    end
+
+    alt Candidate hotels exist
+        Search->>DB: Check room inventory for every night
+        DB-->>Search: Hotels satisfying rooms and capacity
+        alt Available hotels exist
+            loop Each available hotel, queried concurrently
+                Search->>DB: Fetch available room types and date-specific prices
+                DB-->>Search: Room details, stay totals and nightly averages
+            end
+            Search->>Search: Merge metadata and rooms, apply price filter
+            Search->>Search: Rank, sort, build facets and paginate
+            opt Signed in and page has hotels
+                Search->>DB: identity.getFavoriteHotelIds(userId, pageHotelIds)
+                DB-->>Search: Favorite IDs
+            end
+            Search->>Search: Attach is_favorite, false for anonymous guests
+        else No hotels available for the stay
+            Search->>Search: Format successful empty response
+        end
+    else No candidate hotels
+        Search->>Search: Format successful empty response
+    end
+
+    Search-->>API: Search results and resolved destination ID/type
+    opt Signed in
+        API-)Redis: Record recent search, best effort, not awaited
+    end
+    API-)Events: Publish search-performed event, not awaited
+    API-->>Web: 200 hotels, pagination, filter options and metadata
+    Web->>Web: Render hotel cards or empty state
+    Note over Web,API: Filter, sort and page changes repeat GET hotels. POST log is deduplicated by base criteria.
+    Note over Events: NATS consumer is the Go analytics service, which writes MongoDB search_logs.

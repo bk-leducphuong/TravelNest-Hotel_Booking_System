@@ -9,9 +9,9 @@ data:
   # "TravelNest API Docs JSON"). Everything else on the API stays public.
   ENABLE_API_DOCS: "true"
   PORT: "3000"
-  CLIENT_HOST: https://deployserver.work
-  ADMIN_CLIENT_HOST: https://admin.deployserver.work
-  SUPERADMIN_CLIENT_HOST: https://superadmin.deployserver.work
+  CLIENT_HOST: https://deployserver.work,https://trestay.com
+  ADMIN_CLIENT_HOST: https://admin.deployserver.work,https://admin.trestay.com
+  SUPERADMIN_CLIENT_HOST: https://superadmin.deployserver.work,https://superadmin.trestay.com
   DB_USER: travelnest
   DB_NAME: travelnest
   REDIS_DB: "1"

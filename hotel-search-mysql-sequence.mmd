@@ -1,0 +1,74 @@
+sequenceDiagram
+    title Target MySQL-only hotel search - issue 153
+    autonumber
+    participant Web as Vue guest client
+    participant API as Search controller
+    participant Search as Search application
+    participant Repo as Repositories
+    participant DB as Local MySQL
+    participant Redis as Redis history
+    participant Events as Publisher / NATS
+
+    opt User types a destination
+        Web->>API: GET /search/destinations/autocomplete
+        API->>Search: Normalize text and aliases
+        Search->>Repo: Find active matching destinations
+        Repo->>DB: Read destinations
+        DB-->>Repo: Destination candidates
+        Repo-->>Search: Matching names and IDs
+        Search->>Search: Rank exact, prefix, substring and typo suggestions
+        Search-->>API: Suggestions
+        API-->>Web: 200 suggestions with destination IDs
+    end
+
+    Web->>Web: Submit dates and guests, update Router and Vuex
+    opt New base criteria, preserving current client logging behavior
+        Web->>Web: Save browser recent-search history
+        Web->>API: POST /search/log
+        API->>Events: Publish search-performed event, best effort
+        Events-->>API: Publish attempt completed
+        API-->>Web: 201 log response
+    end
+
+    Web->>API: GET /search/hotels with criteria, filters and page
+    API->>API: Optional authentication and Joi validation
+    API->>Search: searchHotels(params, userId)
+    Search->>Repo: Resolve active destination by ID or normalized text
+    Repo->>DB: Query destinations
+    DB-->>Repo: Destination or unresolved text intent
+    Repo-->>Search: Resolved search intent
+
+    Search->>Repo: Search eligible hotel offers in batch
+    Repo->>DB: Filter hotel candidates by location, text and static criteria
+    DB->>DB: Aggregate daily inventory by room type for all stay nights
+    DB->>DB: Check rooms and occupancy, subtract bookings and holds
+    DB->>DB: Price eligible offers, apply budget and cancellation rules
+    DB->>DB: Select cheapest qualifying offer per hotel
+    DB-->>Repo: Eligible hotel-offer rows
+    Repo-->>Search: Full eligible set without per-hotel query fan-out
+
+    alt Eligible hotels exist
+        Search->>Search: Score review quality, popularity and optional distance
+        Search->>Search: Build facets and total, apply requested sort and pagination
+        opt Authenticated user
+            Search->>Repo: Fetch favorite IDs for the displayed page
+            Repo->>DB: Batch favorite lookup
+            DB-->>Repo: Favorite hotel IDs
+            Repo-->>Search: Favorite IDs
+        end
+        Search->>Search: Format page, offers, coordinates and metadata
+    else No eligible hotels
+        Search->>Search: Format successful empty results and facets
+    end
+
+    Search-->>API: Search response and resolved destination
+    opt Authenticated user
+        API-)Redis: Record recent search, not awaited
+    end
+    API-)Events: Publish search-performed event, not awaited
+    API-->>Web: 200 hotels, pagination, facets and metadata
+    Web->>Web: Render hotel cards, map data or empty state
+
+    Note over Repo,DB: SQL stages are logical steps of a bounded set-based query plan, not one query per hotel.
+    Note over Search,DB: One room type per offer. Search does not reserve rooms. Booking rechecks inventory atomically.
+    Note over Events: Go analytics consumes NATS events and writes MongoDB independently of the search response.

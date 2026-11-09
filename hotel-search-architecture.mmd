@@ -1,0 +1,53 @@
+flowchart TB
+    guest["Vue 3 guest client
+SearchBar, SearchResults, Router, Vuex and SearchService
+Browser localStorage stores recent criteria"]
+    subgraph backend ["Express backend - one application"]
+        direction TB
+        api["Search routes and controller
+Optional authentication and Joi validation"]
+        pipeline["Search application
+Resolve destination, discover hotels, verify rooms
+Merge, price filter, rank, build facets and paginate"]
+        catalog["Catalog and identity APIs
+Destination lookup and favorite status"]
+        repo["Search repository and ES helpers
+Candidate discovery, inventory and room prices"]
+        publisher["Recent-search writer and event publisher"]
+        api -->|"Autocomplete and hotel search"| pipeline
+        pipeline --> catalog
+        pipeline --> repo
+        api -.->|"Explicit POST log and post-search effects"| publisher
+    end
+    es[("Elasticsearch
+destinations and hotels indexes")]
+    sql[("MySQL
+destinations and hotel_search_snapshots
+rooms, room_inventory and favorites")]
+    redis[("Redis
+Signed-in recent searches")]
+    subgraph analyticsPath ["Asynchronous analytics"]
+        direction LR
+        nats["NATS JetStream"]
+        analytics["Go analytics service"]
+        mongo[("MongoDB
+search_logs")]
+        nats -.->|"Consume search event"| analytics
+        analytics -->|"Persist"| mongo
+    end
+    guest -->|"GET destinations/autocomplete, GET hotels, POST log
+under /api/v1/search"| api
+    catalog -->|"Lookup destination and favorites"| sql
+    pipeline -->|"Resolve text destination"| es
+    repo -->|"Discover hotel candidates"| es
+    repo -->|"Live date availability, prices and candidate fallback"| sql
+    publisher -.->|"Best effort, signed-in users"| redis
+    publisher -.->|"analytics.search.performed.v1"| nats
+    classDef client fill:#dbeafe,stroke:#2563eb,color:#172554
+    classDef app fill:#e0e7ff,stroke:#6366f1,color:#1e1b4b
+    classDef data fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef background fill:#fff7ed,stroke:#ea580c,color:#7c2d12
+    class guest client
+    class api,pipeline,catalog,repo app
+    class es,sql,redis,mongo data
+    class publisher,nats,analytics background

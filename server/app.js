@@ -100,11 +100,15 @@ const createApp = async () => {
   await natsTransport.subscribe(INBOUND_EVENTS.REALTIME_DISPATCH, handleRealtimeNotification);
   await redisHoldTransport.subscribe(HOLD_EVENTS.HOLD_EXPIRED, handleHoldExpired);
 
-  const normalizeOrigin = (origin) => origin && origin.replace(/\/$/, '');
+  const normalizeOrigin = (origin) => origin && origin.trim().replace(/\/$/, '');
+  // A host variable may hold a comma-separated list so more than one domain can
+  // be served while a domain migration is in progress
+  // (e.g. "https://old.example,https://new.example").
+  const splitOrigins = (value) => (value || '').split(',');
   const allowedOrigins = [
-    process.env.CLIENT_HOST,
-    process.env.ADMIN_CLIENT_HOST,
-    process.env.SUPERADMIN_CLIENT_HOST,
+    ...splitOrigins(process.env.CLIENT_HOST),
+    ...splitOrigins(process.env.ADMIN_CLIENT_HOST),
+    ...splitOrigins(process.env.SUPERADMIN_CLIENT_HOST),
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:8000',

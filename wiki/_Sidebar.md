@@ -20,6 +20,7 @@
 - [Inventory Admin](Module-Inventory)
 - [Payment & Refunds](Module-Payment)
 - [Payout Admin](Module-Payout)
+- [Partners (affiliate links)](Module-Partners)
 
 ### 🚀 Operations
 - [Deployment](Deployment)

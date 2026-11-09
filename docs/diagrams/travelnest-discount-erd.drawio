@@ -1,0 +1,631 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="drawio" version="26.0.0">
+  <diagram id="discount-erd" name="Discount feature ERD">
+    <mxGraphModel page="1" pageWidth="1860" pageHeight="1800" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="TRAVELNEST / DISCOUNT FEATURE" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=30;fontStyle=1;fontColor=#172b4d;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="25" width="1500" height="50" />
+        </mxCell>
+        <mxCell id="subtitle" value="PROPOSED ERD • Automatic hotel sales + checkout codes • One applied promotion per booking" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=16;fontColor=#526078;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="80" width="1600" height="30" />
+        </mxCell>
+        <mxCell id="hotels" value="hotels  / existing" style="shape=table;html=1;startSize=42;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;fontFamily=Helvetica;fontSize=17;fillColor=#f5f5f5;strokeColor=#8993a4;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="200" width="440" height="96" />
+        </mxCell>
+        <mxCell id="hotels_0" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="hotels">
+          <mxGeometry as="geometry" x="0" y="42" width="440" height="27" />
+        </mxCell>
+        <mxCell id="hotels_0n" value="PK  id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;fontStyle=1;" vertex="1" parent="hotels_0">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="hotels_0t" value="UUID" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="hotels_0">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="hotels_1" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="hotels">
+          <mxGeometry as="geometry" x="0" y="69" width="440" height="27" />
+        </mxCell>
+        <mxCell id="hotels_1n" value="name" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="hotels_1">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="hotels_1t" value="STRING" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="hotels_1">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="rooms" value="rooms  / existing" style="shape=table;html=1;startSize=42;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;fontFamily=Helvetica;fontSize=17;fillColor=#f5f5f5;strokeColor=#8993a4;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="480" width="440" height="123" />
+        </mxCell>
+        <mxCell id="rooms_0" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="rooms">
+          <mxGeometry as="geometry" x="0" y="42" width="440" height="27" />
+        </mxCell>
+        <mxCell id="rooms_0n" value="PK  id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;fontStyle=1;" vertex="1" parent="rooms_0">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="rooms_0t" value="UUID" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="rooms_0">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="rooms_1" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="rooms">
+          <mxGeometry as="geometry" x="0" y="69" width="440" height="27" />
+        </mxCell>
+        <mxCell id="rooms_1n" value="FK  hotel_id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="rooms_1">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="rooms_1t" value="UUID" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="rooms_1">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="rooms_2" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="rooms">
+          <mxGeometry as="geometry" x="0" y="96" width="440" height="27" />
+        </mxCell>
+        <mxCell id="rooms_2n" value="room_name" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="rooms_2">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="rooms_2t" value="STRING" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="rooms_2">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="targets" value="promotion_rooms  / new" style="shape=table;html=1;startSize=42;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;fontFamily=Helvetica;fontSize=17;fillColor=#d5e8d4;strokeColor=#43845b;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="820" width="440" height="96" />
+        </mxCell>
+        <mxCell id="targets_0" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="targets">
+          <mxGeometry as="geometry" x="0" y="42" width="440" height="27" />
+        </mxCell>
+        <mxCell id="targets_0n" value="PK, FK  promotion_id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;fontStyle=1;" vertex="1" parent="targets_0">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="targets_0t" value="UUID" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="targets_0">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="targets_1" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="targets">
+          <mxGeometry as="geometry" x="0" y="69" width="440" height="27" />
+        </mxCell>
+        <mxCell id="targets_1n" value="PK, FK  room_id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;fontStyle=1;" vertex="1" parent="targets_1">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="targets_1t" value="UUID" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="targets_1">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions" value="promotions  / new" style="shape=table;html=1;startSize=42;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;fontFamily=Helvetica;fontSize=17;fillColor=#d5e8d4;strokeColor=#43845b;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="650" y="200" width="440" height="690" />
+        </mxCell>
+        <mxCell id="promotions_0" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="42" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_0n" value="PK  id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;fontStyle=1;" vertex="1" parent="promotions_0">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_0t" value="UUID" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_0">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_1" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="69" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_1n" value="FK  hotel_id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_1">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_1t" value="UUID" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_1">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_2" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="96" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_2n" value="mode" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_2">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_2t" value="automatic | code" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_2">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_3" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="123" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_3n" value="normalized_code" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_3">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_3t" value="STRING NULL" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_3">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_4" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="150" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_4n" value="name / description" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_4">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_4t" value="STRING / TEXT" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_4">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_5" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="177" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_5n" value="state" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_5">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_5t" value="lifecycle enum" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_5">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_6" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="204" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_6n" value="room_scope" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_6">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_6t" value="all | selected" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_6">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_7" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="231" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_7n" value="discount_type" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_7">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_7t" value="percentage | fixed" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_7">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_8" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="258" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_8n" value="percentage_bps" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_8">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_8t" value="INTEGER NULL" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_8">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_9" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="285" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_9n" value="fixed_amount" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_9">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_9t" value="DECIMAL NULL" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_9">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_10" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="312" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_10n" value="currency" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_10">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_10t" value="CHAR(3)" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_10">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_11" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="339" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_11n" value="max_discount_amount" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_11">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_11t" value="DECIMAL NULL" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_11">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_12" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="366" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_12n" value="booking_starts_at / ends_at" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_12">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_12t" value="TIMESTAMP" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_12">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_13" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="393" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_13n" value="stay_starts_on / ends_on" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_13">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_13t" value="DATE NULL" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_13">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_14" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="420" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_14n" value="min_nights" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_14">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_14t" value="INTEGER" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_14">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_15" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="447" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_15n" value="min_eligible_subtotal" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_15">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_15t" value="DECIMAL" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_15">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_16" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="474" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_16n" value="min_advance_days" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_16">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_16t" value="INTEGER NULL" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_16">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_17" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="501" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_17n" value="total_use_limit" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_17">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_17t" value="INTEGER NULL" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_17">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_18" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="528" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_18n" value="per_user_limit" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_18">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_18t" value="INTEGER NULL" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_18">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_19" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="555" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_19n" value="reserved_count" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_19">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_19t" value="INTEGER" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_19">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_20" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="582" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_20n" value="redeemed_count" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_20">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_20t" value="INTEGER" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_20">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_21" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="609" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_21n" value="version" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_21">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_21t" value="INTEGER" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_21">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_22" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="636" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_22n" value="FK  created_by / updated_by" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_22">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_22t" value="UUID → users" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_22">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="promotions_23" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="promotions">
+          <mxGeometry as="geometry" x="0" y="663" width="440" height="27" />
+        </mxCell>
+        <mxCell id="promotions_23n" value="created_at / updated_at" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="promotions_23">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="promotions_23t" value="TIMESTAMP" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="promotions_23">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="bookings" value="bookings  / extend existing" style="shape=table;html=1;startSize=42;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;fontFamily=Helvetica;fontSize=17;fillColor=#dae8fc;strokeColor=#4e78b0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1260" y="200" width="440" height="312" />
+        </mxCell>
+        <mxCell id="bookings_0" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="bookings">
+          <mxGeometry as="geometry" x="0" y="42" width="440" height="27" />
+        </mxCell>
+        <mxCell id="bookings_0n" value="PK  id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;fontStyle=1;" vertex="1" parent="bookings_0">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="bookings_0t" value="UUID" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="bookings_0">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="bookings_1" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="bookings">
+          <mxGeometry as="geometry" x="0" y="69" width="440" height="27" />
+        </mxCell>
+        <mxCell id="bookings_1n" value="FK  hotel_id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="bookings_1">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="bookings_1t" value="UUID" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="bookings_1">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="bookings_2" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="bookings">
+          <mxGeometry as="geometry" x="0" y="96" width="440" height="27" />
+        </mxCell>
+        <mxCell id="bookings_2n" value="FK  buyer_id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="bookings_2">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="bookings_2t" value="UUID → users" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="bookings_2">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="bookings_3" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="bookings">
+          <mxGeometry as="geometry" x="0" y="123" width="440" height="27" />
+        </mxCell>
+        <mxCell id="bookings_3n" value="FK  promotion_id  [NEW]" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="bookings_3">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="bookings_3t" value="UUID NULL" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="bookings_3">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="bookings_4" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="bookings">
+          <mxGeometry as="geometry" x="0" y="150" width="440" height="27" />
+        </mxCell>
+        <mxCell id="bookings_4n" value="discount_amount  [NEW]" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="bookings_4">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="bookings_4t" value="DECIMAL = 0" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="bookings_4">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="bookings_5" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="bookings">
+          <mxGeometry as="geometry" x="0" y="177" width="440" height="27" />
+        </mxCell>
+        <mxCell id="bookings_5n" value="subtotal / tax_amount" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="bookings_5">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="bookings_5t" value="DECIMAL" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="bookings_5">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="bookings_6" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="bookings">
+          <mxGeometry as="geometry" x="0" y="204" width="440" height="27" />
+        </mxCell>
+        <mxCell id="bookings_6n" value="service_fee_amount" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="bookings_6">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="bookings_6t" value="DECIMAL" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="bookings_6">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="bookings_7" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="bookings">
+          <mxGeometry as="geometry" x="0" y="231" width="440" height="27" />
+        </mxCell>
+        <mxCell id="bookings_7n" value="total_price / currency" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="bookings_7">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="bookings_7t" value="DECIMAL / CHAR(3)" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="bookings_7">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="bookings_8" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="bookings">
+          <mxGeometry as="geometry" x="0" y="258" width="440" height="27" />
+        </mxCell>
+        <mxCell id="bookings_8n" value="price_breakdown" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="bookings_8">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="bookings_8t" value="JSON snapshot" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="bookings_8">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="bookings_9" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="bookings">
+          <mxGeometry as="geometry" x="0" y="285" width="440" height="27" />
+        </mxCell>
+        <mxCell id="bookings_9n" value="status / payment_due_at" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="bookings_9">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="bookings_9t" value="existing fields" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="bookings_9">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="redemptions" value="promotion_redemptions  / new" style="shape=table;html=1;startSize=42;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;fontFamily=Helvetica;fontSize=17;fillColor=#d5e8d4;strokeColor=#43845b;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1260" y="820" width="440" height="366" />
+        </mxCell>
+        <mxCell id="redemptions_0" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="redemptions">
+          <mxGeometry as="geometry" x="0" y="42" width="440" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_0n" value="PK  id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;fontStyle=1;" vertex="1" parent="redemptions_0">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_0t" value="UUID" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="redemptions_0">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_1" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="redemptions">
+          <mxGeometry as="geometry" x="0" y="69" width="440" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_1n" value="FK  promotion_id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="redemptions_1">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_1t" value="UUID" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="redemptions_1">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_2" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="redemptions">
+          <mxGeometry as="geometry" x="0" y="96" width="440" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_2n" value="FK, UQ  booking_id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="redemptions_2">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_2t" value="UUID" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="redemptions_2">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_3" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="redemptions">
+          <mxGeometry as="geometry" x="0" y="123" width="440" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_3n" value="FK  buyer_id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="redemptions_3">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_3t" value="UUID → users" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="redemptions_3">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_4" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="redemptions">
+          <mxGeometry as="geometry" x="0" y="150" width="440" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_4n" value="FK  hotel_id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="redemptions_4">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_4t" value="UUID → hotels" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="redemptions_4">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_5" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="redemptions">
+          <mxGeometry as="geometry" x="0" y="177" width="440" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_5n" value="status" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="redemptions_5">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_5t" value="redemption enum" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="redemptions_5">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_6" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="redemptions">
+          <mxGeometry as="geometry" x="0" y="204" width="440" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_6n" value="discount_amount / currency" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="redemptions_6">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_6t" value="DECIMAL / CHAR(3)" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="redemptions_6">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_7" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="redemptions">
+          <mxGeometry as="geometry" x="0" y="231" width="440" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_7n" value="promotion_version" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="redemptions_7">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_7t" value="INTEGER" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="redemptions_7">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_8" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="redemptions">
+          <mxGeometry as="geometry" x="0" y="258" width="440" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_8n" value="promotion_snapshot" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="redemptions_8">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_8t" value="JSON" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="redemptions_8">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_9" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="redemptions">
+          <mxGeometry as="geometry" x="0" y="285" width="440" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_9n" value="reservation_expires_at" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="redemptions_9">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_9t" value="TIMESTAMP" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="redemptions_9">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_10" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="redemptions">
+          <mxGeometry as="geometry" x="0" y="312" width="440" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_10n" value="reserved_at / redeemed_at" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="redemptions_10">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_10t" value="TIMESTAMP NULL" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="redemptions_10">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_11" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="redemptions">
+          <mxGeometry as="geometry" x="0" y="339" width="440" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_11n" value="released_at / release_reason" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="redemptions_11">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="redemptions_11t" value="TIMESTAMP / STRING" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="redemptions_11">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="users" value="users  / existing" style="shape=table;html=1;startSize=42;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;fontFamily=Helvetica;fontSize=17;fillColor=#f5f5f5;strokeColor=#8993a4;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="1320" width="440" height="96" />
+        </mxCell>
+        <mxCell id="users_0" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="users">
+          <mxGeometry as="geometry" x="0" y="42" width="440" height="27" />
+        </mxCell>
+        <mxCell id="users_0n" value="PK  id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;fontStyle=1;" vertex="1" parent="users_0">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="users_0t" value="UUID" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="users_0">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="users_1" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="users">
+          <mxGeometry as="geometry" x="0" y="69" width="440" height="27" />
+        </mxCell>
+        <mxCell id="users_1n" value="first_name / last_name" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="users_1">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="users_1t" value="STRING" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="users_1">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="usage" value="promotion_user_usage  / new¹" style="shape=table;html=1;startSize=42;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;fontFamily=Helvetica;fontSize=17;fillColor=#d5e8d4;strokeColor=#43845b;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="650" y="1320" width="440" height="150" />
+        </mxCell>
+        <mxCell id="usage_0" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="usage">
+          <mxGeometry as="geometry" x="0" y="42" width="440" height="27" />
+        </mxCell>
+        <mxCell id="usage_0n" value="PK, FK  promotion_id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;fontStyle=1;" vertex="1" parent="usage_0">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="usage_0t" value="UUID" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="usage_0">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="usage_1" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="usage">
+          <mxGeometry as="geometry" x="0" y="69" width="440" height="27" />
+        </mxCell>
+        <mxCell id="usage_1n" value="PK, FK  buyer_id" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;fontStyle=1;" vertex="1" parent="usage_1">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="usage_1t" value="UUID → users" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="usage_1">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="usage_2" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="usage">
+          <mxGeometry as="geometry" x="0" y="96" width="440" height="27" />
+        </mxCell>
+        <mxCell id="usage_2n" value="reserved_count" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="usage_2">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="usage_2t" value="INTEGER" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="usage_2">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="usage_3" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=none;collapsible=0;dropTarget=0;" vertex="1" parent="usage">
+          <mxGeometry as="geometry" x="0" y="123" width="440" height="27" />
+        </mxCell>
+        <mxCell id="usage_3n" value="redeemed_count" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=13;spacingLeft=10;" vertex="1" parent="usage_3">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="27" />
+        </mxCell>
+        <mxCell id="usage_3t" value="INTEGER" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=12;fontColor=#65738a;" vertex="1" parent="usage_3">
+          <mxGeometry as="geometry" x="300" y="0" width="140" height="27" />
+        </mxCell>
+        <mxCell id="hotel_rooms" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;endArrow=ERzeroToMany;startSize=12;endSize=12;strokeColor=#73839a;strokeWidth=1.5;exitX=0.3;exitY=1;entryX=0.3;entryY=0;" edge="1" parent="1" source="hotels" target="rooms">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="hotel_promotions" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;endArrow=ERzeroToMany;startSize=12;endSize=12;strokeColor=#73839a;strokeWidth=1.5;exitX=1;exitY=0.5;entryX=0;entryY=0.08;" edge="1" parent="1" source="hotels" target="promotions">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="room_targets" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;endArrow=ERzeroToMany;startSize=12;endSize=12;strokeColor=#73839a;strokeWidth=1.5;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="rooms" target="targets">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="promotion_targets" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;endArrow=ERzeroToMany;startSize=12;endSize=12;strokeColor=#73839a;strokeWidth=1.5;exitX=0;exitY=0.7;entryX=1;entryY=0.5;" edge="1" parent="1" source="promotions" target="targets">
+          <mxGeometry as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="565" y="683" />
+              <mxPoint x="565" y="868" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="promotion_bookings" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERzeroToOne;endArrow=ERzeroToMany;startSize=12;endSize=12;strokeColor=#73839a;strokeWidth=1.5;exitX=1;exitY=0.12;entryX=0;entryY=0.3;" edge="1" parent="1" source="promotions" target="bookings">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="booking_redemption" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;endArrow=ERzeroToOne;startSize=12;endSize=12;strokeColor=#73839a;strokeWidth=1.5;exitX=0.6;exitY=1;entryX=0.6;entryY=0;" edge="1" parent="1" source="bookings" target="redemptions">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="promotion_redemptions" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;endArrow=ERzeroToMany;startSize=12;endSize=12;strokeColor=#73839a;strokeWidth=1.5;exitX=1;exitY=0.8;entryX=0;entryY=0.2;" edge="1" parent="1" source="promotions" target="redemptions">
+          <mxGeometry as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="1170" y="752" />
+              <mxPoint x="1170" y="899" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="promotion_usage" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;endArrow=ERzeroToMany;startSize=12;endSize=12;strokeColor=#73839a;strokeWidth=1.5;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="promotions" target="usage">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="user_usage" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;endArrow=ERzeroToMany;startSize=12;endSize=12;strokeColor=#73839a;strokeWidth=1.5;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="users" target="usage">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="user_redemptions" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;endArrow=ERzeroToMany;startSize=12;endSize=12;strokeColor=#73839a;strokeWidth=1.5;exitX=0.8;exitY=0;entryX=0.25;entryY=1;" edge="1" parent="1" source="users" target="redemptions">
+          <mxGeometry as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="392" y="1240" />
+              <mxPoint x="1370" y="1240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hotel_bookings" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;endArrow=ERzeroToMany;startSize=12;endSize=12;strokeColor=#73839a;strokeWidth=1.5;exitX=0.65;exitY=0;entryX=0.3;entryY=0;" edge="1" parent="1" source="hotels" target="bookings">
+          <mxGeometry as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="326" y="145" />
+              <mxPoint x="1392" y="145" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend" value="GREEN  New tables     BLUE  Existing table changes     GRAY  Existing context (selected columns)" style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=14;fontColor=#526078;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="1530" width="1650" height="30" />
+        </mxCell>
+        <mxCell id="notes" value="&lt;b&gt;Rules&lt;/b&gt;  Automatic → code is NULL; selected rooms allowed. Code → code required; all rooms only.&lt;br&gt;UQ (hotel_id, normalized_code). One redemption per booking; no stacking. Room targets must belong to the same hotel.&lt;br&gt;¹ Usage counters are optional implementation support for code limits; composite keys shown are proposed.&lt;br&gt;Redemption: reserved → redeemed or released. Both modes keep history. Automatic offers have no use limits in v1. Booking JSON preserves original terms and allocations.&lt;br&gt;Crow’s foot: circle = zero; bar = one; fork = many. Context-only buyer/hotel/audit FKs are named in rows; their extra lines are omitted.&lt;br&gt;Source: docs/plan/discount-feature.md. Proposed design, not an extracted database schema." style="text;html=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;align=left;verticalAlign=middle;fontSize=14;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="1580" width="1680" height="170" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

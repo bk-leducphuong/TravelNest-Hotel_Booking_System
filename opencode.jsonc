@@ -16,14 +16,21 @@
   "mcp": {
     "servers": {
       // The only MCP we want here. Overrides the global `playwright` server.
+      //
+      // Headless mode: MCP launches its own Chromium (no visible window, no
+      // `--extension`). `--extension` attaches to a real, already-running
+      // Chrome and therefore can never be headless, so it is not used here.
+      // To go back to an attached headed browser, swap `--headless` for
+      // `--extension` and re-enable PLAYWRIGHT_MCP_EXTENSION_TOKEN below.
       "playwright": {
         "type": "local",
-        "command": ["npx", "@playwright/mcp@latest", "--extension"],
-        "environment": {
-          // Secret kept out of git (.opencode/secrets/ is gitignored, chmod 600).
-          // `{file:...}` resolves relative to this config file and works in V2.
-          "PLAYWRIGHT_MCP_EXTENSION_TOKEN": "{file:.opencode/secrets/playwright-token.txt}"
-        }
+        "command": ["npx", "@playwright/mcp@latest", "--headless"]
+        // Extension mode only (disabled while headless). Secret is kept out of
+        // git (.opencode/secrets/ is gitignored, chmod 600); `{file:...}`
+        // resolves relative to this config file and works in V2.
+        // "environment": {
+        //   "PLAYWRIGHT_MCP_EXTENSION_TOKEN": "{file:.opencode/secrets/playwright-token.txt}"
+        // }
       },
 
       // Global enables this against AWS_PROFILE=prod, which is the *SessionUp*

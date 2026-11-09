@@ -1,0 +1,12 @@
+# Local-only override.
+#
+# MinIO removed its Docker Hub images (minio/minio) in September 2026 and
+# closed anonymous pulls from quay.io, so the upstream `minio` service cannot
+# be pulled anymore. `pgsty/silo` is an API/CLI-compatible drop-in fork that
+# keeps the same `minio server /data --console-address :9001` interface and
+# the same MINIO_ROOT_USER / MINIO_ROOT_PASSWORD environment variables.
+#
+# Remove this file (or switch back to minio/minio) if the images return.
+services:
+  minio:
+    image: pgsty/silo:latest
