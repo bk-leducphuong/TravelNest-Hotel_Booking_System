@@ -1,12 +1,10 @@
 <script>
   import { mapGetters } from 'vuex';
-  import { ElDialog } from 'element-plus';
   import sectionFeedback from '@/mixins/sectionFeedback';
   import { UserService } from '@/services/user.service';
 
   export default {
     mixins: [sectionFeedback],
-    components: { ElDialog },
     props: {
       hotelId: {
         type: String,

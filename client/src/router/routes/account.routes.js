@@ -1,25 +1,21 @@
 // src/router/routes/account.routes.js
-import AccountSettings from '@/views/account-settings/AccountSettings.vue'
-import SettingDetails from '@/views/account-settings/SettingDetails.vue'
-import SavedHotels from '@/views/SavedHotels.vue'
-
 export default [
   {
     path: '/account-settings',
     name: 'AccountSettings',
-    component: AccountSettings,
+    component: () => import('@/views/account-settings/AccountSettings.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/account-settings/:details',
     name: 'SettingDetails',
-    component: SettingDetails,
+    component: () => import('@/views/account-settings/SettingDetails.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/saved-hotels',
     name: 'SavedHotels',
-    component: SavedHotels,
+    component: () => import('@/views/SavedHotels.vue'),
     meta: { requiresAuth: true }
   }
 ]

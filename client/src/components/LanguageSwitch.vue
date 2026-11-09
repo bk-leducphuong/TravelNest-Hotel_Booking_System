@@ -1,12 +1,20 @@
 <script>
+import { localizePath } from '@/utils/locale'
+
 export default {
   name: 'LanguageSwitch',
   emits: ['close-language-popup'],
   methods: {
     chooseLanguage(language) {
       localStorage.setItem('language', language)
+      this.$i18n.locale = language
+      this.$store.dispatch('user/updateUserLanguage', language)
       this.$emit('close-language-popup')
-      window.location.reload()
+
+      const target = localizePath(this.$route.path, language)
+      if (this.$route.path !== target) {
+        this.$router.push({ path: target, query: this.$route.query, hash: this.$route.hash })
+      }
     },
   },
 }
@@ -17,7 +25,7 @@ export default {
     <div class="popup-content">
       <div class="popup-header">
         <h2>{{ $t('language.selectTitle') }}</h2>
-        <button class="close-popup-btn" @click="this.$emit('close-language-popup')">✖</button>
+        <button class="close-popup-btn" @click="$emit('close-language-popup')">✖</button>
       </div>
       <p class="recommended-text">{{ $t('language.recommended') }}</p>
       <div class="languages">

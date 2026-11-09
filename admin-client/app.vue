@@ -8,6 +8,7 @@ useHead(() => ({
     ? `${t(active.value.labelKey)} · Trestay Admin`
     : "Trestay Admin",
   htmlAttrs: { lang: locale.value },
+  meta: [{ name: "robots", content: "noindex, nofollow" }],
 }));
 </script>
 

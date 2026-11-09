@@ -9,7 +9,6 @@ import router from './router';
 import stores from './stores/index.js'; // import store
 import { clickOutside } from '../directives/clickOutsite'; // import custom directives
 import i18n from './config/i18n';
-import 'leaflet';
 import './assets/styles/index.scss';
 
 if (window.location.pathname === '/silent-check-sso.html') {

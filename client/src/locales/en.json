@@ -1075,5 +1075,12 @@
   "partners.unavailable": "This service is not available yet. Please check back soon.",
   "partners.error": "We could not open the partner search. Please try again.",
   "partners.popupBlocked": "Your browser blocked the new tab. Use the button below to continue.",
-  "footer.airportTransfers": "Airport transfers"
+  "footer.airportTransfers": "Airport transfers",
+  "seo.default": "Trestay is an open-source hotel booking platform demo built with Vue 3, Express and Kubernetes.",
+  "seo.Home": "Search and compare hotel stays, view deals and book rooms on Trestay — an open-source hotel booking platform demo.",
+  "seo.SearchResults": "Browse hotel search results on Trestay: filter by price, rating and amenities to find the right stay.",
+  "seo.HotelDetails": "View hotel details, room types, amenities and guest reviews on Trestay.",
+  "seo.Reviews": "Read guest reviews for hotels listed on Trestay.",
+  "seo.Join": "List your property on Trestay and manage availability, pricing and bookings as a host.",
+  "seo.JoinForm": "Register your property as a partner on Trestay and start accepting bookings."
 }

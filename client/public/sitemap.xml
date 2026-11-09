@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+>
+  <url>
+    <loc>https://trestay.com/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://trestay.com/" />
+    <xhtml:link rel="alternate" hreflang="vi" href="https://trestay.com/vi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://trestay.com/" />
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://trestay.com/vi</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://trestay.com/" />
+    <xhtml:link rel="alternate" hreflang="vi" href="https://trestay.com/vi" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://trestay.com/" />
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://trestay.com/join</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://trestay.com/join" />
+    <xhtml:link rel="alternate" hreflang="vi" href="https://trestay.com/vi/join" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://trestay.com/join" />
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://trestay.com/vi/join</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://trestay.com/join" />
+    <xhtml:link rel="alternate" hreflang="vi" href="https://trestay.com/vi/join" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://trestay.com/join" />
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://trestay.com/join/become-a-host</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://trestay.com/join/become-a-host" />
+    <xhtml:link rel="alternate" hreflang="vi" href="https://trestay.com/vi/join/become-a-host" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://trestay.com/join/become-a-host" />
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://trestay.com/vi/join/become-a-host</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://trestay.com/join/become-a-host" />
+    <xhtml:link rel="alternate" hreflang="vi" href="https://trestay.com/vi/join/become-a-host" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://trestay.com/join/become-a-host" />
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+</urlset>

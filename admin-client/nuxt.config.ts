@@ -5,6 +5,14 @@ export default defineNuxtConfig({
   // statically. This avoids SSR/Keycloak pitfalls.
   ssr: false,
   devtools: { enabled: true },
+  // The admin console must never be indexed. robots.txt and a <meta robots>
+  // tag are already in place; this header also covers non-JS crawlers and any
+  // response that is not the HTML shell.
+  routeRules: {
+    "/**": {
+      headers: { "X-Robots-Tag": "noindex, nofollow" },
+    },
+  },
   runtimeConfig: {
     public: {
       mediaBase:

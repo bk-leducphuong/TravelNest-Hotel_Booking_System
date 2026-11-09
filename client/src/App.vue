@@ -1,11 +1,11 @@
 <script>
   import AiChatWidget from './components/ai-chat/AiChatWidget.vue';
-  import { ElConfigProvider } from 'element-plus';
   import en from 'element-plus/es/locale/lang/en';
   import vi from 'element-plus/es/locale/lang/vi';
+  import { applySeoMeta, isPrerenderedPage } from './utils/seo';
   export default {
     name: 'App',
-    components: { AiChatWidget, ElConfigProvider },
+    components: { AiChatWidget },
     computed: {
       widgetLocale() {
         return this.$i18n.locale === 'vi' ? vi : en;
@@ -38,21 +38,25 @@
       pageTitle: {
         immediate: true,
         handler(value) {
-          document.title = value;
+          // Prerendered hotel pages ship their own <title>; don't clobber it
+          // unless the visitor has navigated to a different route.
+          if (!isPrerenderedPage(this.$route.path)) {
+            document.title = value;
+          }
+          applySeoMeta(this.$route, this.$i18n);
         },
       },
       '$i18n.locale': {
         immediate: true,
         handler(value) {
           document.documentElement.lang = value === 'vi' ? 'vi' : 'en';
+          applySeoMeta(this.$route, this.$i18n);
         },
       },
     },
     mounted() {
-      const preferred = (localStorage.getItem('language') || navigator.language || 'en').split(
-        '-'
-      )[0];
-      this.$i18n.locale = preferred === 'vi' ? 'vi' : 'en';
+      // The URL decides the active language (see router guards); only sync the
+      // stored preference so it follows the visitor between sessions.
       this.$store.dispatch('user/updateUserLanguage', this.$i18n.locale);
     },
   };
