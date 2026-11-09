@@ -59,9 +59,14 @@
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
         "https://deployserver.work/*",
+        "https://trestay.com/*",
         "http://localhost:5173/*"
       ],
-      "webOrigins": ["https://deployserver.work", "http://localhost:5173"],
+      "webOrigins": [
+        "https://deployserver.work",
+        "https://trestay.com",
+        "http://localhost:5173"
+      ],
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,
@@ -75,7 +80,7 @@
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "login_theme": "travelnest-guest",
-        "post.logout.redirect.uris": "https://deployserver.work/*##http://localhost:5173/*"
+        "post.logout.redirect.uris": "https://deployserver.work/*##https://trestay.com/*##http://localhost:5173/*"
       },
       "fullScopeAllowed": true,
       "defaultClientScopes": [
@@ -119,10 +124,12 @@
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
         "https://admin.deployserver.work/*",
+        "https://admin.trestay.com/*",
         "http://localhost:8000/*"
       ],
       "webOrigins": [
         "https://admin.deployserver.work",
+        "https://admin.trestay.com",
         "http://localhost:8000"
       ],
       "notBefore": 0,
@@ -138,7 +145,7 @@
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "login_theme": "travelnest-admin",
-        "post.logout.redirect.uris": "https://admin.deployserver.work/*##http://localhost:8000/*"
+        "post.logout.redirect.uris": "https://admin.deployserver.work/*##https://admin.trestay.com/*##http://localhost:8000/*"
       },
       "fullScopeAllowed": true,
       "defaultClientScopes": [
@@ -180,8 +187,14 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "redirectUris": ["https://superadmin.deployserver.work/*"],
-      "webOrigins": ["https://superadmin.deployserver.work"],
+      "redirectUris": [
+        "https://superadmin.deployserver.work/*",
+        "https://superadmin.trestay.com/*"
+      ],
+      "webOrigins": [
+        "https://superadmin.deployserver.work",
+        "https://superadmin.trestay.com"
+      ],
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,
@@ -195,7 +208,7 @@
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "login_theme": "travelnest-platform",
-        "post.logout.redirect.uris": "https://superadmin.deployserver.work/*"
+        "post.logout.redirect.uris": "https://superadmin.deployserver.work/*##https://superadmin.trestay.com/*"
       },
       "fullScopeAllowed": true,
       "defaultClientScopes": [
