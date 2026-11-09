@@ -2,6 +2,7 @@ const adminRoutes = require('./api/admin.routes');
 const guestRoutes = require('./api/guest.routes');
 const jobs = require('./jobs');
 const { reconcilePromotionReservations } = require('./application/reconcilePromotionReservations');
+const { listDealCandidates } = require('./application/listDealCandidates');
 
 const { resolveQuotePromotion } = require('./application/resolveQuotePromotion');
 const { applyAutomaticOffersToHotelOffers } = require('./application/applyAutomaticOffers');
@@ -41,6 +42,7 @@ module.exports = {
   // Pricing engine shared by search/listing/checkout.
   resolveQuotePromotion,
   applyAutomaticOffersToHotelOffers,
+  listDealCandidates,
   toMinor,
   fromMinor,
   allocateMinor,

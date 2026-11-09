@@ -67,4 +67,21 @@ describe('home hotel card price and rating', () => {
     expect(wrapper.find('.guest-property-price').exists()).toBe(false);
     wrapper.unmount();
   });
+
+  it('shows the sale badge, original price and discounted nightly price', () => {
+    const wrapper = mountCard({
+      hotel_id: 'hotel-2',
+      hotel_name: 'Sale Hotel',
+      has_sale: true,
+      min_price_per_night: 80,
+      original_min_price_per_night: 100,
+      discount_percent: 20,
+      currency: 'USD',
+    });
+
+    expect(wrapper.find('.guest-property-sale-badge').text()).toBe('userHome.dealBadge');
+    expect(wrapper.find('.guest-property-price').text()).toContain('80.00');
+    expect(wrapper.find('.guest-property-price').text()).toContain('100.00');
+    wrapper.unmount();
+  });
 });

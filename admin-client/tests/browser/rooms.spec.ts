@@ -78,7 +78,7 @@ test("permission-aware shell, quick jump and mobile context", async ({
   await expect(page).toHaveURL(/\/rooms\/new$/);
   await page.goto("/rooms");
   await page.locator("#desktop-hotel").press("Enter");
-  await page.getByRole("option", { name: "TravelNest Garden" }).click();
+  await page.getByRole("option", { name: "Trestay Garden" }).click();
   await expect(page.locator(".el-select-dropdown:visible")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Garden Room", exact: true })
@@ -97,7 +97,7 @@ test("permission-aware shell, quick jump and mobile context", async ({
   });
   await expect(
     page.locator(".el-select").filter({ has: page.locator("#mobile-hotel") })
-  ).toContainText("TravelNest Garden");
+  ).toContainText("Trestay Garden");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth
@@ -175,7 +175,7 @@ test("room list ignores stale responses after switching hotels", async ({
   await page.goto("/rooms");
   await requested;
   await page.locator("#desktop-hotel").press("Enter");
-  await page.getByRole("option", { name: "TravelNest Garden" }).click();
+  await page.getByRole("option", { name: "Trestay Garden" }).click();
   await expect(page.locator(".el-select-dropdown:visible")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Garden Room", exact: true })
@@ -258,10 +258,10 @@ test("pending room saves block navigation and hotel switching", async ({
   await page.getByRole("link", { name: "Availability", exact: true }).click();
   await expect(page).toHaveURL(/\/rooms\/room-1$/);
   await page.locator("#desktop-hotel").press("Enter");
-  await page.getByRole("option", { name: "TravelNest Garden" }).click();
+  await page.getByRole("option", { name: "Trestay Garden" }).click();
   await expect(
     page.locator(".el-select").filter({ has: page.locator("#desktop-hotel") })
-  ).toContainText("TravelNest Riverside");
+  ).toContainText("Trestay Riverside");
   const response = page.waitForResponse(
     (result) => result.request().method() === "PATCH"
   );

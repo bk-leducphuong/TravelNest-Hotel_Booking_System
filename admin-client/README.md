@@ -1,6 +1,6 @@
-# TravelNest Admin Client (Nuxt 4)
+# Trestay Admin Client (Nuxt 4)
 
-The TravelNest admin client is a Nuxt 4 application used by property owners and administrators
+The Trestay admin client is a Nuxt 4 application used by property owners and administrators
 to manage listings, bookings, users, reviews, analytics, and platform configuration.
 
 ## Tech Stack
@@ -22,7 +22,7 @@ to manage listings, bookings, users, reviews, analytics, and platform configurat
 ### Prerequisites
 
 - Node.js 18+ and npm
-- A running instance of the TravelNest API (see `server/README.md`)
+- A running instance of the Trestay API (see `server/README.md`)
 
 ### Install Dependencies
 
@@ -150,4 +150,4 @@ admin-client/
 
 ---
 
-📖 See the **[Wiki: Frontend Development](https://github.com/bk-leducphuong/TravelNest/wiki/Frontend-Development)** for more details.
+📖 See the **[Wiki: Frontend Development](https://github.com/bk-leducphuong/Trestay/wiki/Frontend-Development)** for more details.

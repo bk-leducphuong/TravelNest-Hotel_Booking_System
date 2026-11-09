@@ -16,11 +16,12 @@
   import ReviewValidation from '@/components/review/ReviewValidation.vue';
   import { HoldService } from '@/services/hold.service';
   import { stayNights, formatStayDate } from '@/utils/stay';
-  import { guestMoney } from '@/utils/guestPresentation';
+  import { guestMoney, promotionBadgeDescriptor, promotionDisplayName } from '@/utils/guestPresentation';
+  import { getDirectionsUrl } from '@/utils/directions';
+  import { AnalyticsService } from '@/services/analytics.service';
   import MediaImage from '@/components/ui/MediaImage.vue';
 
   export default {
-    mixins: [sectionFeedback],
     components: {
       MediaImage,
       TheHeader,
@@ -32,6 +33,7 @@
       // ReviewForm,
       ReviewValidation,
     },
+    mixins: [sectionFeedback],
     data() {
       return {
         hotel_id: null,
@@ -81,6 +83,7 @@
         // popup
         openCommentPopup: false,
         openMapPopup: false,
+        directionsMode: 'walking',
         isImageGalleryOpen: false,
         showGuestSelector: false,
         showReviewForm: false,
@@ -134,6 +137,14 @@
           Number.isFinite(Number(this.hotel.latitude)) &&
           Number.isFinite(Number(this.hotel.longitude))
         );
+      },
+      directionsUrl() {
+        if (!this.hasLocation) return null;
+        return getDirectionsUrl({
+          latitude: this.hotel.latitude,
+          longitude: this.hotel.longitude,
+          mode: this.directionsMode,
+        });
       },
       ...mapGetters('auth', ['isUserAuthenticated', 'getUserId']),
       ...mapGetters('search', ['getSearchData']),
@@ -242,6 +253,12 @@
     methods: {
       guestMoney,
       formatStayDate,
+      promotionLabel(promotion) {
+        const name = promotionDisplayName(promotion);
+        if (name) return name;
+        const descriptor = promotionBadgeDescriptor(promotion);
+        return this.$t(descriptor.key, descriptor.params);
+      },
       ...mapActions('book', ['booking', 'checkRoomAvailability']),
       ...mapActions('search', [
         'updateCheckInDate',
@@ -748,6 +765,13 @@
           this.$router.push({ path: '/login', query: { redirect: this.$route.path } });
         }
       },
+      trackDirectionsClick() {
+        AnalyticsService.trackDirectionsClick({
+          hotelId: this.hotel.hotel_id,
+          mode: this.directionsMode,
+          source: 'none',
+        }).catch(() => {});
+      },
       calculateDistance(lat2, lon2) {
         const toRadians = (degrees) => degrees * (Math.PI / 180);
 
@@ -897,7 +921,7 @@
                   </div>
                   <div class="room-card-price">
                     <span v-if="room.has_sale" class="room-sale-badge">{{
-                      room.promotion?.name || $t('guest.checkout.saleBadge')
+                      promotionLabel(room.promotion)
                     }}</span>
                     <small v-if="room.has_sale && room.original_price_per_night">
                       {{ guestMoney(room.original_price_per_night, 'USD', $i18n.locale) }}
@@ -1015,6 +1039,26 @@
             >
               {{ $t('searchResults.showOnMap') }}
             </button>
+            <div v-if="directionsUrl" class="property-directions">
+              <label class="directions-mode">
+                <span>{{ $t('directions.modeLabel') }}</span>
+                <select v-model="directionsMode">
+                  <option value="walking">{{ $t('directions.walking') }}</option>
+                  <option value="driving">{{ $t('directions.driving') }}</option>
+                  <option value="transit">{{ $t('directions.transit') }}</option>
+                </select>
+              </label>
+              <a
+                :href="directionsUrl"
+                class="guest-button guest-button-secondary"
+                target="_blank"
+                rel="noopener noreferrer"
+                :title="$t('directions.newTabHint')"
+                @click="trackDirectionsClick"
+              >
+                {{ $t('directions.getDirections') }}
+              </a>
+            </div>
             <hr />
             <p>{{ $t('hotelDetails.table.roomsSelected', { count: totalSelectedRooms }) }}</p>
             <template v-if="totalSelectedRooms"
@@ -1317,6 +1361,30 @@
   .property-booking .guest-button {
     width: 100%;
     margin-top: 20px;
+  }
+  .property-directions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .property-directions .guest-button {
+    margin-top: 0;
+  }
+  .directions-mode {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--tn-muted);
+  }
+  .directions-mode select {
+    min-height: 40px;
+    padding: 8px 10px;
+    border: 1px solid var(--tn-border);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--tn-ink);
   }
   .property-booking .selected-rate {
     font-size: 26px;

@@ -1,5 +1,5 @@
 <#--
-    TravelNest override of Keycloak's base theme/login/register.ftl.
+    Trestay override of Keycloak's base theme/login/register.ftl.
 
     Keycloak only renders social identity-provider buttons on the login page
     (login.ftl); its stock register.ftl does not include them, so there is no

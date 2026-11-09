@@ -1,6 +1,7 @@
 <script>
   import TheHeader from '../components/Header.vue';
   import TheFooter from '../components/Footer.vue';
+  import DealsSection from '@/components/home/DealsSection.vue';
   import RecentSearchs from '@/components/home/RecentSearchs.vue';
   import ViewedHotels from '@/components/home/ViewedHotels.vue';
   import TrendingHotels from '@/components/home/TrendingHotels.vue';
@@ -10,6 +11,7 @@
     components: {
       TheHeader,
       TheFooter,
+      DealsSection,
       RecentSearchs,
       ViewedHotels,
       TrendingHotels,
@@ -26,6 +28,7 @@
 <template>
   <TheHeader :is-search-open="true" />
   <main id="guest-main" tabindex="-1" class="guest-page home-container">
+    <DealsSection />
     <RecentSearchs @update:recentSearches="handleRecentSearchesUpdate" />
     <ViewedHotels />
     <TrendingHotels />

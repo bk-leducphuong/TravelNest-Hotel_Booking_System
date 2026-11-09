@@ -25,7 +25,7 @@
     "noDestinations": "No permitted pages match your search",
     "language": "Language",
     "logout": "Sign out",
-    "footer": "TravelNest · Platform workspace",
+    "footer": "Trestay · Platform workspace",
     "noAccess": "No pages available for this account",
     "account": "Account menu"
   },
@@ -66,7 +66,7 @@
   },
   "overview": {
     "title": "Platform overview",
-    "description": "A snapshot of hotels, accounts and bookings across TravelNest.",
+    "description": "A snapshot of hotels, accounts and bookings across Trestay.",
     "scope": "Platform-wide totals · All time",
     "refreshHint": "Refresh retrieves the latest stored snapshot; it does not recalculate totals.",
     "generated": "Snapshot generated {date}",
@@ -109,9 +109,9 @@
     "continue": "Open an available page"
   },
   "login": {
-    "title": "TravelNest Platform",
+    "title": "Trestay Platform",
     "subtitle": "Sign in to monitor hotels, users and finances",
-    "signIn": "Sign in with TravelNest",
+    "signIn": "Sign in with Trestay",
     "signOut": "Sign out and use a different account",
     "secure": "You will be redirected to the secure sign-in page.",
     "failed": "Sign-in failed",

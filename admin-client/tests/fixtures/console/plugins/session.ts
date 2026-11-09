@@ -9,7 +9,7 @@ export default defineNuxtPlugin(() => {
   auth.hotels = [
     {
       id: "hotel-1",
-      name: "TravelNest Riverside",
+      name: "Trestay Riverside",
       role: "manager",
       isPrimaryOwner: false,
       permissions: [
@@ -35,7 +35,7 @@ export default defineNuxtPlugin(() => {
     },
     {
       id: "hotel-2",
-      name: "TravelNest Garden",
+      name: "Trestay Garden",
       role: "viewer",
       isPrimaryOwner: false,
       permissions: ["room.read"],

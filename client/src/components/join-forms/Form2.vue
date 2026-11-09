@@ -1,7 +1,25 @@
 <script>
-import { mapActions, mapGetters, mapState } from 'vuex'
-import { LMap, LTileLayer, LMarker, LPopup } from '@vue-leaflet/vue-leaflet'
-import * as L from 'leaflet'
+import { mapGetters } from 'vuex'
+import { LMap, LTileLayer, LMarker } from '@vue-leaflet/vue-leaflet'
+
+// Fallback map view when the property has no pinned coordinates yet (Vietnam).
+const DEFAULT_CENTER = [14.058324, 108.277199]
+const DEFAULT_ZOOM = 6
+const PINNED_ZOOM = 15
+
+function isValidCoordinate(latitude, longitude) {
+  return (
+    latitude !== null &&
+    latitude !== undefined &&
+    longitude !== null &&
+    longitude !== undefined &&
+    String(latitude).trim() !== '' &&
+    String(longitude).trim() !== '' &&
+    Number.isFinite(Number(latitude)) &&
+    Number.isFinite(Number(longitude))
+  )
+}
+
 export default {
   components: {
     LMap,
@@ -11,8 +29,8 @@ export default {
   data() {
     return {
       openMapPopup: false,
-      zoom: 6,
-      center: [14.058324, 108.277199], // Default to London
+      zoom: DEFAULT_ZOOM,
+      mapCenter: DEFAULT_CENTER,
       markerPosition: null, // Position of the clicked marker
       tileUrl: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       tileAttribution:
@@ -22,10 +40,18 @@ export default {
   computed: {
     ...mapGetters('join', ['getJoinFormData']),
     checkForNext() {
-      return (
-        this.getJoinFormData.coordinates.latitude !== null &&
-        this.getJoinFormData.coordinates.longitude !== null
-      )
+      const { latitude, longitude } = this.getJoinFormData.coordinates
+      return isValidCoordinate(latitude, longitude)
+    },
+    pinnedLabel() {
+      if (!this.checkForNext) {
+        return ''
+      }
+      const { latitude, longitude } = this.getJoinFormData.coordinates
+      return this.$t('join.form.mapPinned', {
+        lat: Number(latitude).toFixed(5),
+        lng: Number(longitude).toFixed(5)
+      })
     }
   },
   watch: {
@@ -41,16 +67,33 @@ export default {
     goNext() {
       this.$emit('next')
     },
+    openMap() {
+      const { latitude, longitude } = this.getJoinFormData.coordinates
+      if (isValidCoordinate(latitude, longitude)) {
+        this.markerPosition = { lat: Number(latitude), lng: Number(longitude) }
+        this.mapCenter = [Number(latitude), Number(longitude)]
+        this.zoom = PINNED_ZOOM
+      } else {
+        this.markerPosition = null
+        this.mapCenter = DEFAULT_CENTER
+        this.zoom = DEFAULT_ZOOM
+      }
+      this.openMapPopup = true
+    },
     onMapClick(event) {
       // Get latitude and longitude of the clicked point
       this.markerPosition = event.latlng
-      // this.openMapPopup = false
+    },
+    onMapReady() {
+      // The map is rendered inside a dialog, so it needs a size recalculation
+      // once the dialog transition has finished.
+      this.$nextTick(() => this.$refs.map?.leafletObject?.invalidateSize())
     }
   }
 }
 </script>
 <template>
-  <form class="multi-step-form" style="margin-bottom: 40px;" v-if="!openMapPopup">
+  <form class="multi-step-form" style="margin-bottom: 40px;">
     <!--  form-2  -->
     <div class="card">
       <div class="map-section">
@@ -60,12 +103,13 @@ export default {
         </p>
         <div class="map-container">
           <iframe
+            :title="$t('join.form.mapTitle')"
             src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d59582.31596536299!2d105.834667!3d21.036897!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135aba15ec15d17%3A0x620e85c2cfe14d4c!2zTMSDbmcgQ2jhu6cgdOG7i2NoIEjhu5MgQ2jDrSBNaW5o!5e0!3m2!1svi!2sus!4v1729735752435!5m2!1svi!2sus"
             allowfullscreen=""
             loading="lazy"
             referrerpolicy="no-referrer-when-downgrade"
           ></iframe>
-          <button type="button" class="map-button" @click="openMapPopup = !openMapPopup">
+          <button type="button" class="map-button" @click="openMap">
             <svg class="map-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
@@ -74,6 +118,7 @@ export default {
             {{ $t('searchResults.showOnMap') }}
           </button>
         </div>
+        <p v-if="pinnedLabel" class="map-pinned" role="status">{{ pinnedLabel }}</p>
       </div>
       <div class="form-button-container">
         <button type="button" class="previous" @click="$emit('previous')">{{ $t('join.form.backButton') }}</button>
@@ -83,13 +128,46 @@ export default {
       </div>
     </div>
   </form>
-  <div id="map-container" class="leaflet-map-container" v-if="openMapPopup">
-    <LMap style="height: 500px; width: 80%" :zoom="zoom" :center="center" @click="onMapClick">
-      <LTileLayer :url="tileUrl" :attribution="tileAttribution" />
-      <LMarker v-if="markerPosition" :lat-lng="markerPosition"></LMarker>
-    </LMap>
-    <i class="fa-solid fa-circle-xmark" style="font-size: 30px; margin-top: -25px; cursor: pointer;" @click="openMapPopup = false"></i>
-  </div>
+
+  <el-dialog
+    v-model="openMapPopup"
+    :title="$t('join.form.mapTitle')"
+    width="min(960px, 94vw)"
+    top="6vh"
+    class="pin-map-dialog"
+    append-to-body
+    destroy-on-close
+    @opened="onMapReady"
+  >
+    <p class="pin-map-hint">{{ $t('join.form.mapSubtitle') }}</p>
+    <div class="pin-map-canvas">
+      <LMap
+        ref="map"
+        :zoom="zoom"
+        :center="mapCenter"
+        @click="onMapClick"
+        @ready="onMapReady"
+      >
+        <LTileLayer :url="tileUrl" :attribution="tileAttribution" />
+        <LMarker v-if="markerPosition" :lat-lng="markerPosition"></LMarker>
+      </LMap>
+    </div>
+    <template #footer>
+      <div class="pin-map-actions">
+        <button type="button" class="previous" @click="openMapPopup = false">
+          {{ $t('join.form.backButton') }}
+        </button>
+        <button
+          type="button"
+          class="next"
+          :disabled="!markerPosition"
+          @click="openMapPopup = false"
+        >
+          {{ $t('join.form.continueButton') }}
+        </button>
+      </div>
+    </template>
+  </el-dialog>
   <!--  form-2  -->
 </template>
 <style scoped>
@@ -465,8 +543,10 @@ select {
 }
 
 .map-container {
-  height: 200px;
-  border-radius: 5px;
+  position: relative;
+  height: 220px;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 iframe {
@@ -489,9 +569,11 @@ iframe {
   font-size: 14px;
   cursor: pointer;
   transition: background-color 0.2s;
-  top: -60px;
-  margin: auto;
-  position: relative;
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  margin: 0;
 }
 
 .map-button:hover {
@@ -504,14 +586,46 @@ iframe {
   fill: currentColor;
 }
 
-.leaflet-map-container {
-    margin: 0 auto;
-    top: 100px;
-    position: absolute;
-    width: 100vw;
-    justify-content: center;
-    display: flex;
-    border-radius: 10px;
+.map-pinned {
+  margin: 12px 0 0;
+  color: var(--tn-muted);
+  font-size: 13px;
+}
+
+.pin-map-hint {
+  margin: 0 0 12px;
+  color: var(--tn-muted);
+  font-size: 13px;
+}
+
+.pin-map-canvas {
+  height: clamp(280px, 55vh, 520px);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.pin-map-canvas :deep(.leaflet-container) {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+}
+
+.pin-map-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pin-map-actions .previous,
+.pin-map-actions .next {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-top: 0;
+  padding-left: 24px;
+  padding-right: 24px;
+  white-space: nowrap;
 }
 
 
@@ -546,4 +660,17 @@ iframe {
   background-color: rgb(165, 165, 165);
   color: #4b4b4b;
 }
+</style>
+<style>
+  /* The dialog is teleported to <body>, so its wrapper needs global styles. */
+  .pin-map-dialog.el-dialog {
+    border-radius: 16px;
+  }
+  .pin-map-dialog .el-dialog__body {
+    padding-top: 4px;
+  }
+  .pin-map-dialog .leaflet-control-zoom a {
+    background: white;
+    color: #223;
+  }
 </style>

@@ -1,4 +1,4 @@
-# TravelNest Platform
+# Trestay Platform
 
 Read-only, cross-hotel monitoring console for platform staff. Built with Nuxt 4
 (SPA), Vue, Pinia, Tailwind, Element Plus, TypeScript and Keycloak OIDC/PKCE.

@@ -5,8 +5,8 @@ const { locale, t } = useI18n();
 const { active } = useAdminNavigation();
 useHead(() => ({
   title: active.value
-    ? `${t(active.value.labelKey)} · TravelNest Admin`
-    : "TravelNest Admin",
+    ? `${t(active.value.labelKey)} · Trestay Admin`
+    : "Trestay Admin",
   htmlAttrs: { lang: locale.value },
 }));
 </script>

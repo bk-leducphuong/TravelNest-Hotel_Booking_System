@@ -305,3 +305,40 @@
  *       400:
  *         description: Validation error
  */
+
+/**
+ * @swagger
+ * /analytics/directions:
+ *   post:
+ *     summary: Record a directions click
+ *     description: >
+ *       Records that a guest opened an external map for a hotel. Coordinates are
+ *       never included; the hotel id, travel mode and location source are enough
+ *       for analytics.
+ *     tags:
+ *       - Analytics
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - hotelId
+ *             properties:
+ *               hotelId:
+ *                 type: string
+ *               mode:
+ *                 type: string
+ *                 enum: [walking, driving, transit]
+ *                 default: walking
+ *               source:
+ *                 type: string
+ *                 enum: [gps, ip, none]
+ *                 default: none
+ *     responses:
+ *       202:
+ *         description: Event accepted
+ *       400:
+ *         description: Validation error
+ */

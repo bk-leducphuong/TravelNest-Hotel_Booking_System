@@ -52,6 +52,6 @@ module.exports = function bullBoardAuth(req, res, next) {
     }
   }
 
-  res.set('WWW-Authenticate', 'Basic realm="TravelNest Bull Board"');
+  res.set('WWW-Authenticate', 'Basic realm="Trestay Bull Board"');
   return res.status(401).json({ success: false, message: 'Authentication required.' });
 };

@@ -312,7 +312,7 @@ const bookingConfirmationTemplate = `<!doctype html>
   </head>
   <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5;">
     <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-      <div style="background-color: #003580; padding: 20px; text-align: center; color: white; font-size: 24px; font-weight: bold;">TravelNest</div>
+      <div style="background-color: #003580; padding: 20px; text-align: center; color: white; font-size: 24px; font-weight: bold;">Trestay</div>
       <div style="padding: 40px 30px;">
         <h1 style="color: #003580;">Thank You for Your Booking!</h1>
         <p>Dear {{.buyerName}},</p>
@@ -327,7 +327,7 @@ const bookingConfirmationTemplate = `<!doctype html>
         </div>
         <p><strong>Total Amount:</strong> {{.totalPrice}}</p>
         <p><a href="{{.bookingDetailsUrl}}" style="display: inline-block; padding: 12px 30px; background-color: #003580; color: white; text-decoration: none; border-radius: 4px;">View Booking Details</a></p>
-        <p>Best regards,<br />The TravelNest Team</p>
+        <p>Best regards,<br />The Trestay Team</p>
       </div>
     </div>
   </body>
@@ -342,7 +342,7 @@ const paymentFailureTemplate = `<!doctype html>
   </head>
   <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5;">
     <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-      <div style="background-color: #dc3545; padding: 20px; text-align: center; color: white; font-size: 24px; font-weight: bold;">TravelNest</div>
+      <div style="background-color: #dc3545; padding: 20px; text-align: center; color: white; font-size: 24px; font-weight: bold;">Trestay</div>
       <div style="padding: 40px 30px;">
         <h1>Payment Failed</h1>
         <p>Dear {{.buyerName}},</p>
@@ -350,8 +350,8 @@ const paymentFailureTemplate = `<!doctype html>
         {{if .bookingCode}}<p><strong>Booking Code:</strong> {{.bookingCode}}</p>{{end}}
         <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; padding: 15px; margin: 20px 0; color: #721c24;"><strong>Error:</strong> {{.failureMessage}}</div>
         <p><a href="{{.retryUrl}}" style="display: inline-block; padding: 12px 30px; background-color: #003580; color: white; text-decoration: none; border-radius: 4px;">Try Again</a></p>
-        <p>Best regards,<br />The TravelNest Team</p>
-        <p style="font-size: 12px; color: #666;">© {{.year}} TravelNest. All rights reserved.</p>
+        <p>Best regards,<br />The Trestay Team</p>
+        <p style="font-size: 12px; color: #666;">© {{.year}} Trestay · Released under the MIT License.</p>
       </div>
     </div>
   </body>

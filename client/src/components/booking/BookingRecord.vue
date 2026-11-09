@@ -1,7 +1,7 @@
 <script>
   import FeedbackMessage from '@/components/common/FeedbackMessage.vue';
   import { BookingService } from '@/services/booking.service';
-  import { normalizeBooking, guestMoney } from '@/utils/guestPresentation';
+  import { normalizeBooking, guestMoney, promotionBadgeDescriptor, promotionDisplayName } from '@/utils/guestPresentation';
   import { stayNights, formatStayDate } from '@/utils/stay';
   import { getFirstImageUrl } from '@/utils/images';
   import MediaImage from '@/components/ui/MediaImage.vue';
@@ -46,6 +46,12 @@
       guestMoney,
       formatStayDate,
       getFirstImageUrl,
+      promotionLabel(promotion) {
+        const name = promotionDisplayName(promotion);
+        if (name) return name;
+        const descriptor = promotionBadgeDescriptor(promotion);
+        return this.$t(descriptor.key, descriptor.params);
+      },
       printBooking() {
         window.print();
       },
@@ -152,7 +158,7 @@
           <h2>{{ $t('bookingFlow.priceSummary') }}</h2>
           <p v-if="booking.promotion" class="checkout-promotion">
             <span class="guest-pill">{{ $t('guest.checkout.saleBadge') }}</span>
-            {{ booking.promotion.name }}
+            {{ promotionLabel(booking.promotion) }}
           </p>
           <dl v-if="booking.discountAmount > 0" class="record-price-lines">
             <div>
@@ -168,7 +174,7 @@
               </dd>
             </div>
             <div class="record-discount">
-              <dt>{{ $t('guest.checkout.discount', { name: booking.promotion?.name || '' }) }}</dt>
+              <dt>{{ $t('guest.checkout.discount', { name: promotionLabel(booking.promotion) }) }}</dt>
               <dd>−{{ guestMoney(booking.discountAmount, booking.currency, $i18n.locale) }}</dd>
             </div>
           </dl>

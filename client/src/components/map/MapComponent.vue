@@ -74,6 +74,17 @@
                 :use-initial-favorite-status="true"
               />
               <button type="button" @click="openHotel(hotel)">{{ $t('map.viewProperty') }}</button>
+              <a
+                v-if="directionsUrl(hotel)"
+                class="card-directions"
+                :href="directionsUrl(hotel)"
+                target="_blank"
+                rel="noopener noreferrer"
+                :title="$t('directions.newTabHint')"
+                @click="trackDirections(hotel)"
+              >
+                {{ $t('map.getDirections') }}
+              </a>
             </div>
           </div>
         </article>
@@ -146,7 +157,9 @@
   import { getFirstImageUrl, getImageUrl } from '@/utils/images';
   import { guestMoney } from '@/utils/guestPresentation';
   import { formatDistance } from '@/utils/distance';
+  import { getDirectionsUrl, directionsModeForDistance } from '@/utils/directions';
   import { SearchService } from '@/services/search.service';
+  import { AnalyticsService } from '@/services/analytics.service';
 
   export default {
     components: { LCircle, LMap, LTileLayer, LMarker, LTooltip, SavedHotelIcon },
@@ -198,6 +211,16 @@
         if (this.anchorLatLng) return this.anchorLatLng;
         const hotel = this.hotels.find(this.hasCoords);
         return hotel ? this.latLng(hotel) : [10.7769, 106.7009];
+      },
+      directionsOrigin() {
+        // Only a precise browser fix is safe to use as a route origin; IP
+        // coordinates can be city-level and would produce misleading routes.
+        if (this.searchParams.locationSource !== 'gps') return null;
+        const latitude = Number(this.searchParams.latitude);
+        const longitude = Number(this.searchParams.longitude);
+        return Number.isFinite(latitude) && Number.isFinite(longitude)
+          ? { latitude, longitude }
+          : null;
       },
       areaScopeLabel() {
         const radius = Number(this.criteria.radius);
@@ -346,6 +369,25 @@
       },
       latLng(hotel) {
         return [Number(hotel.latitude), Number(hotel.longitude)];
+      },
+      directionsMode(hotel) {
+        return directionsModeForDistance(hotel.distance_km);
+      },
+      directionsUrl(hotel) {
+        return getDirectionsUrl({
+          latitude: hotel.latitude,
+          longitude: hotel.longitude,
+          origin: this.directionsOrigin,
+          mode: this.directionsMode(hotel),
+        });
+      },
+      trackDirections(hotel) {
+        const source = this.searchParams.locationSource;
+        AnalyticsService.trackDirectionsClick({
+          hotelId: hotel.hotel_id,
+          mode: this.directionsMode(hotel),
+          source: source === 'gps' || source === 'ip' ? source : 'none',
+        }).catch(() => {});
       },
       priceOf(hotel) {
         const value = hotel.min_price_for_requested_rooms ?? hotel.min_price_for_dates;
@@ -637,8 +679,15 @@
   .card-actions {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
     margin-top: 10px;
+  }
+  .card-actions .card-directions {
+    color: #006ce4;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: underline;
   }
   .card-actions :deep(.favorite-button) {
     position: static;

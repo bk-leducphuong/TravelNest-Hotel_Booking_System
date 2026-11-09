@@ -7,6 +7,7 @@ const {
   searchMapHotels,
   getIpLocation,
   getHotelAvailability,
+  getHotelDeals,
   getAutocompleteSuggestions,
   getDestinationAutocomplete,
   saveSearchInformation,
@@ -25,6 +26,8 @@ router.get(
 router.get('/geo/ip', getIpLocation);
 
 router.get('/hotels', optionalAuthenticate, validate(searchSchema.searchHotels), searchHotels);
+
+router.get('/deals', optionalAuthenticate, validate(searchSchema.getHotelDeals), getHotelDeals);
 
 router.get(
   '/hotels/:hotelId/availability',

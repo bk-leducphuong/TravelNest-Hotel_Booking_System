@@ -1,5 +1,6 @@
 {
   "name": "@travelnest/admin-client",
+  "license": "MIT",
   "type": "module",
   "private": true,
   "scripts": {

@@ -2,7 +2,8 @@
   "name": "travelnest-monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "TravelNest Hotel Booking System - Monorepo",
+  "license": "MIT",
+  "description": "Trestay Hotel Booking System - Monorepo",
   "workspaces": [
     "client",
     "server",

@@ -61,7 +61,7 @@ const onSignOut = async () => {
       <div class="flex items-center gap-3">
         <span
           class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-brand font-semibold text-white"
-          >TN</span
+          >TS</span
         >
         <h1 class="text-xl font-semibold tracking-tight text-brand">
           {{ $t("login.title") }}

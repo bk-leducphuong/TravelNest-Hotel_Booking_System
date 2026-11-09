@@ -1,6 +1,6 @@
-# TravelNest Client (User Web App)
+# Trestay Client (User Web App)
 
-This package is the user-facing web application for TravelNest.
+This package is the user-facing web application for Trestay.
 It allows guests to search for accommodations, view property details, make bookings, manage their trips, and leave reviews.
 
 ## Tech Stack
@@ -29,7 +29,7 @@ It allows guests to search for accommodations, view property details, make booki
 ### Prerequisites
 
 - Node.js 18+ and npm
-- A running instance of the TravelNest API (see `server/README.md`)
+- A running instance of the Trestay API (see `server/README.md`)
 
 ### Install Dependencies
 
@@ -43,7 +43,7 @@ npm install
 Create a `.env` file in the `client` directory (or `.env.local`).
 Typical variables (names may differ depending on your configuration):
 
-- `VITE_API_BASE_URL` – base URL of the TravelNest API
+- `VITE_API_BASE_URL` – base URL of the Trestay API
 - `VITE_SOCKET_URL` – Socket.IO endpoint (often same host as API)
 - `VITE_STRIPE_PUBLIC_KEY` – Stripe publishable key
 - Any additional `VITE_*` variables used for maps, analytics, etc.
@@ -134,5 +134,5 @@ src/
 
 ---
 
-📖 See the **[Wiki: Frontend Development](https://github.com/bk-leducphuong/TravelNest/wiki/Frontend-Development)** for more details.
+📖 See the **[Wiki: Frontend Development](https://github.com/bk-leducphuong/Trestay/wiki/Frontend-Development)** for more details.
 

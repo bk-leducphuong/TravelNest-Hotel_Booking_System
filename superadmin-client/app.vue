@@ -4,7 +4,7 @@ import vi from "element-plus/es/locale/lang/vi";
 const { locale, t } = useI18n();
 const { titleKey } = usePlatformNavigation();
 useHead(() => ({
-  title: `${t(titleKey.value)} · TravelNest Platform`,
+  title: `${t(titleKey.value)} · Trestay Platform`,
   htmlAttrs: { lang: locale.value },
 }));
 </script>

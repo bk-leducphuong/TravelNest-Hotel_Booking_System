@@ -26,6 +26,15 @@ export const SearchService = {
     return http.get(`/search/hotels/${hotelId}/availability`, { params });
   },
 
+  /**
+   * GET /api/v1/search/deals
+   * Public home-page deals feed. Dates are optional; the server uses a sample
+   * stay (tomorrow + 2 nights) when omitted.
+   */
+  getHotelDeals(params = {}) {
+    return http.get('/search/deals', { params });
+  },
+
   getAutocompleteSuggestions(query, limit = 10) {
     return http.get('/search/autocomplete', {
       params: { query, limit },

@@ -26,9 +26,9 @@ watch(
       <div class="flex items-center gap-3 px-5 pb-3 pt-6 text-brand">
         <span
           class="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-sm font-semibold text-white"
-          >TN</span
+          >TS</span
         >
-        <span class="text-lg font-semibold tracking-tight">TravelNest</span>
+        <span class="text-lg font-semibold tracking-tight">Trestay</span>
       </div>
       <p class="px-5 pb-4 text-xs text-muted">{{ $t("shell.workspace") }}</p>
       <div class="min-h-0 flex-1 overflow-y-auto"><UiPlatformSidebar /></div>
@@ -99,6 +99,10 @@ watch(
       </main>
       <footer class="px-4 py-6 text-xs text-muted md:px-8">
         © {{ new Date().getFullYear() }} {{ $t("shell.footer") }}
+        <p class="mt-1">
+          Personal learning project — not affiliated with Travelnest Ltd or any
+          commercial booking service.
+        </p>
       </footer>
     </div>
     <el-drawer

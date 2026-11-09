@@ -6,7 +6,7 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'TravelNest API',
+      title: 'Trestay API',
       version: '1.0.0',
       description: 'Hotel Booking Platform API Documentation',
       contact: {
@@ -136,7 +136,7 @@ function setupSwagger(app) {
     swaggerUi.serve,
     swaggerUi.setup(swaggerSpec, {
       explorer: true,
-      customSiteTitle: 'TravelNest API Docs',
+      customSiteTitle: 'Trestay API Docs',
     })
   );
 }

@@ -25,7 +25,7 @@
     "noDestinations": "Không có trang được phép nào phù hợp",
     "language": "Ngôn ngữ",
     "logout": "Đăng xuất",
-    "footer": "TravelNest · Quản trị nền tảng",
+    "footer": "Trestay · Quản trị nền tảng",
     "noAccess": "Tài khoản này chưa được cấp quyền truy cập trang nào",
     "account": "Menu tài khoản"
   },
@@ -66,7 +66,7 @@
   },
   "overview": {
     "title": "Tổng quan nền tảng",
-    "description": "Ảnh chụp dữ liệu khách sạn, tài khoản và đặt phòng trên TravelNest.",
+    "description": "Ảnh chụp dữ liệu khách sạn, tài khoản và đặt phòng trên Trestay.",
     "scope": "Tổng toàn nền tảng · Từ trước đến nay",
     "refreshHint": "Làm mới lấy ảnh chụp dữ liệu đã lưu gần nhất, không tính lại tổng số.",
     "generated": "Ảnh chụp dữ liệu được tạo lúc {date}",
@@ -109,9 +109,9 @@
     "continue": "Mở trang được cấp quyền"
   },
   "login": {
-    "title": "TravelNest Platform",
+    "title": "Trestay Platform",
     "subtitle": "Đăng nhập để theo dõi khách sạn, người dùng và tài chính",
-    "signIn": "Đăng nhập với TravelNest",
+    "signIn": "Đăng nhập với Trestay",
     "signOut": "Đăng xuất và dùng tài khoản khác",
     "secure": "Bạn sẽ được chuyển đến trang đăng nhập bảo mật.",
     "failed": "Đăng nhập thất bại",

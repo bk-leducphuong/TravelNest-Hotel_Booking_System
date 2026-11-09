@@ -59,7 +59,7 @@ test("mobile navigation, translated shell and keyboard quick jump", async ({
   await expect(
     page.getByRole("heading", { name: "Tổng quan nền tảng" })
   ).toBeVisible();
-  await expect(page).toHaveTitle("Tổng quan · TravelNest Platform");
+  await expect(page).toHaveTitle("Tổng quan · Trestay Platform");
   const menu = page.getByRole("button", { name: "Mở điều hướng" });
   await menu.click();
   const drawer = page.getByRole("dialog", { name: "Điều hướng nền tảng" });
@@ -242,7 +242,7 @@ test("login and forbidden surfaces render without API access", async ({
 }) => {
   await page.goto("/login?fixture=anonymous");
   await expect(
-    page.getByRole("heading", { name: "TravelNest Platform" })
+    page.getByRole("heading", { name: "Trestay Platform" })
   ).toBeVisible();
   await page.goto("/403?fixture=none");
   await expect(
