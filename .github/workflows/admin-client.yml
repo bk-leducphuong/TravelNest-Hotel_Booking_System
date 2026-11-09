@@ -64,10 +64,14 @@ jobs:
       - name: Run unit and Nuxt tests
         run: yarn workspace @travelnest/admin-client run test:ci
 
+      # Static checks are Node-version independent, so run them once on the
+      # production runtime (22.x) instead of duplicating them across the matrix.
       - name: Run ESLint
+        if: matrix.node-version == '22.x'
         run: yarn workspace @travelnest/admin-client run lint
 
       - name: Type check
+        if: matrix.node-version == '22.x'
         run: yarn workspace @travelnest/admin-client run typecheck
 
       - name: Install browser test dependencies
@@ -81,6 +85,7 @@ jobs:
       # Formatting debt outside this redesign remains advisory.
       - name: Check formatting
         continue-on-error: true
+        if: matrix.node-version == '22.x'
         run: yarn workspace @travelnest/admin-client exec prettier --check .
 
       # `nuxt build` is what the Docker image runs (a Node SSR server), so CI

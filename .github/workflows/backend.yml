@@ -65,17 +65,21 @@ jobs:
 
       # Lint and formatting are blocking: the repository is clean and these must
       # stay clean. If a change introduces an error, fix it rather than disabling
-      # the gate.
+      # the gate. Static checks are Node-version independent, so run them once on
+      # the production runtime (22.x) instead of duplicating them across the matrix.
       - name: Run ESLint
+        if: matrix.node-version == '22.x'
         run: yarn workspace @travelnest/server run lint
 
       - name: Check code formatting
+        if: matrix.node-version == '22.x'
         run: yarn workspace @travelnest/server exec prettier --check .
 
       # Architecture ratchet: fails on new cross-module internal imports, new
       # layer leaks, or growing god files. Existing debt is recorded in
       # server/scripts/architecture-baseline.json and may only go down.
       - name: Check architecture boundaries
+        if: matrix.node-version == '22.x'
         run: yarn workspace @travelnest/server run arch:check
 
       # TODO(quality-debt): the unit/integration suites still have pre-existing

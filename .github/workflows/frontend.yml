@@ -62,12 +62,16 @@ jobs:
 
       # TODO(quality-debt): pre-existing lint/format failures; advisory so
       # deploys are not blocked. Remove `continue-on-error` once cleared.
+      # Static checks are Node-version independent, so run them once on the
+      # production runtime (22.x) instead of duplicating them across the matrix.
       - name: Run ESLint
         continue-on-error: true
+        if: matrix.node-version == '22.x'
         run: yarn workspace @travelnest/client run lint
 
       - name: Check formatting
         continue-on-error: true
+        if: matrix.node-version == '22.x'
         run: yarn workspace @travelnest/client exec prettier --check "src/**/*.{js,vue,json,css,scss}"
 
       - name: Build app
