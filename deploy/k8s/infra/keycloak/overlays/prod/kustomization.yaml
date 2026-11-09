@@ -64,4 +64,4 @@ patches:
         path: /spec/template/spec/containers/0/env
         value:
           - name: KC_HOSTNAME
-            value: https://keycloak.deployserver.work
+            value: https://keycloak.trestay.com
