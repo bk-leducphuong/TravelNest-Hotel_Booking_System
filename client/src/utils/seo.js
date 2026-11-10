@@ -26,6 +26,13 @@ export const PRIVATE_ROUTE_NAMES = new Set([
   'NotFound',
 ]);
 
+/**
+ * Public routes kept out of the index. Hotel pages currently render generated
+ * placeholder copy, so they stay reachable and shareable but are not submitted
+ * for indexing until real inventory descriptions exist.
+ */
+export const NOINDEX_ROUTE_NAMES = new Set([...PRIVATE_ROUTE_NAMES, 'HotelDetails']);
+
 const FALLBACK_DESCRIPTION =
   'Trestay is an open-source hotel booking platform demo built with Vue 3, Express and Kubernetes.';
 
@@ -111,7 +118,7 @@ export function applySeoMeta(route, i18n) {
   if (isPrerenderedPage(route?.path)) return;
 
   const name = route?.name;
-  const isPrivate = PRIVATE_ROUTE_NAMES.has(String(name));
+  const isNoindex = NOINDEX_ROUTE_NAMES.has(String(name));
 
   const translationKey = name ? `seo.${String(name)}` : 'seo.default';
   let description = '';
@@ -131,7 +138,7 @@ export function applySeoMeta(route, i18n) {
   const canonical = `${SITE_URL}${path}`;
 
   upsertMeta('name', 'description', description);
-  upsertMeta('name', 'robots', isPrivate ? 'noindex, nofollow' : 'index, follow, max-image-preview:large');
+  upsertMeta('name', 'robots', isNoindex ? 'noindex, follow' : 'index, follow, max-image-preview:large');
 
   upsertMeta('property', 'og:title', title);
   upsertMeta('property', 'og:description', description);

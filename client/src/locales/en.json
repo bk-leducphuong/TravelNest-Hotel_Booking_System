@@ -916,7 +916,8 @@
       "settings": "Account settings",
       "partner": "List your property",
       "onboarding": "Property registration",
-      "notFound": "Page not found"
+      "notFound": "Page not found",
+      "about": "About"
     },
     "season": {
       "spring": "Spring",
@@ -1082,5 +1083,40 @@
   "seo.HotelDetails": "View hotel details, room types, amenities and guest reviews on Trestay.",
   "seo.Reviews": "Read guest reviews for hotels listed on Trestay.",
   "seo.Join": "List your property on Trestay and manage availability, pricing and bookings as a host.",
-  "seo.JoinForm": "Register your property as a partner on Trestay and start accepting bookings."
+  "seo.JoinForm": "Register your property as a partner on Trestay and start accepting bookings.",
+  "seo.About": "About Trestay — an open-source hotel booking platform built with Vue 3, Express, Keycloak and Kubernetes.",
+  "about": {
+    "eyebrow": "Open source · Learning project",
+    "link": "About",
+    "title": "About Trestay",
+    "lead": "Trestay is a full-stack hotel booking platform built end to end as a learning project: a guest booking app, two operations consoles, a REST API, background workers and the Kubernetes infrastructure that runs them.",
+    "whatTitle": "What you can do here",
+    "whatText": "The project covers the whole booking journey rather than a single screen.",
+    "guestTitle": "Guests",
+    "guestText": "search by destination and dates, filter by price, rating and amenities, compare room types, save favourites, and complete a booking with Stripe test payments.",
+    "hostTitle": "Property owners",
+    "hostText": "sign in to the admin console to manage properties, rooms, rates and availability, and review reservations as they arrive.",
+    "operatorTitle": "Platform operators",
+    "operatorText": "use the superadmin console for platform-wide views of properties, accounts and bookings.",
+    "stackTitle": "How it is built",
+    "stackText": "Every layer is implemented in this repository — there is no third-party booking engine behind it.",
+    "stackGuestLabel": "Guest app",
+    "stackGuest": "Vue 3, Vite, Vue Router, Vuex, Element Plus, i18n (English and Vietnamese)",
+    "stackConsoleLabel": "Admin consoles",
+    "stackConsole": "Nuxt 4 with Pinia and Tailwind, authenticated through Keycloak",
+    "stackApiLabel": "API",
+    "stackApi": "Express on Node.js with a modular monolith layout, Joi validation and Swagger docs",
+    "stackDataLabel": "Data",
+    "stackData": "MySQL (Sequelize) as the source of truth, Redis for sessions, holds and queues, MongoDB for analytics events",
+    "stackJobsLabel": "Background work",
+    "stackJobs": "BullMQ workers for booking expiry, notifications and reconciliation",
+    "stackAuthLabel": "Identity",
+    "stackAuth": "Keycloak (OIDC) with separate clients for the guest, admin and superadmin apps",
+    "stackInfraLabel": "Infrastructure",
+    "stackInfra": "k3s on a single VPS, Argo CD GitOps, Cloudflare Tunnel, images built in GitHub Actions",
+    "whyTitle": "Why it exists",
+    "whyText": "Trestay is a portfolio and learning project. The goal was to build a realistic booking product from the database schema up to the deployment pipeline, and to document the trade-offs along the way. It is not a commercial service, and the hotel data is demo content.",
+    "ctaSearch": "Start searching",
+    "ctaSource": "View the source"
+  }
 }

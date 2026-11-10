@@ -19,4 +19,9 @@ export default [
     name: 'SearchResults',
     component: SearchResults,
   },
+  {
+    path: '/about',
+    name: 'About',
+    component: () => import('@/views/About.vue'),
+  },
 ];
