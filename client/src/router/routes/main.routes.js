@@ -1,7 +1,7 @@
 // src/router/routes/main.routes.js
+// Home is imported eagerly so the landing page paints without an extra chunk
+// request; the heavier views are loaded on demand.
 import HomeView from '@/views/HomeView.vue';
-import HotelDetails from '@/views/HotelDetails.vue';
-import SearchResults from '@/views/SearchResults.vue';
 
 export default [
   {
@@ -12,12 +12,12 @@ export default [
   {
     path: '/hotels/:hotel_id',
     name: 'HotelDetails',
-    component: HotelDetails,
+    component: () => import('@/views/HotelDetails.vue'),
   },
   {
     path: '/search',
     name: 'SearchResults',
-    component: SearchResults,
+    component: () => import('@/views/SearchResults.vue'),
   },
   {
     path: '/about',
