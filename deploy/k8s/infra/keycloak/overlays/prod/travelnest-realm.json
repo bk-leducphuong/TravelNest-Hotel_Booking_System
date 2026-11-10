@@ -51,17 +51,24 @@
       "clientId": "travelnest-web",
       "name": "TravelNest Web SPA",
       "description": "Public SPA client for TravelNest frontend and admin frontend",
-      "rootUrl": "https://deployserver.work",
+      "rootUrl": "https://trestay.com",
       "baseUrl": "/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
+        "https://trestay.com/*",
+        "https://www.trestay.com/*",
         "https://deployserver.work/*",
         "http://localhost:5173/*"
       ],
-      "webOrigins": ["https://deployserver.work", "http://localhost:5173"],
+      "webOrigins": [
+        "https://trestay.com",
+        "https://www.trestay.com",
+        "https://deployserver.work",
+        "http://localhost:5173"
+      ],
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,
@@ -75,7 +82,7 @@
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "login_theme": "travelnest-guest",
-        "post.logout.redirect.uris": "https://deployserver.work/*##http://localhost:5173/*"
+        "post.logout.redirect.uris": "https://trestay.com/*##https://www.trestay.com/*##http://localhost:5173/*"
       },
       "fullScopeAllowed": true,
       "defaultClientScopes": [
@@ -111,17 +118,19 @@
       "clientId": "travelnest-admin",
       "name": "TravelNest Admin SPA",
       "description": "Public SPA client for TravelNest admin console",
-      "rootUrl": "https://admin.deployserver.work",
+      "rootUrl": "https://admin.trestay.com",
       "baseUrl": "/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
+        "https://admin.trestay.com/*",
         "https://admin.deployserver.work/*",
         "http://localhost:8000/*"
       ],
       "webOrigins": [
+        "https://admin.trestay.com",
         "https://admin.deployserver.work",
         "http://localhost:8000"
       ],
@@ -138,7 +147,7 @@
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "login_theme": "travelnest-admin",
-        "post.logout.redirect.uris": "https://admin.deployserver.work/*##http://localhost:8000/*"
+        "post.logout.redirect.uris": "https://admin.trestay.com/*##http://localhost:8000/*"
       },
       "fullScopeAllowed": true,
       "defaultClientScopes": [
@@ -174,14 +183,20 @@
       "clientId": "travelnest-superadmin",
       "name": "TravelNest Superadmin SPA",
       "description": "Public SPA client for the TravelNest superadmin console",
-      "rootUrl": "https://superadmin.deployserver.work",
+      "rootUrl": "https://superadmin.trestay.com",
       "baseUrl": "/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "redirectUris": ["https://superadmin.deployserver.work/*"],
-      "webOrigins": ["https://superadmin.deployserver.work"],
+      "redirectUris": [
+        "https://superadmin.trestay.com/*",
+        "https://superadmin.deployserver.work/*"
+      ],
+      "webOrigins": [
+        "https://superadmin.trestay.com",
+        "https://superadmin.deployserver.work"
+      ],
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,
@@ -195,7 +210,7 @@
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "login_theme": "travelnest-platform",
-        "post.logout.redirect.uris": "https://superadmin.deployserver.work/*"
+        "post.logout.redirect.uris": "https://superadmin.trestay.com/*"
       },
       "fullScopeAllowed": true,
       "defaultClientScopes": [
@@ -354,8 +369,8 @@
     "contentSecurityPolicyReportOnly": "",
     "xContentTypeOptions": "nosniff",
     "xRobotsTag": "none",
-    "xFrameOptions": "SAMEORIGIN",
-    "contentSecurityPolicy": "frame-src 'self'; frame-ancestors 'self'; object-src 'none';",
+    "xFrameOptions": "",
+    "contentSecurityPolicy": "frame-src 'self'; frame-ancestors 'self' https://trestay.com https://*.trestay.com https://deployserver.work; object-src 'none';",
     "xXSSProtection": "1; mode=block",
     "strictTransportSecurity": "max-age=31536000; includeSubDomains"
   }
