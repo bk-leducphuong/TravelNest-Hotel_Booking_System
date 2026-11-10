@@ -15,3 +15,13 @@ spec:
                 name: admin-client
                 port:
                   number: 80
+    - host: admin.trestay.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-client
+                port:
+                  number: 80

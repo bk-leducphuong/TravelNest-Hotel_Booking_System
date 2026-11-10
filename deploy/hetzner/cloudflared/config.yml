@@ -27,6 +27,22 @@ ingress:
     service: http://localhost:80
   - hostname: argocd.deployserver.work
     service: http://localhost:80
+  # --- New primary domain (trestay.com). Old deployserver.work hostnames stay
+  # routable during the migration; see deploy/docs/DOMAIN-MIGRATION.md.
+  - hostname: trestay.com
+    service: http://localhost:80
+  - hostname: api.trestay.com
+    service: http://localhost:80
+  - hostname: admin.trestay.com
+    service: http://localhost:80
+  - hostname: superadmin.trestay.com
+    service: http://localhost:80
+  - hostname: storage.trestay.com
+    service: http://localhost:80
+  - hostname: keycloak.trestay.com
+    service: http://localhost:80
+  - hostname: argocd.trestay.com
+    service: http://localhost:80
   # --- Database access (raw TCP, gated by Cloudflare Access) ---
   # These are NOT HTTP. Clients reach them with
   #   cloudflared access tcp --hostname <host> --url 127.0.0.1:<port>
