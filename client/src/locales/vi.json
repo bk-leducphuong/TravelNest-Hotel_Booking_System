@@ -916,7 +916,8 @@
       "settings": "Cài đặt tài khoản",
       "partner": "Đăng chỗ nghỉ",
       "onboarding": "Đăng ký chỗ nghỉ",
-      "notFound": "Không tìm thấy trang"
+      "notFound": "Không tìm thấy trang",
+      "about": "Giới thiệu"
     },
     "season": {
       "spring": "Mùa xuân",
@@ -1082,5 +1083,40 @@
   "seo.HotelDetails": "Xem thông tin khách sạn, loại phòng, tiện nghi và đánh giá của khách trên Trestay.",
   "seo.Reviews": "Đọc đánh giá của khách về các khách sạn trên Trestay.",
   "seo.Join": "Đăng cơ sở lưu trú trên Trestay và quản lý tình trạng phòng, giá và đặt phòng.",
-  "seo.JoinForm": "Đăng ký cơ sở lưu trú trở thành đối tác của Trestay."
+  "seo.JoinForm": "Đăng ký cơ sở lưu trú trở thành đối tác của Trestay.",
+  "seo.About": "Giới thiệu Trestay — nền tảng đặt phòng khách sạn mã nguồn mở, xây dựng bằng Vue 3, Express, Keycloak và Kubernetes.",
+  "about": {
+    "eyebrow": "Mã nguồn mở · Dự án học tập",
+    "link": "Giới thiệu",
+    "title": "Giới thiệu Trestay",
+    "lead": "Trestay là nền tảng đặt phòng khách sạn được xây dựng trọn vẹn như một dự án học tập: ứng dụng đặt phòng cho khách, hai bảng điều khiển vận hành, REST API, các worker chạy nền và hạ tầng Kubernetes vận hành chúng.",
+    "whatTitle": "Bạn có thể làm gì ở đây",
+    "whatText": "Dự án bao phủ toàn bộ hành trình đặt phòng, không chỉ một màn hình.",
+    "guestTitle": "Khách hàng",
+    "guestText": "tìm theo điểm đến và ngày, lọc theo giá, đánh giá và tiện nghi, so sánh loại phòng, lưu yêu thích và hoàn tất đặt phòng với thanh toán thử nghiệm qua Stripe.",
+    "hostTitle": "Chủ cơ sở lưu trú",
+    "hostText": "đăng nhập bảng điều khiển quản trị để quản lý cơ sở, phòng, giá và tình trạng còn trống, đồng thời theo dõi đặt phòng.",
+    "operatorTitle": "Quản trị nền tảng",
+    "operatorText": "dùng bảng điều khiển superadmin để xem tổng quan toàn hệ thống về cơ sở, tài khoản và đặt phòng.",
+    "stackTitle": "Cách hệ thống được xây dựng",
+    "stackText": "Mọi tầng đều được hiện thực trong kho mã này — không dùng engine đặt phòng của bên thứ ba.",
+    "stackGuestLabel": "Ứng dụng khách",
+    "stackGuest": "Vue 3, Vite, Vue Router, Vuex, Element Plus, i18n (tiếng Anh và tiếng Việt)",
+    "stackConsoleLabel": "Bảng điều khiển",
+    "stackConsole": "Nuxt 4 với Pinia và Tailwind, xác thực qua Keycloak",
+    "stackApiLabel": "API",
+    "stackApi": "Express trên Node.js theo mô hình modular monolith, kiểm tra dữ liệu bằng Joi, tài liệu Swagger",
+    "stackDataLabel": "Dữ liệu",
+    "stackData": "MySQL (Sequelize) là nguồn dữ liệu chính, Redis cho phiên, giữ chỗ và hàng đợi, MongoDB cho sự kiện phân tích",
+    "stackJobsLabel": "Xử lý nền",
+    "stackJobs": "BullMQ worker cho hết hạn đặt phòng, thông báo và đối soát",
+    "stackAuthLabel": "Định danh",
+    "stackAuth": "Keycloak (OIDC) với các client riêng cho ứng dụng khách, quản trị và superadmin",
+    "stackInfraLabel": "Hạ tầng",
+    "stackInfra": "k3s trên một VPS, Argo CD GitOps, Cloudflare Tunnel, image build bằng GitHub Actions",
+    "whyTitle": "Vì sao dự án tồn tại",
+    "whyText": "Trestay là dự án portfolio và học tập. Mục tiêu là xây dựng một sản phẩm đặt phòng thực tế từ lược đồ cơ sở dữ liệu đến quy trình triển khai, và ghi lại các đánh đổi trong quá trình làm. Đây không phải dịch vụ thương mại và dữ liệu khách sạn là dữ liệu minh hoạ.",
+    "ctaSearch": "Bắt đầu tìm kiếm",
+    "ctaSource": "Xem mã nguồn"
+  }
 }

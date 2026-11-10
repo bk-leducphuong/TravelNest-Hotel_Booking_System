@@ -92,7 +92,9 @@ function buildHotelHead(hotel, locale = 'en') {
     `<meta name="x-seo-prerendered" content="1" data-path="${escapeHtml(isVi ? `/vi/hotels/${hotel.id}` : `/hotels/${hotel.id}`)}" />`,
     `<title>${escapeHtml(title)}</title>`,
     `<meta name="description" content="${escapeHtml(description)}" />`,
-    '<meta name="robots" content="index, follow, max-image-preview:large" />',
+    // Seed hotel copy is generated placeholder text, so these pages stay
+    // crawlable but are kept out of the index until real inventory exists.
+    '<meta name="robots" content="noindex, follow" />',
     `<link rel="canonical" href="${escapeHtml(url)}" />`,
     `<link rel="alternate" hreflang="en" href="${escapeHtml(enUrl)}" />`,
     `<link rel="alternate" hreflang="vi" href="${escapeHtml(viUrl)}" />`,
@@ -176,6 +178,88 @@ async function fetchJson(url) {
 }
 
 /**
+ * Static marketing pages that live at a fixed path. Their `<head>` is rendered
+ * here so crawlers and social scrapers get correct metadata without waiting for
+ * the SPA to boot; the body is still rendered by Vue.
+ */
+const STATIC_PAGES = [
+  { routeName: 'About', path: '/about' },
+];
+
+function buildStaticPageHead(page, locale, messages) {
+  const isVi = locale === 'vi';
+  const about = messages.about;
+  const title = `${messages.guest.page.about} · Trestay`;
+  const description = messages['seo.About'] || messages['seo.default'];
+  const enUrl = `${SITE}${page.path}`;
+  const viUrl = `${SITE}/vi${page.path}`;
+  const url = isVi ? viUrl : enUrl;
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'AboutPage',
+    name: about.title,
+    url,
+    inLanguage: isVi ? 'vi' : 'en',
+    description,
+    isPartOf: { '@type': 'WebSite', name: 'Trestay', url: SITE },
+  };
+
+  return [
+    '<meta name="x-seo-prerendered" content="1" />',
+    `<title>${escapeHtml(title)}</title>`,
+    `<meta name="description" content="${escapeHtml(description)}" />`,
+    '<meta name="robots" content="index, follow, max-image-preview:large" />',
+    `<link rel="canonical" href="${escapeHtml(url)}" />`,
+    `<link rel="alternate" hreflang="en" href="${escapeHtml(enUrl)}" />`,
+    `<link rel="alternate" hreflang="vi" href="${escapeHtml(viUrl)}" />`,
+    `<link rel="alternate" hreflang="x-default" href="${escapeHtml(enUrl)}" />`,
+    '<meta property="og:type" content="website" />',
+    '<meta property="og:site_name" content="Trestay" />',
+    `<meta property="og:title" content="${escapeHtml(about.title)}" />`,
+    `<meta property="og:description" content="${escapeHtml(description)}" />`,
+    `<meta property="og:url" content="${escapeHtml(url)}" />`,
+    `<meta property="og:image" content="${SITE}/og-image.png" />`,
+    `<meta property="og:locale" content="${isVi ? 'vi_VN' : 'en_US'}" />`,
+    '<meta name="twitter:card" content="summary_large_image" />',
+    `<meta name="twitter:title" content="${escapeHtml(about.title)}" />`,
+    `<meta name="twitter:description" content="${escapeHtml(description)}" />`,
+    `<meta name="twitter:image" content="${SITE}/og-image.png" />`,
+    `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>`,
+  ].join('\n    ');
+}
+
+async function prerenderStaticPages(strippedShell) {
+  const localesDir = path.resolve(HERE, '../src/locales');
+  let written = 0;
+
+  for (const page of STATIC_PAGES) {
+    for (const locale of ['en', 'vi']) {
+      let messages;
+      try {
+        messages = JSON.parse(await readFile(path.join(localesDir, `${locale}.json`), 'utf8'));
+      } catch (error) {
+        log(`could not read ${locale} messages (${error.message}) — skipped ${page.path}`);
+        continue;
+      }
+
+      const head = buildStaticPageHead(page, locale, messages);
+      let html = strippedShell.replace('</head>', `${head}\n  </head>`);
+      if (locale === 'vi') {
+        html = html.replace('<html lang="en"', '<html lang="vi"');
+      }
+
+      const dir = path.join(DIST, ...(locale === 'vi' ? ['vi'] : []), page.path.replace(/^\//, ''));
+      await mkdir(dir, { recursive: true });
+      await writeFile(path.join(dir, 'index.html'), html, 'utf8');
+      written += 1;
+    }
+  }
+
+  return written;
+}
+
+/**
  * Hotel list sources, in priority order.
  *
  * `/search/hotels` is not usable here: it requires checkIn/checkOut/adults and a
@@ -213,44 +297,6 @@ async function loadHotels() {
   return hotels.slice(0, LIMIT);
 }
 
-function ensureXhtmlNamespace(xml) {
-  return xml.includes('xmlns:xhtml')
-    ? xml
-    : xml.replace('<urlset', '<urlset xmlns:xhtml="http://www.w3.org/1999/xhtml"');
-}
-
-function sitemapEntry(loc, alternates, lastmod) {
-  return `  <url>
-    <loc>${escapeHtml(loc)}</loc>
-${alternates}
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>`;
-}
-
-function addToSitemap(xml, hotels, lastmod) {
-  if (!hotels.length) return ensureXhtmlNamespace(xml);
-  // Idempotent: drop any hotel URLs a previous run added, then re-append.
-  const cleaned = ensureXhtmlNamespace(xml).replace(
-    /<url>\s*<loc>[^<]*\/hotels\/[^<]*<\/loc>[\s\S]*?<\/url>\s*/g,
-    ''
-  );
-  const urls = hotels
-    .flatMap((hotel) => {
-      const enUrl = `${SITE}/hotels/${hotel.id}`;
-      const viUrl = `${SITE}/vi/hotels/${hotel.id}`;
-      const alternates = [
-        `    <xhtml:link rel="alternate" hreflang="en" href="${escapeHtml(enUrl)}" />`,
-        `    <xhtml:link rel="alternate" hreflang="vi" href="${escapeHtml(viUrl)}" />`,
-        `    <xhtml:link rel="alternate" hreflang="x-default" href="${escapeHtml(enUrl)}" />`,
-      ].join('\n');
-      return [sitemapEntry(enUrl, alternates, lastmod), sitemapEntry(viUrl, alternates, lastmod)];
-    })
-    .join('\n');
-  return cleaned.replace('</urlset>', `${urls}\n</urlset>`);
-}
-
 async function main() {
   const shellPath = path.join(DIST, 'index.html');
   let shell;
@@ -261,26 +307,30 @@ async function main() {
     return;
   }
 
+  const stripped = stripManagedHead(shell);
+  let written = 0;
+
+  // Static marketing pages (e.g. /about) are always prerendered.
+  written += await prerenderStaticPages(stripped);
+
   if (!API) {
-    log('PRERENDER_API_BASE not set — skipping hotel prerender.');
+    log('PRERENDER_API_BASE not set — skipping hotel pages.');
+    log(`prerendered ${written} static page(s) into ${DIST}`);
     return;
   }
 
-  let hotels;
+  let hotels = [];
   try {
     hotels = await loadHotels();
   } catch (error) {
-    log(`could not load hotels from ${API} (${error.message}) — skipping.`);
-    return;
+    log(`could not load hotels from ${API} (${error.message}) — skipping hotel pages.`);
   }
 
   if (!hotels.length) {
-    log('API returned no hotels — nothing to prerender.');
+    log('API returned no hotels — nothing to prerender for hotels.');
+    log(`prerendered ${written} static page(s) into ${DIST}`);
     return;
   }
-
-  const stripped = stripManagedHead(shell);
-  let written = 0;
 
   for (const hotel of hotels) {
     for (const locale of ['en', 'vi']) {
@@ -300,17 +350,10 @@ async function main() {
     }
   }
 
-  const lastmod = new Date().toISOString().slice(0, 10);
-  const sitemapPath = path.join(DIST, 'sitemap.xml');
-  try {
-    const sitemap = await readFile(sitemapPath, 'utf8');
-    await writeFile(sitemapPath, addToSitemap(sitemap, hotels, lastmod), 'utf8');
-    log(`sitemap updated with ${hotels.length} hotel URLs.`);
-  } catch {
-    log('no sitemap.xml in dist — skipped sitemap update.');
-  }
-
-  log(`prerendered ${written} hotel page(s) into ${path.join(DIST, 'hotels')}`);
+  // Seed hotel copy is placeholder text, so these pages are intentionally
+  // noindex and stay out of sitemap.xml.
+  log(`prerendered ${hotels.length} noindex hotel page pair(s).`);
+  log(`total pages written: ${written}`);
 }
 
 main().catch((error) => {

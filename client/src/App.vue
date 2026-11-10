@@ -28,6 +28,7 @@
           SettingDetails: 'settings',
           Join: 'partner',
           JoinForm: 'onboarding',
+          About: 'about',
           NotFound: 'notFound',
         };
         const key = names[this.$route.name];
