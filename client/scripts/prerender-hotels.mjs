@@ -175,13 +175,42 @@ async function fetchJson(url) {
   return res.json();
 }
 
+/**
+ * Hotel list sources, in priority order.
+ *
+ * `/search/hotels` is not usable here: it requires checkIn/checkOut/adults and a
+ * location, so a build-time fetch gets a VALIDATION_ERROR. These two public
+ * endpoints need no parameters and are capped server-side (deals: 20,
+ * trending: 50).
+ */
+const HOTEL_SOURCES = [
+  { name: 'deals', path: '/api/v1/search/deals?limit=20' },
+  { name: 'trending', path: '/api/v1/hotels/trending?limit=50' },
+];
+
 async function loadHotels() {
-  const url = `${API}/api/v1/search/hotels?limit=${encodeURIComponent(LIMIT)}`;
-  const payload = await fetchJson(url);
-  const hotels = pickArray(payload).map(normalizeHotel).filter(Boolean);
-  // De-duplicate by id, keep the configured cap.
   const seen = new Set();
-  return hotels.filter((h) => (seen.has(h.id) ? false : seen.add(h.id))).slice(0, LIMIT);
+  const hotels = [];
+
+  for (const source of HOTEL_SOURCES) {
+    try {
+      const payload = await fetchJson(`${API}${source.path}`);
+      const found = pickArray(payload).map(normalizeHotel).filter(Boolean);
+      let added = 0;
+      for (const hotel of found) {
+        if (seen.has(hotel.id)) continue;
+        seen.add(hotel.id);
+        hotels.push(hotel);
+        added += 1;
+      }
+      log(`source ${source.name}: ${found.length} hotel(s), ${added} new`);
+    } catch (error) {
+      log(`source ${source.name} failed: ${error.message}`);
+    }
+    if (hotels.length >= LIMIT) break;
+  }
+
+  return hotels.slice(0, LIMIT);
 }
 
 function ensureXhtmlNamespace(xml) {
