@@ -2,11 +2,12 @@
   import { mapGetters } from 'vuex';
   import AccountMenu from './user/AccountMenu.vue';
   import BaseHeader from './common/BaseHeader.vue';
+  import ChatBell from './ChatBell.vue';
   import Notification from './Notification.vue';
   import SearchBar from './SearchBar.vue';
   export default {
     name: 'GuestHeader',
-    components: { AccountMenu, BaseHeader, Notification, SearchBar },
+    components: { AccountMenu, BaseHeader, ChatBell, Notification, SearchBar },
     props: { isSearchOpen: { type: Boolean, required: true } },
     computed: { ...mapGetters('auth', ['isUserAuthenticated']) },
   };
@@ -14,6 +15,7 @@
 <template>
   <BaseHeader
     ><template #nav-items>
+      <ChatBell v-if="isUserAuthenticated" />
       <Notification v-if="isUserAuthenticated" />
       <li class="guest-host-link">
         <RouterLink to="/join">{{ $t('userHeader.postProperty') }}</RouterLink>
