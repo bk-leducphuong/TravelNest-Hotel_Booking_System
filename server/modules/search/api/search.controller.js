@@ -12,7 +12,6 @@ const searchUseCases = {
   getIpLocation: require('../application/ipLocation').getIpLocation,
 };
 const logger = require('@config/logger.config');
-const asyncHandler = require('@utils/asyncHandler');
 const { getAuthenticatedUserId } = require('@helpers/auth-context.helper');
 
 function parseNumber(value) {
@@ -55,7 +54,7 @@ function parseBoolean(value) {
  * - Sorting: sortBy (relevance, price_asc, price_desc, rating, distance, popularity)
  * - Pagination: page, limit
  */
-const searchHotels = asyncHandler(async (req, res) => {
+const searchHotels = async (req, res) => {
   const searchParams = {
     // Location
     city: req.query.city,
@@ -146,7 +145,7 @@ const searchHotels = asyncHandler(async (req, res) => {
   }
 
   res.status(200).json(searchResults);
-});
+};
 
 /**
  * GET /api/v1/search/geo/ip
@@ -155,7 +154,7 @@ const searchHotels = asyncHandler(async (req, res) => {
  * Prefers Cloudflare visitor-location headers and never returns the raw IP.
  * City-level at best; callers must treat it as a hint, not a precise fix.
  */
-const getIpLocation = asyncHandler(async (req, res) => {
+const getIpLocation = async (req, res) => {
   const ip = req.ip || req.connection?.remoteAddress || '';
   const location = await searchUseCases.getIpLocation(ip, req.headers);
 
@@ -163,7 +162,7 @@ const getIpLocation = asyncHandler(async (req, res) => {
   // must not reuse it across visitors.
   res.set?.('Cache-Control', 'private, max-age=3600');
   res.status(200).json({ success: true, data: location });
-});
+};
 
 /**
  * GET /api/v1/search/hotels/:hotelId/availability
@@ -171,7 +170,7 @@ const getIpLocation = asyncHandler(async (req, res) => {
  *
  * Query params: checkIn, checkOut, adults, children, rooms
  */
-const getHotelAvailability = asyncHandler(async (req, res) => {
+const getHotelAvailability = async (req, res) => {
   const { hotelId } = req.params;
 
   const params = {
@@ -185,13 +184,13 @@ const getHotelAvailability = asyncHandler(async (req, res) => {
   const result = await searchUseCases.getHotelAvailability(hotelId, params);
 
   res.status(200).json(result);
-});
+};
 
 /**
  * GET /api/v1/search/deals
  * Public home-page deals feed. Defaults to a sample stay when dates are absent.
  */
-const getHotelDeals = asyncHandler(async (req, res) => {
+const getHotelDeals = async (req, res) => {
   const result = await searchUseCases.getHotelDeals(
     {
       limit: req.query.limit ? parseInt(req.query.limit, 10) : 8,
@@ -206,7 +205,7 @@ const getHotelDeals = asyncHandler(async (req, res) => {
 
   res.set('Cache-Control', req.user?.id ? 'private, max-age=30' : 'public, max-age=60');
   res.status(200).json(result);
-});
+};
 
 /**
  * GET /api/v1/search/autocomplete
@@ -214,7 +213,7 @@ const getHotelDeals = asyncHandler(async (req, res) => {
  *
  * Query params: query (required), limit
  */
-const getAutocompleteSuggestions = asyncHandler(async (req, res) => {
+const getAutocompleteSuggestions = async (req, res) => {
   const { query, limit } = req.query;
 
   const result = await searchUseCases.getAutocompleteSuggestions(
@@ -223,7 +222,7 @@ const getAutocompleteSuggestions = asyncHandler(async (req, res) => {
   );
 
   res.status(200).json(result);
-});
+};
 
 /**
  * GET /api/v1/search/destinations/autocomplete
@@ -231,7 +230,7 @@ const getAutocompleteSuggestions = asyncHandler(async (req, res) => {
  *
  * Query params: query (required), limit
  */
-const getDestinationAutocomplete = asyncHandler(async (req, res) => {
+const getDestinationAutocomplete = async (req, res) => {
   const { query, limit } = req.query;
 
   const result = await searchUseCases.getDestinationAutocomplete(
@@ -240,13 +239,13 @@ const getDestinationAutocomplete = asyncHandler(async (req, res) => {
   );
 
   res.status(200).json(result);
-});
+};
 
 /**
  * POST /api/v1/search/log
  * Save search information to search logs (optional, for analytics)
  */
-const saveSearchInformation = asyncHandler(async (req, res) => {
+const saveSearchInformation = async (req, res) => {
   const userId = getAuthenticatedUserId(req);
   const searchData = req.body;
 
@@ -259,13 +258,13 @@ const saveSearchInformation = asyncHandler(async (req, res) => {
       eventId: result?.eventId,
     },
   });
-});
+};
 
 /**
  * GET /api/v1/search/destinations/trending
  * Get top popular/trending destinations from analytics service
  */
-const getTrendingDestinations = asyncHandler(async (req, res) => {
+const getTrendingDestinations = async (req, res) => {
   const { limit, days } = req.query;
 
   const destinations = await searchUseCases.getTrendingDestinations({
@@ -279,13 +278,13 @@ const getTrendingDestinations = asyncHandler(async (req, res) => {
       destinations,
     },
   });
-});
+};
 
 /**
  * GET /api/v1/search/recent
  * Get recent hotel search queries for authenticated user (from Redis)
  */
-const getRecentSearches = asyncHandler(async (req, res) => {
+const getRecentSearches = async (req, res) => {
   const userId = req.user.id;
   const { limit } = req.query;
 
@@ -297,9 +296,9 @@ const getRecentSearches = asyncHandler(async (req, res) => {
       searches,
     },
   });
-});
+};
 
-const searchMapHotels = asyncHandler(async (req, res) => {
+const searchMapHotels = async (req, res) => {
   const boundsKeys = ['north', 'south', 'east', 'west'];
   const hasBounds = boundsKeys.every((key) => {
     const value = req.query[key];
@@ -333,7 +332,7 @@ const searchMapHotels = asyncHandler(async (req, res) => {
       limit: 200,
     },
   });
-});
+};
 
 module.exports = {
   searchMapHotels,

@@ -1,4 +1,3 @@
-const asyncHandler = require('@utils/asyncHandler');
 const holdService = require('../application/hold.service');
 
 function getSessionUserId(req) {
@@ -9,7 +8,7 @@ function getSessionUserId(req) {
  * POST /api/hold
  * Create a temporary room hold (locks rooms while user completes payment)
  */
-const createHold = asyncHandler(async (req, res) => {
+const createHold = async (req, res) => {
   const userId = getSessionUserId(req);
   const { hotelId, checkInDate, checkOutDate, numberOfGuests, rooms, currency } = req.body;
 
@@ -26,45 +25,45 @@ const createHold = asyncHandler(async (req, res) => {
   res.status(201).json({
     data: result,
   });
-});
+};
 
 /**
  * GET /api/hold
  * Get active holds for the authenticated user
  */
-const getMyHolds = asyncHandler(async (req, res) => {
+const getMyHolds = async (req, res) => {
   const userId = getSessionUserId(req);
   const holds = await holdService.getActiveHoldsByUser(userId);
   res.status(200).json({
     data: holds,
   });
-});
+};
 
 /**
  * GET /api/hold/:holdId
  * Get a single hold by ID (must own the hold)
  */
-const getHoldById = asyncHandler(async (req, res) => {
+const getHoldById = async (req, res) => {
   const userId = getSessionUserId(req);
   const { holdId } = req.params;
   const hold = await holdService.getHold(holdId, userId);
   res.status(200).json({
     data: hold,
   });
-});
+};
 
 /**
  * DELETE /api/hold/:holdId
  * Release a hold (cancel checkout)
  */
-const releaseHold = asyncHandler(async (req, res) => {
+const releaseHold = async (req, res) => {
   const userId = getSessionUserId(req);
   const { holdId } = req.params;
   const result = await holdService.releaseHold(holdId, userId, 'released');
   res.status(200).json({
     data: result,
   });
-});
+};
 
 module.exports = {
   createHold,

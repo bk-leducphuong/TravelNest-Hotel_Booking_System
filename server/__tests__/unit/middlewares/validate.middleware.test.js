@@ -39,4 +39,24 @@ describe('validate.middleware', () => {
       done();
     });
   });
+
+  it('replaces req.query even though Express 5 exposes it as a getter', () => {
+    const schema = {
+      query: Joi.object({ limit: Joi.number().integer().default(10) }),
+    };
+
+    // Mimic Express 5: `req.query` is a getter that re-parses the URL on every
+    // read and has no setter, so assigning to it throws.
+    const req = {};
+    Object.defineProperty(req, 'query', {
+      get: () => ({ limit: '10', unknown: 'stripped' }),
+      configurable: true,
+      enumerable: true,
+    });
+
+    validate(schema)(req, {}, (err) => {
+      expect(err).toBeUndefined();
+      expect(req.query).toEqual({ limit: 10 });
+    });
+  });
 });

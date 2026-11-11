@@ -72,6 +72,11 @@ const createApp = async () => {
 
   const app = express();
 
+  // Express 5 defaults to the `simple` query parser (querystring). Keep the
+  // Express 4 behaviour (`qs`, nested/array/`[]` syntax) so existing clients and
+  // the search/analytics query handlers keep seeing the same shapes.
+  app.set('query parser', 'extended');
+
   // Security headers. CSP is intentionally left to the edge/CDN: this service
   // returns JSON and serves Swagger UI (which needs inline scripts). The rest
   // of the helmet defaults (nosniff, frameguard, HSTS, referrer policy) are
@@ -146,6 +151,16 @@ const createApp = async () => {
   // Regular JSON parsing for all other routes
   app.use(bodyParser.json({ limit: '50mb' })); // create application/json parser
   app.use(bodyParser.urlencoded({ limit: '50mb', extended: false })); // create application/x-www-form-urlencoded parser
+
+  // Express 5 (and body-parser 2) leave `req.body` undefined when no body was
+  // parsed; Express 4 / body-parser 1.x defaulted it to `{}`. Controllers
+  // destructure `req.body` directly, so normalise it back to an empty object.
+  app.use((req, res, next) => {
+    if (req.body === undefined) {
+      req.body = {};
+    }
+    next();
+  });
 
   // Request logging middleware (before other middlewares to capture all requests)
   app.use(requestLogger);

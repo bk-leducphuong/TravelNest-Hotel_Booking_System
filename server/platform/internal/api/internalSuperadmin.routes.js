@@ -1,6 +1,5 @@
 const express = require('express');
 
-const asyncHandler = require('@utils/asyncHandler');
 const { requireInternalSuperadmin } = require('@middlewares/internal-superadmin.middleware');
 const controller = require('./internalSuperadmin.controller');
 
@@ -13,31 +12,31 @@ router.use(requireInternalSuperadmin);
 router.get(
   '/notifications/test/targets',
   // requireInternalSuperadmin,
-  asyncHandler(controller.previewNotificationTargets)
+  controller.previewNotificationTargets
 );
 
 router.post(
   '/notifications/test/inapp',
   // requireInternalSuperadmin,
-  asyncHandler(controller.sendTestNotification)
+  controller.sendTestNotification
 );
 
 router.post(
   '/notifications/test/email',
   // requireInternalSuperadmin,
-  asyncHandler(controller.sendTestEmail)
+  controller.sendTestEmail
 );
 
-router.get('/tasks', asyncHandler(controller.listTasks));
+router.get('/tasks', controller.listTasks);
 
-router.post('/database/init', asyncHandler(controller.initDatabase));
+router.post('/database/init', controller.initDatabase);
 
-router.post('/database/seeders/:seeder', asyncHandler(controller.runDatabaseSeeder));
+router.post('/database/seeders/:seeder', controller.runDatabaseSeeder);
 
-router.post('/images/seed', asyncHandler(controller.runImageSeeder));
+router.post('/images/seed', controller.runImageSeeder);
 
-router.post('/city-images/seed', asyncHandler(controller.runCityImageSeeder));
+router.post('/city-images/seed', controller.runCityImageSeeder);
 
-router.post('/mongodb/seeders/:target', asyncHandler(controller.runMongodbSeeder));
+router.post('/mongodb/seeders/:target', controller.runMongodbSeeder);
 
 module.exports = router;
