@@ -1,4 +1,5 @@
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = rateLimit;
 const { RedisStore } = require('rate-limit-redis');
 
 const redisClient = require('../config/redis.config');
@@ -25,9 +26,12 @@ function createStore(prefix) {
 }
 
 // Key authenticated callers by user id, everyone else by IP.
+// express-rate-limit v8 requires `ipKeyGenerator` for the IP branch: it masks
+// IPv6 addresses to their /56 subnet, otherwise a single user with a v6 block
+// could rotate addresses to bypass the limit.
 function keyGenerator(req) {
   const userId = req.user?.id || req.session?.user?.id || req.session?.user?.user_id;
-  return userId ? `user:${userId}` : `ip:${req.ip}`;
+  return userId ? `user:${userId}` : `ip:${ipKeyGenerator(req.ip)}`;
 }
 
 function buildLimiter({ windowMs, max, prefix, skip, message }) {
@@ -40,16 +44,13 @@ function buildLimiter({ windowMs, max, prefix, skip, message }) {
 
   return rateLimit({
     windowMs,
-    max: safeMax,
+    limit: safeMax,
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator,
     store: createStore(prefix),
     // Never take the API down because Redis blipped — fail open on store errors.
     passOnStoreError: true,
-    // We deliberately key by user id and fall back to IP; silence the library's
-    // IPv6 fallback warning that assumes the default IP-only keying.
-    validate: { keyGeneratorIpFallback: false },
     skip,
     message: text,
     handler: (req, res) => {

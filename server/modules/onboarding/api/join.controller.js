@@ -1,5 +1,4 @@
 const logger = require('@config/logger.config');
-const asyncHandler = require('@utils/asyncHandler');
 const joinService = require('../application/join.service');
 
 /**
@@ -12,7 +11,7 @@ const joinService = require('../application/join.service');
  * POST /api/join
  * Submit join form (become a partner)
  */
-const submitJoinForm = asyncHandler(async (req, res) => {
+const submitJoinForm = async (req, res) => {
   const ownerId = req.user.id;
   const { joinFormData } = req.body;
 
@@ -28,13 +27,13 @@ const submitJoinForm = asyncHandler(async (req, res) => {
       message: 'Join form submitted successfully',
     },
   });
-});
+};
 
 /**
  * POST /api/join/photos
  * Upload and process hotel/room photos
  */
-const uploadPhotos = asyncHandler(async (req, res) => {
+const uploadPhotos = async (req, res) => {
   const { hotel_id, room_id } = req.body;
 
   if (!hotel_id || !room_id) {
@@ -64,7 +63,7 @@ const uploadPhotos = asyncHandler(async (req, res) => {
       count: imageUrls.length,
     },
   });
-});
+};
 
 module.exports = {
   submitJoinForm,

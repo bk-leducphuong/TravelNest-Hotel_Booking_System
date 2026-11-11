@@ -11,7 +11,6 @@ const bookingUseCases = {
     .createPaymentIntentForBooking,
 };
 const logger = require('@config/logger.config');
-const asyncHandler = require('@utils/asyncHandler');
 
 function getSessionUserId(req) {
   return req.session?.user?.id || req.session?.user?.user_id || req.user?.id || req.user?.user_id;
@@ -26,7 +25,7 @@ function getSessionUserId(req) {
  * GET /api/bookings
  * Get a page of bookings for the authenticated user.
  */
-const getUserBookings = asyncHandler(async (req, res) => {
+const getUserBookings = async (req, res) => {
   const userId = getSessionUserId(req);
   const { includeCancelled, status, reviewed, bookedAfter, page, limit } = req.query;
 
@@ -43,13 +42,13 @@ const getUserBookings = asyncHandler(async (req, res) => {
     data: result.bookings,
     meta: { page: result.page, limit: result.limit, total: result.total },
   });
-});
+};
 
 /**
  * GET /api/bookings/reviewable
  * Completed, unreviewed bookings the user can still write a review for.
  */
-const getReviewableBookings = asyncHandler(async (req, res) => {
+const getReviewableBookings = async (req, res) => {
   const userId = getSessionUserId(req);
   const { page, limit } = req.query;
 
@@ -59,13 +58,13 @@ const getReviewableBookings = asyncHandler(async (req, res) => {
     data: result.bookings,
     meta: { page: result.page, limit: result.limit, total: result.total },
   });
-});
+};
 
 /**
  * POST /api/bookings
  * Create a pending-payment booking from an active hold.
  */
-const createBooking = asyncHandler(async (req, res) => {
+const createBooking = async (req, res) => {
   const userId = getSessionUserId(req);
   const idempotencyKey = req.headers['idempotency-key'];
 
@@ -74,13 +73,13 @@ const createBooking = asyncHandler(async (req, res) => {
   res.status(201).json({
     data: booking,
   });
-});
+};
 
 /**
  * POST /api/bookings/:bookingId/payment-intent
  * Create or reuse a Stripe PaymentIntent for a pending-payment booking.
  */
-const createBookingPaymentIntent = asyncHandler(async (req, res) => {
+const createBookingPaymentIntent = async (req, res) => {
   const userId = getSessionUserId(req);
   const { bookingId } = req.params;
 
@@ -89,13 +88,13 @@ const createBookingPaymentIntent = asyncHandler(async (req, res) => {
   res.status(201).json({
     data: result,
   });
-});
+};
 
 /**
  * GET /api/bookings/:bookingId
  * Get a specific booking by ID
  */
-const getBookingById = asyncHandler(async (req, res) => {
+const getBookingById = async (req, res) => {
   const userId = getSessionUserId(req);
   const { bookingId } = req.params;
 
@@ -104,13 +103,13 @@ const getBookingById = asyncHandler(async (req, res) => {
   res.status(200).json({
     data: booking,
   });
-});
+};
 
 /**
  * GET /api/bookings/code/:bookingCode
  * Get booking by booking code
  */
-const getBookingByCode = asyncHandler(async (req, res) => {
+const getBookingByCode = async (req, res) => {
   const userId = getSessionUserId(req);
   const { bookingCode } = req.params;
 
@@ -119,22 +118,22 @@ const getBookingByCode = asyncHandler(async (req, res) => {
   res.status(200).json({
     data: booking,
   });
-});
+};
 
 /**
  * DELETE /api/bookings/:bookingId
  * Cancel a booking
  */
-const cancellationQuote = asyncHandler(async (req, res) => {
+const cancellationQuote = async (req, res) => {
   const { cancellationQuote: quote } = require('../application/guest/cancellationQuote');
   res.status(200).json({ data: await quote(req.params.bookingId, getSessionUserId(req)) });
-});
-const cancellationStatus = asyncHandler(async (req, res) => {
+};
+const cancellationStatus = async (req, res) => {
   const { cancellationStatus: status } = require('../application/guest/cancellationQuote');
   res.status(200).json({ data: await status(req.params.bookingId, getSessionUserId(req)) });
-});
+};
 
-const cancelBooking = asyncHandler(async (req, res) => {
+const cancelBooking = async (req, res) => {
   const userId = getSessionUserId(req);
   const { bookingId } = req.params;
   const result = await bookingUseCases.cancelBooking(bookingId, userId, {
@@ -145,7 +144,7 @@ const cancelBooking = asyncHandler(async (req, res) => {
   res.status(200).json({
     data: result,
   });
-});
+};
 
 module.exports = {
   cancellationQuote,

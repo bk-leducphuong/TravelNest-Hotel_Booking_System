@@ -6,7 +6,6 @@ const notificationUseCases = {
   markNotificationAsRead: require('../application/markNotificationAsRead').markNotificationAsRead,
 };
 const logger = require('@config/logger.config');
-const asyncHandler = require('@utils/asyncHandler');
 
 /**
  * Notification Controller - HTTP ↔ business mapping
@@ -17,7 +16,7 @@ const asyncHandler = require('@utils/asyncHandler');
  * GET /api/notifications
  * Get notifications for authenticated user
  */
-const getNotifications = asyncHandler(async (req, res) => {
+const getNotifications = async (req, res) => {
   const userId = req.user.id;
   const { page, limit, unreadOnly } = req.query;
 
@@ -35,13 +34,13 @@ const getNotifications = asyncHandler(async (req, res) => {
       total: result.total,
     },
   });
-});
+};
 
 /**
  * PATCH /api/notifications/:notificationId/read
  * Mark a specific notification as read
  */
-const markNotificationAsRead = asyncHandler(async (req, res) => {
+const markNotificationAsRead = async (req, res) => {
   const userId = req.user.id;
   const { notificationId } = req.params;
 
@@ -52,13 +51,13 @@ const markNotificationAsRead = asyncHandler(async (req, res) => {
       message: 'Notification marked as read',
     },
   });
-});
+};
 
 /**
  * PATCH /api/notifications/read-all
  * Mark all notifications as read for authenticated user
  */
-const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
+const markAllNotificationsAsRead = async (req, res) => {
   const userId = req.user.id;
 
   const updatedCount = await notificationUseCases.markAllNotificationsAsRead(userId);
@@ -69,13 +68,13 @@ const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
       updatedCount,
     },
   });
-});
+};
 
 /**
  * GET /api/notifications/unread-count
  * Get unread notification count for authenticated user
  */
-const getUnreadCount = asyncHandler(async (req, res) => {
+const getUnreadCount = async (req, res) => {
   const userId = req.user.id;
 
   const count = await notificationUseCases.getUnreadCount(userId);
@@ -85,7 +84,7 @@ const getUnreadCount = asyncHandler(async (req, res) => {
       unreadCount: count,
     },
   });
-});
+};
 
 module.exports = {
   getNotifications,

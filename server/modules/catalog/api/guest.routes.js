@@ -12,7 +12,10 @@ const {
   getHotelsByIds,
 } = require('./hotel.controller');
 const router = express.Router();
-const HOTEL_ID_ROUTE_PARAM = ':hotelId([0-9a-fA-F-]{36})';
+// Express 5 (path-to-regexp v8) no longer supports inline regex params such as
+// `:hotelId([0-9a-fA-F-]{36})` — it throws at route registration. The UUID shape
+// is enforced by the Joi schemas (`hotelIdSchema`) instead, which returns 400.
+const HOTEL_ID_ROUTE_PARAM = ':hotelId';
 
 // root route: /api/v1/hotels
 

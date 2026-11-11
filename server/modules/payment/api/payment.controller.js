@@ -13,7 +13,6 @@ const paymentUseCases = {
   removePaymentMethod: require('../application/guest/removePaymentMethod').removePaymentMethod,
 };
 const logger = require('@config/logger.config');
-const asyncHandler = require('@utils/asyncHandler');
 
 function getSessionUserId(req) {
   return req.session?.user?.id || req.session?.user?.user_id || req.user?.id || req.user?.user_id;
@@ -28,7 +27,7 @@ function getSessionUserId(req) {
  * POST /api/payments
  * Create a payment intent for booking
  */
-const createPaymentIntent = asyncHandler(async (req, res) => {
+const createPaymentIntent = async (req, res) => {
   const userId = getSessionUserId(req);
   const { paymentMethodId, currency } = req.body;
 
@@ -40,13 +39,13 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
   res.status(201).json({
     data: result,
   });
-});
+};
 
 /**
  * GET /api/payments
  * Get all payments for authenticated user
  */
-const getUserPayments = asyncHandler(async (req, res) => {
+const getUserPayments = async (req, res) => {
   const userId = getSessionUserId(req);
   const { page, limit } = req.query;
 
@@ -63,13 +62,13 @@ const getUserPayments = asyncHandler(async (req, res) => {
       total: result.total,
     },
   });
-});
+};
 
 /**
  * GET /api/payments/bookings/:bookingId
  * Get payment information by booking ID
  */
-const getPaymentByBookingId = asyncHandler(async (req, res) => {
+const getPaymentByBookingId = async (req, res) => {
   const userId = getSessionUserId(req);
   const { bookingId } = req.params;
 
@@ -78,13 +77,13 @@ const getPaymentByBookingId = asyncHandler(async (req, res) => {
   res.status(200).json({
     data: payment,
   });
-});
+};
 
 /**
  * GET /api/payments/transactions/:transactionId
  * Get payment information by transaction ID
  */
-const getPaymentByTransactionId = asyncHandler(async (req, res) => {
+const getPaymentByTransactionId = async (req, res) => {
   const userId = getSessionUserId(req);
   const { transactionId } = req.params;
 
@@ -93,70 +92,70 @@ const getPaymentByTransactionId = asyncHandler(async (req, res) => {
   res.status(200).json({
     data: payment,
   });
-});
+};
 
 /**
  * POST /api/payments/methods/setup-intent
  * Create a Stripe SetupIntent so the client can attach a card.
  */
-const createSetupIntent = asyncHandler(async (req, res) => {
+const createSetupIntent = async (req, res) => {
   const userId = getSessionUserId(req);
 
   const result = await paymentUseCases.createSetupIntent(userId);
 
   res.status(201).json({ data: result });
-});
+};
 
 /**
  * POST /api/payments/methods
  * Persist a card the client just attached via a confirmed SetupIntent.
  */
-const savePaymentMethod = asyncHandler(async (req, res) => {
+const savePaymentMethod = async (req, res) => {
   const userId = getSessionUserId(req);
   const { setupIntentId } = req.body;
 
   const result = await paymentUseCases.savePaymentMethod(userId, { setupIntentId });
 
   res.status(201).json({ data: result });
-});
+};
 
 /**
  * GET /api/payments/methods
  * List the authenticated user's saved cards.
  */
-const listPaymentMethods = asyncHandler(async (req, res) => {
+const listPaymentMethods = async (req, res) => {
   const userId = getSessionUserId(req);
 
   const result = await paymentUseCases.listPaymentMethods(userId);
 
   res.status(200).json({ data: result });
-});
+};
 
 /**
  * POST /api/payments/methods/:paymentMethodId/default
  * Set a saved card as the default.
  */
-const setDefaultPaymentMethod = asyncHandler(async (req, res) => {
+const setDefaultPaymentMethod = async (req, res) => {
   const userId = getSessionUserId(req);
   const { paymentMethodId } = req.params;
 
   const result = await paymentUseCases.setDefaultPaymentMethod(userId, paymentMethodId);
 
   res.status(200).json({ data: result });
-});
+};
 
 /**
  * DELETE /api/payments/methods/:paymentMethodId
  * Remove a saved card.
  */
-const removePaymentMethod = asyncHandler(async (req, res) => {
+const removePaymentMethod = async (req, res) => {
   const userId = getSessionUserId(req);
   const { paymentMethodId } = req.params;
 
   const result = await paymentUseCases.removePaymentMethod(userId, paymentMethodId);
 
   res.status(200).json({ data: result });
-});
+};
 
 module.exports = {
   createPaymentIntent,

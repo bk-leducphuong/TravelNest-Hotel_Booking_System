@@ -11,7 +11,6 @@ const hotelUseCases = {
     .recordRecentlyViewedHotel,
 };
 const logger = require('@config/logger.config');
-const asyncHandler = require('@utils/asyncHandler');
 const { hotelViewEvents: hotelViewEventService } = require('@modules/analytics');
 const { getAuthenticatedUserId, getTrackingSessionId } = require('@helpers/auth-context.helper');
 const { computeNumberOfNights } = require('../domain/nights');
@@ -20,7 +19,7 @@ const { computeNumberOfNights } = require('../domain/nights');
  * GET /api/hotels/:hotelId
  * Get hotel details with rooms, reviews, nearby places, and review criteria
  */
-const getHotelDetails = asyncHandler(async (req, res) => {
+const getHotelDetails = async (req, res) => {
   const { hotelId } = req.params;
   const { checkInDate, checkOutDate, numberOfRooms, numberOfGuests } = req.query;
 
@@ -60,13 +59,13 @@ const getHotelDetails = asyncHandler(async (req, res) => {
   res.status(200).json({
     data: result,
   });
-});
+};
 
 /**
  * GET /api/hotels/:hotelId/rooms
  * Search available rooms for a hotel
  */
-const searchRooms = asyncHandler(async (req, res) => {
+const searchRooms = async (req, res) => {
   const { hotelId } = req.params;
   const { checkInDate, checkOutDate, numberOfRooms, numberOfGuests, page, limit } = req.query;
 
@@ -92,19 +91,19 @@ const searchRooms = asyncHandler(async (req, res) => {
       total: result.total,
     },
   });
-});
+};
 
-const getHotelPolicies = asyncHandler(async (req, res) => {
+const getHotelPolicies = async (req, res) => {
   const { hotelId } = req.params;
   const policies = await hotelUseCases.getHotelPolicies(hotelId);
   res.status(200).json({ data: policies });
-});
+};
 
 /**
  * GET /api/hotels/:hotelId/nearby-places
  * Get nearby places for a hotel
  */
-const getNearbyPlaces = asyncHandler(async (req, res) => {
+const getNearbyPlaces = async (req, res) => {
   const { hotelId } = req.params;
   const { category, limit } = req.query;
 
@@ -114,13 +113,13 @@ const getNearbyPlaces = asyncHandler(async (req, res) => {
   });
 
   res.status(200).json({ data: places });
-});
+};
 
 /**
  * GET /api/v1/hotels/recently-viewed
  * Get recently viewed hotels (authenticated, from Redis)
  */
-const getRecentlyViewedHotels = asyncHandler(async (req, res) => {
+const getRecentlyViewedHotels = async (req, res) => {
   const userId = req.user.id;
   const { limit } = req.query;
 
@@ -131,13 +130,13 @@ const getRecentlyViewedHotels = asyncHandler(async (req, res) => {
 
   res.set('Cache-Control', 'private, no-store');
   res.status(200).json({ data: hotels });
-});
+};
 
 /**
  * GET /api/v1/hotels/trending
  * Get trending hotels (public, from analytics service)
  */
-const getTrendingHotels = asyncHandler(async (req, res) => {
+const getTrendingHotels = async (req, res) => {
   const { limit, days } = req.query;
 
   const hotels = await hotelUseCases.getTrendingHotels({
@@ -148,13 +147,13 @@ const getTrendingHotels = asyncHandler(async (req, res) => {
 
   res.set('Cache-Control', 'private, no-store');
   res.status(200).json({ data: hotels });
-});
+};
 
 /**
  * POST /api/v1/hotels/batch
  * Get enriched hotel cards for a list of hotel IDs (public).
  */
-const getHotelsByIds = asyncHandler(async (req, res) => {
+const getHotelsByIds = async (req, res) => {
   const { ids } = req.body;
 
   if (!Array.isArray(ids) || ids.length === 0) {
@@ -164,7 +163,7 @@ const getHotelsByIds = asyncHandler(async (req, res) => {
   const hotels = await hotelUseCases.getHotelsByIds(ids.slice(0, 50), req.user?.id);
   res.set('Cache-Control', 'private, no-store');
   res.status(200).json({ data: hotels });
-});
+};
 
 module.exports = {
   getHotelDetails,

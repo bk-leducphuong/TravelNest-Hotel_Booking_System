@@ -1,4 +1,3 @@
-const asyncHandler = require('@utils/asyncHandler');
 const { collectPermissionNames } = require('@helpers/permission.helper');
 const { PERMISSIONS } = require('@constants/permissions');
 const { auditService } = require('@platform/audit');
@@ -13,7 +12,7 @@ const finance = require('../application/finance-admin.service');
  * roles and their global permissions. Mirrors the admin BFF's `/admin/me` shape
  * but without the hotel list (the platform console is not hotel-scoped).
  */
-const getMeHandler = asyncHandler(async (req, res) => {
+const getMeHandler = async (req, res) => {
   const globalRoles = (req.user?.roles || [])
     .map((userRole) => userRole.role?.name)
     .filter(Boolean);
@@ -27,12 +26,12 @@ const getMeHandler = asyncHandler(async (req, res) => {
       permissions,
     },
   });
-});
+};
 
-const getOverviewHandler = asyncHandler(async (req, res) => {
+const getOverviewHandler = async (req, res) => {
   const data = await getOverview();
   res.status(200).json({ data });
-});
+};
 
 /** Whether the caller may see unmasked PII. */
 function canUnmaskPii(req) {
@@ -61,33 +60,33 @@ async function recordPiiAccess(
   });
 }
 
-const listHotelsHandler = asyncHandler(async (req, res) => {
+const listHotelsHandler = async (req, res) => {
   const { hotels, page, limit, total } = await listHotels(req.query, {
     unmaskPii: canUnmaskPii(req),
   });
   await recordPiiAccess(req, { entityType: 'hotel', scope: 'list', total });
   res.status(200).json({ data: hotels, meta: { page, limit, total } });
-});
+};
 
-const getHotelHandler = asyncHandler(async (req, res) => {
+const getHotelHandler = async (req, res) => {
   const data = await getHotel(req.params.hotelId, { unmaskPii: canUnmaskPii(req) });
   await recordPiiAccess(req, { entityType: 'hotel', entityId: req.params.hotelId });
   res.status(200).json({ data });
-});
+};
 
-const listUsersHandler = asyncHandler(async (req, res) => {
+const listUsersHandler = async (req, res) => {
   const { users, page, limit, total } = await listUsers(req.query, {
     unmaskPii: canUnmaskPii(req),
   });
   await recordPiiAccess(req, { entityType: 'user', scope: 'list', total });
   res.status(200).json({ data: users, meta: { page, limit, total } });
-});
+};
 
-const getUserHandler = asyncHandler(async (req, res) => {
+const getUserHandler = async (req, res) => {
   const data = await getUser(req.params.userId, { unmaskPii: canUnmaskPii(req) });
   await recordPiiAccess(req, { entityType: 'user', entityId: req.params.userId });
   res.status(200).json({ data });
-});
+};
 
 /**
  * Camel-case serializer for audit rows — the rest of the superadmin module
@@ -112,47 +111,47 @@ function serializeAuditEntry(row) {
   };
 }
 
-const listAuditHandler = asyncHandler(async (req, res) => {
+const listAuditHandler = async (req, res) => {
   const data = await auditService.list(req.query);
   res.status(200).json({
     data: data.entries.map(serializeAuditEntry),
     meta: { page: data.page, limit: data.limit, total: data.total },
   });
-});
+};
 
-const getFinanceOverviewHandler = asyncHandler(async (req, res) => {
+const getFinanceOverviewHandler = async (req, res) => {
   const data = await finance.getFinanceOverview();
   res.status(200).json({ data });
-});
+};
 
-const listPaymentsHandler = asyncHandler(async (req, res) => {
+const listPaymentsHandler = async (req, res) => {
   const { payments, page, limit, total } = await finance.listPayments(req.query, {
     unmaskPii: canUnmaskPii(req),
   });
   await recordPiiAccess(req, { entityType: 'payment', scope: 'list', total });
   res.status(200).json({ data: payments, meta: { page, limit, total } });
-});
+};
 
-const listRefundsHandler = asyncHandler(async (req, res) => {
+const listRefundsHandler = async (req, res) => {
   const { refunds, page, limit, total } = await finance.listRefunds(req.query, {
     unmaskPii: canUnmaskPii(req),
   });
   await recordPiiAccess(req, { entityType: 'refund', scope: 'list', total });
   res.status(200).json({ data: refunds, meta: { page, limit, total } });
-});
+};
 
-const listPayoutsHandler = asyncHandler(async (req, res) => {
+const listPayoutsHandler = async (req, res) => {
   const { payouts, page, limit, total } = await finance.listPayouts(req.query, {
     unmaskPii: canUnmaskPii(req),
   });
   await recordPiiAccess(req, { entityType: 'payout', scope: 'list', total });
   res.status(200).json({ data: payouts, meta: { page, limit, total } });
-});
+};
 
-const listLedgerHandler = asyncHandler(async (req, res) => {
+const listLedgerHandler = async (req, res) => {
   const { entries, page, limit, total } = await finance.listLedgerEntries(req.query);
   res.status(200).json({ data: entries, meta: { page, limit, total } });
-});
+};
 
 module.exports = {
   getMeHandler,
