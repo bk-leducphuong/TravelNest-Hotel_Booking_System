@@ -834,6 +834,8 @@
   "userHeader.searchValidationError": "Vui lòng chọn địa điểm và ngày bắt đầu và kết thúc",
   "join.form.cardHolderPlaceholder": "Nguyễn Văn A",
   "guest": {
+    "adultCount": "{count} người lớn",
+    "childCount": "{count} trẻ em",
     "noPhoto": "Chưa có ảnh",
     "skip": "Chuyển đến nội dung",
     "navigation": "Điều hướng chính",
