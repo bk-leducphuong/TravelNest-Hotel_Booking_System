@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
 
 jest.mock('@platform/database', () => ({
-  bookings: { findAll: jest.fn() },
+  bookings: { findAll: jest.fn(), findAndCountAll: jest.fn(), findOne: jest.fn() },
   booking_rooms: {},
   rooms: {},
   users: {},
@@ -79,4 +79,18 @@ describe('booking-admin repository reservations', () => {
       })
     );
   });
+});
+
+it('retains soft-deleted buyer identities for authorized booking list and detail reads', async () => {
+  await bookingRepository.findForHotel({ hotelId: 'h1' });
+  await bookingRepository.findByIdWithRelations('b1');
+  for (const method of [Bookings.findAndCountAll, Bookings.findOne]) {
+    expect(method).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.arrayContaining([
+          expect.objectContaining({ as: 'buyer', paranoid: false, required: false }),
+        ]),
+      })
+    );
+  }
 });

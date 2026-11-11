@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatDateTime } from "~/utils/format";
 import { BadgePercent, Plus, RefreshCw } from "lucide-vue-next";
 import { fetchRooms, type Room } from "~/services/api/catalog";
 import {
@@ -17,6 +18,7 @@ import {
 const auth = useAuthStore();
 const { can } = usePermissions();
 const { t } = useI18n();
+const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const promotions = ref<Promotion[]>([]);
 const rooms = ref<Room[]>([]);
@@ -81,7 +83,10 @@ const discountLabel = (row: unknown) => {
     const percent = (Number(promotion.discount_basis_points) || 0) / 100;
     const cap = Number(promotion.max_discount_amount);
     return cap > 0
-      ? t("promotions.discount.percentageCapped", { percent, cap: cap.toFixed(2) })
+      ? t("promotions.discount.percentageCapped", {
+          percent,
+          cap: cap.toFixed(2),
+        })
       : t("promotions.discount.percentage", { percent });
   }
   return t("promotions.discount.fixed", {
@@ -95,7 +100,7 @@ const windowLabel = (row: unknown) => {
     return t("promotions.window.always");
   }
   const format = (value?: string | null) =>
-    value ? new Date(value).toLocaleString() : t("promotions.window.open");
+    value ? formatDateTime(value) : t("promotions.window.open");
   return `${format(promotion.booking_starts_at)} → ${format(promotion.booking_ends_at)}`;
 };
 
@@ -221,7 +226,9 @@ const openEdit = (promotion: Promotion) => {
 };
 
 const nullableNumber = (value: number | undefined) =>
-  value === undefined || value === null || Number.isNaN(value) ? null : Number(value);
+  value === undefined || value === null || Number.isNaN(value)
+    ? null
+    : Number(value);
 
 const buildPayload = (): PromotionInput => ({
   mode: form.mode,
@@ -230,23 +237,30 @@ const buildPayload = (): PromotionInput => ({
   description: form.description || null,
   discountType: form.discountType,
   discountBasisPoints:
-    form.discountType === "percentage" ? Math.round(Number(form.percent) * 100) : null,
-  discountValue:
-    form.discountType === "fixed" ? Number(form.fixedValue) : null,
+    form.discountType === "percentage"
+      ? Math.round(Number(form.percent) * 100)
+      : null,
+  discountValue: form.discountType === "fixed" ? Number(form.fixedValue) : null,
   maxDiscountAmount:
     form.discountType === "percentage"
       ? nullableNumber(form.maxDiscountAmount)
       : null,
   roomScope: form.mode === "code" ? "all" : form.roomScope,
-  roomIds: form.mode === "automatic" && form.roomScope === "selected" ? form.roomIds : [],
-  bookingStartsAt: form.bookingStartsAt ? form.bookingStartsAt.toISOString() : null,
+  roomIds:
+    form.mode === "automatic" && form.roomScope === "selected"
+      ? form.roomIds
+      : [],
+  bookingStartsAt: form.bookingStartsAt
+    ? form.bookingStartsAt.toISOString()
+    : null,
   bookingEndsAt: form.bookingEndsAt ? form.bookingEndsAt.toISOString() : null,
   stayStartsOn: form.stayStartsOn || null,
   stayEndsOn: form.stayEndsOn || null,
   minNights: nullableNumber(form.minNights),
   minSubtotal: nullableNumber(form.minSubtotal),
   minAdvanceDays: nullableNumber(form.minAdvanceDays),
-  totalUseLimit: form.mode === "code" ? nullableNumber(form.totalUseLimit) : null,
+  totalUseLimit:
+    form.mode === "code" ? nullableNumber(form.totalUseLimit) : null,
   perUserLimit: form.mode === "code" ? nullableNumber(form.perUserLimit) : null,
 });
 
@@ -275,7 +289,10 @@ const save = async () => {
   }
 };
 
-const runTransition = async (promotion: Promotion, action: "activate" | "pause" | "archive") => {
+const runTransition = async (
+  promotion: Promotion,
+  action: "activate" | "pause" | "archive"
+) => {
   if (!hotelId.value) return;
   try {
     const label = t(`promotions.actions.${action}`);
@@ -284,9 +301,11 @@ const runTransition = async (promotion: Promotion, action: "activate" | "pause" 
       label,
       { confirmButtonText: label, cancelButtonText: t("common.cancel") }
     );
-    if (action === "activate") await activatePromotion(hotelId.value, promotion.id);
+    if (action === "activate")
+      await activatePromotion(hotelId.value, promotion.id);
     if (action === "pause") await pausePromotion(hotelId.value, promotion.id);
-    if (action === "archive") await archivePromotion(hotelId.value, promotion.id);
+    if (action === "archive")
+      await archivePromotion(hotelId.value, promotion.id);
     ElMessage.success(t("promotions.toast.updated"));
     await load();
   } catch (failure) {
@@ -302,10 +321,14 @@ const openRedemptions = async (promotion: Promotion) => {
   redemptionLoading.value = true;
   redemptions.value = [];
   try {
-    const result = await fetchPromotionRedemptions(hotelId.value, promotion.id, {
-      page: 1,
-      limit: 50,
-    });
+    const result = await fetchPromotionRedemptions(
+      hotelId.value,
+      promotion.id,
+      {
+        page: 1,
+        limit: 50,
+      }
+    );
     redemptions.value = result.data;
   } catch (failure) {
     ElMessage.error((failure as Error).message);
@@ -341,18 +364,37 @@ const openRedemptions = async (promotion: Promotion) => {
         <el-input
           v-model="filters.search"
           clearable
+          :aria-label="$t('promotions.filters.search')"
           :placeholder="$t('promotions.filters.search')"
           class="w-64"
         />
-        <el-select v-model="filters.mode" clearable :placeholder="$t('promotions.filters.mode')" class="w-44">
-          <el-option :label="$t('promotions.mode.automatic')" value="automatic" />
+        <el-select
+          v-model="filters.mode"
+          clearable
+          :aria-label="$t('promotions.filters.mode')"
+          :placeholder="$t('promotions.filters.mode')"
+          class="w-44"
+        >
+          <el-option
+            :label="$t('promotions.mode.automatic')"
+            value="automatic"
+          />
           <el-option :label="$t('promotions.mode.code')" value="code" />
         </el-select>
-        <el-select v-model="filters.status" clearable :placeholder="$t('promotions.filters.status')" class="w-44">
+        <el-select
+          v-model="filters.status"
+          clearable
+          :aria-label="$t('promotions.filters.status')"
+          :placeholder="$t('promotions.filters.status')"
+          class="w-44"
+        >
           <el-option :label="$t('promotions.status.draft')" value="draft" />
           <el-option :label="$t('promotions.status.active')" value="active" />
           <el-option :label="$t('promotions.status.paused')" value="paused" />
-          <el-option :label="$t('promotions.status.archived')" value="archived" />
+          <el-option
+            :label="$t('promotions.status.archived')"
+            value="archived"
+          />
         </el-select>
       </UiFilterBar>
 
@@ -364,12 +406,22 @@ const openRedemptions = async (promotion: Promotion) => {
         :title="$t('promotions.empty.title')"
         :description="$t('promotions.empty.description')"
       />
-      <div v-else class="tn-table-region" role="region" :aria-label="$t('promotions.title')" tabindex="0">
+      <div
+        v-else
+        class="tn-table-region"
+        role="region"
+        :aria-label="$t('promotions.title')"
+        tabindex="0"
+      >
         <el-table v-loading="loading" :data="promotions" row-key="id">
           <el-table-column :label="$t('promotions.col.name')" min-width="220">
             <template #default="{ row }">
               <div class="flex items-center gap-2">
-                <BadgePercent :size="16" class="text-action" aria-hidden="true" />
+                <BadgePercent
+                  :size="16"
+                  class="text-action"
+                  aria-hidden="true"
+                />
                 <div>
                   <p class="font-medium">{{ row.name }}</p>
                   <p class="text-xs text-muted">
@@ -380,17 +432,26 @@ const openRedemptions = async (promotion: Promotion) => {
               </div>
             </template>
           </el-table-column>
-          <el-table-column :label="$t('promotions.col.discount')" min-width="180">
+          <el-table-column
+            :label="$t('promotions.col.discount')"
+            min-width="180"
+          >
             <template #default="{ row }">{{ discountLabel(row) }}</template>
           </el-table-column>
           <el-table-column :label="$t('promotions.col.window')" min-width="240">
             <template #default="{ row }">{{ windowLabel(row) }}</template>
           </el-table-column>
-          <el-table-column :label="$t('promotions.col.usage')" width="140" align="center">
+          <el-table-column
+            :label="$t('promotions.col.usage')"
+            width="140"
+            align="center"
+          >
             <template #default="{ row }">
               <span class="text-sm">
                 {{ row.redeemed_count }}
-                <span class="text-muted">/ {{ row.total_use_limit || "∞" }}</span>
+                <span class="text-muted"
+                  >/ {{ row.total_use_limit || "∞" }}</span
+                >
               </span>
             </template>
           </el-table-column>
@@ -401,9 +462,18 @@ const openRedemptions = async (promotion: Promotion) => {
               </UiStatusPill>
             </template>
           </el-table-column>
-          <el-table-column :label="$t('promotions.col.actions')" width="280" align="right">
+          <el-table-column
+            :label="$t('promotions.col.actions')"
+            fixed="right"
+            width="160"
+            align="right"
+          >
             <template #default="{ row }">
-              <el-button link type="primary" @click="openRedemptions(asPromotion(row))">
+              <el-button
+                link
+                type="primary"
+                @click="openRedemptions(asPromotion(row))"
+              >
                 {{ $t("promotions.actions.usage") }}
               </el-button>
               <el-button
@@ -415,7 +485,10 @@ const openRedemptions = async (promotion: Promotion) => {
                 {{ $t("common.edit") }}
               </el-button>
               <el-button
-                v-if="(row.status === 'draft' || row.status === 'paused') && canManage"
+                v-if="
+                  (row.status === 'draft' || row.status === 'paused') &&
+                  canManage
+                "
                 link
                 type="success"
                 @click="runTransition(asPromotion(row), 'activate')"
@@ -445,7 +518,13 @@ const openRedemptions = async (promotion: Promotion) => {
 
       <div v-if="total > limit" class="mt-4 flex items-center justify-between">
         <p class="text-sm text-muted">
-          {{ $t("promotions.pagination", { page: page, pages: totalPages, total }) }}
+          {{
+            $t("promotions.pagination", {
+              page: page,
+              pages: totalPages,
+              total,
+            })
+          }}
         </p>
         <el-pagination
           v-model:current-page="page"
@@ -455,36 +534,67 @@ const openRedemptions = async (promotion: Promotion) => {
           @current-change="load"
         />
       </div>
-      <p v-if="error" role="alert" class="mt-4 text-sm text-red-600">{{ error }}</p>
+      <p v-if="error" role="alert" class="mt-4 text-sm text-red-600">
+        {{ error }}
+      </p>
     </UiSectionCard>
 
     <el-dialog
       v-model="dialogVisible"
-      :title="editing ? $t('promotions.editTitle') : $t('promotions.createTitle')"
+      :title="
+        editing ? $t('promotions.editTitle') : $t('promotions.createTitle')
+      "
       width="min(94%, 680px)"
       destroy-on-close
     >
+      <p class="mb-4 text-xs text-muted">
+        {{ $t("promotions.form.timezoneHint", { timezone: browserTimezone }) }}
+      </p>
       <el-form label-position="top" class="grid gap-4 md:grid-cols-2">
         <el-form-item :label="$t('promotions.form.mode')" required>
           <el-radio-group v-model="form.mode" :disabled="!!editing">
-            <el-radio value="automatic">{{ $t("promotions.mode.automatic") }}</el-radio>
+            <el-radio value="automatic">{{
+              $t("promotions.mode.automatic")
+            }}</el-radio>
             <el-radio value="code">{{ $t("promotions.mode.code") }}</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item v-if="form.mode === 'code'" :label="$t('promotions.form.code')" required>
+        <el-form-item
+          v-if="form.mode === 'code'"
+          :label="$t('promotions.form.code')"
+          required
+        >
           <el-input v-model="form.code" maxlength="64" :disabled="!!editing" />
         </el-form-item>
-        <el-form-item :label="$t('promotions.form.name')" required class="md:col-span-2">
+        <el-form-item
+          :label="$t('promotions.form.name')"
+          required
+          class="md:col-span-2"
+        >
           <el-input v-model="form.name" maxlength="150" />
         </el-form-item>
-        <el-form-item :label="$t('promotions.form.description')" class="md:col-span-2">
-          <el-input v-model="form.description" type="textarea" :rows="2" maxlength="5000" />
+        <el-form-item
+          :label="$t('promotions.form.description')"
+          class="md:col-span-2"
+        >
+          <el-input
+            v-model="form.description"
+            type="textarea"
+            :rows="2"
+            maxlength="5000"
+          />
         </el-form-item>
 
         <el-form-item :label="$t('promotions.form.discountType')" required>
           <el-select v-model="form.discountType">
-            <el-option :label="$t('promotions.discount.percentageLabel')" value="percentage" />
-            <el-option :label="$t('promotions.discount.fixedLabel')" value="fixed" />
+            <el-option
+              :label="$t('promotions.discount.percentageLabel')"
+              value="percentage"
+            />
+            <el-option
+              :label="$t('promotions.discount.fixedLabel')"
+              value="fixed"
+            />
           </el-select>
         </el-form-item>
         <el-form-item
@@ -492,23 +602,42 @@ const openRedemptions = async (promotion: Promotion) => {
           :label="$t('promotions.form.percent')"
           required
         >
-          <el-input-number v-model="form.percent" :min="0.01" :max="100" :step="1" class="w-full" />
+          <el-input-number
+            v-model="form.percent"
+            :min="0.01"
+            :max="100"
+            :step="1"
+            class="w-full"
+          />
         </el-form-item>
         <el-form-item v-else :label="$t('promotions.form.fixedValue')" required>
-          <el-input-number v-model="form.fixedValue" :min="0.01" :step="1" class="w-full" />
+          <el-input-number
+            v-model="form.fixedValue"
+            :min="0.01"
+            :step="1"
+            class="w-full"
+          />
         </el-form-item>
         <el-form-item
           v-if="form.discountType === 'percentage'"
           :label="$t('promotions.form.maxDiscount')"
         >
-          <el-input-number v-model="form.maxDiscountAmount" :min="0" :step="1" class="w-full" />
+          <el-input-number
+            v-model="form.maxDiscountAmount"
+            :min="0"
+            :step="1"
+            class="w-full"
+          />
         </el-form-item>
 
         <template v-if="form.mode === 'automatic'">
           <el-form-item :label="$t('promotions.form.roomScope')">
             <el-select v-model="form.roomScope">
               <el-option :label="$t('promotions.roomScope.all')" value="all" />
-              <el-option :label="$t('promotions.roomScope.selected')" value="selected" />
+              <el-option
+                :label="$t('promotions.roomScope.selected')"
+                value="selected"
+              />
             </el-select>
           </el-form-item>
           <el-form-item
@@ -517,7 +646,12 @@ const openRedemptions = async (promotion: Promotion) => {
             class="md:col-span-2"
             required
           >
-            <el-select v-model="form.roomIds" multiple filterable class="w-full">
+            <el-select
+              v-model="form.roomIds"
+              multiple
+              filterable
+              class="w-full"
+            >
               <el-option
                 v-for="room in rooms"
                 :key="room.id"
@@ -568,21 +702,37 @@ const openRedemptions = async (promotion: Promotion) => {
           <el-input-number v-model="form.minSubtotal" :min="0" class="w-full" />
         </el-form-item>
         <el-form-item :label="$t('promotions.form.minAdvanceDays')">
-          <el-input-number v-model="form.minAdvanceDays" :min="0" class="w-full" />
+          <el-input-number
+            v-model="form.minAdvanceDays"
+            :min="0"
+            class="w-full"
+          />
         </el-form-item>
 
         <template v-if="form.mode === 'code'">
           <el-form-item :label="$t('promotions.form.totalUseLimit')">
-            <el-input-number v-model="form.totalUseLimit" :min="1" class="w-full" />
+            <el-input-number
+              v-model="form.totalUseLimit"
+              :min="1"
+              class="w-full"
+            />
           </el-form-item>
           <el-form-item :label="$t('promotions.form.perUserLimit')">
-            <el-input-number v-model="form.perUserLimit" :min="1" class="w-full" />
+            <el-input-number
+              v-model="form.perUserLimit"
+              :min="1"
+              class="w-full"
+            />
           </el-form-item>
         </template>
       </el-form>
-      <p class="text-xs text-muted">{{ $t("promotions.form.bestOfferNote") }}</p>
+      <p class="text-xs text-muted">
+        {{ $t("promotions.form.bestOfferNote") }}
+      </p>
       <template #footer>
-        <el-button @click="dialogVisible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button @click="dialogVisible = false">{{
+          $t("common.cancel")
+        }}</el-button>
         <el-button type="primary" :loading="saving" @click="save">
           {{ $t("common.save") }}
         </el-button>
@@ -591,22 +741,51 @@ const openRedemptions = async (promotion: Promotion) => {
 
     <el-drawer
       v-model="redemptionVisible"
-      :title="$t('promotions.redemptions.title', { name: redemptionPromotion?.name || '' })"
+      :title="
+        $t('promotions.redemptions.title', {
+          name: redemptionPromotion?.name || '',
+        })
+      "
       size="min(94%, 620px)"
     >
       <el-table v-loading="redemptionLoading" :data="redemptions" row-key="id">
-        <el-table-column :label="$t('promotions.redemptions.code')" min-width="140">
-          <template #default="{ row }">{{ row.booking?.booking_code || "—" }}</template>
+        <el-table-column
+          :label="$t('promotions.redemptions.code')"
+          min-width="140"
+        >
+          <template #default="{ row }">{{
+            row.booking?.booking_code || "—"
+          }}</template>
         </el-table-column>
-        <el-table-column :label="$t('promotions.redemptions.status')" width="120">
-          <template #default="{ row }">{{ $t(`promotions.redemptionStatus.${row.status}`) }}</template>
+        <el-table-column
+          :label="$t('promotions.redemptions.status')"
+          width="120"
+        >
+          <template #default="{ row }">{{
+            $t(`promotions.redemptionStatus.${row.status}`)
+          }}</template>
         </el-table-column>
-        <el-table-column :label="$t('promotions.redemptions.discount')" width="120" align="right">
-          <template #default="{ row }">{{ Number(row.discount_amount).toFixed(2) }}</template>
+        <el-table-column
+          :label="$t('promotions.redemptions.discount')"
+          width="120"
+          align="right"
+        >
+          <template #default="{ row }">{{
+            Number(row.discount_amount).toFixed(2)
+          }}</template>
         </el-table-column>
-        <el-table-column :label="$t('promotions.redemptions.buyer')" min-width="180">
+        <el-table-column
+          :label="$t('promotions.redemptions.buyer')"
+          min-width="180"
+        >
           <template #default="{ row }">
-            {{ row.buyer?.email || [row.buyer?.first_name, row.buyer?.last_name].filter(Boolean).join(" ") || "—" }}
+            {{
+              row.buyer?.email ||
+              [row.buyer?.first_name, row.buyer?.last_name]
+                .filter(Boolean)
+                .join(" ") ||
+              "—"
+            }}
           </template>
         </el-table-column>
       </el-table>

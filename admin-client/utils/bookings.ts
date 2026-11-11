@@ -58,7 +58,9 @@ export function canCancelBooking(from: string): boolean {
 }
 
 export function bookingStatusLabel(status: string): string {
-  return status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+  return status
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export function bookingStatusTagType(
@@ -81,4 +83,33 @@ export function bookingStatusTagType(
     default:
       return "info";
   }
+}
+
+/** Use the booking contact snapshot when its buyer account is unavailable. */
+export function bookingGuestLabel(
+  booking?: {
+    buyer?: {
+      first_name?: string | null;
+      last_name?: string | null;
+      email?: string | null;
+      id?: string;
+    } | null;
+    guest_details?: Record<string, unknown> | null;
+  } | null
+): string {
+  const buyer = booking?.buyer;
+  const contact = booking?.guest_details;
+  const snapshotName = contact?.fullName ?? contact?.full_name ?? contact?.name;
+  const snapshotEmail = contact?.email;
+  const buyerName = [buyer?.first_name, buyer?.last_name]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    buyerName ||
+    (typeof snapshotName === "string" ? snapshotName.trim() : "") ||
+    buyer?.email ||
+    (typeof snapshotEmail === "string" ? snapshotEmail.trim() : "") ||
+    buyer?.id ||
+    "—"
+  );
 }

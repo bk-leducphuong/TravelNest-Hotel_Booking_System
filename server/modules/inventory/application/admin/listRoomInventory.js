@@ -23,10 +23,7 @@ async function listRoomInventory(hotelId, range = {}) {
         totalRooms: num(summary.totalRooms),
         bookedRooms: num(summary.bookedRooms),
         heldRooms: num(summary.heldRooms),
-        availableRooms: Math.max(
-          0,
-          num(summary.totalRooms) - num(summary.bookedRooms) - num(summary.heldRooms)
-        ),
+        availableRooms: num(summary.availableRooms),
         avgPrice: round2(num(summary.avgPrice)),
         minPrice: round2(num(summary.minPrice)),
         maxPrice: round2(num(summary.maxPrice)),

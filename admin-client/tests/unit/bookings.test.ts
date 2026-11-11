@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  bookingGuestLabel,
   allowedNextStatuses,
   canCancelBooking,
   bookingStatusLabel,
@@ -9,7 +10,10 @@ import {
 describe("booking rules", () => {
   describe("allowedNextStatuses", () => {
     it("exposes valid transitions but never cancelling (dedicated endpoint)", () => {
-      expect(allowedNextStatuses("confirmed").sort()).toEqual(["checked_in", "no_show"]);
+      expect(allowedNextStatuses("confirmed").sort()).toEqual([
+        "checked_in",
+        "no_show",
+      ]);
       expect(allowedNextStatuses("checked_in")).toEqual(["completed"]);
       expect(allowedNextStatuses("pending_payment")).toEqual(["confirmed"]);
     });
@@ -43,5 +47,27 @@ describe("booking rules", () => {
       expect(bookingStatusTagType("completed")).toBe("info");
       expect(bookingStatusTagType("pending")).toBe("warning");
     });
+  });
+});
+
+describe("booking guest identity", () => {
+  it("uses buyer names, then booking contact snapshots, then email", () => {
+    expect(
+      bookingGuestLabel({ buyer: { first_name: "Linh", last_name: "Tran" } })
+    ).toBe("Linh Tran");
+    expect(
+      bookingGuestLabel({
+        buyer: null,
+        guest_details: {
+          fullName: "Booking Guest",
+          email: "guest@example.test",
+        },
+      })
+    ).toBe("Booking Guest");
+    expect(
+      bookingGuestLabel({ guest_details: { email: "guest@example.test" } })
+    ).toBe("guest@example.test");
+    expect(bookingGuestLabel({ guest_details: { fullName: 123 } })).toBe("—");
+    expect(bookingGuestLabel(null)).toBe("—");
   });
 });

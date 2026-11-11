@@ -102,6 +102,16 @@ const occupancySegments = computed(() => {
           value: s.availableRooms,
           color: "#cbd5e1",
         },
+        {
+          label: t("dashboard.chart.unavailable"),
+          value:
+            s.unavailableRooms ??
+            Math.max(
+              0,
+              s.totalRooms - s.bookedRooms - s.heldRooms - s.availableRooms
+            ),
+          color: "#94a3b8",
+        },
       ]
     : [];
 });

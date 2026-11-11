@@ -25,6 +25,8 @@ export interface AdminMe {
  * Load the admin session: identity, effective permissions and managed hotels.
  */
 export async function fetchAdminMe(): Promise<AdminMe> {
-  const response = await apiFetch<{ data: AdminMe }>("/admin/me");
+  const response = await apiFetch<{ data: AdminMe }>("/admin/me", {
+    signal: AbortSignal.timeout(20_000),
+  });
   return response.data;
 }

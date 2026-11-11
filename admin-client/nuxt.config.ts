@@ -4,6 +4,7 @@ export default defineNuxtConfig({
   // SPA: the admin console is behind Keycloak (client-side OIDC) and is served
   // statically. This avoids SSR/Keycloak pitfalls.
   ssr: false,
+  spaLoadingTemplate: "spa-loading-template.html",
   devtools: { enabled: true },
   // The admin console must never be indexed. robots.txt and a <meta robots>
   // tag are already in place; this header also covers non-JS crawlers and any

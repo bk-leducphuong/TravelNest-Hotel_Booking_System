@@ -13,6 +13,8 @@ export default defineNuxtPlugin(() => {
       role: "manager",
       isPrimaryOwner: false,
       permissions: [
+        "promotion.read",
+        "promotion.manage",
         "room.read",
         "room.create",
         "room.update",

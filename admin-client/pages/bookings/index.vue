@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Eye } from "lucide-vue-next";
 import { fetchBookings, type BookingListItem } from "~/services/api/bookings";
-import { BOOKING_STATUSES } from "~/utils/bookings";
+import { BOOKING_STATUSES, bookingGuestLabel } from "~/utils/bookings";
 
 const auth = useAuthStore();
 const { can } = usePermissions();
@@ -32,15 +32,7 @@ const statusOptions = computed(() =>
   }))
 );
 
-const buyerLabel = (row: BookingListItem) => {
-  if (!row.buyer) {
-    return "—";
-  }
-  const name = [row.buyer.first_name, row.buyer.last_name]
-    .filter(Boolean)
-    .join(" ");
-  return name || row.buyer.email || row.buyer.id;
-};
+const buyerLabel = (row: BookingListItem) => bookingGuestLabel(row);
 
 const money = (value: string, currency = "USD") =>
   new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
@@ -198,12 +190,12 @@ watch(
               :label="$t('bookings.col.code')"
               width="150"
             />
-            <el-table-column :label="$t('bookings.col.guest')" min-width="180">
+            <el-table-column :label="$t('bookings.col.guest')" min-width="150">
               <template #default="{ row }">{{
                 buyerLabel(row as BookingListItem)
               }}</template>
             </el-table-column>
-            <el-table-column :label="$t('bookings.col.stay')" min-width="200">
+            <el-table-column :label="$t('bookings.col.stay')" min-width="190">
               <template #default="{ row }"
                 >{{ row.check_in_date }} → {{ row.check_out_date }}</template
               >
@@ -215,7 +207,7 @@ watch(
             >
             <el-table-column
               :label="$t('bookings.col.guestsRooms')"
-              width="150"
+              width="120"
             >
               <template #default="{ row }"
                 >{{ row.number_of_guests }} / {{ row.quantity }}</template
@@ -230,25 +222,24 @@ watch(
                 money(row.total_price, row.currency)
               }}</template>
             </el-table-column>
-            <el-table-column :label="$t('common.status')" width="140">
-              <template #default="{ row }"
-                ><BookingStatusTag :status="row.status"
-              /></template>
-            </el-table-column>
             <el-table-column
-              :label="$t('common.actions')"
-              width="90"
-              align="right"
+              :label="$t('bookings.col.statusActions')"
+              fixed="right"
+              width="170"
             >
               <template #default="{ row }">
-                <NuxtLink
-                  :to="`/bookings/${row.id}`"
-                  :aria-label="
-                    $t('common.viewRecord', { id: row.booking_code })
-                  "
-                  @click.stop
-                  ><Eye :size="18" aria-hidden="true"
-                /></NuxtLink>
+                <div class="flex items-center justify-between gap-2">
+                  <BookingStatusTag :status="row.status" />
+                  <NuxtLink
+                    :to="`/bookings/${row.id}`"
+                    :aria-label="
+                      $t('common.viewRecord', { id: row.booking_code })
+                    "
+                    class="shrink-0"
+                    @click.stop
+                    ><Eye :size="18" aria-hidden="true"
+                  /></NuxtLink>
+                </div>
               </template>
             </el-table-column>
             <template #empty>

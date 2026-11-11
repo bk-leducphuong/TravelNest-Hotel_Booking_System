@@ -145,7 +145,10 @@ function buildRow(faker, location) {
     check_out_policy: faker.helpers.arrayElement(HOTEL_CHECK_OUT_POLICIES) ?? null,
     min_price: String(faker.number.float({ min: 50, max: 800, fractionDigits: 2 })),
     status: 'active',
-    timezone: faker.helpers.arrayElement(IANA_TIMEZONES),
+    timezone:
+      location?.countryIsoCode?.toUpperCase() === 'VN'
+        ? 'Asia/Ho_Chi_Minh'
+        : faker.helpers.arrayElement(IANA_TIMEZONES),
     created_at: createdAt,
     updated_at: faker.date.between({ from: createdAt, to: new Date() }),
   };
