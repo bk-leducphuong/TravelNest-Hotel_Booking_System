@@ -16,5 +16,8 @@ export function formatDateTime(value?: string | null): string {
   if (Number.isNaN(date.getTime())) {
     return "—";
   }
-  return date.toLocaleString();
+  return date.toLocaleString(undefined, {
+    timeZone: "UTC",
+    timeZoneName: "short",
+  });
 }

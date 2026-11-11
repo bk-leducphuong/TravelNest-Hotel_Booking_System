@@ -231,14 +231,11 @@
         },
       },
       guestDetails() {
-        return (
-          `${this.adults} ` +
-          this.$t('userHeader.guestInputPlaceholder_1') +
-          ` · ${this.children} ` +
-          this.$t('userHeader.guestInputPlaceholder_2') +
-          ` · ${this.rooms} ` +
-          this.$t('userHeader.guestInputPlaceholder_3')
-        );
+        return [
+          this.$t('guest.adultCount', { count: Number(this.adults) }),
+          this.$t('guest.childCount', { count: Number(this.children) }),
+          this.$t('map.roomCount', { count: Number(this.rooms) }),
+        ].join(' · ');
       },
     },
     methods: {
@@ -390,6 +387,7 @@
   }
   .search-bar :deep(.el-autocomplete),
   .search-bar :deep(.el-date-editor) {
+    box-sizing: border-box;
     width: 100%;
     min-width: 0;
   }

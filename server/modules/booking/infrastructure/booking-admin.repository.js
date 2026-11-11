@@ -20,6 +20,7 @@ const LIST_INCLUDE = [
   {
     model: Users,
     as: 'buyer',
+    paranoid: false,
     attributes: ['id', 'first_name', 'last_name', 'email'],
     required: false,
   },

@@ -5,7 +5,11 @@ import {
   updateBookingStatus,
   type BookingDetail,
 } from "~/services/api/bookings";
-import { allowedNextStatuses, canCancelBooking } from "~/utils/bookings";
+import {
+  allowedNextStatuses,
+  canCancelBooking,
+  bookingGuestLabel,
+} from "~/utils/bookings";
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -34,14 +38,7 @@ const money = (value?: string | number | null, currency = "USD") =>
     Number(value || 0)
   );
 
-const buyerLabel = computed(() => {
-  const buyer = booking.value?.buyer;
-  if (!buyer) {
-    return "—";
-  }
-  const name = [buyer.first_name, buyer.last_name].filter(Boolean).join(" ");
-  return name || buyer.email || buyer.id;
-});
+const buyerLabel = computed(() => bookingGuestLabel(booking.value));
 
 const statusActions = computed(() =>
   booking.value ? allowedNextStatuses(booking.value.status) : []
@@ -245,7 +242,10 @@ watch(
             }}
           </el-descriptions-item>
           <el-descriptions-item
-            v-if="booking.payment_policy === 'pay_at_property' && booking.payment_due_at"
+            v-if="
+              booking.payment_policy === 'pay_at_property' &&
+              booking.payment_due_at
+            "
             :label="$t('bookings.col.paymentDue')"
           >
             {{ new Date(booking.payment_due_at).toLocaleString() }}

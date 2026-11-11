@@ -13,6 +13,6 @@ describe("format helpers", () => {
   it("formats date-times and handles missing values", () => {
     expect(formatDateTime(null)).toBe("—");
     expect(formatDateTime("not-a-date")).toBe("—");
-    expect(formatDateTime("2026-03-15T10:00:00.000Z")).not.toBe("—");
+    expect(formatDateTime("2026-03-15T10:00:00.000Z")).toMatch(/UTC/);
   });
 });

@@ -80,6 +80,13 @@ const photos = ref<HotelPhoto[]>([]);
 const countries = ref<Country[]>([]);
 const cities = ref<City[]>([]);
 const loadingLocations = ref(false);
+const vietnamTimezoneMismatch = computed(
+  () =>
+    countries.value
+      .find((country) => country.id === hotelForm.countryId)
+      ?.iso_code?.toUpperCase() === "VN" &&
+    !["Asia/Ho_Chi_Minh", "Asia/Saigon"].includes(hotelForm.timezone)
+);
 
 const amenities = ref<Amenity[]>([]);
 const selectedAmenityIds = ref<string[]>([]);
@@ -891,7 +898,27 @@ watch(
                     :aria-label="$t('properties.form.timezonePlaceholder')"
                     :placeholder="$t('properties.form.timezonePlaceholder')"
                   />
-                </el-form-item></div></el-form></UiSectionCard
+                  <p class="mt-1 text-xs text-muted">
+                    {{ $t("properties.form.timezoneHint") }}
+                  </p>
+                  <div
+                    v-if="vietnamTimezoneMismatch"
+                    role="alert"
+                    class="mt-2 text-sm text-amber-800"
+                  >
+                    <p>{{ $t("properties.form.timezoneMismatch") }}</p>
+                    <el-button
+                      v-if="can('hotel.update')"
+                      :disabled="pending"
+                      link
+                      type="primary"
+                      @click="hotelForm.timezone = 'Asia/Ho_Chi_Minh'"
+                      >{{ $t("properties.form.useVietnamTimezone") }}</el-button
+                    >
+                  </div>
+                </el-form-item>
+              </div></el-form
+            ></UiSectionCard
           ><UiSectionCard :title="$t('properties.section.stay')"
             ><template #actions
               ><el-button
@@ -1273,11 +1300,16 @@ watch(
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column :label="$t('properties.paymentPolicy')" width="170">
+              <el-table-column
+                :label="$t('properties.paymentPolicy')"
+                width="170"
+              >
                 <template #default="{ row }">
                   <el-tag
                     :type="
-                      row.payment_policy === 'pay_at_property' ? 'success' : 'info'
+                      row.payment_policy === 'pay_at_property'
+                        ? 'success'
+                        : 'info'
                     "
                     size="small"
                   >

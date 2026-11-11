@@ -1,4 +1,4 @@
-const { Op, fn, col } = require('sequelize');
+const { Op, fn, col, literal } = require('sequelize');
 
 const { room_inventory: RoomInventory, rooms: Rooms } = require('@platform/database');
 
@@ -76,6 +76,12 @@ class InventoryRepository {
         [fn('SUM', col('total_rooms')), 'totalRooms'],
         [fn('SUM', col('booked_rooms')), 'bookedRooms'],
         [fn('SUM', col('held_rooms')), 'heldRooms'],
+        [
+          literal(
+            "SUM(CASE WHEN `room_inventory`.`status` = 'open' AND `room`.`status` = 'active' THEN GREATEST(0, `total_rooms` - `booked_rooms` - `held_rooms`) ELSE 0 END)"
+          ),
+          'availableRooms',
+        ],
         [fn('AVG', col('price_per_night')), 'avgPrice'],
         [fn('MIN', col('price_per_night')), 'minPrice'],
         [fn('MAX', col('price_per_night')), 'maxPrice'],
@@ -106,6 +112,12 @@ class InventoryRepository {
         [fn('SUM', col('total_rooms')), 'totalRooms'],
         [fn('SUM', col('booked_rooms')), 'bookedRooms'],
         [fn('SUM', col('held_rooms')), 'heldRooms'],
+        [
+          literal(
+            "SUM(CASE WHEN `room_inventory`.`status` = 'open' AND `room`.`status` = 'active' THEN GREATEST(0, `total_rooms` - `booked_rooms` - `held_rooms`) ELSE 0 END)"
+          ),
+          'availableRooms',
+        ],
         [fn('AVG', col('price_per_night')), 'avgPrice'],
         [fn('COUNT', col('room_inventory.date')), 'dayCount'],
         [fn('COUNT', fn('DISTINCT', col('room_inventory.room_id'))), 'roomCount'],

@@ -117,6 +117,7 @@ a:hover {
   max-width: 130px;
 }
 .guest-button {
+  box-sizing: border-box;
   display: inline-flex;
   gap: 8px;
   align-items: center;
@@ -163,6 +164,7 @@ a:hover {
   top: 8px;
 }
 .guest-page {
+  box-sizing: border-box;
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;

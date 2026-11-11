@@ -596,14 +596,15 @@ const RUNNERS = {
 async function getSeedLocations(reader, countryIsoCode) {
   const sql = countryIsoCode
     ? `SELECT c.id AS cityId, c.name AS cityName, c.country_id AS countryId,
-              c.latitude AS latitude, c.longitude AS longitude
+              c.latitude AS latitude, c.longitude AS longitude, co.iso_code AS countryIsoCode
        FROM cities c
        JOIN countries co ON co.id = c.country_id
        WHERE co.iso_code = ?
        ORDER BY c.name ASC`
     : `SELECT c.id AS cityId, c.name AS cityName, c.country_id AS countryId,
-              c.latitude AS latitude, c.longitude AS longitude
+              c.latitude AS latitude, c.longitude AS longitude, co.iso_code AS countryIsoCode
        FROM cities c
+       JOIN countries co ON co.id = c.country_id
        ORDER BY c.name ASC`;
 
   const params = countryIsoCode ? [countryIsoCode] : [];
