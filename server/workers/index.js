@@ -8,6 +8,7 @@ const redisHoldTransport = require('@platform/events/transports/redis-hold');
 const { jobs } = require('@modules/booking');
 const promotionModule = require('@modules/promotion');
 const superadminModule = require('@modules/superadmin');
+const { getMetrics, instrumentWorker } = require('@platform/metrics');
 
 const workers = [
   jobs.holdExpiry.createWorker(),
@@ -18,13 +19,18 @@ const workers = [
   superadminModule.jobs.platformStatsRefresh.createWorker(),
 ];
 
+// Job duration histograms, scraped from the same port as the health check.
+workers.forEach((worker) => instrumentWorker(worker));
+
 let healthServer;
 
 function startHealthServer() {
   const port = parseInt(process.env.WORKER_HEALTH_PORT || '4001', 10);
 
-  const server = http.createServer((req, res) => {
-    if (req.url === '/health' || req.url === '/healthz') {
+  const server = http.createServer(async (req, res) => {
+    const pathname = (req.url || '').split('?')[0];
+
+    if (pathname === '/health' || pathname === '/healthz') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(
         JSON.stringify({
@@ -33,10 +39,28 @@ function startHealthServer() {
           queues: workers.map((w) => w.name),
         })
       );
-    } else {
-      res.writeHead(404);
-      res.end();
+      return;
     }
+
+    if (pathname === '/metrics') {
+      try {
+        const registry = getMetrics().registry;
+        const body = await registry.metrics();
+        res.writeHead(200, {
+          'Content-Type': registry.contentType,
+          'Cache-Control': 'no-store',
+        });
+        res.end(body);
+      } catch (error) {
+        logger.error({ error: error.message }, 'Failed to render Prometheus metrics');
+        res.writeHead(500);
+        res.end();
+      }
+      return;
+    }
+
+    res.writeHead(404);
+    res.end();
   });
 
   server.listen(port, '0.0.0.0', () => {

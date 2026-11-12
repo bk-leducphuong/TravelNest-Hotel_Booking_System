@@ -2,6 +2,8 @@ const path = require('path');
 
 const { Sequelize } = require('sequelize');
 
+const { wrapSequelizeLogging } = require('../platform/metrics/infrastructure/db.metrics');
+
 const nodeEnv = process.env.NODE_ENV || 'development';
 
 // Load the environment file once for every consumer (app runtime and sequelize-cli).
@@ -60,10 +62,13 @@ function getPool(overrides) {
 }
 
 function getLogging(override) {
-  if (override !== undefined) {
-    return override;
-  }
-  return process.env.DB_LOGGING === 'true' ? console.log : false;
+  const userLogging =
+    override !== undefined ? override : process.env.DB_LOGGING === 'true' ? console.log : false;
+
+  // Always return a function so query timings are measured even when SQL
+  // logging is disabled. `benchmark: true` below is what makes Sequelize pass
+  // the duration as the second argument.
+  return wrapSequelizeLogging(userLogging);
 }
 
 /**
@@ -78,6 +83,7 @@ function createSequelize(overrides = {}) {
     host: connection.host,
     port: connection.port,
     dialect: connection.dialect,
+    benchmark: true,
     logging: getLogging(overrides.logging),
     pool: getPool(overrides.pool),
     retry: { ...DEFAULT_RETRY, ...(overrides.retry || {}) },
