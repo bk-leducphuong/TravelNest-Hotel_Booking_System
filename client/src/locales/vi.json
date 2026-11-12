@@ -1109,7 +1109,7 @@
     "stackApiLabel": "API",
     "stackApi": "Express trên Node.js theo mô hình modular monolith, kiểm tra dữ liệu bằng Joi, tài liệu Swagger",
     "stackDataLabel": "Dữ liệu",
-    "stackData": "MySQL (Sequelize) là nguồn dữ liệu chính, Redis cho phiên, giữ chỗ và hàng đợi, MongoDB cho sự kiện phân tích",
+    "stackData": "MySQL (Sequelize) là nguồn dữ liệu chính, Redis cho phiên, giữ chỗ và hàng đợi, MySQL cho sự kiện phân tích",
     "stackJobsLabel": "Xử lý nền",
     "stackJobs": "BullMQ worker cho hết hạn đặt phòng, thông báo và đối soát",
     "stackAuthLabel": "Định danh",

@@ -17,7 +17,6 @@ Phase 1 deploys these workloads into a single-node `k3s` cluster:
 - `mysql`
 - `redis`
 - `minio`
-- `mongodb`
 - `nats`
 - `keycloak`
 
@@ -134,7 +133,7 @@ cp deploy/k8s/.env.local.example deploy/k8s/.env.local && $EDITOR deploy/k8s/.en
 Kubernetes does not restart pods when a `Secret`/`ConfigMap` used as environment
 values changes, so a re-sealed secret alone leaves the running pod on the old
 credentials. (This is how the analytics service ended up querying an
-authenticated MongoDB/Redis with no password, silently returning empty trending
+authenticated Redis with no password, silently returning empty trending
 results.) [`infra/reloader`](infra/reloader) runs
 [stakater/reloader](https://github.com/stakater/Reloader); the workloads opt in
 with the `reloader.stakater.com/auto: "true"` annotation, so a sealed-secret
@@ -187,9 +186,7 @@ rolls out. It reuses the `api-config` ConfigMap and `api-secret` Secret.
 ## Local environment (k3d)
 
 `deploy/k8s/local/` is a self-contained environment overlay for a local k3d
-cluster. It deploys the same workloads as prod, plus a dev-only MongoDB instance:
-
-- `infra/mongodb/` — single-node MongoDB (`mongodb:27017`), shared with prod.
+cluster. It deploys the same workloads as prod.
 
 All local Secrets are SOPS-encrypted with their own values — see
 [Secrets](#secrets-sops--age) and `deploy/docs/SECRETS.md`.
@@ -259,7 +256,7 @@ The overlays are intentionally cluster-agnostic so the same `prod` manifests run
 on the VPS k3s cluster or a managed cloud cluster. Assumptions to satisfy on any
 new cluster:
 
-- **StorageClass** — `mysql`, `redis`, `nats`, `minio` and `mongodb` use
+- **StorageClass** — `mysql`, `redis`, `nats` and `minio` use
   `volumeClaimTemplates` with **no `storageClassName`**, so
   the cluster must have a default StorageClass. Don't hardcode one in the
   manifests; set the default on the cluster instead.
@@ -284,8 +281,8 @@ manifests stay environment-agnostic. Terraform provisions the data tier, cluster
 and platform add-ons — see [`../terraform/README.md`](../terraform/README.md).
 
 > This is an **alternate** target, not the live environment. The production
-> cluster is the single-node Hetzner k3s cluster, where MySQL/Redis/MinIO/MongoDB/
-> NATS/Keycloak all run in-cluster. Hotel search is MySQL-only.
+> cluster is the single-node Hetzner k3s cluster, where MySQL/Redis/MinIO/NATS/
+> Keycloak all run in-cluster. Hotel search is MySQL-only.
 
 The `keycloak` database is created by
 `infra/keycloak/overlays/prod/db-init-job.yaml` (an Argo CD PreSync hook),
@@ -293,7 +290,7 @@ because RDS cannot run the old in-cluster MySQL init ConfigMap.
 
 ## Before First Deploy
 
-- MySQL, Redis, MinIO and MongoDB are provisioned in-cluster. Re-seal
+- MySQL, Redis and MinIO are provisioned in-cluster. Re-seal
   `deploy/k8s/.env.prod` (see above) if you rotate any secret.
 - Image pushes deploy automatically: the image CI (on master) commits the new
   tag into the prod overlay and Argo CD rolls it out.

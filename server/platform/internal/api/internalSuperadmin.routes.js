@@ -37,6 +37,6 @@ router.post('/images/seed', controller.runImageSeeder);
 
 router.post('/city-images/seed', controller.runCityImageSeeder);
 
-router.post('/mongodb/seeders/:target', controller.runMongodbSeeder);
+router.post('/analytics/seeders/:target', controller.runAnalyticsSeeder);
 
 module.exports = router;

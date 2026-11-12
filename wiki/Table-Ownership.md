@@ -17,6 +17,7 @@ distributed monolith with no schema contract.
 | `audit_logs` | **Node (platform)** | `platform/audit` |
 | `images`, `image_variants` | **media (Go)** → target | currently also written by Node |
 | `notifications` | **notification (Go)** → target | currently also written by Node |
+| `analytics_search_logs`, `analytics_hotel_view_events` | **analytics (Go)** | seeded by Node in dev |
 | `saved_hotels`, `viewed_hotels` | **Node (core)** | |
 
 ## Known shared writes (the debt)
@@ -43,6 +44,7 @@ application password, so no extra secret is required.
 |---|---|---|
 | `travelnest_media` | `images`, `image_variants`, `users`, `rooms` (update only) | `users`, `rooms` |
 | `travelnest_notification` | `notifications` | `hotels`, `hotel_users`, `user_roles`, `roles`, `users` |
+| `travelnest_analytics` | `analytics_search_logs`, `analytics_hotel_view_events` | — |
 
 ## Cutover checklist
 

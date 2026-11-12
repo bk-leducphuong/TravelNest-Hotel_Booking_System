@@ -1,20 +1,9 @@
-package mongo
+package mysql
 
 import (
 	"testing"
-
-	mongodriver "go.mongodb.org/mongo-driver/mongo"
+	"time"
 )
-
-func TestIsDuplicateKey(t *testing.T) {
-	err := mongodriver.WriteException{
-		WriteErrors: []mongodriver.WriteError{{Code: 11000, Message: "duplicate key"}},
-	}
-
-	if !IsDuplicateKey(err) {
-		t.Fatal("expected duplicate key error to be detected")
-	}
-}
 
 func TestClamp(t *testing.T) {
 	if got := clamp(0, 10, 1, 100); got != 10 {
@@ -25,5 +14,15 @@ func TestClamp(t *testing.T) {
 	}
 	if got := clamp(500, 10, 1, 100); got != 100 {
 		t.Fatalf("clamp max = %d, want 100", got)
+	}
+}
+
+func TestStartOfDayUsesUTC(t *testing.T) {
+	input := time.Date(2026, 3, 8, 17, 42, 13, 0, time.FixedZone("ICT", 7*60*60))
+	got := startOfDay(input)
+
+	want := time.Date(2026, 3, 8, 0, 0, 0, 0, time.UTC)
+	if !got.Equal(want) {
+		t.Fatalf("startOfDay = %s, want %s", got, want)
 	}
 }

@@ -8,7 +8,7 @@ surfaces are authorised.
 
 ### 1. Internal superadmin API was fully unauthenticated
 
-`/api/v1/internal/superadmin/*` (DB init, seeders, Mongo seeding, bulk
+`/api/v1/internal/superadmin/*` (DB init, seeders, analytics seeding, bulk
 email/in-app notifications) had every guard commented out — anyone could trigger them.
 
 - The whole router is now protected: `router.use(requireInternalSuperadmin)`

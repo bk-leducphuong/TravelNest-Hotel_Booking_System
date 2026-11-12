@@ -4,7 +4,7 @@ const {
   buildImageSeedArgs,
   buildImageSeedEnv,
   buildCityImageSeedArgs,
-  buildMongodbSeedArgs,
+  buildAnalyticsSeedArgs,
 } = require('@platform/internal/args');
 
 describe('platform/internal/args', () => {
@@ -69,12 +69,14 @@ describe('platform/internal/args', () => {
     expect(buildCityImageSeedArgs({ primaryOnly: false })).toEqual(['--all-images']);
   });
 
-  it('builds MongoDB seeder args per target', () => {
-    expect(buildMongodbSeedArgs('search_logs', { days: 7, batch: 100, rows: 50 })).toEqual([
+  it('builds analytics seeder args per target', () => {
+    expect(buildAnalyticsSeedArgs('search_logs', { days: 7, batch: 100, rows: 50 })).toEqual([
       '--days=7',
       '--batch=100',
       '--rows=50',
     ]);
-    expect(buildMongodbSeedArgs('hotel_views', { avgPerHotel: 5 })).toEqual(['--avg-per-hotel=5']);
+    expect(buildAnalyticsSeedArgs('hotel_views', { avgPerHotel: 5 })).toEqual([
+      '--avg-per-hotel=5',
+    ]);
   });
 });

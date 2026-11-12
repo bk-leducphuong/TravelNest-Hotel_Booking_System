@@ -5,7 +5,7 @@ A repeatable path to bring up TravelNest and run a full guest + host demo.
 ## 1. Prerequisites
 
 - **Node.js ≥ 20** and **Yarn 4** (`corepack enable && corepack prepare yarn@4.5.3 --activate`)
-- **MySQL 8**, **Redis**, **MinIO**, **MongoDB** — start them with the
+- **MySQL 8**, **Redis**, **MinIO** — start them with the
   repo's infra scripts (`make infra-*`) or your own instances.
 - **Keycloak** — the app authenticates with Keycloak (realm `travelnest`; clients
   `travelnest-web` for the guest app and `travelnest-admin` for the admin app).
@@ -19,7 +19,7 @@ yarn install
 
 ```bash
 # from the repo root (uses server/.env.development by default)
-make infra-mysql infra-redis infra-minio infra-mongodb
+make infra-mysql infra-redis infra-minio
 ```
 
 ## 3. Migrate + seed a demo dataset
@@ -31,7 +31,7 @@ yarn demo:seed      # clear seed data, then seed everything incl. finance
 
 `yarn demo:seed` = `seed:clear` + `seed-all --with-finance` (hotels, rooms, inventory,
 users, staff, bookings, reviews, transactions/payments/payouts, images,
-and MongoDB analytics). Use `--quick` for a smaller/faster dataset:
+and MySQL analytics events). Use `--quick` for a smaller/faster dataset:
 
 ```bash
 yarn workspace @travelnest/server seed:all:quick
@@ -79,7 +79,7 @@ the matching Keycloak users, realm roles, `hotel_users` memberships and `hotels.
 - **Auth is Keycloak-only.** Make sure the realm/clients exist and the seeded accounts are
   provisioned before the demo; otherwise login fails. Set `SEED_TEST_PASSWORD` to a known
   value and re-run `seed:hotel_staff`.
-- **External services** (MySQL/Redis/MinIO/Mongo/NATS/Keycloak) must be up.
+- **External services** (MySQL/Redis/MinIO/NATS/Keycloak) must be up.
   Hotel search is MySQL-only; the hotel search-snapshot pipeline is seeded,
   not event-driven.
 - **Stripe** must be in test mode with valid test keys for the payment step.

@@ -14,7 +14,6 @@ data:
   NATS_URL: nats://nats:4222
   NATS_STREAM: TRAVELNEST_ANALYTICS
   NATS_CLIENT_NAME: travelnest-worker
-  MONGODB_DATABASE: travelnest_analytics
   MINIO_ENDPOINT: minio
   MINIO_PORT: "9000"
   MINIO_BUCKET: uploads

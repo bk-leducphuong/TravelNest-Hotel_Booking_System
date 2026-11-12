@@ -53,7 +53,5 @@ ingress:
     service: tcp://localhost:13306
   - hostname: redis.deployserver.work
     service: tcp://localhost:16379
-  - hostname: mongodb.deployserver.work
-    service: tcp://localhost:27017
   # Catch-all: anything not matched above returns 404.
   - service: http_status:404

@@ -8,7 +8,6 @@ require('dotenv').config({
   path: path.join(serverRoot, `.env.${process.env.NODE_ENV || 'development'}`),
 });
 
-const mongoDb = require('@config/mongodb.config');
 const db = require('@models');
 const searchLogRepository = require('./repositories/search_log.repository');
 
@@ -34,7 +33,6 @@ async function main(options = {}) {
   const closeSequelize = options.closeSequelize !== false;
 
   await db.sequelize.authenticate();
-  await mongoDb.connect();
 
   const destinations = await db.destinations.findAll({
     where: { is_active: true },
@@ -47,10 +45,10 @@ async function main(options = {}) {
   }
 
   if (clear) {
-    await require('./models/search_log.model').deleteMany({});
+    await searchLogRepository.clear();
   }
 
-  console.log(`Seeding ${rows} MongoDB search logs...`);
+  console.log(`Seeding ${rows} MySQL analytics search logs...`);
 
   let batch = [];
   for (let index = 0; index < rows; index += 1) {
@@ -81,17 +79,15 @@ async function main(options = {}) {
     await searchLogRepository.createSearchLogs(batch);
   }
 
-  await mongoDb.close();
   if (closeSequelize) {
     await db.sequelize.close();
   }
-  console.log('MongoDB search log seeding complete.');
+  console.log('MySQL analytics search log seeding complete.');
 }
 
 if (require.main === module) {
   main().catch(async (error) => {
-    console.error('Error seeding MongoDB search logs:', error);
-    await mongoDb.close();
+    console.error('Error seeding MySQL analytics search logs:', error);
     await db.sequelize.close();
     process.exit(1);
   });

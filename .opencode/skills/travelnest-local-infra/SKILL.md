@@ -1,6 +1,6 @@
 ---
 name: travelnest-local-infra
-description: Inspect TravelNest local development data and the local k3d Kubernetes cluster — MySQL, Redis, MongoDB, MinIO, migrations, and seeds. Use when debugging local data, running make infra-*, querying the dev database/cache, or checking the local cluster. For the production VPS/cluster use the travelnest-prod-ops skill instead.
+description: Inspect TravelNest local development data and the local k3d Kubernetes cluster — MySQL, Redis, MinIO, migrations, and seeds. Use when debugging local data, running make infra-*, querying the dev database/cache, or checking the local cluster. For the production VPS/cluster use the travelnest-prod-ops skill instead.
 metadata:
   audience: maintainers
   workflow: local-dev
@@ -28,7 +28,6 @@ make infra-check                                   # which CLIs are present
 make infra-mysql ARGS="-e 'SHOW TABLES;'"
 make infra-redis ARGS="PING"
 make infra-minio
-make infra-mongodb ARGS="--eval 'db.getCollectionNames()'"
 ```
 
 Target a different env file when needed:
@@ -44,14 +43,12 @@ Connection scripts live in `server/scripts/infra/`:
 | `mysql.sh`   | `MYSQL_CLI_*` → `DB_*`            | dev compose publishes MySQL on `localhost:3307`      |
 | `redis.sh`   | `REDIS_CLI_*` → `REDIS_*`         | default DB index `1`                                 |
 | `minio.sh`   | `MINIO_CLI_*` → `MINIO_*`         | configures an `mc` alias; no args lists the bucket   |
-| `mongodb.sh` | `MONGODB_CLI_URI` → `MONGODB_URI` | falls back to `localhost:27017/travelnest_analytics` |
 
 ## Missing CLIs (fallbacks)
 
 `mc` (MinIO client) is **not** installed on this machine, so `make infra-minio`
 will fail (`require_cli mc`). Use the local S3 API or console instead. The local
-containers are named `minio`, `travelnest-mysql`, `travelnest-redis`,
-`travelnest-mongodb` (see `server/infra/docker-compose.yml`).
+containers are named `minio`, `travelnest-mysql`, `travelnest-redis` (see `server/infra/docker-compose.yml`).
 
 ```bash
 # MinIO / S3 (in place of `make infra-minio`)
@@ -105,8 +102,8 @@ npm run migrate:status
 npm run seed:all:quick
 npm run es:setup-hotels
 npm run es:seed-hotels
-npm run mongo:seed:search_logs
-npm run mongo:seed:hotel_views
+npm run analytics:seed:search_logs
+npm run analytics:seed:hotel_views
 ```
 
 ## Safety
