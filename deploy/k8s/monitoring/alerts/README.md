@@ -6,26 +6,41 @@ metrics below come from the k8s-monitoring stack (`node-exporter`,
 
 ## Rules
 
-| Alert | PromQL | Fires when | For |
-|---|---|---|---|
-| **Node memory high** | `(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100` | `> 90` | 5m |
-| **Node disk high** | `(1 - node_filesystem_avail_bytes{fstype!~"tmpfs\|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs\|overlay"}) * 100` | `> 85` | 10m |
-| **Node not ready** | `kube_node_status_condition{condition="Ready",status="true"} == 0` | `== 1` | 2m |
-| **Pod CrashLooping** | `kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"} > 0` | `> 0` | 5m |
-| **Pod restarting** | `increase(kube_pod_container_status_restarts_total[15m])` | `> 3` | 0s |
-| **Container OOMKilled** | `kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} > 0` | `> 0` | 0s |
-| **Deployment replicas unavailable** | `kube_deployment_status_replicas_unavailable > 0` | `> 0` | 10m |
+| Alert                               | PromQL                                                                                                                     | Fires when | For |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------- | --- |
+| **Node memory high**                | `(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100`                                                  | `> 90`     | 5m  |
+| **Node disk high**                  | `(1 - node_filesystem_avail_bytes{fstype!~"tmpfs\|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs\|overlay"}) * 100` | `> 85`     | 10m |
+| **Node not ready**                  | `kube_node_status_condition{condition="Ready",status="true"} == 0`                                                         | `== 1`     | 2m  |
+| **Pod CrashLooping**                | `kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"} > 0`                                                  | `> 0`      | 5m  |
+| **Pod restarting**                  | `increase(kube_pod_container_status_restarts_total[15m])`                                                                  | `> 3`      | 0s  |
+| **Container OOMKilled**             | `kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} > 0`                                                 | `> 0`      | 0s  |
+| **Deployment replicas unavailable** | `kube_deployment_status_replicas_unavailable > 0`                                                                          | `> 0`      | 10m |
 
 Suggested labels: `severity` = `warning` (memory/disk) or `critical`
 (node-down/crashloop). Send notifications to a contact point (email or a
 webhook such as Slack/Discord).
 
+## API latency and saturation rules
+
+These depend on the API's own metrics (`job="travelnest-api"`) and are **not
+applied yet** — create them in Grafana Cloud Alerting once the metrics have been
+flowing for a day so the thresholds can be baselined.
+
+| Alert                       | PromQL                                                                                                                                       | Fires when | For |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --- |
+| **API p95 latency high**    | `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="travelnest-api"}[5m])))`                               | `> 0.5`    | 10m |
+| **Search p95 latency high** | `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="travelnest-api",route="/api/v1/search/hotels"}[5m])))` | `> 0.5`    | 10m |
+| **API error ratio high**    | `sum(rate(http_requests_total{job="travelnest-api",status_class="5xx"}[5m])) / sum(rate(http_requests_total{job="travelnest-api"}[5m]))`     | `> 0.01`   | 5m  |
+| **MySQL p95 high**          | `histogram_quantile(0.95, sum by (le) (rate(db_query_duration_seconds_bucket[5m])))`                                                         | `> 0.05`   | 10m |
+| **Event loop lag p99**      | `nodejs_eventloop_lag_p99_seconds{job="travelnest-api"}`                                                                                     | `> 0.05`   | 10m |
+| **Worker job p95 high**     | `histogram_quantile(0.95, sum by (le) (rate(job_duration_seconds_bucket{job="travelnest-worker"}[15m])))`                                    | `> 30`     | 15m |
+
 ## Apply
 
 Three ways — use whichever fits:
 
-1. **Grafana Cloud UI** (simplest): *Alerts & IRM → Alert rules → New alert
-   rule* → pick the Prometheus datasource → paste the PromQL → set the
+1. **Grafana Cloud UI** (simplest): _Alerts & IRM → Alert rules → New alert
+   rule_ → pick the Prometheus datasource → paste the PromQL → set the
    threshold + `for` above.
 2. **`gcx`** (once configured — see note below):
    ```bash

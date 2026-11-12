@@ -2,37 +2,30 @@
 #
 # This file is the source of truth for telemetry collection in this cluster.
 # Argo CD reads it through the `ref: values` source in application.yaml.
-#
-# Monitoring changes land as reviewable diffs here instead of in Grafana Cloud
-# Fleet Management. See README.md for the rollout and rollback procedure.
+# See README.md for the rollout and rollback procedure.
 
 cluster:
   name: travelnest-test
 
-collectorCommon:
-  alloy:
-    # Step 1 of the Fleet -> Git migration: the pipeline still lives in Fleet
-    # Management. The next commit replaces this block with in-repo destinations
-    # and features.
-    remoteConfig:
-      enabled: true
-      # Suppress the chart's default mTLS block, which references ca/cert/key
-      # keys that do not exist in our Secret.
-      tls: null
-      name: grafana-cloud-remote-config
-      url: https://fleet-management-prod-013.grafana.net
-      auth:
-        type: basic
-        username: "1867167"
-        passwordKey: "password"
-      secret:
-        create: false
-        name: grafana-cloud-remote-config
+# Prometheus remote write. The URL and instance id come from the Grafana Cloud
+# stack (Connections -> Prometheus -> Details). The token is injected from the
+# sealed Secret as an environment variable so it never appears in Git or in the
+# rendered Alloy config.
+destinations:
+  grafana-cloud-metrics:
+    type: prometheus
+    url: https://prometheus-prod-37-prod-ap-southeast-1.grafana.net/api/prom/push
+    auth:
+      type: basic
+      # Raw Alloy expressions. The username is the Prometheus instance id (not
+      # the stack id, which is 1867167).
+      usernameFrom: '"3658557"'
+      passwordFrom: sys.env("GCLOUD_RW_API_KEY")
 
 collectors:
   alloy-daemon:
-    # Host access presets are kept from the previous configuration. Features
-    # auto-assign to this collector because it is the only enabled one.
+    # Host access presets are kept from the previous Fleet-based setup.
+    # Features auto-assign to this collector because it is the only enabled one.
     presets:
       - small
       - root
@@ -43,6 +36,30 @@ collectors:
       - service-discovery
       - filesystem-log-reader
       - daemonset
+    alloy:
+      extraEnv:
+        - name: GCLOUD_RW_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: grafana-cloud-remote-config
+              key: password
+
+# Node/cAdvisor/kubelet/kube-state-metrics scraping, matching the pipeline that
+# was previously served by Fleet Management.
+clusterMetrics:
+  enabled: true
+
+# Node Exporter scraping (previously part of the Fleet pipeline). The
+# node-exporter Deployment is provided by telemetryServices below.
+hostMetrics:
+  enabled: true
+  linuxHosts:
+    enabled: true
+
+# Scrapes pods that carry the k8s.grafana.com/scrape annotation. The API and
+# worker deployments in deploy/k8s/apps/*/base set it.
+annotationAutodiscovery:
+  enabled: true
 
 telemetryServices:
   node-exporter:
