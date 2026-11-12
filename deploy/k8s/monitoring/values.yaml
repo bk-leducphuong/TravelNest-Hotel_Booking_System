@@ -1,0 +1,53 @@
+# Values for the grafana/k8s-monitoring chart.
+#
+# This file is the source of truth for telemetry collection in this cluster.
+# Argo CD reads it through the `ref: values` source in application.yaml.
+#
+# Monitoring changes land as reviewable diffs here instead of in Grafana Cloud
+# Fleet Management. See README.md for the rollout and rollback procedure.
+
+cluster:
+  name: travelnest-test
+
+collectorCommon:
+  alloy:
+    # Step 1 of the Fleet -> Git migration: the pipeline still lives in Fleet
+    # Management. The next commit replaces this block with in-repo destinations
+    # and features.
+    remoteConfig:
+      enabled: true
+      # Suppress the chart's default mTLS block, which references ca/cert/key
+      # keys that do not exist in our Secret.
+      tls: null
+      name: grafana-cloud-remote-config
+      url: https://fleet-management-prod-013.grafana.net
+      auth:
+        type: basic
+        username: "1867167"
+        passwordKey: "password"
+      secret:
+        create: false
+        name: grafana-cloud-remote-config
+
+collectors:
+  alloy-daemon:
+    # Host access presets are kept from the previous configuration. Features
+    # auto-assign to this collector because it is the only enabled one.
+    presets:
+      - small
+      - root
+      - host-storage
+      - host-network
+      - host-cgroup
+      - clustered
+      - service-discovery
+      - filesystem-log-reader
+      - daemonset
+
+telemetryServices:
+  node-exporter:
+    deploy: true
+  kube-state-metrics:
+    deploy: true
+  beyla:
+    deploy: false
