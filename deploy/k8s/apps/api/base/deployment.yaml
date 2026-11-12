@@ -15,6 +15,14 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: api
+      annotations:
+        # Scraped by the Alloy collector (annotationAutodiscovery in
+        # deploy/k8s/monitoring/values.yaml). Metrics are exposed on the
+        # dedicated `metrics` port, never through the Ingress.
+        k8s.grafana.com/scrape: "true"
+        k8s.grafana.com/job: travelnest-api
+        k8s.grafana.com/metrics.portName: metrics
+        k8s.grafana.com/metrics.path: /metrics
     spec:
       containers:
         - name: api
@@ -28,6 +36,8 @@ spec:
           ports:
             - containerPort: 3000
               name: http
+            - containerPort: 9464
+              name: metrics
           # Give the app time to bring up (it now retries MySQL with backoff
           # instead of exiting) before liveness/readiness start failing it.
           startupProbe:
