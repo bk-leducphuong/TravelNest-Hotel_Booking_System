@@ -1,5 +1,4 @@
 const ApiError = require('@utils/ApiError');
-const asyncHandler = require('@utils/asyncHandler');
 
 const { openConversationForGuest } = require('../application/ensureConversationForBooking');
 const { listGuestConversations } = require('../application/listConversations');
@@ -13,7 +12,7 @@ const { toConversationDto } = require('../application/serializers');
  * Guest messaging controller - HTTP mapping only.
  */
 
-const listConversationsHandler = asyncHandler(async (req, res) => {
+const listConversationsHandler = async (req, res) => {
   const result = await listGuestConversations({
     userId: req.user.id,
     page: req.query.page,
@@ -25,9 +24,9 @@ const listConversationsHandler = asyncHandler(async (req, res) => {
     data: result.conversations,
     meta: { page: result.page, limit: result.limit, total: result.total },
   });
-});
+};
 
-const openConversationHandler = asyncHandler(async (req, res) => {
+const openConversationHandler = async (req, res) => {
   const conversation = await openConversationForGuest({
     userId: req.user.id,
     bookingId: req.body.bookingId,
@@ -36,9 +35,9 @@ const openConversationHandler = asyncHandler(async (req, res) => {
   res.status(200).json({
     data: toConversationDto(conversation, { unreadCount: 0 }),
   });
-});
+};
 
-const getMessagesHandler = asyncHandler(async (req, res) => {
+const getMessagesHandler = async (req, res) => {
   const result = await getGuestMessages({
     userId: req.user.id,
     conversationId: req.params.conversationId,
@@ -54,9 +53,9 @@ const getMessagesHandler = asyncHandler(async (req, res) => {
     data: result.messages,
     meta: { hasMore: result.hasMore, latestSeq: result.latestSeq },
   });
-});
+};
 
-const sendMessageHandler = asyncHandler(async (req, res) => {
+const sendMessageHandler = async (req, res) => {
   const message = await sendGuestMessage({
     userId: req.user.id,
     conversationId: req.params.conversationId,
@@ -65,9 +64,9 @@ const sendMessageHandler = asyncHandler(async (req, res) => {
   });
 
   res.status(201).json({ data: message });
-});
+};
 
-const markReadHandler = asyncHandler(async (req, res) => {
+const markReadHandler = async (req, res) => {
   const result = await markGuestConversationRead({
     userId: req.user.id,
     conversationId: req.params.conversationId,
@@ -75,12 +74,12 @@ const markReadHandler = asyncHandler(async (req, res) => {
   });
 
   res.status(200).json({ data: result });
-});
+};
 
-const unreadCountHandler = asyncHandler(async (req, res) => {
+const unreadCountHandler = async (req, res) => {
   const result = await getGuestUnreadCount(req.user.id);
   res.status(200).json({ data: result });
-});
+};
 
 module.exports = {
   listConversationsHandler,

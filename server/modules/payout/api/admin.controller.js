@@ -1,5 +1,3 @@
-const asyncHandler = require('@utils/asyncHandler');
-
 const { listPayouts } = require('../application/admin/listPayouts');
 const { getPayout } = require('../application/admin/getPayout');
 const { getHotelPayoutSummary } = require('../application/admin/getHotelPayoutSummary');
@@ -12,7 +10,7 @@ const { createConnectAccount } = require('../application/admin/createConnectAcco
 const { createAccountLink } = require('../application/admin/createAccountLink');
 const { syncConnectedAccount } = require('../application/admin/syncConnectedAccount');
 
-const listPayoutsHandler = asyncHandler(async (req, res) => {
+const listPayoutsHandler = async (req, res) => {
   const result = await listPayouts({
     ...req.query,
     hotelId: req.hotelContext?.hotelId || req.query.hotelId,
@@ -22,21 +20,21 @@ const listPayoutsHandler = asyncHandler(async (req, res) => {
     data: result.payouts,
     meta: { page: result.page, limit: result.limit, total: result.total },
   });
-});
+};
 
-const getPayoutHandler = asyncHandler(async (req, res) => {
+const getPayoutHandler = async (req, res) => {
   const payout = await getPayout(req.params.payoutId);
 
   res.status(200).json({ data: payout });
-});
+};
 
-const getHotelPayoutSummaryHandler = asyncHandler(async (req, res) => {
+const getHotelPayoutSummaryHandler = async (req, res) => {
   const summary = await getHotelPayoutSummary(req.params.hotelId);
 
   res.status(200).json({ data: summary });
-});
+};
 
-const generateEligiblePayoutsHandler = asyncHandler(async (req, res) => {
+const generateEligiblePayoutsHandler = async (req, res) => {
   const result = await generateEligiblePayouts({
     cutoffDate: req.body.cutoffDate,
     ownerId: req.body.ownerId,
@@ -45,18 +43,18 @@ const generateEligiblePayoutsHandler = asyncHandler(async (req, res) => {
   });
 
   res.status(201).json({ data: result });
-});
+};
 
-const processPayoutHandler = asyncHandler(async (req, res) => {
+const processPayoutHandler = async (req, res) => {
   const payout = await processPayout(req.params.payoutId, {
     actorUserId: req.user.id,
     requestId: req.id,
   });
 
   res.status(200).json({ data: payout });
-});
+};
 
-const setPayoutStatusHandler = asyncHandler(async (req, res) => {
+const setPayoutStatusHandler = async (req, res) => {
   const payout = await setPayoutStatus(req.params.payoutId, {
     status: req.body.status,
     failureCode: req.body.failureCode,
@@ -66,36 +64,36 @@ const setPayoutStatusHandler = asyncHandler(async (req, res) => {
   });
 
   res.status(200).json({ data: payout });
-});
+};
 
-const listConnectedAccountsHandler = asyncHandler(async (req, res) => {
+const listConnectedAccountsHandler = async (req, res) => {
   const accounts = await listConnectedAccounts({
     hotelId: req.query.hotelId,
     ownerId: req.query.ownerId,
   });
 
   res.status(200).json({ data: accounts });
-});
+};
 
-const checkConnectedAccountHandler = asyncHandler(async (req, res) => {
+const checkConnectedAccountHandler = async (req, res) => {
   const result = await checkConnectedAccount({
     hotelId: req.query.hotelId,
     ownerId: req.query.ownerId,
   });
 
   res.status(200).json({ data: result });
-});
+};
 
-const createConnectAccountHandler = asyncHandler(async (req, res) => {
+const createConnectAccountHandler = async (req, res) => {
   const account = await createConnectAccount(req.body, {
     actorUserId: req.user.id,
     requestId: req.id,
   });
 
   res.status(201).json({ data: account });
-});
+};
 
-const createAccountLinkHandler = asyncHandler(async (req, res) => {
+const createAccountLinkHandler = async (req, res) => {
   const link = await createAccountLink(
     {
       accountId: req.params.accountId,
@@ -106,16 +104,16 @@ const createAccountLinkHandler = asyncHandler(async (req, res) => {
   );
 
   res.status(200).json({ data: link });
-});
+};
 
-const syncConnectedAccountHandler = asyncHandler(async (req, res) => {
+const syncConnectedAccountHandler = async (req, res) => {
   const account = await syncConnectedAccount(req.params.accountId, {
     actorUserId: req.user.id,
     requestId: req.id,
   });
 
   res.status(200).json({ data: account });
-});
+};
 
 module.exports = {
   listPayoutsHandler,

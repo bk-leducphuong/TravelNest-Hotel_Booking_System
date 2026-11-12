@@ -1,12 +1,11 @@
 const logger = require('@config/logger.config');
-const asyncHandler = require('@utils/asyncHandler');
 const imageService = require('../application/image.service');
 
 /**
  * Upload image for an entity
  * POST /api/v1/images/:entityType/:entityId
  */
-const uploadImage = asyncHandler(async (req, res) => {
+const uploadImage = async (req, res) => {
   const { entityType, entityId } = req.params;
   const file = req.file;
   const isPrimary = req.body.is_primary === 'true' || req.body.is_primary === true;
@@ -18,13 +17,13 @@ const uploadImage = asyncHandler(async (req, res) => {
     message: 'Image uploaded successfully',
     data: result,
   });
-});
+};
 
 /**
  * Get images for an entity
  * GET /api/v1/images/:entityType/:entityId
  */
-const getImages = asyncHandler(async (req, res) => {
+const getImages = async (req, res) => {
   const { entityType, entityId } = req.params;
 
   const images = await imageService.getImages(entityType, entityId);
@@ -37,13 +36,13 @@ const getImages = asyncHandler(async (req, res) => {
       images,
     },
   });
-});
+};
 
 /**
  * Delete an image
  * DELETE /api/v1/images/:id
  */
-const deleteImage = asyncHandler(async (req, res) => {
+const deleteImage = async (req, res) => {
   const { id } = req.params;
 
   const result = await imageService.deleteImage(id);
@@ -53,13 +52,13 @@ const deleteImage = asyncHandler(async (req, res) => {
     message: 'Image deleted successfully',
     data: result,
   });
-});
+};
 
 /**
  * Set primary image for an entity
  * PUT /api/v1/images/:entityType/:entityId/primary/:imageId
  */
-const setPrimaryImage = asyncHandler(async (req, res) => {
+const setPrimaryImage = async (req, res) => {
   const { entityType, entityId, imageId } = req.params;
 
   const result = await imageService.setPrimaryImage(entityType, entityId, imageId);
@@ -69,7 +68,7 @@ const setPrimaryImage = asyncHandler(async (req, res) => {
     message: 'Primary image set successfully',
     data: result,
   });
-});
+};
 
 module.exports = {
   uploadImage,

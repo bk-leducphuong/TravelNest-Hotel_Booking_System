@@ -1,5 +1,4 @@
 const ApiError = require('@utils/ApiError');
-const asyncHandler = require('@utils/asyncHandler');
 
 const { listHotelConversations } = require('../application/listConversations');
 const { getHotelMessages } = require('../application/getMessages');
@@ -32,7 +31,7 @@ function requireActiveHotelId(req) {
   return hotelId;
 }
 
-const listConversationsHandler = asyncHandler(async (req, res) => {
+const listConversationsHandler = async (req, res) => {
   const hotelId = requireActiveHotelId(req);
 
   const result = await listHotelConversations({
@@ -47,9 +46,9 @@ const listConversationsHandler = asyncHandler(async (req, res) => {
     data: result.conversations,
     meta: { page: result.page, limit: result.limit, total: result.total },
   });
-});
+};
 
-const getMessagesHandler = asyncHandler(async (req, res) => {
+const getMessagesHandler = async (req, res) => {
   const result = await getHotelMessages({
     hotelId: requireActiveHotelId(req),
     conversationId: req.params.conversationId,
@@ -65,9 +64,9 @@ const getMessagesHandler = asyncHandler(async (req, res) => {
     data: result.messages,
     meta: { hasMore: result.hasMore, latestSeq: result.latestSeq },
   });
-});
+};
 
-const sendMessageHandler = asyncHandler(async (req, res) => {
+const sendMessageHandler = async (req, res) => {
   const message = await sendHotelMessage({
     hotelId: requireActiveHotelId(req),
     senderUserId: req.user.id,
@@ -77,9 +76,9 @@ const sendMessageHandler = asyncHandler(async (req, res) => {
   });
 
   res.status(201).json({ data: message });
-});
+};
 
-const markReadHandler = asyncHandler(async (req, res) => {
+const markReadHandler = async (req, res) => {
   const result = await markHotelConversationRead({
     hotelId: requireActiveHotelId(req),
     userId: req.user.id,
@@ -88,16 +87,16 @@ const markReadHandler = asyncHandler(async (req, res) => {
   });
 
   res.status(200).json({ data: result });
-});
+};
 
-const unreadCountHandler = asyncHandler(async (req, res) => {
+const unreadCountHandler = async (req, res) => {
   const result = await getHotelUnreadCount({
     hotelId: requireActiveHotelId(req),
     readerUserId: req.user.id,
   });
 
   res.status(200).json({ data: result });
-});
+};
 
 module.exports = {
   listConversationsHandler,

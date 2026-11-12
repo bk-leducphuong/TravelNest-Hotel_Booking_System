@@ -10,6 +10,7 @@ export interface OccupancySummary {
   availableRooms: number;
   avgPrice: number;
   occupancyRate: number;
+  unavailableRooms?: number;
   dayCount: number;
   roomCount: number;
 }

@@ -1,5 +1,3 @@
-const asyncHandler = require('@utils/asyncHandler');
-
 const { createReview } = require('../application/createReview');
 const { listHotelReviews } = require('../application/listHotelReviews');
 const { listUserReviews } = require('../application/listUserReviews');
@@ -7,7 +5,7 @@ const { validateReviewEligibility } = require('../application/validateReviewElig
 const { checkAlreadyReviewed } = require('../application/checkAlreadyReviewed');
 const { castReviewVote, removeReviewVote } = require('../application/reviewHelpfulVote');
 
-const getHotelReviews = asyncHandler(async (req, res) => {
+const getHotelReviews = async (req, res) => {
   const { hotelId } = req.params;
   const { page, limit, minRating, maxRating, months, country, hasMedia, q } = req.query;
 
@@ -33,9 +31,9 @@ const getHotelReviews = asyncHandler(async (req, res) => {
       facets: result.facets,
     },
   });
-});
+};
 
-const getUserReviews = asyncHandler(async (req, res) => {
+const getUserReviews = async (req, res) => {
   const userId = req.user.id;
   const { page, limit, status } = req.query;
 
@@ -51,45 +49,45 @@ const getUserReviews = asyncHandler(async (req, res) => {
       hidden: result.hidden,
     },
   });
-});
+};
 
-const validateReview = asyncHandler(async (req, res) => {
+const validateReview = async (req, res) => {
   const result = await validateReviewEligibility(req.user.id, {
     bookingCode: req.query.bookingCode,
     hotelId: req.query.hotelId,
   });
 
   res.status(200).json({ data: result });
-});
+};
 
-const checkReview = asyncHandler(async (req, res) => {
+const checkReview = async (req, res) => {
   const result = await checkAlreadyReviewed(req.user.id, {
     bookingCode: req.query.bookingCode,
     hotelId: req.query.hotelId,
   });
 
   res.status(200).json({ data: result });
-});
+};
 
-const postReview = asyncHandler(async (req, res) => {
+const postReview = async (req, res) => {
   const result = await createReview(req.user.id, req.body);
 
   res.status(201).json({
     data: { ...result, message: 'Review posted successfully' },
   });
-});
+};
 
-const putReviewVote = asyncHandler(async (req, res) => {
+const putReviewVote = async (req, res) => {
   const result = await castReviewVote(req.user.id, req.params.reviewId, req.body.isHelpful);
 
   res.status(200).json({ data: result });
-});
+};
 
-const deleteReviewVote = asyncHandler(async (req, res) => {
+const deleteReviewVote = async (req, res) => {
   const result = await removeReviewVote(req.user.id, req.params.reviewId);
 
   res.status(200).json({ data: result });
-});
+};
 
 module.exports = {
   getHotelReviews,

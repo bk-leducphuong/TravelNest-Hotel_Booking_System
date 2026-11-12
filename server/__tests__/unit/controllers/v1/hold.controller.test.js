@@ -118,7 +118,7 @@ describe('HoldController', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should call next with error when service throws', async () => {
+    it('propagates service errors so the error middleware can handle them', async () => {
       const userId = 'user-uuid-123';
       req.session = { user: { user_id: userId } };
       req.params = { holdId: 'hold-123' };
@@ -126,9 +126,11 @@ describe('HoldController', () => {
 
       holdService.releaseHold.mockRejectedValue(error);
 
-      await holdController.releaseHold(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(error);
+      // Express 5 forwards rejected handler promises to the error middleware;
+      // the controller no longer needs (nor uses) an asyncHandler wrapper.
+      await expect(holdController.releaseHold(req, res, next)).rejects.toBe(error);
+      expect(next).not.toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
     });
   });
 });

@@ -29,8 +29,23 @@ module.exports = (schema) => (req, res, next) => {
         return next(new ApiError(400, 'VALIDATION_ERROR', 'Invalid request data', fields));
       }
 
-      // Replace with sanitized data
-      req[key] = value;
+      // Replace with sanitized data.
+      //
+      // Express 5 exposes `req.query` as a getter-only accessor that re-parses
+      // the URL on every read, so `req.query = value` throws (and mutating the
+      // returned object would be lost on the next read). Redefine it as an own
+      // writable property so handlers keep reading the sanitized/defaulted
+      // values from `req.query`.
+      if (key === 'query') {
+        Object.defineProperty(req, 'query', {
+          value,
+          writable: true,
+          configurable: true,
+          enumerable: true,
+        });
+      } else {
+        req[key] = value;
+      }
     }
   }
 

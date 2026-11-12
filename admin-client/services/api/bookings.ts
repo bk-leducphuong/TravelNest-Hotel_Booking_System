@@ -39,6 +39,7 @@ export interface BookingListItem {
   created_at: string;
   room_id?: string | null;
   buyer?: BookingBuyer | null;
+  guest_details?: Record<string, unknown> | null;
   room?: BookingRoomRef | null;
   hotel?: BookingHotelRef | null;
 }
@@ -219,11 +220,16 @@ export interface CreateBookingPayload {
 }
 
 /** Create a booking on behalf of a guest (phone / walk-in). */
-export async function createBooking(payload: CreateBookingPayload): Promise<BookingDetail> {
-  const response = await apiFetch<{ data: { booking: BookingDetail } }>("/admin/bookings", {
-    method: "POST",
-    body: payload,
-  });
+export async function createBooking(
+  payload: CreateBookingPayload
+): Promise<BookingDetail> {
+  const response = await apiFetch<{ data: { booking: BookingDetail } }>(
+    "/admin/bookings",
+    {
+      method: "POST",
+      body: payload,
+    }
+  );
   return response.data.booking;
 }
 

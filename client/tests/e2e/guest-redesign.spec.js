@@ -203,7 +203,7 @@ test('hotel room selection keeps decimal rates and requires refreshed dates', as
   await page.locator('.search-bar .el-range-input').nth(1).press('Enter');
   await page.locator('.search-bar .el-range-input').nth(1).press('Tab');
   await expect(page.locator('.room-scope-hint')).toContainText('Your search changed');
-  await expect(page.locator('.property-booking .guest-button')).toBeDisabled();
+  await expect(page.locator('.property-booking button.guest-button')).toBeDisabled();
 });
 test('booking details survive reload and confirmation uses its URL code', async ({ page }) => {
   await fixtures(page, { authenticated: true });
@@ -251,6 +251,25 @@ for (const width of [375, 1440]) {
         await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
         name
       ).toBe(true);
+      if (name === 'hotel') {
+        const directions = await page.locator('.property-directions a').boundingBox();
+        const bookingButton = await page
+          .locator('.property-booking button.guest-button')
+          .boundingBox();
+        expect(directions.x + directions.width).toBeLessThanOrEqual(
+          bookingButton.x + bookingButton.width + 1
+        );
+        const readReviews = await page
+          .getByRole('button', { name: 'Read all reviews', exact: true })
+          .boundingBox();
+        const writeReview = await page
+          .getByRole('button', { name: 'Write a review', exact: true })
+          .boundingBox();
+        expect(
+          writeReview.y >= readReviews.y + readReviews.height ||
+            writeReview.x >= readReviews.x + readReviews.width + 12
+        ).toBe(true);
+      }
       // The dev-server toolbar is absent from production builds.
       await page.addStyleTag({ content: '#__vue-devtools-container__ {display:none!important}' });
       const audit = await new AxeBuilder({ page })
@@ -282,7 +301,7 @@ test('room selection creates one hold with dates and quantities', async ({ page 
   const requestPromise = page.waitForRequest(
     (request) => request.url().endsWith('/api/v1/hold') && request.method() === 'POST'
   );
-  await page.locator('.property-booking .guest-button').click();
+  await page.locator('.property-booking button.guest-button').click();
   const request = await requestPromise;
   expect(request.postDataJSON()).toMatchObject({
     hotelId: '12',
@@ -336,7 +355,7 @@ test('checkout edits reach payment and cancellation confirms the server refund q
   await page.goto(searchURL);
   await page.locator('.result-info a').click();
   await page.locator('.room-card select').selectOption('1');
-  await page.locator('.property-booking .guest-button').click();
+  await page.locator('.property-booking button.guest-button').click();
   await page.locator('#checkout-name').fill('Edited Guest');
   await page.locator('#checkout-email').fill('edited@example.test');
   await page.locator('#checkout-phone').fill('invalid');
@@ -439,7 +458,7 @@ test('checkout expiry and payment initialization failure have recovery paths', a
   await page.goto(searchURL);
   await page.locator('.result-info a').click();
   await page.locator('.room-card select').selectOption('1');
-  await page.locator('.property-booking .guest-button').click();
+  await page.locator('.property-booking button.guest-button').click();
   await expect(page.locator('#checkout-name')).toHaveValue('Test Guest');
   await page.addStyleTag({ content: '#__vue-devtools-container__{display:none!important}' });
   await page.evaluate(() => document.fonts.ready);

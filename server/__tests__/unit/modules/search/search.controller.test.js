@@ -28,7 +28,16 @@ jest.mock('@modules/search/application/ipLocation', () => ({
 const { searchHotels, getIpLocation } = require('@modules/search/api/search.controller');
 const searchUseCases = require('@modules/search/application/searchHotels');
 const { recordRecentSearch } = require('@modules/search/application/recentSearches');
+const { saveSearchLog } = require('@modules/search/application/saveSearchLog');
 const { getIpLocation: getIpLocationUseCase } = require('@modules/search/application/ipLocation');
+
+// `resetMocks: true` in jest.config.js wipes the implementations declared in the
+// `jest.mock` factories above before every test, so re-apply the ones the
+// controller awaits (the analytics calls are fire-and-forget and must resolve).
+beforeEach(() => {
+  recordRecentSearch.mockResolvedValue(undefined);
+  saveSearchLog.mockResolvedValue({ eventId: 'e1' });
+});
 
 function mockRes() {
   return { status: jest.fn().mockReturnThis(), json: jest.fn() };
@@ -42,10 +51,6 @@ const baseQuery = {
 };
 
 describe('search.controller.searchHotels', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('records the resolved city id/country id for a city search', async () => {
     searchUseCases.searchHotels.mockResolvedValue({
       destination: {

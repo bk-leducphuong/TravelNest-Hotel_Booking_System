@@ -29,7 +29,10 @@ async function getRoomInventory(roomId, range = {}) {
       totalRooms: row.total_rooms,
       bookedRooms: row.booked_rooms,
       heldRooms: row.held_rooms,
-      availableRooms: Math.max(0, row.total_rooms - row.booked_rooms - row.held_rooms),
+      availableRooms:
+        row.status === 'open' && room.status === 'active'
+          ? Math.max(0, row.total_rooms - row.booked_rooms - row.held_rooms)
+          : 0,
       status: row.status,
       pricePerNight: num(row.price_per_night),
       currency: row.currency,

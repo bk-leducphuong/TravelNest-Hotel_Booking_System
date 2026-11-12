@@ -131,7 +131,10 @@ async function generateHotelRecord(location = null) {
     check_out_policy: faker.helpers.arrayElement(HOTEL_CHECK_OUT_POLICIES) ?? null,
     min_price: String(minPrice),
     status: 'active',
-    timezone: faker.helpers.arrayElement(IANA_TIMEZONES),
+    timezone:
+      location?.countryIsoCode?.toUpperCase() === 'VN'
+        ? 'Asia/Ho_Chi_Minh'
+        : faker.helpers.arrayElement(IANA_TIMEZONES),
   };
 }
 

@@ -15,7 +15,12 @@
   import { stayNights } from '@/utils/stay';
   import { getCurrentPosition, roundCoordinate } from '@/utils/geolocation';
   import { formatDistance as formatDistanceValue } from '@/utils/distance';
-  import { guestMoney, promotionBadgeDescriptor, promotionDisplayName, ratingLabelKey } from '@/utils/guestPresentation';
+  import {
+    guestMoney,
+    promotionBadgeDescriptor,
+    promotionDisplayName,
+    ratingLabelKey,
+  } from '@/utils/guestPresentation';
   import MediaImage from '@/components/ui/MediaImage.vue';
   import { CircleAlert, SearchX, Star, LayoutGrid, List } from 'lucide-vue-next';
 
@@ -672,7 +677,12 @@
 </script>
 <template>
   <TheHeader :is-search-open="true" />
-  <MapComponent v-if="openMapPopup" :hotels="hotels" :search-params="mapSearchParams" @close-map-popup="closeMapPopup" />
+  <MapComponent
+    v-if="openMapPopup"
+    :hotels="hotels"
+    :search-params="mapSearchParams"
+    @close-map-popup="closeMapPopup"
+  />
   <main id="guest-main" tabindex="-1" class="guest-page search-page">
     <div class="search-page-heading inner-content">
       <div>
@@ -1057,11 +1067,12 @@
     gap: 20px;
   }
   .result-photo {
+    align-self: start;
     position: relative;
   }
   .result-photo .guest-media {
-    height: 100%;
-    min-height: 210px;
+    height: 210px;
+    min-height: 0;
   }
   .result-info h2 {
     font-size: 22px;

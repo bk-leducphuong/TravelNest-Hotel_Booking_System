@@ -136,20 +136,14 @@
           @click="$emit('use-approximate-location')"
         >
           {{
-            isLocatingApproximate
-              ? $t('filters.locating')
-              : $t('filters.useApproximateLocation')
+            isLocatingApproximate ? $t('filters.locating') : $t('filters.useApproximateLocation')
           }}
         </button>
       </div>
       <p v-if="locationError" class="hint hint-error" role="alert">
         {{ $t(locationError) }}
       </p>
-      <label
-        v-for="option in distanceOptions"
-        :key="String(option.value)"
-        class="filter-option"
-      >
+      <label v-for="option in distanceOptions" :key="String(option.value)" class="filter-option">
         <span>
           <input
             type="radio"
@@ -490,17 +484,20 @@
 
   .budget-inputs {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
   }
 
   .budget-inputs label {
+    min-width: 0;
     margin: 0;
     font-size: 12px;
     font-weight: 600;
   }
 
   .budget-inputs input {
+    box-sizing: border-box;
+    min-width: 0;
     width: 100%;
     margin: 4px 0 0;
     padding: 8px;

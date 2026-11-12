@@ -16,7 +16,11 @@
   import ReviewValidation from '@/components/review/ReviewValidation.vue';
   import { HoldService } from '@/services/hold.service';
   import { stayNights, formatStayDate } from '@/utils/stay';
-  import { guestMoney, promotionBadgeDescriptor, promotionDisplayName } from '@/utils/guestPresentation';
+  import {
+    guestMoney,
+    promotionBadgeDescriptor,
+    promotionDisplayName,
+  } from '@/utils/guestPresentation';
   import { getDirectionsUrl } from '@/utils/directions';
   import { AnalyticsService } from '@/services/analytics.service';
   import MediaImage from '@/components/ui/MediaImage.vue';
@@ -192,14 +196,11 @@
         },
       },
       guestDetails() {
-        return (
-          `${this.adults} ` +
-          this.$t('userHeader.guestInputPlaceholder_1') +
-          ` · ${this.children} ` +
-          this.$t('userHeader.guestInputPlaceholder_2') +
-          ` · ${this.rooms} ` +
-          this.$t('userHeader.guestInputPlaceholder_3')
-        );
+        return [
+          this.$t('guest.adultCount', { count: Number(this.adults) }),
+          this.$t('guest.childCount', { count: Number(this.children) }),
+          this.$t('map.roomCount', { count: Number(this.rooms) }),
+        ].join(' · ');
       },
       totalGuests() {
         return this.toCount(this.adults, 1) + this.toCount(this.children, 0);
@@ -794,7 +795,12 @@
 <template>
   <div id="hotelDetails">
     <TheHeader :is-search-open="true" />
-    <MapComponent v-if="openMapPopup" :hotels="[hotel]" :initial-selected-hotel-id="hotel.hotel_id" @close-map-popup="closeMapPopup" />
+    <MapComponent
+      v-if="openMapPopup"
+      :hotels="[hotel]"
+      :initial-selected-hotel-id="hotel.hotel_id"
+      @close-map-popup="closeMapPopup"
+    />
     <ImageGallery
       :room_list="room_list"
       :hotel-images="hotelImages"
@@ -1005,15 +1011,18 @@
                 </p>
                 <p>{{ review.comment }}</p>
               </article>
-              <button
-                type="button"
-                class="guest-button guest-button-secondary"
-                @click="showCommentPopup"
-              >
-                {{ $t('hotelDetails.reviews.readAll') }}</button
-              ><button type="button" class="property-review-link" @click="writeReview">
-                {{ $t('guest.writeReview') }}
-              </button>
+              <div class="property-review-actions">
+                <button
+                  type="button"
+                  class="guest-button guest-button-secondary"
+                  @click="showCommentPopup"
+                >
+                  {{ $t('hotelDetails.reviews.readAll') }}
+                </button>
+                <button type="button" class="property-review-link" @click="writeReview">
+                  {{ $t('guest.writeReview') }}
+                </button>
+              </div>
             </section>
             <section v-if="nearbyPlaces.length" class="guest-section">
               <h2>{{ $t('hotelDetails.nearby.title') }}</h2>
@@ -1258,6 +1267,12 @@
     gap: 12px;
     font-size: 13px;
     margin-top: 16px;
+  }
+  .property-review-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
   }
   .property-review-link {
     border: 0;

@@ -1,10 +1,9 @@
-const asyncHandler = require('@utils/asyncHandler');
 const { getAuthenticatedUserId } = require('@helpers/auth-context.helper');
 const analyticsService = require('../infrastructure/analytics-service.client');
 const { publishLocationEvent } = require('../application/location-event.service');
 const { publishDirectionsClick } = require('../application/directions-event.service');
 
-const getSearchDemand = asyncHandler(async (req, res) => {
+const getSearchDemand = async (req, res) => {
   const { nextDays, limit } = req.query;
 
   const demand = await analyticsService.getSearchDemand({
@@ -18,9 +17,9 @@ const getSearchDemand = asyncHandler(async (req, res) => {
       demand,
     },
   });
-});
+};
 
-const getMySearchSummary = asyncHandler(async (req, res) => {
+const getMySearchSummary = async (req, res) => {
   const userId = req.user.id;
   const summary = await analyticsService.getUserSearchSummary(userId);
 
@@ -30,9 +29,9 @@ const getMySearchSummary = asyncHandler(async (req, res) => {
       summary,
     },
   });
-});
+};
 
-const getMySearches = asyncHandler(async (req, res) => {
+const getMySearches = async (req, res) => {
   const userId = req.user.id;
   const { limit } = req.query;
 
@@ -46,9 +45,9 @@ const getMySearches = asyncHandler(async (req, res) => {
       searches,
     },
   });
-});
+};
 
-const trackDirectionsClick = asyncHandler(async (req, res) => {
+const trackDirectionsClick = async (req, res) => {
   const { hotelId, mode, source } = req.body;
 
   const result = await publishDirectionsClick({
@@ -62,9 +61,9 @@ const trackDirectionsClick = asyncHandler(async (req, res) => {
     success: true,
     data: { eventId: result?.eventId ?? null },
   });
-});
+};
 
-const trackLocationEvent = asyncHandler(async (req, res) => {
+const trackLocationEvent = async (req, res) => {
   const { event, source, errorCode } = req.body;
 
   const result = await publishLocationEvent({
@@ -78,7 +77,7 @@ const trackLocationEvent = asyncHandler(async (req, res) => {
     success: true,
     data: { eventId: result?.eventId ?? null },
   });
-});
+};
 
 module.exports = {
   getSearchDemand,
