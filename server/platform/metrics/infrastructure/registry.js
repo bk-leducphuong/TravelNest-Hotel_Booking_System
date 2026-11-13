@@ -62,7 +62,9 @@ function createMetrics({ collectDefault = true } = {}) {
   const jobDuration = new client.Histogram({
     name: 'job_duration_seconds',
     help: 'BullMQ job processing duration in seconds',
-    labelNames: ['queue', 'job', 'status'],
+    // `job` is reserved by Prometheus for the scrape target (travelnest-worker);
+    // using it here would overwrite the target label with the BullMQ job name.
+    labelNames: ['queue', 'job_name', 'status'],
     buckets: JOB_BUCKETS,
     registers: [registry],
   });
