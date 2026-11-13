@@ -15,7 +15,12 @@
       return { unread: 0, socket: null }
     },
     computed: {
-      ...mapGetters('auth', ['isUserAuthenticated'])
+      ...mapGetters('auth', ['isUserAuthenticated']),
+      bellLabel() {
+        return this.unread > 0
+          ? this.$t('messages.bellUnread', { count: this.unread })
+          : this.$t('messages.title')
+      }
     },
     async mounted() {
       if (!this.isUserAuthenticated) return
@@ -59,11 +64,14 @@
 
 <template>
   <li>
-    <RouterLink to="/messages" class="guest-chat-trigger" :aria-label="$t('messages.title')">
+    <RouterLink to="/messages" class="guest-chat-trigger" :aria-label="bellLabel">
       <ElBadge :value="unread" :max="99" :hidden="unread === 0">
         <ElIcon :size="20"><ChatDotRound /></ElIcon>
       </ElBadge>
     </RouterLink>
+    <span class="guest-chat-sr" role="status" aria-live="polite">
+      {{ unread > 0 ? $t('messages.bellUnread', { count: unread }) : '' }}
+    </span>
   </li>
 </template>
 
@@ -80,5 +88,17 @@
 
   .guest-chat-trigger:hover {
     color: var(--tn-ink);
+  }
+
+  .guest-chat-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 </style>

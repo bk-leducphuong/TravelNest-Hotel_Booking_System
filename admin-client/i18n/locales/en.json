@@ -905,6 +905,7 @@
   "messages.sending": "Sending…",
   "messages.sendError": "Message could not be sent.",
   "messages.flagged": "Contact shared",
+  "messages.typing": "Guest is typing…",
   "messages.back": "Back to conversations",
   "dashboard.chart.unavailable": "Blocked / unavailable",
   "properties.form.timezoneHint": "Use the property’s local IANA timezone (for Vietnam: Asia/Ho_Chi_Minh). Existing values are not changed automatically.",

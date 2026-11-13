@@ -422,6 +422,9 @@
               <p v-if="message.type === 'system'" class="system-message">{{ message.body }}</p>
               <div v-else class="bubble" :class="{ 'is-flagged': message.flagged }">
                 <p class="bubble-body">{{ message.body }}</p>
+                <span v-if="message.flagged" class="bubble-flag">
+                  {{ $t('messages.flagged') }}
+                </span>
                 <time class="bubble-time">{{ messageTime(message.createdAt) }}</time>
               </div>
             </div>
@@ -691,6 +694,14 @@
 
   .bubble.is-flagged {
     border-color: #f0b429;
+  }
+
+  .bubble-flag {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #8a5a00;
   }
 
   .bubble-body {

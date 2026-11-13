@@ -28,6 +28,18 @@ function conversationRoom(conversationId) {
 }
 
 /**
+ * Typing state is transient and has no persistence layer, so it must be fanned
+ * out to both sides explicitly. `socket.to(room)` only reaches the sender's own
+ * namespace; the guest and the hotel console are on different namespaces.
+ */
+function emitTypingToParticipants(socket, conversationId, payload) {
+  const room = conversationRoom(conversationId);
+  for (const namespaceName of ['/user', '/property']) {
+    socket.server.of(namespaceName).except(socket.id).to(room).emit('chat:typing', payload);
+  }
+}
+
+/**
  * @param {object} params
  * @param {import('socket.io').Namespace} params.namespace
  * @param {import('socket.io').Socket} params.socket
@@ -94,7 +106,7 @@ function registerChatHandlers({ namespace, socket, userId, hotelIds = [] }) {
         return;
       }
 
-      socket.to(conversationRoom(conversationId)).emit('chat:typing', {
+      emitTypingToParticipants(socket, conversationId, {
         conversationId,
         userId,
         side: access.side,

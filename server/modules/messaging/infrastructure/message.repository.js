@@ -71,17 +71,17 @@ class MessageRepository {
   /**
    * Reader-aware unread count for one thread (used when acknowledging a join).
    */
-  async countUnreadForReader(conversationId, readerUserId, ownSide) {
+  async countUnreadForReader(conversationId, readerUserId, otherSide) {
     const rows = await sequelize.query(
       `SELECT COUNT(*) AS unread
          FROM messages m
          LEFT JOIN conversation_reads cr
            ON cr.conversation_id = m.conversation_id AND cr.user_id = :readerUserId
         WHERE m.conversation_id = :conversationId
-          AND m.sender_side <> :ownSide
+          AND m.sender_side = :otherSide
           AND m.seq > COALESCE(cr.last_read_seq, 0)`,
       {
-        replacements: { conversationId, readerUserId, ownSide },
+        replacements: { conversationId, readerUserId, otherSide },
         type: QueryTypes.SELECT,
       }
     );

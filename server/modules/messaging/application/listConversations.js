@@ -24,7 +24,8 @@ async function listGuestConversations({ userId, page, limit, unreadOnly = false 
 
   const unread = await conversationRepository.countUnreadForConversations(
     rows.map((row) => row.id),
-    userId
+    userId,
+    'hotel'
   );
 
   return {
@@ -56,7 +57,8 @@ async function listHotelConversations({ hotelId, readerUserId, page, limit, unre
 
   const unread = await conversationRepository.countUnreadForConversations(
     rows.map((row) => row.id),
-    readerUserId
+    readerUserId,
+    'guest'
   );
 
   return {

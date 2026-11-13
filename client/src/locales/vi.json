@@ -1140,6 +1140,8 @@
   "messages.loadEarlier": "Tải tin nhắn cũ hơn",
   "messages.sayHello": "Chưa có tin nhắn. Hãy gửi lời chào.",
   "messages.typing": "Đang nhập…",
+  "messages.flagged": "Có chia sẻ liên hệ",
+  "messages.bellUnread": "Tin nhắn, {count} chưa đọc",
   "messages.closed": "Hội thoại này đã đóng.",
   "messages.placeholder": "Viết tin nhắn…",
   "messages.send": "Gửi",

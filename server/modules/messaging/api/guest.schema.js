@@ -1,6 +1,6 @@
 const Joi = require('joi');
 
-const { MAX_BODY_LENGTH, DEFAULT_PAGE_SIZE, DEFAULT_MESSAGE_PAGE_SIZE } = require('../constants');
+const { DEFAULT_PAGE_SIZE, DEFAULT_MESSAGE_PAGE_SIZE } = require('../constants');
 
 /**
  * Guest messaging schemas (mounted at /api/v1/conversations).
@@ -39,7 +39,9 @@ const getMessages = {
 const sendMessage = {
   params: conversationParams,
   body: Joi.object({
-    body: Joi.string().trim().min(1).max(MAX_BODY_LENGTH).required(),
+    // Emptiness and length are validated in the service so the API can return
+    // the documented MESSAGE_EMPTY / MESSAGE_TOO_LONG error codes.
+    body: Joi.string().required(),
     clientMessageId: uuid,
   }).required(),
 };

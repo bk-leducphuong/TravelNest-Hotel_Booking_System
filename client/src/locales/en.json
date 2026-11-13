@@ -1140,6 +1140,8 @@
   "messages.loadEarlier": "Load earlier messages",
   "messages.sayHello": "No messages yet. Say hello.",
   "messages.typing": "Typing…",
+  "messages.flagged": "Contact shared",
+  "messages.bellUnread": "Messages, {count} unread",
   "messages.closed": "This conversation is closed.",
   "messages.placeholder": "Write a message…",
   "messages.send": "Send",

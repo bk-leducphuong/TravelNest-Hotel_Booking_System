@@ -110,7 +110,7 @@ class ConversationRepository {
   async findForGuest(guestUserId, { limit, offset, unreadOnly = false } = {}) {
     const where = { guest_user_id: guestUserId };
     if (unreadOnly) {
-      where[Op.and] = [buildUnreadLiteral(guestUserId)];
+      where[Op.and] = [buildUnreadLiteral(guestUserId, 'hotel')];
     }
 
     return Conversations.findAndCountAll({
@@ -133,7 +133,7 @@ class ConversationRepository {
   async findForHotel(hotelId, { limit, offset, unreadOnly = false, readerUserId } = {}) {
     const where = { hotel_id: hotelId };
     if (unreadOnly) {
-      where[Op.and] = [buildUnreadLiteral(readerUserId)];
+      where[Op.and] = [buildUnreadLiteral(readerUserId, 'guest')];
     }
 
     return Conversations.findAndCountAll({
@@ -154,7 +154,7 @@ class ConversationRepository {
    * Unread message count per conversation for one reader, as a Map.
    * Kept as one grouped query so an inbox page costs two queries, not N.
    */
-  async countUnreadForConversations(conversationIds, readerUserId) {
+  async countUnreadForConversations(conversationIds, readerUserId, otherSide) {
     if (!conversationIds.length) {
       return new Map();
     }
@@ -165,10 +165,11 @@ class ConversationRepository {
          LEFT JOIN conversation_reads cr
            ON cr.conversation_id = m.conversation_id AND cr.user_id = :readerUserId
         WHERE m.conversation_id IN (:conversationIds)
+          AND m.sender_side = :otherSide
           AND m.seq > COALESCE(cr.last_read_seq, 0)
         GROUP BY m.conversation_id`,
       {
-        replacements: { conversationIds, readerUserId },
+        replacements: { conversationIds, readerUserId, otherSide },
         type: QueryTypes.SELECT,
       }
     );
@@ -180,7 +181,7 @@ class ConversationRepository {
    * Total unread messages for a reader across their scope.
    * `ownSide` is excluded so a reader never sees their own message as unread.
    */
-  async countUnreadByScope({ scope, scopeValue, readerUserId, ownSide }) {
+  async countUnreadByScope({ scope, scopeValue, readerUserId, otherSide }) {
     const scopeColumn = scope === 'guest' ? 'c.guest_user_id' : 'c.hotel_id';
 
     const rows = await sequelize.query(
@@ -190,10 +191,10 @@ class ConversationRepository {
          LEFT JOIN conversation_reads cr
            ON cr.conversation_id = c.id AND cr.user_id = :readerUserId
         WHERE ${scopeColumn} = :scopeValue
-          AND m.sender_side <> :ownSide
+          AND m.sender_side = :otherSide
           AND m.seq > COALESCE(cr.last_read_seq, 0)`,
       {
-        replacements: { readerUserId, scopeValue, ownSide },
+        replacements: { readerUserId, scopeValue, otherSide },
         type: QueryTypes.SELECT,
       }
     );
@@ -203,16 +204,24 @@ class ConversationRepository {
 }
 
 /**
- * `last_message_seq > last_read_seq` as a portable SQL predicate. The reader id
- * comes from the authenticated request, and is escaped rather than inlined.
+ * "Has at least one unread message from the other side" as a portable SQL
+ * predicate. `otherSide` deliberately excludes the reader's own messages and
+ * system lines, so an inbox badge only counts messages that need a response.
+ * The reader id comes from the authenticated request and is escaped rather
+ * than inlined.
  */
-function buildUnreadLiteral(readerUserId) {
+function buildUnreadLiteral(readerUserId, otherSide) {
   const reader = sequelize.escape(readerUserId);
+  const side = sequelize.escape(otherSide);
   return sequelize.literal(
-    `conversations.last_message_seq > COALESCE((SELECT cr.last_read_seq
-       FROM conversation_reads cr
-      WHERE cr.conversation_id = conversations.id
-        AND cr.user_id = ${reader}), 0)`
+    `EXISTS (SELECT 1
+       FROM messages m
+       LEFT JOIN conversation_reads cr
+         ON cr.conversation_id = m.conversation_id
+        AND cr.user_id = ${reader}
+      WHERE m.conversation_id = conversations.id
+        AND m.sender_side = ${side}
+        AND m.seq > COALESCE(cr.last_read_seq, 0))`
   );
 }
 

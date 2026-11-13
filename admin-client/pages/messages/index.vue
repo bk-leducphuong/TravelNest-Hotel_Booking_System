@@ -8,6 +8,8 @@ import {
   type ConversationSummary,
 } from "~/services/api/messages";
 import { formatDateTime } from "~/utils/format";
+import type { Socket } from "socket.io-client";
+import { connectChatSocket, disconnectChatSocket } from "~/services/chatSocket";
 
 const auth = useAuthStore();
 const { can } = usePermissions();
@@ -29,9 +31,15 @@ const sending = ref(false);
 const sendError = ref("");
 const mobileThread = ref(false);
 const threadArea = ref<HTMLElement | null>(null);
+const typingGuest = ref(false);
 
 let inboxTimer: ReturnType<typeof setInterval> | null = null;
 let threadTimer: ReturnType<typeof setInterval> | null = null;
+let chatSocket: Socket | null = null;
+let joinedConversationId: string | null = null;
+let inboxRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+let typingClearTimer: ReturnType<typeof setTimeout> | null = null;
+let typingEmitTimer: ReturnType<typeof setTimeout> | null = null;
 
 const canRead = computed(() => can("chat.read"));
 const canRespond = computed(() => can("chat.respond"));
@@ -165,12 +173,148 @@ async function markRead(conversationId: string, seq: number) {
   }
 }
 
+function joinConversation(conversationId: string | null) {
+  if (!conversationId || !chatSocket?.connected || joinedConversationId === conversationId) {
+    return;
+  }
+  if (joinedConversationId) {
+    chatSocket.emit("chat:leave", { conversationId: joinedConversationId });
+  }
+  chatSocket.emit("chat:join", { conversationId });
+  joinedConversationId = conversationId;
+}
+
+function refreshInboxSoon() {
+  if (inboxRefreshTimer) {
+    return;
+  }
+  inboxRefreshTimer = setTimeout(() => {
+    inboxRefreshTimer = null;
+    void loadConversations({ silent: true });
+  }, 400);
+}
+
+function upsertIncomingMessage(message: ChatMessage) {
+  if (messages.value.some((entry) => entry.id === message.id)) {
+    return;
+  }
+  messages.value = [...messages.value, message].sort((a, b) => a.seq - b.seq);
+}
+
+function handleSocketMessage(message: ChatMessage) {
+  const conversation = conversations.value.find(
+    (entry) => entry.id === message.conversationId
+  );
+  if (conversation) {
+    conversation.lastMessagePreview = message.body.slice(0, 160);
+    conversation.lastMessageAt = message.createdAt;
+    conversation.lastMessageSeq = message.seq;
+  }
+
+  if (message.conversationId !== activeId.value) {
+    if (conversation && message.senderSide === "guest" && message.type !== "system") {
+      conversation.unreadCount = (conversation.unreadCount || 0) + 1;
+    }
+    if (!conversation) {
+      refreshInboxSoon();
+    }
+    return;
+  }
+
+  upsertIncomingMessage(message);
+  if (message.senderSide === "guest") {
+    typingGuest.value = false;
+    void markRead(message.conversationId, message.seq);
+  }
+  void nextTick().then(scrollToBottom);
+}
+
+function handleSocketActivity(activity: {
+  conversationId?: string;
+  lastMessageSeq?: number;
+  lastMessagePreview?: string;
+}) {
+  if (!activity?.conversationId) {
+    return;
+  }
+  const conversation = conversations.value.find(
+    (entry) => entry.id === activity.conversationId
+  );
+  if (conversation) {
+    conversation.lastMessageSeq = activity.lastMessageSeq ?? conversation.lastMessageSeq;
+    if (activity.lastMessagePreview !== undefined) {
+      conversation.lastMessagePreview = activity.lastMessagePreview;
+    }
+  }
+
+  if (activity.conversationId === activeId.value) {
+    // The activity event can arrive before the room message; fetch to converge.
+    void pollLatest();
+  } else {
+    refreshInboxSoon();
+  }
+}
+
+function handleSocketTyping(payload: { conversationId?: string; side?: string }) {
+  if (payload?.conversationId !== activeId.value || payload?.side !== "guest") {
+    return;
+  }
+  typingGuest.value = true;
+  if (typingClearTimer) {
+    clearTimeout(typingClearTimer);
+  }
+  typingClearTimer = setTimeout(() => {
+    typingGuest.value = false;
+    typingClearTimer = null;
+  }, 4000);
+}
+
+function notifyTyping() {
+  if (!chatSocket?.connected || !activeId.value || typingEmitTimer) {
+    return;
+  }
+  chatSocket.emit("chat:typing", { conversationId: activeId.value });
+  typingEmitTimer = setTimeout(() => {
+    typingEmitTimer = null;
+  }, 1500);
+}
+
+function handleSocketConnect() {
+  joinedConversationId = null;
+  joinConversation(activeId.value);
+}
+
+async function connectSocket() {
+  try {
+    chatSocket = await connectChatSocket();
+    if (!chatSocket) {
+      return;
+    }
+    chatSocket.off("chat:message", handleSocketMessage);
+    chatSocket.off("chat:activity", handleSocketActivity);
+    chatSocket.off("chat:typing", handleSocketTyping);
+    chatSocket.off("connect", handleSocketConnect);
+    chatSocket.on("chat:message", handleSocketMessage);
+    chatSocket.on("chat:activity", handleSocketActivity);
+    chatSocket.on("chat:typing", handleSocketTyping);
+    chatSocket.on("connect", handleSocketConnect);
+    if (chatSocket.connected) {
+      joinConversation(activeId.value);
+    }
+  } catch {
+    // Polling remains the fallback when the socket cannot connect.
+    chatSocket = null;
+  }
+}
+
 async function selectConversation(conversation: ConversationSummary) {
   activeId.value = conversation.id;
   mobileThread.value = true;
   messages.value = [];
   hasMore.value = false;
   sendError.value = "";
+  typingGuest.value = false;
+  joinConversation(conversation.id);
   await loadMessages(conversation.id);
 }
 
@@ -256,6 +400,10 @@ function backToInbox() {
   mobileThread.value = false;
 }
 
+// Realtime is additive: the hotel page listens on the /property socket when it
+// can connect, and these polls stay in place as a fallback. Messages are
+// persisted before any emit and these polls read the committed rows, so the API
+// remains authoritative even when the socket is unavailable.
 function startPolling() {
   stopPolling();
   inboxTimer = setInterval(() => void loadConversations({ silent: true }), 20000);
@@ -275,21 +423,53 @@ function stopPolling() {
 
 onMounted(async () => {
   await loadConversations();
+  await connectSocket();
   startPolling();
 });
 
 watch(
   () => auth.activeHotelId,
   async () => {
+    if (chatSocket && joinedConversationId) {
+      chatSocket.emit("chat:leave", { conversationId: joinedConversationId });
+      joinedConversationId = null;
+    }
     activeId.value = null;
     messages.value = [];
+    typingGuest.value = false;
     await loadConversations();
   }
 );
 
 watch(unreadOnly, () => loadConversations());
 
-onBeforeUnmount(stopPolling);
+watch(draft, (value) => {
+  if (value.trim()) {
+    notifyTyping();
+  }
+});
+
+onBeforeUnmount(() => {
+  stopPolling();
+  if (chatSocket && joinedConversationId) {
+    chatSocket.emit("chat:leave", { conversationId: joinedConversationId });
+  }
+  disconnectChatSocket();
+  chatSocket = null;
+  joinedConversationId = null;
+  if (inboxRefreshTimer) {
+    clearTimeout(inboxRefreshTimer);
+    inboxRefreshTimer = null;
+  }
+  if (typingClearTimer) {
+    clearTimeout(typingClearTimer);
+    typingClearTimer = null;
+  }
+  if (typingEmitTimer) {
+    clearTimeout(typingEmitTimer);
+    typingEmitTimer = null;
+  }
+});
 </script>
 
 <template>
@@ -464,6 +644,10 @@ onBeforeUnmount(stopPolling);
             </div>
           </div>
 
+          <p v-if="typingGuest" class="chat-typing" role="status" aria-live="polite">
+            {{ $t("messages.typing") }}
+          </p>
+
           <p v-if="activeConversation.status !== 'open'" class="chat-closed">
             {{ $t("messages.closed") }}
           </p>
@@ -628,6 +812,13 @@ onBeforeUnmount(stopPolling);
   border-top: 1px solid #eef1f6;
   color: var(--tn-muted);
   font-size: 13px;
+}
+
+.chat-typing {
+  padding: 8px 16px 0;
+  color: var(--tn-muted);
+  font-size: 12px;
+  font-style: italic;
 }
 
 @media (max-width: 1023px) {

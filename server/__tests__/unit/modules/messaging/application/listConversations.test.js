@@ -13,6 +13,7 @@ const {
 const GUEST_ID = '11111111-1111-7111-8111-111111111111';
 const HOTEL_ID = '22222222-2222-7222-8222-222222222222';
 const CONVERSATION_ID = '33333333-3333-7333-8333-333333333333';
+const READER_ID = 'bbbbbbbb-bbbb-7bbb-8bbb-bbbbbbbbbbbb';
 
 function row(overrides = {}) {
   return {
@@ -66,6 +67,11 @@ describe('listGuestConversations', () => {
     });
     // Guests never receive their own profile echoed back.
     expect(result.conversations[0].guest).toBeUndefined();
+    expect(conversationRepository.countUnreadForConversations).toHaveBeenCalledWith(
+      [CONVERSATION_ID],
+      GUEST_ID,
+      'hotel'
+    );
   });
 });
 
@@ -76,7 +82,7 @@ describe('listHotelConversations', () => {
 
     const result = await listHotelConversations({
       hotelId: HOTEL_ID,
-      readerUserId: 'bbbbbbbb-bbbb-7bbb-8bbb-bbbbbbbbbbbb',
+      readerUserId: READER_ID,
       page: 1,
       limit: 20,
     });
@@ -88,5 +94,10 @@ describe('listHotelConversations', () => {
       avatarUrl: null,
     });
     expect(result.conversations[0].unreadCount).toBe(0);
+    expect(conversationRepository.countUnreadForConversations).toHaveBeenCalledWith(
+      [CONVERSATION_ID],
+      READER_ID,
+      'guest'
+    );
   });
 });

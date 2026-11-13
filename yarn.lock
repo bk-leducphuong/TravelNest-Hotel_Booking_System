@@ -6668,6 +6668,7 @@ __metadata:
     pinia: "npm:^3.0.4"
     playwright-core: "npm:^1.58.2"
     prettier: "npm:^3.5.3"
+    socket.io-client: "npm:^4.8.1"
     typescript: "npm:^5"
     vitest: "npm:^4.0.18"
     vue: "npm:^3.5.28"

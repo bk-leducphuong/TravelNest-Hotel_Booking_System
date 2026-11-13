@@ -1,15 +1,15 @@
 const conversationRepository = require('../infrastructure/conversation.repository');
 
 /**
- * Badge counts. Own-side messages are excluded so an agent's own reply never
- * shows up as something they need to read.
+ * Badge counts. Only messages from the other side count: own replies and
+ * system lines (booking confirmed/cancelled) never need a response.
  */
 async function getGuestUnreadCount(userId) {
   const unread = await conversationRepository.countUnreadByScope({
     scope: 'guest',
     scopeValue: userId,
     readerUserId: userId,
-    ownSide: 'guest',
+    otherSide: 'hotel',
   });
 
   return { unread };
@@ -20,7 +20,7 @@ async function getHotelUnreadCount({ hotelId, readerUserId }) {
     scope: 'hotel',
     scopeValue: hotelId,
     readerUserId,
-    ownSide: 'hotel',
+    otherSide: 'guest',
   });
 
   return { unread };
