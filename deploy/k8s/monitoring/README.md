@@ -146,14 +146,19 @@ hold timestamp carried into the payment transaction metadata, so it needs no
 extra query at confirmation time. A payment that arrives after the booking was
 cancelled is refunded, not confirmed, and is never observed.
 
-### Dashboard
+### Dashboards
 
-[`dashboards/travelnest-api-latency.json`](./dashboards/travelnest-api-latency.json)
-is an importable Grafana dashboard (Dashboards → New → Import → upload JSON,
-then pick the Prometheus data source and the `travelnest-test` cluster). It
-covers request rate, p50/p95/p99 overall and per route, slowest routes, the
-HTTP/MySQL/Redis split, booking checkout/confirmation stages and worker job
-durations.
+Owned dashboards live in [`dashboards/`](./dashboards) and are imported manually
+(Dashboards → New → Import → upload JSON, then pick the Prometheus data source
+and the `travelnest-test` cluster):
+
+| Dashboard                    | Audience          | Covers                                                                                                                   |
+| ---------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `travelnest-api-performance` | Backend on-call   | request rate, p50/p95/p99 overall and per route, slowest routes, HTTP/MySQL/Redis split, SLO under 400ms, event-loop lag |
+| `travelnest-booking-funnel`  | Product + backend | confirmations/min, payment conversion, checkout/confirmation/webhook stages                                              |
+
+The prebuilt Kubernetes monitoring dashboards stay untouched in the
+`GrafanaCloud` folder; these three are the only ones this repo owns.
 
 ## Access
 

@@ -41,222 +41,17 @@
               }
             ]
           },
-          "unit": "reqps"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 5,
-        "x": 0,
-        "y": 0
-      },
-      "id": 1,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(http_requests_total{cluster=~\"$cluster\", job=\"travelnest-api\"}[5m]))",
-          "legendFormat": "__auto",
-          "range": false,
-          "instant": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Requests / s",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 3,
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 0.4
-              },
-              {
-                "color": "red",
-                "value": 0.8
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 5,
-        "x": 5,
-        "y": 0
-      },
-      "id": 2,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{cluster=~\"$cluster\", job=\"travelnest-api\"}[5m])))",
-          "legendFormat": "__auto",
-          "range": false,
-          "instant": true,
-          "refId": "A"
-        }
-      ],
-      "title": "p95 latency (all routes)",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 2,
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 0.01
-              },
-              {
-                "color": "red",
-                "value": 0.05
-              }
-            ]
-          },
-          "unit": "percentunit"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 5,
-        "x": 10,
-        "y": 0
-      },
-      "id": 3,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(http_requests_total{cluster=~\"$cluster\", job=\"travelnest-api\", status_class=\"5xx\"}[5m])) / clamp_min(sum(rate(http_requests_total{cluster=~\"$cluster\", job=\"travelnest-api\"}[5m])), 1e-9)",
-          "legendFormat": "__auto",
-          "range": false,
-          "instant": true,
-          "refId": "A"
-        }
-      ],
-      "title": "5xx ratio",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 2,
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
           "unit": "short"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 15,
+        "w": 6,
+        "x": 0,
         "y": 0
       },
-      "id": 4,
+      "id": 11,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -293,6 +88,79 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
+      "description": "Confirmations divided by checkout starts over the same window. Approximate when traffic is changing; use ≥1h windows.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.5
+              },
+              {
+                "color": "green",
+                "value": 0.8
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(booking_confirmation_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])) / clamp_min(sum(rate(booking_checkout_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])), 1e-9)",
+          "legendFormat": "__auto",
+          "range": false,
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Payment conversion",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Business SLA. Includes the time the guest spends on the payment page, so it is not a server signal.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -323,11 +191,11 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 5,
-        "x": 19,
+        "w": 6,
+        "x": 12,
         "y": 0
       },
-      "id": 5,
+      "id": 13,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -356,7 +224,7 @@
           "refId": "A"
         }
       ],
-      "title": "Booking p95 (hold → confirmed)",
+      "title": "p95 hold → confirmed",
       "type": "stat"
     },
     {
@@ -364,42 +232,13 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
+      "description": "Server-side confirmation cost. Alert on this one; it does not include guest think time.",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
           },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
+          "decimals": 3,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -407,6 +246,14 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "red",
+                "value": 5
               }
             ]
           },
@@ -415,202 +262,25 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 4
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
       },
-      "id": 6,
+      "id": 14,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.5, sum by (le) (rate(http_request_duration_seconds_bucket{cluster=~\"$cluster\", job=\"travelnest-api\", route=~\"$route\"}[5m])))",
-          "legendFormat": "p50",
-          "range": true,
-          "instant": false,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{cluster=~\"$cluster\", job=\"travelnest-api\", route=~\"$route\"}[5m])))",
-          "legendFormat": "p95",
-          "range": true,
-          "instant": false,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{cluster=~\"$cluster\", job=\"travelnest-api\", route=~\"$route\"}[5m])))",
-          "legendFormat": "p99",
-          "range": true,
-          "instant": false,
-          "refId": "C"
-        }
-      ],
-      "title": "Latency percentiles — all routes",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "reqps"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 4
-      },
-      "id": 7,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum by (route) (rate(http_requests_total{cluster=~\"$cluster\", job=\"travelnest-api\", route=~\"$route\"}[5m]))",
-          "legendFormat": "{{route}}",
-          "range": true,
-          "instant": false,
-          "refId": "A"
-        }
-      ],
-      "title": "Requests by route",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "continuous-GrYlRd"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 12
-      },
-      "id": 8,
-      "options": {
-        "displayMode": "gradient",
-        "maxVizHeight": 300,
-        "minVizHeight": 16,
-        "minVizWidth": 8,
-        "namePlacement": "auto",
-        "orientation": "horizontal",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
-        "showUnfilled": true,
-        "sizing": "auto",
-        "valueMode": "color"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
       "targets": [
         {
@@ -619,148 +289,22 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "topk(10, histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket{cluster=~\"$cluster\", job=\"travelnest-api\", route=~\"$route\"}[5m]))))",
-          "legendFormat": "{{route}}",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(booking_confirmation_processing_seconds_bucket{cluster=~\"$cluster\", flow=\"prepay\"}[15m])))",
+          "legendFormat": "__auto",
           "range": false,
           "instant": true,
           "refId": "A"
         }
       ],
-      "title": "Slowest routes by p95",
-      "type": "bargauge"
+      "title": "p95 webhook → committed",
+      "type": "stat"
     },
     {
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 12
-      },
-      "id": 9,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{cluster=~\"$cluster\", job=\"travelnest-api\", route=~\"$route\"}[5m])))",
-          "legendFormat": "HTTP",
-          "range": true,
-          "instant": false,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(db_query_duration_seconds_bucket{cluster=~\"$cluster\", job=\"travelnest-api\"}[5m])))",
-          "legendFormat": "MySQL",
-          "range": true,
-          "instant": false,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(redis_command_duration_seconds_bucket{cluster=~\"$cluster\", job=\"travelnest-api\"}[5m])))",
-          "legendFormat": "Redis",
-          "range": true,
-          "instant": false,
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "nodejs_eventloop_lag_p99_seconds{cluster=~\"$cluster\", job=\"travelnest-api\"}",
-          "legendFormat": "Event loop p99",
-          "range": true,
-          "instant": false,
-          "refId": "D"
-        }
-      ],
-      "title": "Where is the time going? (p95)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
+      "description": "Checkout = hold → booking row. Business = hold → confirmed. System = webhook received → committed.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -815,9 +359,9 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 20
+        "y": 4
       },
-      "id": 10,
+      "id": 15,
       "options": {
         "legend": {
           "calcs": [],
@@ -868,7 +412,7 @@
           "refId": "C"
         }
       ],
-      "title": "Booking flow — p95",
+      "title": "Booking stages — p95",
       "type": "timeseries"
     },
     {
@@ -930,9 +474,9 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 20
+        "y": 4
       },
-      "id": 11,
+      "id": 16,
       "options": {
         "legend": {
           "calcs": [],
@@ -952,14 +496,38 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le, queue) (rate(job_duration_seconds_bucket{cluster=~\"$cluster\", job=\"travelnest-worker\"}[15m])))",
-          "legendFormat": "{{queue}}",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(booking_confirmation_duration_seconds_bucket{cluster=~\"$cluster\", flow=\"prepay\"}[30m])))",
+          "legendFormat": "p50",
           "range": true,
           "instant": false,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(booking_confirmation_duration_seconds_bucket{cluster=~\"$cluster\", flow=\"prepay\"}[30m])))",
+          "legendFormat": "p95",
+          "range": true,
+          "instant": false,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(booking_confirmation_duration_seconds_bucket{cluster=~\"$cluster\", flow=\"prepay\"}[30m])))",
+          "legendFormat": "p99",
+          "range": true,
+          "instant": false,
+          "refId": "C"
         }
       ],
-      "title": "Worker job p95 by queue",
+      "title": "Confirmation latency percentiles",
       "type": "timeseries"
     },
     {
@@ -967,6 +535,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
+      "description": "Confirmed bookings per checkout start. A dip means payment failures, abandoned checkouts or a stalled webhook.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1021,9 +590,9 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 28
+        "y": 12
       },
-      "id": 12,
+      "id": 17,
       "options": {
         "legend": {
           "calcs": [],
@@ -1043,14 +612,14 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(http_request_duration_seconds_bucket{cluster=~\"$cluster\", job=\"travelnest-api\", route=~\"$route\", le=\"0.4\"}[5m])) / clamp_min(sum(rate(http_request_duration_seconds_count{cluster=~\"$cluster\", job=\"travelnest-api\", route=~\"$route\"}[5m])), 1e-9)",
-          "legendFormat": "under 400ms",
+          "expr": "sum(rate(booking_confirmation_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])) / clamp_min(sum(rate(booking_checkout_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])), 1e-9)",
+          "legendFormat": "conversion",
           "range": true,
           "instant": false,
           "refId": "A"
         }
       ],
-      "title": "SLO — share of requests served under 400ms",
+      "title": "Payment conversion over time",
       "type": "timeseries"
     },
     {
@@ -1070,7 +639,7 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 20,
+            "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1104,7 +673,7 @@
               }
             ]
           },
-          "unit": "s"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -1112,9 +681,9 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 28
+        "y": 12
       },
-      "id": 13,
+      "id": 18,
       "options": {
         "legend": {
           "calcs": [],
@@ -1134,20 +703,32 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "nodejs_eventloop_lag_p99_seconds{cluster=~\"$cluster\", job=\"travelnest-api\"}",
-          "legendFormat": "p99",
+          "expr": "sum(rate(booking_checkout_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[15m])) * 60",
+          "legendFormat": "checkout started",
           "range": true,
           "instant": false,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(booking_confirmation_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[15m])) * 60",
+          "legendFormat": "confirmed",
+          "range": true,
+          "instant": false,
+          "refId": "B"
         }
       ],
-      "title": "Event loop lag p99",
+      "title": "Checkouts vs confirmations per minute",
       "type": "timeseries"
     }
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["travelnest", "latency", "slo"],
+  "tags": ["travelnest", "booking", "slo"],
   "templating": {
     "list": [
       {
@@ -1187,41 +768,17 @@
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": "All",
-          "value": "$__all"
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${datasource}"
-        },
-        "definition": "label_values(http_request_duration_seconds_count{job=\"travelnest-api\"}, route)",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Route",
-        "multi": true,
-        "name": "route",
-        "options": [],
-        "query": "label_values(http_request_duration_seconds_count{job=\"travelnest-api\"}, route)",
-        "refresh": 2,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
       }
     ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-24h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "TravelNest API — Latency & Booking Flow",
-  "uid": "travelnest-api-latency",
+  "title": "TravelNest / Booking funnel & SLO",
+  "uid": "travelnest-booking-funnel",
   "version": 1,
   "weekStart": ""
 }
