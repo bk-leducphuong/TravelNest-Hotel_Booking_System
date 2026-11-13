@@ -1,7 +1,8 @@
 # Values for the grafana/k8s-monitoring chart.
 #
 # This file is the source of truth for telemetry collection in this cluster.
-# Argo CD reads it through the `ref: values` source in application.yaml.
+# Argo CD reads it through the `ref: values` source in
+# deploy/k8s/environments/prod/monitoring.yaml.
 # See README.md for the rollout and rollback procedure.
 
 cluster:
