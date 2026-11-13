@@ -3,3 +3,7 @@ kind: Kustomization
 resources:
   - ../base
   - applicationset.yaml
+  # Standalone Application (project `default`: needs cluster-scoped RBAC). It is
+  # a plain resource of the root app, not an ApplicationSet entry, because the
+  # ApplicationSet template targets the `travelnest` project/namespace.
+  - monitoring.yaml

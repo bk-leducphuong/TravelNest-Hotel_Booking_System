@@ -1,5 +1,8 @@
 # Grafana Cloud monitoring via the k8s-monitoring Helm chart.
 #
+# This manifest is rendered by the root app (`travelnest-root`, path
+# deploy/k8s/environments/prod) so the Application itself is GitOps-managed.
+#
 # A single Argo CD Application with three sources:
 #   1. deploy/k8s/monitoring/secrets  (kustomize + KSOPS) -> Namespace + the
 #      `grafana-cloud-remote-config` Secret holding the Grafana Cloud
@@ -18,6 +21,12 @@ metadata:
   namespace: argocd
   labels:
     app.kubernetes.io/part-of: monitoring
+  annotations:
+    # Safety valve: pruning this Application would cascade-delete the whole
+    # monitoring stack (namespace, Secret, Alloy, dashboards' scrape). If the
+    # manifest is ever removed from Git, leave the app in place and delete it
+    # deliberately instead.
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   project: default
   destination:

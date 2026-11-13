@@ -4,7 +4,9 @@ Sends Kubernetes, host and application metrics from this cluster to **Grafana
 Cloud**, where the prebuilt Kubernetes Monitoring dashboards live plus the
 latency panels built from the API's own metrics.
 
-Deployed via Argo CD as the `monitoring` Application (`application.yaml`).
+Deployed via Argo CD as the `monitoring` Application, applied by the root app
+(`travelnest-root`) from
+[`../environments/prod/monitoring.yaml`](../environments/prod/monitoring.yaml).
 
 ## How it works
 
@@ -26,14 +28,14 @@ Local footprint ≈ **200–360 MiB** (collector preset `small`).
 
 ## Files
 
-| Path                           | Purpose                                                                    |
-| ------------------------------ | -------------------------------------------------------------------------- |
-| `application.yaml`             | Argo CD Application (3 sources: sealed Secret, value files, Helm chart)    |
-| `values.yaml`                  | **Source of truth** for the telemetry pipeline                             |
-| `secrets/`                     | KSOPS sealed Secret holding the Grafana Cloud credentials                  |
-| `secrets/secret.template.yaml` | Plaintext template (`${GRAFANA_CLOUD_USERNAME}`, `${GRAFANA_CLOUD_TOKEN}`) |
-| `secrets/secret.enc.yaml`      | SOPS/age-encrypted — safe to commit                                        |
-| `alerts/`                      | Recommended alert rules (live in Grafana Cloud Alerting)                   |
+| Path                                   | Purpose                                                                                          |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `../environments/prod/monitoring.yaml` | Argo CD Application (3 sources: sealed Secret, value files, Helm chart), managed by the root app |
+| `values.yaml`                          | **Source of truth** for the telemetry pipeline                                                   |
+| `secrets/`                             | KSOPS sealed Secret holding the Grafana Cloud credentials                                        |
+| `secrets/secret.template.yaml`         | Plaintext template (`${GRAFANA_CLOUD_USERNAME}`, `${GRAFANA_CLOUD_TOKEN}`)                       |
+| `secrets/secret.enc.yaml`              | SOPS/age-encrypted — safe to commit                                                              |
+| `alerts/`                              | Recommended alert rules (live in Grafana Cloud Alerting)                                         |
 
 The AppProject is `default` (not `travelnest`) because the chart needs
 cluster-scoped RBAC + a new namespace.

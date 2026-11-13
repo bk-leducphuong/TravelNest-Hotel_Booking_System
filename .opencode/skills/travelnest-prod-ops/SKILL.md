@@ -94,16 +94,20 @@ run by the `cloudflared.service` unit on the VPS. Relevant host units:
 
 ## Monitoring (Grafana Cloud)
 
-K8s/host metrics ship to Grafana Cloud (Alloy → remote_write; pipelines managed
-by Fleet Management). The token is sealed in
-`deploy/k8s/monitoring/secrets/secret.enc.yaml` (SOPS/age).
+K8s/host and application metrics ship to Grafana Cloud (Alloy → remote_write).
+The pipeline is defined in `deploy/k8s/monitoring/values.yaml`; the `monitoring`
+Application is a resource of the root app
+(`deploy/k8s/environments/prod/monitoring.yaml`), so monitoring changes are
+GitOps too. There is no Fleet Management remote config any more. The token is
+sealed in `deploy/k8s/monitoring/secrets/secret.enc.yaml` (SOPS/age).
 
 ```bash
 gcx commands          # full, agent-consumable command metadata
+gcx metrics query 'up{cluster="travelnest-test"}'
+gcx metrics query 'histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket{job="travelnest-api"}[5m])))'
 gcx alert rules list
 gcx dashboards list
 gcx cloud stacks list
-gcx fleet pipelines list
 ```
 
 ## Deploys
