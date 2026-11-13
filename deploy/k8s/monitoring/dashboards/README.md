@@ -7,10 +7,11 @@ Prometheus data source, and keep the `TravelNest` folder.
 Do not fork the Grafana-managed Kubernetes / MySQL / Redis integration
 dashboards; they update with the stack.
 
-| File                              | UID                          | Audience          | Answers                                                                         |
-| --------------------------------- | ---------------------------- | ----------------- | ------------------------------------------------------------------------------- |
-| `travelnest-api-performance.json` | `travelnest-api-performance` | Backend on-call   | Is the API slow or erroring, on which route, and is MySQL/Redis/Node the cause? |
-| `travelnest-booking-funnel.json`  | `travelnest-booking-funnel`  | Product + backend | How long from hold to confirmed booking, and is conversion healthy?             |
+| File                              | UID                          | Audience          | Answers                                                                             |
+| --------------------------------- | ---------------------------- | ----------------- | ----------------------------------------------------------------------------------- |
+| `travelnest-api-performance.json` | `travelnest-api-performance` | Backend on-call   | Is the API slow or erroring, on which route, and is MySQL/Redis/Node the cause?     |
+| `travelnest-booking-funnel.json`  | `travelnest-booking-funnel`  | Product + backend | How long from hold to confirmed booking, and is conversion healthy?                 |
+| `travelnest-capacity.json`        | `travelnest-capacity`        | Infra/SRE         | Are we exhausting the DB pool, Redis, event-loop headroom, queue backlog or memory? |
 
 ## Rules
 

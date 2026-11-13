@@ -156,6 +156,7 @@ and the `travelnest-test` cluster):
 | ---------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `travelnest-api-performance` | Backend on-call   | request rate, p50/p95/p99 overall and per route, slowest routes, HTTP/MySQL/Redis split, SLO under 400ms, event-loop lag |
 | `travelnest-booking-funnel`  | Product + backend | confirmations/min, payment conversion, checkout/confirmation/webhook stages                                              |
+| `travelnest-capacity`        | Infra/SRE         | event-loop lag, heap/RSS, DB pool saturation, Redis p95, BullMQ queue depth/failures, pod restarts                       |
 
 The prebuilt Kubernetes monitoring dashboards stay untouched in the
 `GrafanaCloud` folder; these three are the only ones this repo owns.
