@@ -125,11 +125,35 @@ sum(rate(http_request_duration_seconds_bucket{job="travelnest-api", le="0.4"}[5m
 # MySQL vs Redis vs HTTP: which layer moved?
 histogram_quantile(0.95, sum by (le) (rate(db_query_duration_seconds_bucket[5m])))
 histogram_quantile(0.95, sum by (le) (rate(redis_command_duration_seconds_bucket[5m])))
+
+# Booking flow: hold -> pending booking (checkout)
+histogram_quantile(0.95, sum by (le) (rate(booking_checkout_duration_seconds_bucket{flow="prepay"}[15m])))
+
+# Booking flow: hold -> confirmed (business SLA, includes the guest's payment time)
+histogram_quantile(0.95, sum by (le) (rate(booking_confirmation_duration_seconds_bucket{flow="prepay"}[30m])))
+
+# Booking flow: webhook received -> transaction committed (what you alert on)
+histogram_quantile(0.95, sum by (le) (rate(booking_confirmation_processing_seconds_bucket{flow="prepay"}[15m])))
 ```
 
 `route` is the Express pattern (`/api/v1/hotels/:id/rooms`), so identifiers never
 become labels. Health checks, `/metrics`, `/admin/queues` and `/api-docs` are
 excluded from the HTTP histogram.
+
+Booking metrics are labelled by payment policy (`flow="prepay"` or
+`pay_at_property`). The business metric starts at room-hold creation, using the
+hold timestamp carried into the payment transaction metadata, so it needs no
+extra query at confirmation time. A payment that arrives after the booking was
+cancelled is refunded, not confirmed, and is never observed.
+
+### Dashboard
+
+[`dashboards/travelnest-api-latency.json`](./dashboards/travelnest-api-latency.json)
+is an importable Grafana dashboard (Dashboards → New → Import → upload JSON,
+then pick the Prometheus data source and the `travelnest-test` cluster). It
+covers request rate, p50/p95/p99 overall and per route, slowest routes, the
+HTTP/MySQL/Redis split, booking checkout/confirmation stages and worker job
+durations.
 
 ## Access
 

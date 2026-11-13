@@ -26,14 +26,16 @@ These depend on the API's own metrics (`job="travelnest-api"`) and are **not
 applied yet** — create them in Grafana Cloud Alerting once the metrics have been
 flowing for a day so the thresholds can be baselined.
 
-| Alert                       | PromQL                                                                                                                                       | Fires when | For |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --- |
-| **API p95 latency high**    | `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="travelnest-api"}[5m])))`                               | `> 0.5`    | 10m |
-| **Search p95 latency high** | `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="travelnest-api",route="/api/v1/search/hotels"}[5m])))` | `> 0.5`    | 10m |
-| **API error ratio high**    | `sum(rate(http_requests_total{job="travelnest-api",status_class="5xx"}[5m])) / sum(rate(http_requests_total{job="travelnest-api"}[5m]))`     | `> 0.01`   | 5m  |
-| **MySQL p95 high**          | `histogram_quantile(0.95, sum by (le) (rate(db_query_duration_seconds_bucket[5m])))`                                                         | `> 0.05`   | 10m |
-| **Event loop lag p99**      | `nodejs_eventloop_lag_p99_seconds{job="travelnest-api"}`                                                                                     | `> 0.05`   | 10m |
-| **Worker job p95 high**     | `histogram_quantile(0.95, sum by (le) (rate(job_duration_seconds_bucket{job="travelnest-worker"}[15m])))`                                    | `> 30`     | 15m |
+| Alert                                    | PromQL                                                                                                                                       | Fires when | For |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --- |
+| **API p95 latency high**                 | `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="travelnest-api"}[5m])))`                               | `> 0.5`    | 10m |
+| **Search p95 latency high**              | `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="travelnest-api",route="/api/v1/search/hotels"}[5m])))` | `> 0.5`    | 10m |
+| **API error ratio high**                 | `sum(rate(http_requests_total{job="travelnest-api",status_class="5xx"}[5m])) / sum(rate(http_requests_total{job="travelnest-api"}[5m]))`     | `> 0.01`   | 5m  |
+| **MySQL p95 high**                       | `histogram_quantile(0.95, sum by (le) (rate(db_query_duration_seconds_bucket[5m])))`                                                         | `> 0.05`   | 10m |
+| **Event loop lag p99**                   | `nodejs_eventloop_lag_p99_seconds{job="travelnest-api"}`                                                                                     | `> 0.05`   | 10m |
+| **Worker job p95 high**                  | `histogram_quantile(0.95, sum by (le) (rate(job_duration_seconds_bucket{job="travelnest-worker"}[15m])))`                                    | `> 30`     | 15m |
+| **Booking confirmation processing slow** | `histogram_quantile(0.95, sum by (le) (rate(booking_confirmation_processing_seconds_bucket{flow="prepay"}[15m])))`                           | `> 5`      | 10m |
+| **Booking checkout p95 high**            | `histogram_quantile(0.95, sum by (le) (rate(booking_checkout_duration_seconds_bucket{flow="prepay"}[15m])))`                                 | `> 120`    | 15m |
 
 ## Apply
 
