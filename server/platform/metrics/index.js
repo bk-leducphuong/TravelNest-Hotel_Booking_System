@@ -5,6 +5,8 @@ const {
   recordBookingConfirmation,
 } = require('./infrastructure/business.metrics');
 const { wrapSequelizeLogging } = require('./infrastructure/db.metrics');
+const { instrumentQueueDepths } = require('./infrastructure/queue-depth.metrics');
+const { instrumentSequelizePool } = require('./infrastructure/pool.metrics');
 const { instrumentWorker } = require('./infrastructure/queue.metrics');
 const { instrumentRedisClient } = require('./infrastructure/redis.metrics');
 const { createMetrics, getMetrics } = require('./infrastructure/registry');
@@ -18,7 +20,9 @@ const { createMetrics, getMetrics } = require('./infrastructure/registry');
 module.exports = {
   createMetrics,
   getMetrics,
+  instrumentQueueDepths,
   instrumentRedisClient,
+  instrumentSequelizePool,
   instrumentWorker,
   metricsMiddleware,
   recordBookingCheckout,
