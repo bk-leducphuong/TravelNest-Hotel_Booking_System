@@ -1,4 +1,4 @@
-const { socketAuthentication } = require('@platform/realtime/auth');
+const { socketAuthentication, socketPropertyAuthorization } = require('@platform/realtime/auth');
 
 jest.mock('@utils/jwt.util', () => ({ verifyJwt: jest.fn() }));
 jest.mock('@config/logger.config', () => ({
@@ -70,5 +70,38 @@ describe('realtime socketAuthentication', () => {
 
     expect(identity.resolveAuthenticatedUser).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
+  });
+});
+
+describe('realtime socketPropertyAuthorization', () => {
+  function socketWith({ roles = [], hotelRoles = [] } = {}) {
+    return { id: 'socket-1', user: { id: 'user-1', roles, hotelRoles } };
+  }
+
+  it('allows a hotel member whose global role is only user', async () => {
+    const next = jest.fn();
+
+    await socketPropertyAuthorization(
+      socketWith({ roles: ['user'], hotelRoles: [{ hotelId: 'hotel-1', role: 'owner' }] }),
+      next
+    );
+
+    expect(next).toHaveBeenCalledWith();
+  });
+
+  it('allows a platform admin without a hotel membership', async () => {
+    const next = jest.fn();
+
+    await socketPropertyAuthorization(socketWith({ roles: ['admin'] }), next);
+
+    expect(next).toHaveBeenCalledWith();
+  });
+
+  it('rejects a user with neither a global role nor a hotel membership', async () => {
+    const next = jest.fn();
+
+    await socketPropertyAuthorization(socketWith({ roles: ['user'] }), next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403 }));
   });
 });

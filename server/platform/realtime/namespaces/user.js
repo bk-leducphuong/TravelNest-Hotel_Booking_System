@@ -1,5 +1,7 @@
 const logger = require('@config/logger.config');
 
+const { registerChatHandlers } = require('./chat');
+
 /**
  * User Namespace Controller (/user)
  * Handles connections from authenticated regular users (customers)
@@ -26,6 +28,13 @@ exports.handleConnection = (namespace, socket) => {
   const userRoom = `user_${userId}`;
   socket.join(userRoom);
 
+  // Guest <-> hotel threads. A user can also be hotel staff, so pass every
+  // hotel they have a role in; access is still resolved per conversation.
+  const hotelIds = (socket.user.hotelRoles || [])
+    .map((hotelRole) => hotelRole.hotelId)
+    .filter(Boolean);
+  registerChatHandlers({ namespace, socket, userId, hotelIds });
+
   // Send welcome message with user info
   socket.emit('connected', {
     message: 'Connected to user namespace',
@@ -34,7 +43,13 @@ exports.handleConnection = (namespace, socket) => {
       firstName: socket.user.firstName,
       lastName: socket.user.lastName,
     },
-    features: ['booking_updates', 'notifications', 'chat_support', 'favorites_sync'],
+    features: [
+      'booking_updates',
+      'notifications',
+      'chat_support',
+      'chat_with_hotel',
+      'favorites_sync',
+    ],
   });
 
   // ==================== Event: Get Unread Notifications Count ====================

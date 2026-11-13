@@ -183,6 +183,12 @@
           </p>
           <p class="guest-subtitle">{{ $t('guest.bookingAmount') }}</p>
           <RouterLink
+            v-if="booking.id"
+            class="guest-button guest-button-secondary no-print"
+            :to="{ path: '/messages', query: { bookingId: booking.id } }"
+            >{{ $t('messages.messageHotel') }}</RouterLink
+          >
+          <RouterLink
             v-if="cancellable"
             class="guest-button guest-button-secondary no-print"
             :to="`/bookings/${encodeURIComponent(booking.booking_code)}/cancel`"

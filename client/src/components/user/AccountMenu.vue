@@ -2,6 +2,7 @@
 import {
   ArrowDown,
   ChatDotRound,
+  ChatLineRound,
   Document,
   House,
   Star,
@@ -20,6 +21,11 @@ const menuItems = [
     labelKey: 'account.menu.bookings',
     route: '/bookings',
     icon: Document,
+  },
+  {
+    labelKey: 'account.menu.messages',
+    route: '/messages',
+    icon: ChatLineRound,
   },
   {
     labelKey: 'account.menu.reviews',

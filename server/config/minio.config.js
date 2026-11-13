@@ -15,6 +15,24 @@ const minioConfig = {
 
 const minioClient = new Minio.Client(minioConfig);
 
+/**
+ * Presigned URLs must be signed for the host the browser will call. In
+ * production the API may reach MinIO over an internal name (`minio:9000`) while
+ * users reach it through a public endpoint. Configure MINIO_PUBLIC_ENDPOINT /
+ * MINIO_PUBLIC_PORT / MINIO_PUBLIC_USE_SSL when those differ.
+ */
+const presignClient = process.env.MINIO_PUBLIC_ENDPOINT
+  ? new Minio.Client({
+      ...minioConfig,
+      endPoint: process.env.MINIO_PUBLIC_ENDPOINT,
+      port: Number(process.env.MINIO_PUBLIC_PORT || minioConfig.port),
+      useSSL:
+        process.env.MINIO_PUBLIC_USE_SSL === undefined
+          ? minioConfig.useSSL
+          : process.env.MINIO_PUBLIC_USE_SSL === 'true',
+    })
+  : minioClient;
+
 const bucketName = process.env.MINIO_BUCKET || 'uploads';
 
 /**
@@ -31,6 +49,7 @@ async function initBucket() {
 
 module.exports = {
   minioClient,
+  presignClient,
   initBucket,
   bucketName,
   minioConfig,

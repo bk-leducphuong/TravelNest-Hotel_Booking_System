@@ -34,6 +34,7 @@
     "seed:promotion": "cross-env NODE_ENV=development node seeders/database/promotion.seed.js",
     "seed:hotel_search_snapshot": "cross-env NODE_ENV=development node seeders/database/hotel_search_snapshot.seed.js --rebuild",
     "seed:snapshot-images": "cross-env NODE_ENV=development node scripts/backfill-snapshot-primary-images.js",
+    "messaging:backfill": "cross-env NODE_ENV=development node scripts/messaging/backfill-conversations.js",
     "seed:images": "cross-env NODE_ENV=development node seeders/database/seed-images.js",
     "seed:images:legacy": "cross-env NODE_ENV=development node seeders/database/images.seed.js",
     "seed:review": "cross-env NODE_ENV=development node seeders/database/review.seed.js",
