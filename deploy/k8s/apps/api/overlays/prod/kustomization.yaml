@@ -11,6 +11,6 @@ images:
     newName: docker.io/leducphuong/travelnest-api
     # Managed by Argo CD Image Updater: rewritten to an immutable
     # sha-<commit> tag. Do not hand-edit unless Image Updater is disabled.
-    newTag: sha-1c78c98
+    newTag: sha-98f4d1e
 generators:
   - secret-generator.yaml
