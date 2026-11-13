@@ -5,6 +5,7 @@ const { getHotelMessages } = require('../application/getMessages');
 const { sendHotelMessage } = require('../application/sendMessage');
 const { markHotelConversationRead } = require('../application/markConversationRead');
 const { getHotelUnreadCount } = require('../application/getUnreadCount');
+const { uploadHotelAttachments } = require('../application/uploadAttachments');
 
 /**
  * Hotel-side messaging controller.
@@ -73,9 +74,21 @@ const sendMessageHandler = async (req, res) => {
     conversationId: req.params.conversationId,
     body: req.body.body,
     clientMessageId: req.body.clientMessageId,
+    attachmentKeys: req.body.attachmentKeys,
   });
 
   res.status(201).json({ data: message });
+};
+
+const uploadAttachmentsHandler = async (req, res) => {
+  const attachments = await uploadHotelAttachments({
+    hotelId: requireActiveHotelId(req),
+    senderUserId: req.user.id,
+    conversationId: req.params.conversationId,
+    files: req.files || [],
+  });
+
+  res.status(201).json({ data: attachments });
 };
 
 const markReadHandler = async (req, res) => {
@@ -102,6 +115,7 @@ module.exports = {
   listConversationsHandler,
   getMessagesHandler,
   sendMessageHandler,
+  uploadAttachmentsHandler,
   markReadHandler,
   unreadCountHandler,
 };

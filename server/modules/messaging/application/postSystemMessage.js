@@ -34,7 +34,7 @@ async function postSystemMessage({ conversationId, body }) {
   });
 
   if (created) {
-    socketEmitter.emitNewMessage({ conversation, message });
+    await socketEmitter.emitNewMessage({ conversation, message });
   }
 
   return toMessageDto(message);

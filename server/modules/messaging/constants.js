@@ -1,6 +1,8 @@
 const MAX_BODY_LENGTH = 4000;
 const DEFAULT_PAGE_SIZE = 20;
 const DEFAULT_MESSAGE_PAGE_SIZE = 30;
+const MAX_ATTACHMENTS = 5;
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 
 /**
  * How long after check-out a guest may still post in the thread. Reading history
@@ -15,5 +17,7 @@ module.exports = {
   MAX_BODY_LENGTH,
   DEFAULT_PAGE_SIZE,
   DEFAULT_MESSAGE_PAGE_SIZE,
+  MAX_ATTACHMENTS,
+  MAX_ATTACHMENT_BYTES,
   sendWindowDays,
 };

@@ -11,7 +11,12 @@ jest.mock('@modules/messaging/infrastructure/conversation.repository', () => ({
 jest.mock('@modules/messaging/infrastructure/message.repository', () => ({
   findByIdempotencyKey: jest.fn(),
   create: jest.fn(),
+  createAttachments: jest.fn(),
   loadWithSender: jest.fn(),
+}));
+
+jest.mock('@modules/messaging/application/uploadAttachments', () => ({
+  resolveAttachmentKeys: jest.fn(),
 }));
 
 jest.mock('@modules/messaging/infrastructure/socket-emitter', () => ({
@@ -22,6 +27,7 @@ jest.mock('@modules/messaging/infrastructure/socket-emitter', () => ({
 const sequelize = require('@config/database.config');
 const conversationRepository = require('@modules/messaging/infrastructure/conversation.repository');
 const messageRepository = require('@modules/messaging/infrastructure/message.repository');
+const { resolveAttachmentKeys } = require('@modules/messaging/application/uploadAttachments');
 const socketEmitter = require('@modules/messaging/infrastructure/socket-emitter');
 const {
   sendGuestMessage,
@@ -65,6 +71,7 @@ beforeEach(() => {
   // `resetMocks` clears factory implementations between tests.
   sequelize.transaction.mockImplementation(async (callback) => callback('tx'));
   messageRepository.findByIdempotencyKey.mockResolvedValue(null);
+  resolveAttachmentKeys.mockResolvedValue([]);
   conversationRepository.findByIdForUpdate.mockResolvedValue({
     id: CONVERSATION_ID,
     status: 'open',
@@ -146,6 +153,60 @@ describe('sendGuestMessage', () => {
       }),
       'MESSAGE_TOO_LONG'
     );
+  });
+
+  it('stores image attachments and allows an empty body', async () => {
+    conversationRepository.findAccessContext.mockResolvedValue(conversation());
+    resolveAttachmentKeys.mockResolvedValue([
+      { objectKey: 'messaging/c/u/one.png', mimeType: 'image/png', sizeBytes: 12 },
+      { objectKey: 'messaging/c/u/two.jpg', mimeType: 'image/jpeg', sizeBytes: 34 },
+    ]);
+
+    await sendGuestMessage({
+      userId: GUEST_ID,
+      conversationId: CONVERSATION_ID,
+      body: '',
+      attachmentKeys: ['messaging/c/u/one.png', 'messaging/c/u/two.jpg'],
+    });
+
+    expect(resolveAttachmentKeys).toHaveBeenCalledWith({
+      conversationId: CONVERSATION_ID,
+      senderUserId: GUEST_ID,
+      attachmentKeys: ['messaging/c/u/one.png', 'messaging/c/u/two.jpg'],
+    });
+    expect(messageRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'image', body: '' }),
+      { transaction: 'tx' }
+    );
+    expect(messageRepository.createAttachments).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({ object_key: 'messaging/c/u/one.png', position: 0 }),
+        expect.objectContaining({ object_key: 'messaging/c/u/two.jpg', position: 1 }),
+      ],
+      { transaction: 'tx' }
+    );
+    expect(conversationRepository.updateLastMessage).toHaveBeenCalledWith(
+      CONVERSATION_ID,
+      expect.objectContaining({ preview: '2 photos' }),
+      { transaction: 'tx' }
+    );
+  });
+
+  it('rejects more than five attachments before writing', async () => {
+    conversationRepository.findAccessContext.mockResolvedValue(conversation());
+
+    await expectApiError(
+      sendGuestMessage({
+        userId: GUEST_ID,
+        conversationId: CONVERSATION_ID,
+        body: '',
+        attachmentKeys: ['1', '2', '3', '4', '5', '6'],
+      }),
+      'TOO_MANY_ATTACHMENTS'
+    );
+
+    expect(resolveAttachmentKeys).not.toHaveBeenCalled();
+    expect(sequelize.transaction).not.toHaveBeenCalled();
   });
 
   it('rejects sends after the post-check-out window', async () => {

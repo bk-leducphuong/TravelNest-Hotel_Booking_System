@@ -6,6 +6,7 @@ const { getGuestMessages } = require('../application/getMessages');
 const { sendGuestMessage } = require('../application/sendMessage');
 const { markGuestConversationRead } = require('../application/markConversationRead');
 const { getGuestUnreadCount } = require('../application/getUnreadCount');
+const { uploadGuestAttachments } = require('../application/uploadAttachments');
 const { toConversationDto } = require('../application/serializers');
 
 /**
@@ -61,9 +62,20 @@ const sendMessageHandler = async (req, res) => {
     conversationId: req.params.conversationId,
     body: req.body.body,
     clientMessageId: req.body.clientMessageId,
+    attachmentKeys: req.body.attachmentKeys,
   });
 
   res.status(201).json({ data: message });
+};
+
+const uploadAttachmentsHandler = async (req, res) => {
+  const attachments = await uploadGuestAttachments({
+    userId: req.user.id,
+    conversationId: req.params.conversationId,
+    files: req.files || [],
+  });
+
+  res.status(201).json({ data: attachments });
 };
 
 const markReadHandler = async (req, res) => {
@@ -86,6 +98,7 @@ module.exports = {
   openConversationHandler,
   getMessagesHandler,
   sendMessageHandler,
+  uploadAttachmentsHandler,
   markReadHandler,
   unreadCountHandler,
 };

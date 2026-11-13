@@ -13,17 +13,27 @@ export interface MessageSender {
   avatarUrl?: string | null;
 }
 
+export interface MessageAttachment {
+  id: string;
+  objectKey: string;
+  mimeType: string;
+  sizeBytes: number;
+  position: number;
+  url?: string | null;
+}
+
 export interface ChatMessage {
   id: string;
   conversationId: string;
   seq: number;
   senderSide: "guest" | "hotel" | "system";
-  type: "text" | "system";
+  type: "text" | "system" | "image";
   body: string;
   flagged: boolean;
   flagReason?: string | null;
   clientMessageId?: string | null;
   createdAt: string;
+  attachments: MessageAttachment[];
   sender?: MessageSender | null;
 }
 
@@ -98,9 +108,22 @@ export async function fetchConversationMessages(
   return { data: response.data, meta: response.meta };
 }
 
+export async function uploadConversationAttachments(
+  conversationId: string,
+  files: File[]
+): Promise<MessageAttachment[]> {
+  const form = new FormData();
+  files.forEach((file) => form.append("images", file));
+  const response = await apiFetch<{ data: MessageAttachment[] }>(
+    `/admin/conversations/${encodeURIComponent(conversationId)}/attachments`,
+    { method: "POST", body: form }
+  );
+  return response.data;
+}
+
 export async function sendConversationMessage(
   conversationId: string,
-  payload: { body: string; clientMessageId?: string }
+  payload: { body: string; clientMessageId?: string; attachmentKeys?: string[] }
 ): Promise<ChatMessage> {
   const response = await apiFetch<{ data: ChatMessage }>(
     `/admin/conversations/${encodeURIComponent(conversationId)}/messages`,

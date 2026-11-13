@@ -3,6 +3,7 @@ import {
   fetchConversations,
   fetchConversationMessages,
   sendConversationMessage,
+  uploadConversationAttachments,
   markConversationRead,
   type ChatMessage,
   type ConversationSummary,
@@ -11,9 +12,13 @@ import { formatDateTime } from "~/utils/format";
 import type { Socket } from "socket.io-client";
 import { connectChatSocket, disconnectChatSocket } from "~/services/chatSocket";
 
+const MAX_ATTACHMENTS = 5;
+
 const auth = useAuthStore();
 const { can } = usePermissions();
 const { t } = useI18n();
+const runtimeConfig = useRuntimeConfig();
+const mediaBase = String(runtimeConfig.public.mediaBase || "").replace(/\/+$/, "");
 
 const conversations = ref<ConversationSummary[]>([]);
 const loading = ref(false);
@@ -32,6 +37,11 @@ const sendError = ref("");
 const mobileThread = ref(false);
 const threadArea = ref<HTMLElement | null>(null);
 const typingGuest = ref(false);
+const attachmentFiles = ref<{ file: File; url: string }[]>([]);
+const pendingAttachmentKeys = ref<string[]>([]);
+const attachmentError = ref("");
+const uploadingAttachments = ref(false);
+const attachmentInput = ref<HTMLInputElement | null>(null);
 
 let inboxTimer: ReturnType<typeof setInterval> | null = null;
 let threadTimer: ReturnType<typeof setInterval> | null = null;
@@ -43,6 +53,13 @@ let typingEmitTimer: ReturnType<typeof setTimeout> | null = null;
 
 const canRead = computed(() => can("chat.read"));
 const canRespond = computed(() => can("chat.respond"));
+const canSend = computed(
+  () =>
+    !sending.value &&
+    !uploadingAttachments.value &&
+    canRespond.value &&
+    (draft.value.trim().length > 0 || attachmentFiles.value.length > 0)
+);
 const activeConversation = computed(
   () => conversations.value.find((entry) => entry.id === activeId.value) ?? null
 );
@@ -171,6 +188,63 @@ async function markRead(conversationId: string, seq: number) {
   } catch {
     // The cursor advances on the next successful read.
   }
+}
+
+function attachmentUrl(attachment: { objectKey: string; url?: string | null }): string {
+  if (attachment.url) {
+    return attachment.url;
+  }
+  return mediaBase ? `${mediaBase}/${attachment.objectKey}` : attachment.objectKey;
+}
+
+function openAttachmentPicker() {
+  attachmentInput.value?.click();
+}
+
+function onAttachmentsSelected(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const selected = Array.from(input.files || []);
+  input.value = "";
+  if (!selected.length) {
+    return;
+  }
+
+  attachmentError.value = "";
+  const images = selected.filter((file) => file.type.startsWith("image/"));
+  if (images.length !== selected.length) {
+    attachmentError.value = t("messages.imagesOnly");
+  }
+
+  const remaining = MAX_ATTACHMENTS - attachmentFiles.value.length;
+  if (remaining <= 0) {
+    attachmentError.value = t("messages.attachmentLimit", { count: MAX_ATTACHMENTS });
+    return;
+  }
+  if (images.length > remaining) {
+    attachmentError.value = t("messages.attachmentLimit", { count: MAX_ATTACHMENTS });
+  }
+
+  for (const file of images.slice(0, remaining)) {
+    attachmentFiles.value.push({ file, url: URL.createObjectURL(file) });
+  }
+  pendingAttachmentKeys.value = [];
+}
+
+function removeAttachment(index: number) {
+  const [removed] = attachmentFiles.value.splice(index, 1);
+  if (removed?.url) {
+    URL.revokeObjectURL(removed.url);
+  }
+  pendingAttachmentKeys.value = [];
+}
+
+function clearAttachments() {
+  for (const attachment of attachmentFiles.value) {
+    URL.revokeObjectURL(attachment.url);
+  }
+  attachmentFiles.value = [];
+  pendingAttachmentKeys.value = [];
+  attachmentError.value = "";
 }
 
 function joinConversation(conversationId: string | null) {
@@ -314,6 +388,7 @@ async function selectConversation(conversation: ConversationSummary) {
   hasMore.value = false;
   sendError.value = "";
   typingGuest.value = false;
+  clearAttachments();
   joinConversation(conversation.id);
   await loadMessages(conversation.id);
 }
@@ -356,26 +431,48 @@ async function pollLatest() {
 async function send() {
   const conversationId = activeId.value;
   const body = draft.value.trim();
-  if (!conversationId || !body || sending.value || !canRespond.value) {
+  const files = attachmentFiles.value.map((attachment) => attachment.file);
+  if (!conversationId || (!body && !files.length) || sending.value || !canRespond.value) {
     return;
   }
 
   sending.value = true;
   sendError.value = "";
   try {
+    let attachmentKeys = pendingAttachmentKeys.value;
+    if (files.length && attachmentKeys.length !== files.length) {
+      uploadingAttachments.value = true;
+      try {
+        const uploaded = await uploadConversationAttachments(conversationId, files);
+        attachmentKeys = uploaded.map((attachment) => attachment.objectKey);
+        pendingAttachmentKeys.value = attachmentKeys;
+      } finally {
+        uploadingAttachments.value = false;
+      }
+    }
+
     const message = await sendConversationMessage(conversationId, {
       body,
       clientMessageId: createClientMessageId(),
+      attachmentKeys,
     });
     if (!messages.value.some((entry) => entry.id === message.id)) {
       messages.value = [...messages.value, message];
     }
     latestSeq.value = Math.max(latestSeq.value, message.seq);
     draft.value = "";
+    clearAttachments();
 
     const conversation = conversations.value.find((entry) => entry.id === conversationId);
     if (conversation) {
-      conversation.lastMessagePreview = body.slice(0, 160);
+      const attachmentCount = message.attachments?.length || 0;
+      conversation.lastMessagePreview =
+        message.body?.trim().slice(0, 160) ||
+        (attachmentCount > 1
+          ? t("messages.photos", { count: attachmentCount })
+          : attachmentCount === 1
+            ? t("messages.photo")
+            : "");
       conversation.lastMessageAt = message.createdAt;
       conversation.lastMessageSeq = message.seq;
       conversation.unreadCount = 0;
@@ -451,6 +548,7 @@ watch(draft, (value) => {
 
 onBeforeUnmount(() => {
   stopPolling();
+  clearAttachments();
   if (chatSocket && joinedConversationId) {
     chatSocket.emit("chat:leave", { conversationId: joinedConversationId });
   }
@@ -628,7 +726,26 @@ onBeforeUnmount(() => {
                 {{ message.body }}
               </p>
               <div v-else class="chat-bubble">
-                <p class="chat-body">{{ message.body }}</p>
+                <div
+                  v-if="message.attachments?.length"
+                  class="chat-images"
+                  :class="{ 'is-single': message.attachments.length === 1 }"
+                >
+                  <a
+                    v-for="attachment in message.attachments"
+                    :key="attachment.id"
+                    :href="attachmentUrl(attachment)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <img
+                      :src="attachmentUrl(attachment)"
+                      :alt="$t('messages.imageAlt', { index: attachment.position + 1 })"
+                      loading="lazy"
+                    />
+                  </a>
+                </div>
+                <p v-if="message.body" class="chat-body">{{ message.body }}</p>
                 <span class="chat-time">
                   {{ formatDateTime(message.createdAt) }}
                   <el-tag
@@ -652,32 +769,79 @@ onBeforeUnmount(() => {
             {{ $t("messages.closed") }}
           </p>
 
-          <form v-else class="chat-composer" @submit.prevent="send">
-            <el-input
-              v-model="draft"
-              type="textarea"
-              :rows="2"
-              :maxlength="4000"
-              resize="none"
-              :placeholder="$t('messages.placeholder')"
-              :aria-label="$t('messages.placeholder')"
-              @keydown.enter.exact.prevent="send"
-            />
-            <div class="mt-2 flex items-center justify-between gap-3">
-              <p v-if="sendError" class="text-xs text-[#b3261e]">{{ sendError }}</p>
-              <span v-else class="text-xs text-muted">
-                {{ draft.trim().length }}/4000
-              </span>
-              <el-button
-                type="primary"
-                native-type="submit"
-                :loading="sending"
-                :disabled="!draft.trim() || !canRespond"
+          <template v-else>
+            <div v-if="attachmentFiles.length" class="chat-attachments">
+              <div
+                v-for="(attachment, index) in attachmentFiles"
+                :key="attachment.url"
+                class="chat-attachment"
               >
-                {{ sending ? $t("messages.sending") : $t("messages.send") }}
-              </el-button>
+                <img :src="attachment.url" :alt="$t('messages.attachmentPreview')" />
+                <button
+                  type="button"
+                  :aria-label="$t('messages.removeAttachment')"
+                  @click="removeAttachment(index)"
+                >
+                  ×
+                </button>
+              </div>
             </div>
-          </form>
+
+            <form class="chat-composer" @submit.prevent="send">
+              <input
+                ref="attachmentInput"
+                class="chat-file-input"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                multiple
+                @change="onAttachmentsSelected"
+              />
+              <div class="flex items-end gap-2">
+                <el-button
+                  circle
+                  :aria-label="$t('messages.addImages')"
+                  :disabled="attachmentFiles.length >= MAX_ATTACHMENTS || sending"
+                  @click="openAttachmentPicker"
+                >
+                  ＋
+                </el-button>
+                <el-input
+                  v-model="draft"
+                  class="flex-1"
+                  type="textarea"
+                  :rows="2"
+                  :maxlength="4000"
+                  resize="none"
+                  :placeholder="$t('messages.placeholder')"
+                  :aria-label="$t('messages.placeholder')"
+                  @keydown.enter.exact.prevent="send"
+                />
+              </div>
+              <div class="mt-2 flex items-center justify-between gap-3">
+                <p v-if="attachmentError" class="text-xs text-[#b3261e]">
+                  {{ attachmentError }}
+                </p>
+                <p v-else-if="sendError" class="text-xs text-[#b3261e]">{{ sendError }}</p>
+                <span v-else class="text-xs text-muted">
+                  {{ draft.trim().length }}/4000
+                </span>
+                <el-button
+                  type="primary"
+                  native-type="submit"
+                  :loading="sending"
+                  :disabled="!canSend"
+                >
+                  {{
+                    uploadingAttachments
+                      ? $t("messages.uploading")
+                      : sending
+                        ? $t("messages.sending")
+                        : $t("messages.send")
+                  }}
+                </el-button>
+              </div>
+            </form>
+          </template>
         </template>
 
         <div v-else class="flex flex-1 items-center justify-center">
@@ -696,14 +860,18 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  min-height: 62vh;
+  min-height: 0;
+  /* Fixed panel height: only the thread/list scroll, not the page. */
+  height: clamp(520px, calc(100vh - 220px), 800px);
+  height: clamp(520px, calc(100dvh - 220px), 800px);
   background: white;
   border-radius: 20px;
   overflow: hidden;
 }
 
 .chat-list {
-  max-height: 66vh;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -748,12 +916,20 @@ onBeforeUnmount(() => {
 .chat-thread {
   display: flex;
   flex: 1;
+  min-height: 0;
   flex-direction: column;
   gap: 10px;
-  max-height: 52vh;
   overflow-y: auto;
   padding: 16px;
   background: #fbfcfe;
+}
+
+.chat-pane > header,
+.chat-composer,
+.chat-attachments,
+.chat-closed,
+.chat-typing {
+  flex-shrink: 0;
 }
 
 .chat-row {
@@ -787,6 +963,29 @@ onBeforeUnmount(() => {
   word-break: break-word;
 }
 
+.chat-images {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.chat-images.is-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.chat-images a {
+  display: block;
+}
+
+.chat-images img {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
 .chat-time {
   display: block;
   margin-top: 4px;
@@ -807,6 +1006,45 @@ onBeforeUnmount(() => {
   border-top: 1px solid #eef1f6;
 }
 
+.chat-file-input {
+  display: none;
+}
+
+.chat-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px 0;
+}
+
+.chat-attachment {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+
+.chat-attachment img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.chat-attachment button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.85);
+  color: white;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 .chat-closed {
   padding: 16px;
   border-top: 1px solid #eef1f6;
@@ -822,6 +1060,11 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1023px) {
+  .chat-pane {
+    height: clamp(480px, calc(100vh - 160px), 760px);
+    height: clamp(480px, calc(100dvh - 160px), 760px);
+  }
+
   .chat-pane.is-hidden {
     display: none;
   }

@@ -11,6 +11,16 @@ function toMessageDto(message) {
   }
 
   const sender = json.sender || null;
+  const attachments = [...(json.attachments || [])]
+    .sort((a, b) => Number(a.position) - Number(b.position))
+    .map((attachment) => ({
+      id: attachment.id,
+      objectKey: attachment.object_key,
+      mimeType: attachment.mime_type,
+      sizeBytes: Number(attachment.size_bytes),
+      position: Number(attachment.position || 0),
+      url: attachment.url || null,
+    }));
 
   return {
     id: json.id,
@@ -23,6 +33,7 @@ function toMessageDto(message) {
     flagReason: json.flag_reason || null,
     clientMessageId: json.client_message_id || null,
     createdAt: json.created_at,
+    attachments,
     sender: sender
       ? {
           id: sender.id,
@@ -80,10 +91,17 @@ function toConversationDto(conversation, { unreadCount = 0, includeGuest = false
   return dto;
 }
 
-function buildPreview(body) {
+function buildPreview(body, attachmentCount = 0) {
   const text = String(body || '')
     .replace(/\s+/g, ' ')
     .trim();
+
+  if (!text) {
+    if (attachmentCount > 1) {
+      return `${attachmentCount} photos`;
+    }
+    return attachmentCount === 1 ? 'Photo' : '';
+  }
 
   return text.length > MAX_PREVIEW_LENGTH ? `${text.slice(0, MAX_PREVIEW_LENGTH - 1)}…` : text;
 }

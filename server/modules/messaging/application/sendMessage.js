@@ -1,9 +1,11 @@
 const ApiError = require('@utils/ApiError');
 const sequelize = require('@config/database.config');
 
-const { MAX_BODY_LENGTH, sendWindowDays } = require('../constants');
+const { MAX_BODY_LENGTH, MAX_ATTACHMENTS, sendWindowDays } = require('../constants');
 const { inspectMessage } = require('../domain/content-flags');
 const { toMessageDto, buildPreview } = require('./serializers');
+const { withAttachmentUrls } = require('./attachmentUrls');
+const { resolveAttachmentKeys } = require('./uploadAttachments');
 const conversationRepository = require('../infrastructure/conversation.repository');
 const messageRepository = require('../infrastructure/message.repository');
 const socketEmitter = require('../infrastructure/socket-emitter');
@@ -12,10 +14,10 @@ function conversationNotFound() {
   return new ApiError(404, 'CONVERSATION_NOT_FOUND', 'Conversation not found.');
 }
 
-function validateBody(body) {
+function validateBody(body, { allowEmpty = false } = {}) {
   const text = String(body ?? '').trim();
 
-  if (!text) {
+  if (!text && !allowEmpty) {
     throw new ApiError(400, 'MESSAGE_EMPTY', 'Message body is required.');
   }
 
@@ -60,9 +62,14 @@ function assertWithinGuestSendWindow(conversation) {
  * to the same conversation produce distinct, gap-free `seq` values without a
  * global counter.
  */
-async function persistMessage({ conversation, senderSide, senderUserId, body, clientMessageId }) {
-  const text = validateBody(body);
-
+async function persistMessage({
+  conversation,
+  senderSide,
+  senderUserId,
+  body,
+  clientMessageId,
+  attachmentKeys = [],
+}) {
   if (conversation.status !== 'open') {
     throw new ApiError(409, 'CONVERSATION_CLOSED', 'This conversation is closed.');
   }
@@ -74,6 +81,25 @@ async function persistMessage({ conversation, senderSide, senderUserId, body, cl
     }
   }
 
+  const rawAttachmentKeys = Array.isArray(attachmentKeys) ? attachmentKeys : [];
+  if (rawAttachmentKeys.length > MAX_ATTACHMENTS) {
+    throw new ApiError(
+      400,
+      'TOO_MANY_ATTACHMENTS',
+      `A message can include at most ${MAX_ATTACHMENTS} images.`
+    );
+  }
+
+  const attachments =
+    senderSide === 'system'
+      ? []
+      : await resolveAttachmentKeys({
+          conversationId: conversation.id,
+          senderUserId,
+          attachmentKeys: rawAttachmentKeys,
+        });
+
+  const text = validateBody(body, { allowEmpty: attachments.length > 0 });
   const { flagged, reason } = inspectMessage(text);
 
   let message;
@@ -99,7 +125,7 @@ async function persistMessage({ conversation, senderSide, senderUserId, body, cl
           seq,
           sender_user_id: senderSide === 'system' ? null : senderUserId || null,
           sender_side: senderSide,
-          type: senderSide === 'system' ? 'system' : 'text',
+          type: senderSide === 'system' ? 'system' : attachments.length ? 'image' : 'text',
           body: text,
           client_message_id: clientMessageId || null,
           flagged,
@@ -109,9 +135,22 @@ async function persistMessage({ conversation, senderSide, senderUserId, body, cl
         { transaction }
       );
 
+      if (attachments.length) {
+        await messageRepository.createAttachments(
+          attachments.map((attachment, index) => ({
+            message_id: created.id,
+            object_key: attachment.objectKey,
+            mime_type: attachment.mimeType,
+            size_bytes: attachment.sizeBytes,
+            position: index,
+          })),
+          { transaction }
+        );
+      }
+
       await conversationRepository.updateLastMessage(
         locked.id,
-        { seq, preview: buildPreview(text), at: createdAt },
+        { seq, preview: buildPreview(text, attachments.length), at: createdAt },
         { transaction }
       );
 
@@ -128,6 +167,13 @@ async function persistMessage({ conversation, senderSide, senderUserId, body, cl
         return { message: existing, created: false };
       }
     }
+    if (error.name === 'SequelizeUniqueConstraintError' && attachments.length) {
+      throw new ApiError(
+        400,
+        'ATTACHMENT_ALREADY_USED',
+        'That image is already part of a message.'
+      );
+    }
     throw error;
   }
 
@@ -136,16 +182,22 @@ async function persistMessage({ conversation, senderSide, senderUserId, body, cl
 
 async function deliver({ conversation, message, created }) {
   if (!created) {
-    return toMessageDto(message);
+    return withAttachmentUrls(toMessageDto(message));
   }
 
   const withSender = await messageRepository.loadWithSender(message.id);
-  socketEmitter.emitNewMessage({ conversation, message: withSender || message });
+  await socketEmitter.emitNewMessage({ conversation, message: withSender || message });
 
-  return toMessageDto(withSender || message);
+  return withAttachmentUrls(toMessageDto(withSender || message));
 }
 
-async function sendGuestMessage({ userId, conversationId, body, clientMessageId }) {
+async function sendGuestMessage({
+  userId,
+  conversationId,
+  body,
+  clientMessageId,
+  attachmentKeys = [],
+}) {
   const conversation = await conversationRepository.findAccessContext(conversationId);
 
   if (!conversation || String(conversation.guest_user_id) !== String(userId)) {
@@ -160,12 +212,20 @@ async function sendGuestMessage({ userId, conversationId, body, clientMessageId 
     senderUserId: userId,
     body,
     clientMessageId,
+    attachmentKeys,
   });
 
   return deliver({ conversation, message, created });
 }
 
-async function sendHotelMessage({ hotelId, senderUserId, conversationId, body, clientMessageId }) {
+async function sendHotelMessage({
+  hotelId,
+  senderUserId,
+  conversationId,
+  body,
+  clientMessageId,
+  attachmentKeys = [],
+}) {
   const conversation = await conversationRepository.findAccessContext(conversationId);
 
   if (!conversation || String(conversation.hotel_id) !== String(hotelId)) {
@@ -178,6 +238,7 @@ async function sendHotelMessage({ hotelId, senderUserId, conversationId, body, c
     senderUserId,
     body,
     clientMessageId,
+    attachmentKeys,
   });
 
   return deliver({ conversation, message, created });

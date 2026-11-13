@@ -18,6 +18,14 @@ export const MessagingService = {
     return http.get(`/conversations/${conversationId}/messages`, { params })
   },
 
+  uploadAttachments(conversationId, files) {
+    const form = new FormData()
+    for (const file of files) {
+      form.append('images', file)
+    }
+    return http.post(`/conversations/${conversationId}/attachments`, form)
+  },
+
   sendMessage(conversationId, payload) {
     return http.post(`/conversations/${conversationId}/messages`, payload)
   },

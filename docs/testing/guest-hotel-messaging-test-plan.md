@@ -272,7 +272,7 @@ Not automated and worth adding next: HTTP-level integration for the authorizatio
 | N02 | Admin socket with polling fallback; polling 8s/20s                       | Realtime delivery is additive on `/property`; polling remains the fallback while mounted. If the socket cannot connect, owners see up to ~8s latency. The API stays authoritative. |
 | N03 | Single API replica; no `@socket.io/redis-adapter`                       | Enabling `replicas > 1` breaks socket fanout. Persistence keeps data safe; delivery needs the adapter + sticky sessions. |
 | N04 | Guest flagged message is signalled by border colour only                | Colour-only signal fails WCAG 1.4.1. Add an icon/label.                                                                  |
-| N05 | No attachments, no offline e-mail notification, no moderation console   | Deliberate v1 scope. `conversation_reads.last_notified_seq` is reserved but unused.                                      |
+| N05 | Image attachments supported; no video/offline email/moderation          | Up to 5 images per message (JPEG/PNG/WebP/GIF, 10 MB each) via MinIO with short-lived presigned URLs. `conversation_reads.last_notified_seq` is reserved but unused. |
 | N06 | No `?aroundSeq` anchor                                                  | Every thread opens at the newest message; permalinks to an old message are not possible yet.                             |
 | N07 | Admin timestamps use browser locale, not the admin UI locale            | Minor i18n inconsistency in `formatDateTime`.                                                                            |
 | N08 | Backfill for existing bookings                                          | Migration `20261113000000-backfill-messaging-conversations` creates threads for active/future confirmed/checked-in bookings. `messaging:backfill` adds dry-run and wider date/status/hotel/booking scope. |
@@ -497,7 +497,7 @@ The defects above were addressed on `feat/guest-hotel-chat`, fast-forwarded to `
 | Socket handshake `Origin: http://localhost:8000` | `200`, `Access-Control-Allow-Origin: http://localhost:8000` |
 | Socket handshake `Origin: http://localhost:5173` | `200`, `Access-Control-Allow-Origin: http://localhost:5173` |
 | Socket handshake unknown origin | `400` |
-| `yarn workspace @travelnest/server test:unit` | 148 suites / 840 tests passed |
+| `yarn workspace @travelnest/server test:unit` | 150 suites / 855 tests passed |
 | `yarn workspace @travelnest/client test:unit` | 44 tests passed |
 | `yarn workspace @travelnest/admin-client typecheck` | Pass |
 | `yarn workspace @travelnest/admin-client test:unit` | 50 tests passed |
@@ -526,7 +526,32 @@ yarn workspace @travelnest/server messaging:backfill --hotel-id=<uuid>
 yarn workspace @travelnest/server messaging:backfill --booking-id=<uuid>
 ```
 
-Local verification: 3 bookings were backfilled via `--limit=3`, the migration then created 9,441 more (9,444 active/future bookings total), and a follow-up `--dry-run` reported 0. Re-running with an existing `--booking-id` also reported 0. `server` unit tests now include `backfillConversations` (846 tests total).
+Local verification: 3 bookings were backfilled via `--limit=3`, the migration then created 9,441 more (9,444 active/future bookings total), and a follow-up `--dry-run` reported 0. Re-running with an existing `--booking-id` also reported 0. `server` unit tests now include `backfillConversations` (855 tests total).
+
+### Image attachments
+
+Image messages are supported end-to-end (up to **5 images** per message):
+
+- `POST /api/v1/conversations/:id/attachments` and the admin equivalent accept `multipart/form-data` with field `images` (max 5, 10 MB each).
+- Allowed formats are JPEG, PNG, WebP and GIF; `sharp` validates the bytes, not just the MIME header.
+- Objects are stored under `messaging/<conversationId>/<senderUserId>/<uuid>.<ext>`, so a key cannot be claimed by another conversation or uploader.
+- Sending a message accepts `attachmentKeys` (max 5). Keys are single-use (`message_attachments.object_key` unique) and missing/foreign/reused keys return `ATTACHMENT_*` errors.
+- A message with images is stored as `type='image'`; the body may be empty.
+- Attachments are returned in REST and socket DTOs with a short-lived presigned `url` (`CHAT_ATTACHMENT_URL_TTL_SECONDS`, default 1 hour; signed for `MINIO_PUBLIC_ENDPOINT` when set). The bucket stays private.
+- Both UIs support selecting up to 5 images, local previews, removal, upload progress and a thumbnail grid; image-only messages are allowed.
+
+Local verification:
+
+| Check | Result |
+| --- | --- |
+| Upload 5 PNGs | `201`, 5 object keys under the conversation/uploader prefix |
+| Send with 5 keys / no body | `type=image`, `body=""`, attachments `position` 0-4 |
+| Fetch history and socket `chat:message` | Attachments and presigned URLs present |
+| GET the presigned URL | `200` from MinIO (bucket remains private) |
+| 6 files / non-image / foreign conversation | `400` / `400` / `404` |
+| 6 keys / foreign key / reused key | `400 VALIDATION_ERROR` / `ATTACHMENT_INVALID` / `ATTACHMENT_ALREADY_USED` |
+| Admin upload + reply | `201`, `type=image`, `senderSide=hotel` |
+| Builds and suites | guest build, admin build, 855 server tests, 50 admin tests, 44 client tests |
 
 ### Residual
 

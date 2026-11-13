@@ -5,9 +5,11 @@
   import ErrorState from '@/components/common/ErrorState.vue'
   import { MessagingService } from '@/services/messaging.service'
   import { getUserSocket } from '@/services/userSocket'
+  import { getImageUrl } from '@/utils/images'
   import { createClientMessageId, formatInboxTime, formatMessageTime } from '@/utils/chatTime'
 
   const MAX_BODY = 4000
+  const MAX_ATTACHMENTS = 5
   const TYPING_THROTTLE_MS = 2500
   const TYPING_TIMEOUT_MS = 3500
 
@@ -27,6 +29,11 @@
         draft: '',
         sending: false,
         sendError: '',
+        attachmentFiles: [],
+        pendingAttachmentKeys: [],
+        attachmentError: '',
+        uploadingAttachments: false,
+        maxAttachments: MAX_ATTACHMENTS,
         loadingMore: false,
         typing: false,
         mobileThread: false,
@@ -45,7 +52,8 @@
       canSend() {
         return (
           !this.sending &&
-          this.draft.trim().length > 0 &&
+          !this.uploadingAttachments &&
+          (this.draft.trim().length > 0 || this.attachmentFiles.length > 0) &&
           this.activeConversation?.status === 'open'
         )
       },
@@ -74,8 +82,55 @@
       if (this.typingTimer) {
         clearTimeout(this.typingTimer)
       }
+      this.clearAttachments()
     },
     methods: {
+      imageUrl(attachment) {
+        return attachment?.url || getImageUrl(attachment?.objectKey)
+      },
+      openAttachmentPicker() {
+        this.$refs.attachmentInput?.click()
+      },
+      onAttachmentsSelected(event) {
+        const selected = Array.from(event.target.files || [])
+        event.target.value = ''
+        if (!selected.length) return
+
+        this.attachmentError = ''
+        const images = selected.filter((file) => file.type.startsWith('image/'))
+        if (images.length !== selected.length) {
+          this.attachmentError = this.$t('messages.imagesOnly')
+        }
+
+        const remaining = MAX_ATTACHMENTS - this.attachmentFiles.length
+        if (remaining <= 0) {
+          this.attachmentError = this.$t('messages.attachmentLimit', { count: MAX_ATTACHMENTS })
+          return
+        }
+        if (images.length > remaining) {
+          this.attachmentError = this.$t('messages.attachmentLimit', { count: MAX_ATTACHMENTS })
+        }
+
+        for (const file of images.slice(0, remaining)) {
+          this.attachmentFiles.push({ file, url: URL.createObjectURL(file) })
+        }
+        this.pendingAttachmentKeys = []
+      },
+      removeAttachment(index) {
+        const [removed] = this.attachmentFiles.splice(index, 1)
+        if (removed?.url) {
+          URL.revokeObjectURL(removed.url)
+        }
+        this.pendingAttachmentKeys = []
+      },
+      clearAttachments() {
+        for (const attachment of this.attachmentFiles) {
+          URL.revokeObjectURL(attachment.url)
+        }
+        this.attachmentFiles = []
+        this.pendingAttachmentKeys = []
+        this.attachmentError = ''
+      },
       async loadConversations() {
         this.loadError = false
         this.loading = true
@@ -127,6 +182,7 @@
         this.hasMore = false
         this.latestSeq = Number(conversation.lastMessageSeq || 0)
         this.sendError = ''
+        this.clearAttachments()
 
         this.joinRoom(conversation.id)
         await this.loadMessages(conversation)
@@ -193,19 +249,34 @@
 
         const body = this.draft.trim()
         const conversationId = this.activeId
+        const files = this.attachmentFiles.map((attachment) => attachment.file)
         this.sending = true
         this.sendError = ''
 
         try {
+          let attachmentKeys = this.pendingAttachmentKeys
+          if (files.length && attachmentKeys.length !== files.length) {
+            this.uploadingAttachments = true
+            try {
+              const upload = await MessagingService.uploadAttachments(conversationId, files)
+              attachmentKeys = (upload?.data || []).map((attachment) => attachment.objectKey)
+              this.pendingAttachmentKeys = attachmentKeys
+            } finally {
+              this.uploadingAttachments = false
+            }
+          }
+
           const response = await MessagingService.sendMessage(conversationId, {
             body,
-            clientMessageId: createClientMessageId()
+            clientMessageId: createClientMessageId(),
+            attachmentKeys
           })
           const message = response?.data
           if (message) {
             this.appendMessage(message)
           }
           this.draft = ''
+          this.clearAttachments()
           await this.$nextTick()
           this.scrollToBottom()
         } catch (error) {
@@ -421,7 +492,26 @@
             >
               <p v-if="message.type === 'system'" class="system-message">{{ message.body }}</p>
               <div v-else class="bubble" :class="{ 'is-flagged': message.flagged }">
-                <p class="bubble-body">{{ message.body }}</p>
+                <div
+                  v-if="message.attachments?.length"
+                  class="bubble-images"
+                  :class="{ 'is-single': message.attachments.length === 1 }"
+                >
+                  <a
+                    v-for="attachment in message.attachments"
+                    :key="attachment.id"
+                    :href="imageUrl(attachment)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <img
+                      :src="imageUrl(attachment)"
+                      :alt="$t('messages.imageAlt', { index: attachment.position + 1 })"
+                      loading="lazy"
+                    />
+                  </a>
+                </div>
+                <p v-if="message.body" class="bubble-body">{{ message.body }}</p>
                 <span v-if="message.flagged" class="bubble-flag">
                   {{ $t('messages.flagged') }}
                 </span>
@@ -436,23 +526,66 @@
             {{ $t('messages.closed') }}
           </p>
 
-          <form v-else class="composer" @submit.prevent="send">
-            <textarea
-              v-model="draft"
-              class="composer-input"
-              :maxlength="4000"
-              rows="1"
-              :placeholder="$t('messages.placeholder')"
-              :aria-label="$t('messages.placeholder')"
-              @keydown.enter.exact.prevent="send"
-              @input="notifyTyping"
-            ></textarea>
-            <button type="submit" class="guest-button guest-button-small" :disabled="!canSend">
-              {{ sending ? $t('messages.sending') : $t('messages.send') }}
-            </button>
-          </form>
+          <template v-else>
+            <div v-if="attachmentFiles.length" class="composer-attachments">
+              <div
+                v-for="(attachment, index) in attachmentFiles"
+                :key="attachment.url"
+                class="composer-attachment"
+              >
+                <img :src="attachment.url" :alt="$t('messages.attachmentPreview')" />
+                <button
+                  type="button"
+                  :aria-label="$t('messages.removeAttachment')"
+                  @click="removeAttachment(index)"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
 
-          <p v-if="sendError" class="composer-error">{{ sendError }}</p>
+            <form class="composer" @submit.prevent="send">
+              <input
+                ref="attachmentInput"
+                class="composer-file-input"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                multiple
+                @change="onAttachmentsSelected"
+              />
+              <button
+                type="button"
+                class="composer-attach"
+                :aria-label="$t('messages.addImages')"
+                :disabled="attachmentFiles.length >= maxAttachments || sending"
+                @click="openAttachmentPicker"
+              >
+                <span aria-hidden="true">＋</span>
+              </button>
+              <textarea
+                v-model="draft"
+                class="composer-input"
+                :maxlength="4000"
+                rows="1"
+                :placeholder="$t('messages.placeholder')"
+                :aria-label="$t('messages.placeholder')"
+                @keydown.enter.exact.prevent="send"
+                @input="notifyTyping"
+              ></textarea>
+              <button type="submit" class="guest-button guest-button-small" :disabled="!canSend">
+                {{
+                  uploadingAttachments
+                    ? $t('messages.uploading')
+                    : sending
+                      ? $t('messages.sending')
+                      : $t('messages.send')
+                }}
+              </button>
+            </form>
+
+            <p v-if="attachmentError" class="composer-error">{{ attachmentError }}</p>
+            <p v-if="sendError" class="composer-error">{{ sendError }}</p>
+          </template>
         </template>
 
         <div v-else class="thread-placeholder">
@@ -471,15 +604,19 @@
   @import '@/assets/styles/index.scss';
 
   .messages-page {
-    padding-top: $spacing-lg;
+    max-width: none;
+    padding: $spacing-lg clamp(16px, 2.5vw, 40px) $spacing-lg;
   }
 
   .messages-shell {
     display: grid;
-    grid-template-columns: minmax(260px, 340px) 1fr;
-    gap: $spacing-lg;
-    min-height: 60vh;
-    max-width: 1100px;
+    grid-template-columns: minmax(280px, 360px) 1fr;
+    gap: $spacing-md;
+    /* Fixed chat panel: the thread scrolls internally instead of growing the page. */
+    height: clamp(520px, calc(100vh - 210px), 800px);
+    height: clamp(520px, calc(100dvh - 210px), 800px);
+    min-height: 0;
+    max-width: none;
     margin: 0 auto;
   }
 
@@ -490,11 +627,13 @@
     border-radius: $border-radius-xl;
     box-shadow: $shadow-sm;
     overflow: hidden;
+    min-height: 0;
   }
 
   .messages-inbox {
     display: flex;
     flex-direction: column;
+    min-height: 0;
   }
 
   .inbox-header {
@@ -509,11 +648,12 @@
   }
 
   .conversation-list {
+    flex: 1;
+    min-height: 0;
     list-style: none;
     margin: 0;
     padding: $spacing-sm;
     overflow-y: auto;
-    max-height: 62vh;
   }
 
   .conversation-card {
@@ -607,11 +747,12 @@
   .messages-thread {
     display: flex;
     flex-direction: column;
-    min-height: 60vh;
+    min-height: 0;
   }
 
   .thread-header {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     gap: $spacing-sm;
     padding: $spacing-md $spacing-lg;
@@ -640,12 +781,12 @@
 
   .thread-messages {
     flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     gap: $spacing-sm;
     padding: $spacing-lg;
     overflow-y: auto;
-    max-height: 52vh;
     background: #fbfcfe;
   }
 
@@ -704,6 +845,29 @@
     color: #8a5a00;
   }
 
+  .bubble-images {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+
+  .bubble-images.is-single {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bubble-images a {
+    display: block;
+  }
+
+  .bubble-images img {
+    display: block;
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
   .bubble-body {
     margin: 0;
     white-space: pre-wrap;
@@ -732,8 +896,68 @@
     font-size: $font-size-xs;
   }
 
+  .composer-attachments {
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: $spacing-sm $spacing-lg 0;
+    background: $white;
+  }
+
+  .composer-attachment {
+    position: relative;
+    width: 64px;
+    height: 64px;
+  }
+
+  .composer-attachment img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .composer-attachment button {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 22px;
+    height: 22px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.85);
+    color: #fff;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .composer-file-input {
+    display: none;
+  }
+
+  .composer-attach {
+    align-self: flex-end;
+    width: 40px;
+    height: 40px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-lg;
+    background: $white;
+    color: $primary-color;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .composer-attach:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
   .composer {
     display: flex;
+    flex-shrink: 0;
     gap: $spacing-sm;
     padding: $spacing-md $spacing-lg;
     border-top: 1px solid #eef1f6;
@@ -765,6 +989,7 @@
 
   .composer-error,
   .thread-closed {
+    flex-shrink: 0;
     margin: 0;
     padding: $spacing-sm $spacing-lg;
     color: $error-color;
@@ -792,8 +1017,9 @@
       display: inline-flex;
     }
 
-    .thread-messages {
-      max-height: 60vh;
+    .messages-shell {
+      height: clamp(480px, calc(100vh - 150px), 760px);
+      height: clamp(480px, calc(100dvh - 150px), 760px);
     }
   }
 </style>

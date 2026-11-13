@@ -7,8 +7,10 @@ const {
 } = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
 const { writeLimiter } = require('@middlewares/rate-limitter.middleware');
+const upload = require('@config/multer.config');
 const { PERMISSIONS } = require('@constants/permissions');
 
+const { MAX_ATTACHMENTS } = require('../constants');
 const schema = require('./admin.schema');
 const controller = require('./admin.controller');
 const { getConversationHotelId } = require('../application/access');
@@ -50,6 +52,16 @@ router.get(
   validate(schema.getMessages),
   conversationInHotel,
   controller.getMessagesHandler
+);
+
+router.post(
+  '/:conversationId/attachments',
+  writeLimiter,
+  requireHotelPermission(PERMISSIONS.CHAT_RESPOND),
+  validate(schema.uploadAttachments),
+  conversationInHotel,
+  upload.array('images', MAX_ATTACHMENTS),
+  controller.uploadAttachmentsHandler
 );
 
 router.post(

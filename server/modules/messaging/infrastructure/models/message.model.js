@@ -37,7 +37,7 @@ module.exports = function (sequelize, DataTypes) {
         comment: 'Denormalized side so the UI never needs a join to render authorship',
       },
       type: {
-        type: DataTypes.ENUM('text', 'system'),
+        type: DataTypes.ENUM('text', 'system', 'image'),
         allowNull: false,
         defaultValue: 'text',
       },
@@ -90,6 +90,10 @@ module.exports = function (sequelize, DataTypes) {
   Message.associate = function (models) {
     Message.belongsTo(models.conversations, { foreignKey: 'conversation_id', as: 'conversation' });
     Message.belongsTo(models.users, { foreignKey: 'sender_user_id', as: 'sender' });
+    Message.hasMany(models.message_attachments, {
+      foreignKey: 'message_id',
+      as: 'attachments',
+    });
   };
 
   return Message;

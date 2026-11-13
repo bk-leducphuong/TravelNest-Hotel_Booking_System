@@ -1,6 +1,6 @@
 const Joi = require('joi');
 
-const { DEFAULT_PAGE_SIZE, DEFAULT_MESSAGE_PAGE_SIZE } = require('../constants');
+const { DEFAULT_PAGE_SIZE, DEFAULT_MESSAGE_PAGE_SIZE, MAX_ATTACHMENTS } = require('../constants');
 
 /**
  * Hotel-side messaging schemas (mounted at /api/v1/admin/conversations).
@@ -9,6 +9,7 @@ const { DEFAULT_PAGE_SIZE, DEFAULT_MESSAGE_PAGE_SIZE } = require('../constants')
 const uuid = Joi.string().uuid({ version: ['uuidv4', 'uuidv5', 'uuidv7'] });
 
 const conversationParams = Joi.object({ conversationId: uuid.required() }).required();
+const uploadAttachments = { params: conversationParams };
 
 const listConversations = {
   query: Joi.object({
@@ -31,9 +32,11 @@ const sendMessage = {
   params: conversationParams,
   body: Joi.object({
     // Emptiness and length are validated in the service so the API can return
-    // the documented MESSAGE_EMPTY / MESSAGE_TOO_LONG error codes.
-    body: Joi.string().required(),
+    // the documented MESSAGE_EMPTY / MESSAGE_TOO_LONG error codes. A body may
+    // be omitted when images are attached.
+    body: Joi.string().allow('').default(''),
     clientMessageId: uuid,
+    attachmentKeys: Joi.array().items(Joi.string().trim()).max(MAX_ATTACHMENTS).default([]),
   }).required(),
 };
 
@@ -55,4 +58,5 @@ module.exports = {
   markRead,
   unreadCount,
   conversationParams,
+  uploadAttachments,
 };

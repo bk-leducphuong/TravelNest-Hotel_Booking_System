@@ -1,6 +1,17 @@
 const { Op, QueryTypes } = require('sequelize');
 
-const { Messages, Users, sequelize } = require('@platform/database');
+const { Messages, MessageAttachments, Users, sequelize } = require('@platform/database');
+
+const ATTACHMENT_ATTRIBUTES = ['id', 'object_key', 'mime_type', 'size_bytes', 'position'];
+
+function attachmentsInclude() {
+  return {
+    model: MessageAttachments,
+    as: 'attachments',
+    attributes: ATTACHMENT_ATTRIBUTES,
+    required: false,
+  };
+}
 
 /**
  * Message Repository - persistence for thread messages.
@@ -16,6 +27,7 @@ class MessageRepository {
           attributes: ['id', 'first_name', 'last_name', 'profile_picture_url'],
           required: false,
         },
+        attachmentsInclude(),
       ],
     });
   }
@@ -27,11 +39,31 @@ class MessageRepository {
 
     return Messages.findOne({
       where: { conversation_id: conversationId, client_message_id: clientMessageId },
+      include: [attachmentsInclude()],
     });
   }
 
   async create(payload, options = {}) {
     return Messages.create(payload, options);
+  }
+
+  async createAttachments(rows, options = {}) {
+    if (!rows.length) {
+      return [];
+    }
+    return MessageAttachments.bulkCreate(rows, options);
+  }
+
+  async findExistingAttachmentKeys(objectKeys) {
+    if (!objectKeys.length) {
+      return [];
+    }
+    const rows = await MessageAttachments.findAll({
+      where: { object_key: { [Op.in]: objectKeys } },
+      attributes: ['object_key'],
+      raw: true,
+    });
+    return rows.map((row) => row.object_key);
   }
 
   async findById(messageId, options = {}) {
@@ -50,6 +82,7 @@ class MessageRepository {
 
     const rows = await Messages.findAll({
       where,
+      include: [attachmentsInclude()],
       order: [['seq', 'DESC']],
       limit: limit + 1,
     });

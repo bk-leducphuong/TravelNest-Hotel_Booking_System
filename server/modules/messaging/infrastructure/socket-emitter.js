@@ -1,6 +1,7 @@
 const logger = require('@config/logger.config');
 
 const { toMessageDto } = require('../application/serializers');
+const { withAttachmentUrls } = require('../application/attachmentUrls');
 
 /**
  * Best-effort realtime fanout for messaging.
@@ -37,8 +38,8 @@ function deliver(event, room, payload, namespace) {
  * Emit a committed message to both participants' namespaces and raise the
  * recipient's unread badge.
  */
-function emitNewMessage({ conversation, message }) {
-  const payload = toMessageDto(message);
+async function emitNewMessage({ conversation, message }) {
+  const payload = await withAttachmentUrls(toMessageDto(message));
   if (!payload) {
     return;
   }

@@ -1,5 +1,6 @@
 const { DEFAULT_MESSAGE_PAGE_SIZE } = require('../constants');
 const { toMessageDto } = require('./serializers');
+const { withAttachmentUrls } = require('./attachmentUrls');
 const conversationRepository = require('../infrastructure/conversation.repository');
 const messageRepository = require('../infrastructure/message.repository');
 
@@ -13,7 +14,9 @@ async function listMessages(conversation, { beforeSeq, limit }) {
 
   return {
     conversationId: conversation.id,
-    messages: messages.map(toMessageDto),
+    messages: await Promise.all(
+      messages.map((message) => withAttachmentUrls(toMessageDto(message)))
+    ),
     hasMore,
     latestSeq: Number(conversation.last_message_seq || 0),
   };
