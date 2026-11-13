@@ -6,8 +6,11 @@ const {
   instrumentRedisClient,
   instrumentWorker,
   metricsMiddleware,
+  recordBookingCheckout,
+  recordBookingConfirmation,
   wrapSequelizeLogging,
 } = require('@platform/metrics');
+const { secondsBetween } = require('@platform/metrics/infrastructure/business.metrics');
 const { sqlOperation } = require('@platform/metrics/infrastructure/db.metrics');
 const { normalizeCommand } = require('@platform/metrics/infrastructure/redis.metrics');
 
@@ -28,6 +31,9 @@ function resetMetrics() {
   metrics.dbDuration.reset();
   metrics.redisDuration.reset();
   metrics.jobDuration.reset();
+  metrics.bookingCheckoutDuration.reset();
+  metrics.bookingConfirmationDuration.reset();
+  metrics.bookingConfirmationProcessing.reset();
 }
 
 describe('platform/metrics', () => {
@@ -201,6 +207,65 @@ describe('platform/metrics', () => {
 
       const body = await scrape();
       expect(body).not.toContain('job_duration_seconds_count{job="reconcile-refunds"');
+    });
+  });
+
+  describe('booking flow metrics', () => {
+    it('computes durations and rejects invalid ranges', () => {
+      expect(secondsBetween(new Date(0), new Date(5000))).toBe(5);
+      expect(secondsBetween(new Date(5000), new Date(0))).toBeNull();
+      expect(secondsBetween(null, new Date(0))).toBeNull();
+      expect(secondsBetween('not-a-date', new Date(0))).toBeNull();
+    });
+
+    it('records the checkout stage after a booking is created', async () => {
+      recordBookingCheckout({
+        flow: 'prepay',
+        holdCreatedAt: new Date(1_000_000),
+        bookingCreatedAt: new Date(1_045_000),
+      });
+
+      const body = await scrape();
+      expect(body).toContain('booking_checkout_duration_seconds_count{flow="prepay"} 1');
+      expect(body).toContain('booking_checkout_duration_seconds_sum{flow="prepay"} 45');
+    });
+
+    it('records hold-to-confirmation and webhook processing separately', async () => {
+      recordBookingConfirmation({
+        flow: 'prepay',
+        holdCreatedAt: new Date(1_000_000),
+        bookingCreatedAt: new Date(1_045_000),
+        confirmedAt: new Date(1_300_000),
+        processingStartedAt: new Date(1_299_000),
+      });
+
+      const body = await scrape();
+      // Business SLA starts at the hold, not at booking creation.
+      expect(body).toContain('booking_confirmation_duration_seconds_count{flow="prepay"} 1');
+      expect(body).toContain('booking_confirmation_duration_seconds_sum{flow="prepay"} 300');
+      expect(body).toContain('booking_confirmation_processing_seconds_count{flow="prepay"} 1');
+      expect(body).toContain('booking_confirmation_processing_seconds_sum{flow="prepay"} 1');
+    });
+
+    it('falls back to booking creation when the hold timestamp is missing', async () => {
+      recordBookingConfirmation({
+        holdCreatedAt: null,
+        bookingCreatedAt: new Date(2_000_000),
+        confirmedAt: new Date(2_060_000),
+      });
+
+      const body = await scrape();
+      expect(body).toContain('booking_confirmation_duration_seconds_sum{flow="prepay"} 60');
+      expect(body).not.toContain('booking_confirmation_processing_seconds_count{flow="prepay"} 1');
+    });
+
+    it('skips observations when timestamps are missing', async () => {
+      recordBookingCheckout({ holdCreatedAt: null, bookingCreatedAt: null });
+      recordBookingConfirmation({ holdCreatedAt: null, bookingCreatedAt: null });
+
+      const body = await scrape();
+      expect(body).not.toContain('booking_checkout_duration_seconds_count{flow="prepay"} 1');
+      expect(body).not.toContain('booking_confirmation_duration_seconds_count{flow="prepay"} 1');
     });
   });
 });

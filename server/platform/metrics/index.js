@@ -1,5 +1,9 @@
 const { metricsMiddleware } = require('./api/metrics.middleware');
 const { startMetricsServer } = require('./api/metrics.server');
+const {
+  recordBookingCheckout,
+  recordBookingConfirmation,
+} = require('./infrastructure/business.metrics');
 const { wrapSequelizeLogging } = require('./infrastructure/db.metrics');
 const { instrumentWorker } = require('./infrastructure/queue.metrics');
 const { instrumentRedisClient } = require('./infrastructure/redis.metrics');
@@ -17,6 +21,8 @@ module.exports = {
   instrumentRedisClient,
   instrumentWorker,
   metricsMiddleware,
+  recordBookingCheckout,
+  recordBookingConfirmation,
   startMetricsServer,
   wrapSequelizeLogging,
 };

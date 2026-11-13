@@ -67,6 +67,31 @@ function createMetrics({ collectDefault = true } = {}) {
     registers: [registry],
   });
 
+  // Booking flow. `flow` is the payment policy: prepay or pay_at_property.
+  const bookingCheckoutDuration = new client.Histogram({
+    name: 'booking_checkout_duration_seconds',
+    help: 'Time from room hold creation to the pending booking row being created',
+    labelNames: ['flow'],
+    buckets: [1, 2, 5, 10, 15, 30, 60, 120, 300, 600],
+    registers: [registry],
+  });
+
+  const bookingConfirmationDuration = new client.Histogram({
+    name: 'booking_confirmation_duration_seconds',
+    help: 'Time from room hold creation to the booking being confirmed (includes the time the guest spends paying)',
+    labelNames: ['flow'],
+    buckets: [10, 30, 60, 120, 300, 600, 900, 1800, 3600],
+    registers: [registry],
+  });
+
+  const bookingConfirmationProcessing = new client.Histogram({
+    name: 'booking_confirmation_processing_seconds',
+    help: 'Time spent processing a payment-succeeded webhook before commit',
+    labelNames: ['flow'],
+    buckets: [0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30],
+    registers: [registry],
+  });
+
   return {
     registry,
     httpDuration,
@@ -74,6 +99,9 @@ function createMetrics({ collectDefault = true } = {}) {
     dbDuration,
     redisDuration,
     jobDuration,
+    bookingCheckoutDuration,
+    bookingConfirmationDuration,
+    bookingConfirmationProcessing,
   };
 }
 
