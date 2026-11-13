@@ -25,6 +25,7 @@ const { handleHoldExpired } = require('@platform/events/consumers/holdExpiry');
 const errorMiddleware = require('@middlewares/error.middleware.js');
 const limiter = require('@middlewares/rate-limitter.middleware');
 const requestLogger = require('@middlewares/request-logger.middleware');
+const { metricsMiddleware } = require('@platform/metrics');
 const bullBoardAuth = require('@middlewares/bull-board-auth.middleware');
 
 /** ********************* Routes ************************ */
@@ -142,6 +143,11 @@ const createApp = async () => {
       credentials: true,
     })
   );
+
+  // Prometheus latency/status metrics. Registered before the webhook routes so
+  // Stripe callbacks are measured too; static assets never reach here because
+  // express.static terminates them first.
+  app.use(metricsMiddleware);
 
   // Webhook routes - MUST come before bodyParser.json() for raw body access
   // Webhooks need raw body for signature verification

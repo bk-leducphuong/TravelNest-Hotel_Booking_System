@@ -9,6 +9,9 @@ data:
   # "TravelNest API Docs JSON"). Everything else on the API stays public.
   ENABLE_API_DOCS: "true"
   PORT: "3000"
+  # Prometheus metrics listener, scraped in-cluster only (see the pod
+  # annotations in deploy/k8s/apps/api/base/deployment.yaml).
+  METRICS_PORT: "9464"
   CLIENT_HOST: https://trestay.com
   ADMIN_CLIENT_HOST: https://admin.trestay.com
   SUPERADMIN_CLIENT_HOST: https://superadmin.trestay.com

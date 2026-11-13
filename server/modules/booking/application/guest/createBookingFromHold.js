@@ -3,6 +3,7 @@ const ApiError = require('@utils/ApiError');
 const sequelize = require('@config/database.config');
 const inventoryModule = require('@modules/inventory');
 const promotionModule = require('@modules/promotion');
+const { recordBookingCheckout } = require('@platform/metrics');
 const { generateBookingCode } = require('../../domain/booking-code');
 const holdService = require('../hold.service');
 const pricingService = require('../pricing.service');
@@ -126,7 +127,9 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
   const idempotencyRecord = acquired.record;
 
   try {
-    return await sequelize.transaction(async (transaction) => {
+    let checkoutTiming = null;
+
+    const result = await sequelize.transaction(async (transaction) => {
       const hold = await holdRepository.findByIdWithRooms(data.holdId, {
         transaction,
         lock: transaction.LOCK?.UPDATE,
@@ -280,6 +283,9 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
           metadata: {
             booking_code: booking.booking_code,
             hold_id: hold.id,
+            // Carried into the payment webhook so hold -> confirmed can be
+            // measured without an extra query at confirmation time.
+            hold_created_at: hold.created_at,
             payment_policy: paymentPolicy,
           },
         },
@@ -302,8 +308,22 @@ async function createBookingFromHold(userId, data, idempotencyKey) {
         { transaction }
       );
 
+      checkoutTiming = {
+        flow: payAtProperty ? 'pay_at_property' : 'prepay',
+        holdCreatedAt: hold.created_at,
+        bookingCreatedAt: booking.created_at || new Date(),
+      };
+
       return result;
     });
+
+    // Only after the transaction commits: a rolled-back attempt is not a
+    // completed checkout.
+    if (checkoutTiming) {
+      recordBookingCheckout(checkoutTiming);
+    }
+
+    return result;
   } catch (error) {
     await paymentModule()
       .failIdempotencyRecord(idempotencyRecord.id)

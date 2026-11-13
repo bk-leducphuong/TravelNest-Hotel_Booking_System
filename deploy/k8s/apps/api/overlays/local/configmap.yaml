@@ -5,6 +5,7 @@ metadata:
 data:
   NODE_ENV: production
   PORT: "3000"
+  METRICS_PORT: "9464"
   CLIENT_HOST: http://travelnest.local
   DB_HOST: mysql
   DB_PORT: "3306"

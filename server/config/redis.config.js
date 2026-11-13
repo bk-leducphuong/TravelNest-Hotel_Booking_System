@@ -1,5 +1,6 @@
 const redis = require('redis');
 const logger = require('@config/logger.config');
+const { instrumentRedisClient } = require('../platform/metrics/infrastructure/redis.metrics');
 
 require('dotenv').config({
   path: `.env.${process.env.NODE_ENV}`,
@@ -36,6 +37,9 @@ redisClient.on('error', (err) => {
 redisClient.on('ready', () => {
   logger.info('Redis connection successful');
 });
+
+// Time every command before the initial connection is kicked off below.
+instrumentRedisClient(redisClient);
 
 /**
  * Start the initial connection exactly once.

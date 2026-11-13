@@ -72,7 +72,7 @@ function createReconciliationWorker() {
     )
   );
 }
-async function schedule() {
+function getReconciliationQueue() {
   if (!reconciliationQueue) {
     reconciliationQueue = new Queue('refundReconciliation', {
       connection: config.connection,
@@ -82,7 +82,12 @@ async function schedule() {
       logger.error({ error: error.message }, 'Refund reconciliation queue error')
     );
   }
-  await reconciliationQueue.add(
+
+  return reconciliationQueue;
+}
+
+async function schedule() {
+  await getReconciliationQueue().add(
     'reconcile-refunds',
     {},
     { jobId: 'refund-reconciliation', repeat: { every: 86400000 } }
@@ -99,5 +104,6 @@ module.exports = {
   createReconciliationWorker,
   schedule,
   getQueue,
+  getReconciliationQueue,
   processRefundRecovery,
 };

@@ -1,0 +1,70 @@
+# Values for the grafana/k8s-monitoring chart.
+#
+# This file is the source of truth for telemetry collection in this cluster.
+# Argo CD reads it through the `ref: values` source in application.yaml.
+# See README.md for the rollout and rollback procedure.
+
+cluster:
+  name: travelnest-test
+
+# Prometheus remote write. The URL and instance id come from the Grafana Cloud
+# stack (Connections -> Prometheus -> Details). The token is injected from the
+# sealed Secret as an environment variable so it never appears in Git or in the
+# rendered Alloy config.
+destinations:
+  grafana-cloud-metrics:
+    type: prometheus
+    url: https://prometheus-prod-37-prod-ap-southeast-1.grafana.net/api/prom/push
+    auth:
+      type: basic
+      # Raw Alloy expressions. The username is the Prometheus instance id (not
+      # the stack id, which is 1867167).
+      usernameFrom: '"3658557"'
+      passwordFrom: sys.env("GCLOUD_RW_API_KEY")
+
+collectors:
+  alloy-daemon:
+    # Host access presets are kept from the previous Fleet-based setup.
+    # Features auto-assign to this collector because it is the only enabled one.
+    presets:
+      - small
+      - root
+      - host-storage
+      - host-network
+      - host-cgroup
+      - clustered
+      - service-discovery
+      - filesystem-log-reader
+      - daemonset
+    alloy:
+      extraEnv:
+        - name: GCLOUD_RW_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: grafana-cloud-remote-config
+              key: password
+
+# Node/cAdvisor/kubelet/kube-state-metrics scraping, matching the pipeline that
+# was previously served by Fleet Management.
+clusterMetrics:
+  enabled: true
+
+# Node Exporter scraping (previously part of the Fleet pipeline). The
+# node-exporter Deployment is provided by telemetryServices below.
+hostMetrics:
+  enabled: true
+  linuxHosts:
+    enabled: true
+
+# Scrapes pods that carry the k8s.grafana.com/scrape annotation. The API and
+# worker deployments in deploy/k8s/apps/*/base set it.
+annotationAutodiscovery:
+  enabled: true
+
+telemetryServices:
+  node-exporter:
+    deploy: true
+  kube-state-metrics:
+    deploy: true
+  beyla:
+    deploy: false
