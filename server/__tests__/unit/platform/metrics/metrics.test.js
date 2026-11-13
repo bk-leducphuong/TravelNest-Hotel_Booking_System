@@ -176,7 +176,7 @@ describe('platform/metrics', () => {
 
       const body = await scrape();
       expect(body).toContain(
-        'job_duration_seconds_count{queue="holdExpiry",job="scan-expired-holds",status="completed"} 1'
+        'job_duration_seconds_count{queue="holdExpiry",job_name="scan-expired-holds",status="completed"} 1'
       );
     });
 
@@ -194,7 +194,7 @@ describe('platform/metrics', () => {
 
       const body = await scrape();
       expect(body).toContain(
-        'job_duration_seconds_count{queue="refundRecovery",job="recover-refunds",status="failed"} 1'
+        'job_duration_seconds_count{queue="refundRecovery",job_name="recover-refunds",status="failed"} 1'
       );
     });
 
@@ -206,7 +206,7 @@ describe('platform/metrics', () => {
       worker.emit('completed', { name: 'reconcile-refunds' });
 
       const body = await scrape();
-      expect(body).not.toContain('job_duration_seconds_count{job="reconcile-refunds"');
+      expect(body).not.toContain('job_duration_seconds_count{job_name="reconcile-refunds"');
     });
   });
 

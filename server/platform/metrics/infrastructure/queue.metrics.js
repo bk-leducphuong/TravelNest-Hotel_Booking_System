@@ -20,7 +20,7 @@ function observeJob(worker, job, status) {
   getMetrics().jobDuration.observe(
     {
       queue: worker.name || 'unknown',
-      job: job.name || 'unknown',
+      job_name: job.name || 'unknown',
       status,
     },
     seconds
