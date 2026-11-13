@@ -2,7 +2,7 @@
 # changes. Kubernetes does not restart pods when env-var Secret/ConfigMap values
 # change, so without this a rotated sealed secret leaves the running pod on the
 # old credentials until someone restarts it by hand (which is how the analytics
-# service ended up talking to an authenticated MongoDB/Redis with no password).
+# service ended up talking to an authenticated Redis with no password).
 #
 # Workloads opt in with `reloader.stakater.com/auto: "true"`.
 apiVersion: apps/v1

@@ -6,13 +6,13 @@ describe('platform/internal', () => {
 
     expect(tasks.databaseSeeders).toContain('user');
     expect(tasks.databaseSeeders).toContain('all');
-    expect(tasks.mongodbSeeders).toContain('search_logs');
+    expect(tasks.analyticsSeeders).toContain('search_logs');
     expect(Array.isArray(tasks.runningTasks)).toBe(true);
   });
 
   it('exposes the runner functions', () => {
     expect(typeof internal.initDatabase).toBe('function');
     expect(typeof internal.runDatabaseSeeder).toBe('function');
-    expect(typeof internal.runMongodbSeeder).toBe('function');
+    expect(typeof internal.runAnalyticsSeeder).toBe('function');
   });
 });

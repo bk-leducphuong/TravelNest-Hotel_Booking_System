@@ -29,12 +29,12 @@ const DATABASE_SEEDERS = {
   destination: 'seeders/database/destinations.seed.js',
 };
 
-const MONGODB_SEEDERS = {
-  search_logs: 'seeders/mongodb/search_logs.seed.js',
-  hotel_views: 'seeders/mongodb/hotel_view_events.seed.js',
+const ANALYTICS_SEEDERS = {
+  search_logs: 'seeders/analytics/search_logs.seed.js',
+  hotel_views: 'seeders/analytics/hotel_view_events.seed.js',
 };
 
 module.exports = {
   DATABASE_SEEDERS,
-  MONGODB_SEEDERS,
+  ANALYTICS_SEEDERS,
 };

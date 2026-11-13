@@ -33,7 +33,7 @@ exposed through a **Cloudflare Tunnel**.
 | **Media storage (MinIO)** | [storage.deployserver.work](https://storage.deployserver.work)                                                                                                  |
 | **Argo CD**               | [argocd.deployserver.work](https://argocd.deployserver.work) (behind Cloudflare Access)                                                                         |
 
-MySQL, Redis, MinIO, MongoDB, NATS and Keycloak all run in-cluster. Hotel search
+MySQL, Redis, MinIO, NATS and Keycloak all run in-cluster. Hotel search
 is **MySQL-only** (no external search engine) — see
 [docs/architecture/search-mysql.md](docs/architecture/search-mysql.md).
 
@@ -85,7 +85,7 @@ is **MySQL-only** (no external search engine) — see
 | **Microservices**    | Go services: analytics, media, notification (NATS messaging)          |
 | **Primary Database** | MySQL 8.0                                                             |
 | **Hotel Search**     | MySQL (`hotel_search_snapshots` + `room_inventory`)                   |
-| **Analytics**        | MongoDB + Mongoose, ClickHouse                                        |
+| **Analytics**        | MySQL event tables (`analytics_*`)                                    |
 | **Cache & Queues**   | Redis 7                                                               |
 | **Object Storage**   | MinIO / S3-compatible                                                 |
 | **Payments**         | Stripe                                                                |

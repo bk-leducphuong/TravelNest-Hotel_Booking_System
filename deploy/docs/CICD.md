@@ -99,7 +99,7 @@ KSOPS — see [`SECRETS.md`](SECRETS.md).
 
 ## Operational Notes
 
-- A single-node k3s cluster runs MySQL, Redis, MinIO, MongoDB, NATS and Keycloak
+- A single-node k3s cluster runs MySQL, Redis, MinIO, NATS and Keycloak
   **in-cluster**. Hotel search is MySQL-only; there is no external search engine.
 - Cloudflare Tunnel provides public ingress and is kept outside the cluster for
   simpler recovery.

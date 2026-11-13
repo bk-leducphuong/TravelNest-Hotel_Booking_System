@@ -10,6 +10,5 @@ data:
   NATS_URL: nats://nats:4222
   NATS_STREAM: TRAVELNEST_ANALYTICS
   NATS_CLIENT_NAME: travelnest-worker
-  MONGODB_DATABASE: travelnest_analytics
   WORKER_HEALTH_PORT: "4001"
   REDIS_USERNAME: ""

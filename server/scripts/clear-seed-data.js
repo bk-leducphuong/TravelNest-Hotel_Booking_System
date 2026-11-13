@@ -4,12 +4,13 @@ require('dotenv').config({
 });
 
 const db = require('../models');
-const mongoDb = require('../config/mongodb.config');
 const { minioClient, bucketName } = require('../config/minio.config');
-const HotelViewEvent = require('../seeders/mongodb/models/hotel_view_event.model');
-const SearchLog = require('../seeders/mongodb/models/search_log.model');
 
 const DATABASE_TABLES = [
+  // Analytics events
+  'analytics_hotel_view_events',
+  'analytics_search_logs',
+
   // Review / activity children
   'review_helpful_votes',
   'review_replies',
@@ -69,17 +70,12 @@ const DATABASE_TABLES = [
   'users',
 ];
 
-const MONGODB_COLLECTIONS = [
-  ['search_logs', SearchLog],
-  ['hotel_view_events', HotelViewEvent],
-];
 const MINIO_PREFIXES = ['hotel/', 'room/', 'city/', 'country/', 'hotels/'];
 const MINIO_DELETE_BATCH_SIZE = 1000;
 
 function parseArgs(argv = process.argv.slice(2)) {
   return {
     skipDatabase: argv.includes('--skip-db'),
-    skipMongodb: argv.includes('--skip-mongo') || argv.includes('--skip-mongodb'),
     skipMinio: argv.includes('--skip-minio'),
     serial: argv.includes('--serial'),
   };
@@ -130,23 +126,6 @@ async function clearDatabase() {
 
   console.log(`[database] Cleared ${results.length} tables.`);
   return { name: 'database', cleared: results.length };
-}
-
-async function clearMongodb() {
-  console.log('\n[mongodb] Clearing seed analytics collections...');
-  await mongoDb.connect();
-
-  const results = [];
-
-  for (const [collection, model] of MONGODB_COLLECTIONS) {
-    const result = await model.deleteMany({});
-    const deleted = result.deletedCount || 0;
-    console.log(`  ${collection}: deleted ${deleted} documents`);
-    results.push({ collection, deleted });
-  }
-
-  console.log('[mongodb] Finished clearing seed analytics collections.');
-  return { name: 'mongodb', results };
 }
 
 function listObjects(prefix) {
@@ -222,10 +201,6 @@ async function clearSeedData(options = parseArgs()) {
     tasks.push(['database', clearDatabase]);
   }
 
-  if (!options.skipMongodb) {
-    tasks.push(['mongodb', clearMongodb]);
-  }
-
   if (!options.skipMinio) {
     tasks.push(['minio', clearMinio]);
   }
@@ -250,8 +225,8 @@ async function main() {
   console.log('==============================================');
   console.log('  CLEAR SEED DATA');
   console.log('==============================================');
-  console.log('Targets: database, MongoDB, MinIO');
-  console.log('Use --skip-db, --skip-es, --skip-mongo, --skip-minio, or --serial as needed.');
+  console.log('Targets: database, MinIO');
+  console.log('Use --skip-db, --skip-minio, or --serial as needed.');
 
   const results = await clearSeedData();
   const failed = results.filter((result) => result.status === 'rejected');
@@ -268,7 +243,7 @@ async function main() {
     }
   }
 
-  await Promise.allSettled([db.sequelize.close(), mongoDb.close()]);
+  await Promise.allSettled([db.sequelize.close()]);
 
   if (failed.length > 0) {
     process.exit(1);
@@ -280,7 +255,7 @@ async function main() {
 if (require.main === module) {
   main().catch(async (error) => {
     console.error('\nFatal error while clearing seed data:', error);
-    await Promise.allSettled([db.sequelize.close(), mongoDb.close()]);
+    await Promise.allSettled([db.sequelize.close()]);
     process.exit(1);
   });
 }
@@ -288,6 +263,5 @@ if (require.main === module) {
 module.exports = {
   clearSeedData,
   clearDatabase,
-  clearMongodb,
   clearMinio,
 };

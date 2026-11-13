@@ -1109,7 +1109,7 @@
     "stackApiLabel": "API",
     "stackApi": "Express on Node.js with a modular monolith layout, Joi validation and Swagger docs",
     "stackDataLabel": "Data",
-    "stackData": "MySQL (Sequelize) as the source of truth, Redis for sessions, holds and queues, MongoDB for analytics events",
+    "stackData": "MySQL (Sequelize) as the source of truth, Redis for sessions, holds and queues, and MySQL tables for analytics events",
     "stackJobsLabel": "Background work",
     "stackJobs": "BullMQ workers for booking expiry, notifications and reconciliation",
     "stackAuthLabel": "Identity",

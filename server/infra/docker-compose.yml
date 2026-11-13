@@ -11,8 +11,7 @@ services:
   #     - ../.env.production
   #   environment:
   #     NODE_ENV: production
-  #     MONGODB_URI: mongodb://mongodb:27017/${MONGODB_DATABASE:-travelnest_analytics}
-  #     MONGODB_DATABASE: ${MONGODB_DATABASE:-travelnest_analytics}
+  #     MYSQL_DSN: ${DB_USER}:${DB_PASSWORD}@tcp(mysql:3306)/${DB_NAME}?parseTime=true&loc=UTC
   #     NATS_URL: ${NATS_URL:-nats://nats:4222}
   #     NATS_STREAM: ${NATS_STREAM:-TRAVELNEST_ANALYTICS}
   #     NATS_CLIENT_NAME: ${NATS_CLIENT_NAME:-travelnest-api}
@@ -42,8 +41,7 @@ services:
     restart: unless-stopped
     environment:
       HTTP_ADDR: :8081
-      MONGODB_URI: mongodb://mongodb:27017
-      MONGODB_DATABASE: ${MONGODB_DATABASE:-travelnest_analytics}
+      MYSQL_DSN: '${DB_USER}:${DB_PASSWORD}@tcp(mysql:3306)/${DB_NAME}?parseTime=true&loc=UTC'
       REDIS_URL: redis://redis:6379/${REDIS_DB:-1}
       TRENDING_HOTELS_CACHE_TTL: ${TRENDING_HOTELS_CACHE_TTL:-2m}
       TRENDING_DESTINATIONS_CACHE_TTL: ${TRENDING_DESTINATIONS_CACHE_TTL:-5m}
@@ -51,7 +49,7 @@ services:
       NATS_STREAM: ${NATS_STREAM:-TRAVELNEST_ANALYTICS}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
-      mongodb:
+      mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -242,41 +240,6 @@ services:
     networks:
       - travelnest-net
 
-  mongodb:
-    image: mongo:7
-    container_name: travelnest-mongodb
-    restart: unless-stopped
-    ports:
-      - '27017:27017'
-    environment:
-      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE:-travelnest_analytics}
-    volumes:
-      - mongodb_data:/data/db
-    networks:
-      - travelnest-net
-    healthcheck:
-      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  # mongo-express:
-  #   image: mongo-express:1.0.2-20
-  #   container_name: travelnest-mongo-express
-  #   restart: unless-stopped
-  #   ports:
-  #     - '${MONGO_EXPRESS_PORT:-8081}:8081'
-  #   environment:
-  #     ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017/
-  #     ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USERNAME:-admin}
-  #     ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:-changeme}
-  #   depends_on:
-  #     mongodb:
-  #       condition: service_healthy
-  #   networks:
-  #     - travelnest-net
-
   mailpit:
     image: axllent/mailpit:latest
     container_name: travelnest-mailpit
@@ -301,8 +264,6 @@ services:
       DB_PORT: '3306'
       REDIS_HOST: redis
       REDIS_PORT: '6379'
-      MONGODB_URI: mongodb://mongodb:27017/${MONGODB_DATABASE:-travelnest_analytics}
-      MONGODB_DATABASE: ${MONGODB_DATABASE:-travelnest_analytics}
       NATS_URL: ${NATS_URL:-nats://nats:4222}
       NATS_STREAM: ${NATS_STREAM:-TRAVELNEST_ANALYTICS}
       NATS_CLIENT_NAME: ${NATS_CLIENT_NAME:-travelnest-api}
@@ -404,6 +365,5 @@ volumes:
   mysql_data:
   redis_data:
   redis-insight-data:
-  mongodb_data:
   nats_data:
   nats_ui_data:

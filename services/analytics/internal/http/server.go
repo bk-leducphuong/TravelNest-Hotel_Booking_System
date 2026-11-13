@@ -10,7 +10,7 @@ import (
 	"time"
 
 	analyticsCache "github.com/travelnest/services/analytics/internal/cache"
-	"github.com/travelnest/services/analytics/internal/mongo"
+	analyticsMysql "github.com/travelnest/services/analytics/internal/mysql"
 )
 
 // readContextTimeout bounds a detached read query: long enough for a cold
@@ -22,7 +22,7 @@ const readContextTimeout = 15 * time.Second
 //
 // The API reaches this service through a proxy with a short timeout
 // (ANALYTICS_SERVICE_TIMEOUT_MS). When that proxy gives up it cancels the
-// request, which would otherwise cancel the Mongo aggregation mid-flight —
+// request, which would otherwise cancel the MySQL query mid-flight —
 // producing an error *and* leaving the Redis cache cold, so every subsequent
 // call repeats the slow scan. Detaching lets the query finish and populate the
 // cache even when the original caller has already gone away.
@@ -31,7 +31,7 @@ func readContext(r *http.Request) (context.Context, context.CancelFunc) {
 }
 
 type Server struct {
-	repo                         *mongo.Repository
+	repo                         *analyticsMysql.Repository
 	cache                        *analyticsCache.RedisCache
 	trendingHotelsCacheTTL       time.Duration
 	trendingDestinationsCacheTTL time.Duration
@@ -39,7 +39,7 @@ type Server struct {
 }
 
 func NewServer(
-	repo *mongo.Repository,
+	repo *analyticsMysql.Repository,
 	cache *analyticsCache.RedisCache,
 	trendingHotelsCacheTTL time.Duration,
 	trendingDestinationsCacheTTL time.Duration,

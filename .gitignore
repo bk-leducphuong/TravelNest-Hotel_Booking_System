@@ -83,3 +83,6 @@ deploy/k8s/.env.local
 # Local tooling artifacts
 .codegraph/
 *.timestamp-*.mjs
+
+# Compiled Go service binaries
+/services/analytics/analytics/

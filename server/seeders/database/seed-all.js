@@ -30,8 +30,8 @@ const { seedHotelStaff } = require('./hotel_staff.seed');
 const { seedCountries } = require('./country.seed');
 const { seedCities } = require('./city.seed');
 const { seedDestinations } = require('./destinations.seed');
-const seedSearchLogs = require('../mongodb/search_logs.seed');
-const seedHotelViewEvents = require('../mongodb/hotel_view_events.seed');
+const seedSearchLogs = require('../analytics/search_logs.seed');
+const seedHotelViewEvents = require('../analytics/hotel_view_events.seed');
 
 const USAGE = `
 Usage: npm run seed:all -- [options]
@@ -40,7 +40,7 @@ Usage: npm run seed:all -- [options]
   --clear                  Truncate each table before seeding (use on re-runs)
   --with-finance           Also seed transactions / payments / invoices
   --skip-images            Skip the MinIO image upload step
-  --skip-mongo             Skip MongoDB analytics seeding
+  --skip-analytics         Skip analytics event seeding
   --skip-snapshots         Skip hotel_search_snapshots rebuild
   --skip-promotions        Do not seed demo promotions
   --skip-keycloak          Do not provision Keycloak accounts
@@ -66,7 +66,7 @@ function parseArgs() {
     imagesConcurrency:
       Number.isInteger(imagesConcurrency) && imagesConcurrency > 0 ? imagesConcurrency : undefined,
     skipImages: args.includes('--skip-images'),
-    skipMongo: args.includes('--skip-mongo'),
+    skipAnalytics: args.includes('--skip-analytics') || args.includes('--skip-mongo'),
     skipSnapshots: args.includes('--skip-snapshots'),
     skipPromotions: args.includes('--skip-promotions'),
     skipKeycloak: args.includes('--skip-keycloak'),
@@ -334,10 +334,10 @@ async function seedAll() {
       results.push({ name: 'Promotions', success: true, duration: 0, skipped: true });
     }
 
-    // ── MongoDB analytics (depends on destinations + hotels) ──────────────
-    if (!options.skipMongo) {
+    // ── Analytics events (depends on destinations + hotels) ───────────────
+    if (!options.skipAnalytics) {
       results.push(
-        await executeSeed('MongoDB Search Logs', seedSearchLogs, {
+        await executeSeed('Analytics Search Logs', seedSearchLogs, {
           rows: options.quick ? 5000 : 50000,
           days: 90,
           batch: 2000,
@@ -346,7 +346,7 @@ async function seedAll() {
         })
       );
       results.push(
-        await executeSeed('MongoDB Hotel View Events', seedHotelViewEvents, {
+        await executeSeed('Analytics Hotel View Events', seedHotelViewEvents, {
           days: 30,
           avgPerHotel: options.quick ? 10 : 50,
           batch: 1000,
@@ -355,10 +355,10 @@ async function seedAll() {
         })
       );
     } else {
-      console.log('\n⚠️  Skipping MongoDB analytics as per --skip-mongo flag');
-      results.push({ name: 'MongoDB Search Logs', success: true, duration: 0, skipped: true });
+      console.log('\n⚠️  Skipping analytics events as per --skip-analytics flag');
+      results.push({ name: 'Analytics Search Logs', success: true, duration: 0, skipped: true });
       results.push({
-        name: 'MongoDB Hotel View Events',
+        name: 'Analytics Hotel View Events',
         success: true,
         duration: 0,
         skipped: true,

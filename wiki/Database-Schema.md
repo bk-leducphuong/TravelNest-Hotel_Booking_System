@@ -122,26 +122,31 @@ Country              City                 Destination
 
 ---
 
-## MongoDB (Analytics)
+## Analytics Events (MySQL)
+
+Owned by the Go analytics service. Rows are written from NATS events and
+expired by a batched purge loop (730 days for searches, 90 days for views).
 
 ```
-SearchLog
-├── _id
-├── query
-├── filters (nested)
-├── result_count
+analytics_search_logs
+├── search_id (PK, uuid)
 ├── user_id (optional)
-├── session_id
-├── timestamp
-└── metadata
+├── destination_id / destination_type
+├── latitude / longitude / radius (optional)
+├── search_time
+├── adults / children / rooms
+├── check_in_date / check_out_date / nights
+├── is_deleted
+└── created_at / updated_at
 
-HotelViewEvent
-├── _id
+analytics_hotel_view_events
+├── event_id (PK, uuid)
 ├── hotel_id
 ├── user_id (optional)
 ├── session_id
-├── source (search/direct/referral)
-└── viewed_at
+├── viewed_at
+├── ip_address / user_agent
+└── created_at / updated_at
 ```
 
 ---

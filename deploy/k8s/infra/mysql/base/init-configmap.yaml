@@ -24,6 +24,7 @@ data:
     mysql -u root -p"${MYSQL_ROOT_PASSWORD}" <<SQL
     CREATE USER IF NOT EXISTS 'travelnest_media'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
     CREATE USER IF NOT EXISTS 'travelnest_notification'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+    CREATE USER IF NOT EXISTS 'travelnest_analytics'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
 
     -- media owns images / image_variants; it may only read users/rooms.
     GRANT SELECT, INSERT, UPDATE ON \`${MYSQL_DATABASE}\`.\`images\` TO 'travelnest_media'@'%';
@@ -38,5 +39,9 @@ data:
     GRANT SELECT ON \`${MYSQL_DATABASE}\`.\`user_roles\` TO 'travelnest_notification'@'%';
     GRANT SELECT ON \`${MYSQL_DATABASE}\`.\`roles\` TO 'travelnest_notification'@'%';
     GRANT SELECT ON \`${MYSQL_DATABASE}\`.\`users\` TO 'travelnest_notification'@'%';
+
+    -- analytics owns the two analytics event tables.
+    GRANT SELECT, INSERT, UPDATE, DELETE ON \`${MYSQL_DATABASE}\`.\`analytics_search_logs\` TO 'travelnest_analytics'@'%';
+    GRANT SELECT, INSERT, UPDATE, DELETE ON \`${MYSQL_DATABASE}\`.\`analytics_hotel_view_events\` TO 'travelnest_analytics'@'%';
     FLUSH PRIVILEGES;
     SQL

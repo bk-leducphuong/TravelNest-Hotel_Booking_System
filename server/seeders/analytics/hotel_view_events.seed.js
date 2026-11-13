@@ -9,7 +9,6 @@ require('dotenv').config({
 });
 
 const { v4: uuidv4 } = require('uuid');
-const mongoDb = require('@config/mongodb.config');
 const db = require('@models');
 const hotelViewEventRepository = require('./repositories/hotel_view_event.repository');
 
@@ -32,7 +31,6 @@ async function main(options = {}) {
   const closeSequelize = options.closeSequelize !== false;
 
   await db.sequelize.authenticate();
-  await mongoDb.connect();
 
   const hotels = await db.hotels.findAll({
     attributes: ['id'],
@@ -44,10 +42,10 @@ async function main(options = {}) {
   }
 
   if (clear) {
-    await require('./models/hotel_view_event.model').deleteMany({});
+    await hotelViewEventRepository.clear();
   }
 
-  console.log(`Seeding MongoDB hotel view events for ${hotels.length} hotels...`);
+  console.log(`Seeding MySQL analytics hotel view events for ${hotels.length} hotels...`);
 
   let batch = [];
   for (const hotel of hotels) {
@@ -74,17 +72,15 @@ async function main(options = {}) {
     await hotelViewEventRepository.insertHotelViewEvents(batch);
   }
 
-  await mongoDb.close();
   if (closeSequelize) {
     await db.sequelize.close();
   }
-  console.log('MongoDB hotel view event seeding complete.');
+  console.log('MySQL analytics hotel view event seeding complete.');
 }
 
 if (require.main === module) {
   main().catch(async (error) => {
-    console.error('Error seeding MongoDB hotel view events:', error);
-    await mongoDb.close();
+    console.error('Error seeding MySQL analytics hotel view events:', error);
     await db.sequelize.close();
     process.exit(1);
   });

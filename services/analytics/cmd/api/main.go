@@ -16,7 +16,7 @@ import (
 	"github.com/travelnest/services/analytics/internal/config"
 	analyticsEvents "github.com/travelnest/services/analytics/internal/events"
 	analyticsHTTP "github.com/travelnest/services/analytics/internal/http"
-	analyticsMongo "github.com/travelnest/services/analytics/internal/mongo"
+	analyticsMysql "github.com/travelnest/services/analytics/internal/mysql"
 )
 
 func main() {
@@ -30,18 +30,15 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	db, disconnect, err := analyticsMongo.Connect(ctx, cfg.MongoDBURI, cfg.MongoDBDatabase)
+	db, disconnect, err := analyticsMysql.Connect(ctx, cfg.MySQLDSN)
 	if err != nil {
-		logger.Error("failed to connect to MongoDB", "error", err)
+		logger.Error("failed to connect to MySQL", "error", err)
 		os.Exit(1)
 	}
-	defer disconnect(context.Background())
+	defer disconnect()
 
-	repo := analyticsMongo.NewRepository(db)
-	if err := repo.EnsureIndexes(ctx); err != nil {
-		logger.Error("failed to create MongoDB indexes", "error", err)
-		os.Exit(1)
-	}
+	repo := analyticsMysql.NewRepository(db)
+	startPurgeLoop(ctx, repo, cfg, logger)
 
 	redisClient, err := analyticsCache.NewRedisClient(cfg.RedisURL)
 	if err != nil {
@@ -102,6 +99,59 @@ func main() {
 	defer cancel()
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		logger.Error("http shutdown failed", "error", err)
+	}
+}
+
+// startPurgeLoop replaces MongoDB's TTL indexes with batched deletes.
+// Each tick drains in batches so a long-running delete never holds a lock for
+// the whole retention window.
+func startPurgeLoop(ctx context.Context, repo *analyticsMysql.Repository, cfg config.Config, logger *slog.Logger) {
+	purge := func() {
+		searchBefore := time.Now().UTC().Add(-time.Duration(cfg.SearchRetentionDays) * 24 * time.Hour)
+		viewBefore := time.Now().UTC().Add(-time.Duration(cfg.ViewRetentionDays) * 24 * time.Hour)
+
+		purgeAll(ctx, "search_logs", logger, func() (int64, error) {
+			return repo.PurgeSearchLogsBefore(ctx, searchBefore, cfg.PurgeBatchSize)
+		})
+		purgeAll(ctx, "hotel_view_events", logger, func() (int64, error) {
+			return repo.PurgeHotelViewEventsBefore(ctx, viewBefore, cfg.PurgeBatchSize)
+		})
+	}
+
+	go func() {
+		purge()
+
+		ticker := time.NewTicker(cfg.PurgeInterval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				purge()
+			}
+		}
+	}()
+}
+
+func purgeAll(ctx context.Context, table string, logger *slog.Logger, purge func() (int64, error)) {
+	var total int64
+
+	for {
+		deleted, err := purge()
+		if err != nil {
+			logger.Error("failed to purge analytics rows", "table", table, "error", err)
+			return
+		}
+		total += deleted
+		if deleted == 0 {
+			break
+		}
+	}
+
+	if total > 0 {
+		logger.Info("purged expired analytics rows", "table", table, "deleted", total)
 	}
 }
 

@@ -5,7 +5,7 @@
 > decision and are kept for context. See `docs/architecture/search-mysql.md`.
 
 > Target: [Hetzner CAX21](https://www.hetzner.com/cloud) · Ubuntu 24.04 · k3s + Argo CD + KSOPS
-> Elasticsearch = Elastic Cloud trial · MySQL / Redis / MinIO / NATS / Keycloak / MongoDB in-cluster
+> Elasticsearch = Elastic Cloud trial · MySQL / Redis / MinIO / NATS / Keycloak in-cluster
 > Domains: `deployserver.work` + subdomains · Public IPv4 + IPv6
 
 ---
@@ -24,7 +24,7 @@
 | GitOps                                  | **Argo CD + KSOPS** (SOPS + age)                                                      |
 | Images                                  | Docker Hub `docker.io/leducphuong/travelnest-*`                                       |
 | Elasticsearch                           | **External** — Elastic Cloud trial                                                    |
-| MongoDB                                 | **In-cluster**                                                                        |
+| Analytics events                        | **MySQL (`analytics_*` tables)**                                                      |
 | MySQL / Redis / MinIO / NATS / Keycloak | **In-cluster**                                                                        |
 | Ingress / TLS                           | **Cloudflare Tunnel** → Traefik                                                       |
 | Domain                                  | Keep `deployserver.work` (+ `api.`, `admin.`, `superadmin.`, `keycloak.`, `storage.`) |
@@ -37,7 +37,7 @@ Running containers ≈ **5.2 GiB** (Elasticsearch ~3.16 GiB is the biggest consu
 
 In-cluster **requests** ≈ **3.5 GiB**:
 
-- mysql 512Mi, keycloak 768Mi, api 512Mi, worker/media/analytics/notification 256Mi each, minio 256Mi, mongodb 256Mi, frontend/admin/superadmin 64Mi each
+- mysql 512Mi, keycloak 768Mi, api 512Mi, worker/media/analytics/notification 256Mi each, minio 256Mi, frontend/admin/superadmin 64Mi each
 - - k3s (~0.4 GiB) + Argo CD (~0.6–1.0 GiB)
 
 Steady state ≈ 4–5 GB. Fits, but keep MySQL's buffer pool modest and monitor. If pods get evicted → upgrade to CAX31 (8 vCPU / 16 GB).
@@ -48,9 +48,9 @@ Steady state ≈ 4–5 GB. Fits, but keep MySQL's buffer pool modest and monitor
 
 The **prod** environment root was a frame that assumed **RDS MySQL, ElastiCache Redis and S3/MinIO were managed AWS services**, so it deployed only NATS, Keycloak and the applications.
 
-The **local** environment root deploys the full in-cluster set (mysql, redis, minio, nats, keycloak, mongodb, elasticsearch).
+The **local** environment root deploys the full in-cluster set (mysql, redis, minio, nats, keycloak).
 
-➡️ **Decision: repurpose `environments/prod` as the single self-contained VPS environment — no new `vps` root.** It now deploys MySQL, Redis, MinIO, MongoDB, NATS and Keycloak in-cluster; only Elasticsearch stays external (Elastic Cloud). The prod app overlays already hardcode `deployserver.work`.
+➡️ **Decision: repurpose `environments/prod` as the single self-contained VPS environment — no new `vps` root.** It now deploys MySQL, Redis, MinIO, NATS and Keycloak in-cluster; only Elasticsearch stays external (Elastic Cloud). The prod app overlays already hardcode `deployserver.work`.
 
 **Good news:** the prod frontend already bakes `https://api.deployserver.work`, so keeping the domain means the existing CI frontend image works unchanged.
 
@@ -93,7 +93,7 @@ docker buildx imagetools inspect docker.io/leducphuong/travelnest-api:develop
 # must list linux/amd64 AND linux/arm64 — repeat for all 8 app images
 ```
 
-Infra images are already multi-arch and fine: `mysql:8.0`, `redis:7-alpine`, `mongo:7`, `nats:2.10-alpine`, `quay.io/minio/minio`, `quay.io/keycloak/keycloak:26.0`, `amazon/aws-cli`.
+Infra images are already multi-arch and fine: `mysql:8.0`, `redis:7-alpine`, `nats:2.10-alpine`, `quay.io/minio/minio`, `quay.io/keycloak/keycloak:26.0`, `amazon/aws-cli`.
 
 ---
 
@@ -114,10 +114,9 @@ See section 3.
 
 `environments/prod` now deploys the self-contained stack:
 
-- _in-cluster infra (wave 10):_ `infra/mysql/overlays/prod`, `infra/redis`, `infra/minio/overlays/prod`, `infra/mongodb`, `infra/nats`, `infra/keycloak/overlays/prod`
+- _in-cluster infra (wave 10):_ `infra/mysql/overlays/prod`, `infra/redis`, `infra/minio/overlays/prod`, `infra/nats`, `infra/keycloak/overlays/prod`
 - _apps (waves 20–40):_ analytics, media, notification, api, worker, frontend, admin-client, superadmin-client (prod overlays, correct domains)
 - **no** in-cluster Elasticsearch (external)
-- MongoDB moved from `local/mongodb` → `infra/mongodb` (shared by the prod and local roots)
 
 The existing `infra/mysql/overlays/prod` backup CronJob already targets **in-cluster MinIO** (`http://minio:9000`), so it works self-contained — no AWS dependency.
 
@@ -125,7 +124,7 @@ The existing `infra/mysql/overlays/prod` backup CronJob already targets **in-clu
 
 - `deploy/k8s/.env.prod` (copy of the updated `.env.prod.example`) now uses **in-cluster** values:
   - `DB_HOST=mysql`, `REDIS_HOST=redis`, `MINIO_ENDPOINT=minio`, `MINIO_PORT=9000`, `MINIO_USE_SSL=false`, `MEDIA_MINIO_ENDPOINT=minio:9000`
-  - `MONGODB_URI=mongodb://mongodb:27017/travelnest_analytics`
+  - `MYSQL_DSN=travelnest_analytics:<DB_PASSWORD>@tcp(mysql:3306)/travelnest?parseTime=true&loc=UTC`
   - `KC_DB_URL_HOST=mysql`
   - `ELASTICSEARCH_ENDPOINT/HOSTS/API_KEY` = Elastic Cloud
   - JWT/session secrets, Keycloak admin, etc.
