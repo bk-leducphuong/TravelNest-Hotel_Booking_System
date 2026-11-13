@@ -275,7 +275,7 @@ Not automated and worth adding next: HTTP-level integration for the authorizatio
 | N05 | No attachments, no offline e-mail notification, no moderation console   | Deliberate v1 scope. `conversation_reads.last_notified_seq` is reserved but unused.                                      |
 | N06 | No `?aroundSeq` anchor                                                  | Every thread opens at the newest message; permalinks to an old message are not possible yet.                             |
 | N07 | Admin timestamps use browser locale, not the admin UI locale            | Minor i18n inconsistency in `formatDateTime`.                                                                            |
-| N08 | No backfill for existing bookings                                       | Threads only exist after first access or a `BOOKING_CREATED` event.                                                      |
+| N08 | Backfill for existing bookings                                          | Migration `20261113000000-backfill-messaging-conversations` creates threads for active/future confirmed/checked-in bookings. `messaging:backfill` adds dry-run and wider date/status/hotel/booking scope. |
 
 ## 16. Local execution results — 2026-11-12
 
@@ -505,6 +505,28 @@ The defects above were addressed on `feat/guest-hotel-chat`, fast-forwarded to `
 | `yarn workspace @travelnest/admin-client lint` | 0 errors |
 
 New regression tests: `getUnreadCount.test.js`, `messaging/api/schema.test.js`, `realtime.chat.test.js` (typing fanout + join/deny), and extra assertions in `listConversations.test.js` and `realtime.auth.test.js`.
+
+### Backfilling existing bookings (N08)
+
+Migration `20261113000000-backfill-messaging-conversations.js` creates missing threads for **active/future** stays (`confirmed` or `checked_in`, check-out today or later). It is batched (500/batch) and idempotent (`INSERT IGNORE` + unique `booking_id`), and its `down` is intentionally a no-op so post-deploy conversations are never deleted.
+
+Wider or one-off runs use the same logic through the script:
+
+```bash
+# Preview the default active/future scope
+yarn workspace @travelnest/server messaging:backfill --dry-run
+
+# Include cancelled/completed stays from the last 90 days
+yarn workspace @travelnest/server messaging:backfill \
+  --since=$(date -d '90 days ago' +%F) \
+  --statuses=confirmed,checked_in,cancelled,completed,no_show
+
+# One hotel, or one booking
+yarn workspace @travelnest/server messaging:backfill --hotel-id=<uuid>
+yarn workspace @travelnest/server messaging:backfill --booking-id=<uuid>
+```
+
+Local verification: 3 bookings were backfilled via `--limit=3`, the migration then created 9,441 more (9,444 active/future bookings total), and a follow-up `--dry-run` reported 0. Re-running with an existing `--booking-id` also reported 0. `server` unit tests now include `backfillConversations` (846 tests total).
 
 ### Residual
 
