@@ -9,7 +9,7 @@ const { emitNotification } = require('../infrastructure/socket-emitter');
  * Create and emit a payout notification for a hotel owner.
  */
 async function sendPayoutNotification(data) {
-  const { hotelId, ownerId, payoutId, transactionId, status, amount } = data;
+  const { hotelId, ownerId, payoutId, transactionId, status, amount, currency, reason } = data;
   const relatedPayoutId = payoutId || transactionId;
 
   try {
@@ -32,7 +32,8 @@ async function sendPayoutNotification(data) {
       {
         payoutId: relatedPayoutId,
         amount,
-        currency: 'USD',
+        currency: currency || 'USD',
+        reason,
       },
       {
         relatedEntityType: RELATED_ENTITY_TYPES.PAYOUT,

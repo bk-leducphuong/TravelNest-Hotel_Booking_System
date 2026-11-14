@@ -1,4 +1,4 @@
-const { Op, fn, col } = require('sequelize');
+const { Op, fn, col, literal } = require('sequelize');
 
 const {
   Payouts,
@@ -232,16 +232,40 @@ class PayoutRepository {
     );
   }
 
-  async findEligibleBookingsForPayout(cutoffDate = new Date(), options = {}) {
-    return await Bookings.findAll({
-      where: {
-        status: {
-          [Op.in]: ['confirmed', 'completed'],
-        },
-        check_in_date: {
-          [Op.lte]: cutoffDate,
-        },
+  /**
+   * Paid bookings whose stay has finished before `cutoffDate` and that have not
+   * been included in a payout yet.
+   *
+   * The refund/dispute hold is enforced by the caller through `cutoffDate`
+   * (see `payout-settings.getEligibilityCutoffDate`). Bookings with an open
+   * refund obligation or an unresolved cancellation decision are excluded so
+   * a payout is never generated against funds that may still be returned.
+   */
+  async findEligibleBookingsForPayout(cutoffDate = new Date(), filters = {}, options = {}) {
+    const where = {
+      status: {
+        [Op.in]: ['confirmed', 'completed'],
       },
+      check_out_date: {
+        [Op.lte]: cutoffDate,
+      },
+      [Op.and]: [
+        literal(
+          `NOT EXISTS (SELECT 1 FROM refunds r WHERE r.booking_id = bookings.id AND r.status IN ('pending', 'processing'))`
+        ),
+        literal(`NOT EXISTS (SELECT 1 FROM payout_items pi WHERE pi.booking_id = bookings.id)`),
+        literal(
+          `(bookings.cancellation_decision IS NULL OR JSON_UNQUOTE(JSON_EXTRACT(bookings.cancellation_decision, '$.outcome')) NOT IN ('refund_required', 'manual_review'))`
+        ),
+      ],
+    };
+
+    if (filters.hotelId) {
+      where.hotel_id = filters.hotelId;
+    }
+
+    return await Bookings.findAll({
+      where,
       include: [
         {
           model: Transactions,
@@ -258,6 +282,33 @@ class PayoutRepository {
           required: false,
         },
       ],
+      order: [
+        ['check_out_date', 'ASC'],
+        ['id', 'ASC'],
+      ],
+      ...options,
+    });
+  }
+
+  /** Pending payouts that are ready to be sent to a connected account. */
+  async findPendingPayouts(limit = 50, options = {}) {
+    return await Payouts.findAll({
+      where: { status: 'pending' },
+      order: [['created_at', 'ASC']],
+      limit,
+      ...options,
+    });
+  }
+
+  /** Payouts stuck in `processing` (crash between transfer and DB commit). */
+  async findStaleProcessingPayouts(olderThan, limit = 50, options = {}) {
+    return await Payouts.findAll({
+      where: {
+        status: 'processing',
+        updated_at: { [Op.lte]: olderThan },
+      },
+      order: [['updated_at', 'ASC']],
+      limit,
       ...options,
     });
   }

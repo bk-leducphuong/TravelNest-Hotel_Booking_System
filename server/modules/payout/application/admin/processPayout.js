@@ -49,25 +49,35 @@ async function processPayout(payoutId, { actorUserId, requestId } = {}) {
 
     return processed;
   } catch (error) {
+    const needsReconciliation = ['PAYOUT_OUTCOME_UNKNOWN', 'PAYOUT_SETTLEMENT_FAILED'].includes(
+      error.code
+    );
+
     await auditService.record({
       actorUserId,
       actorType: actorUserId ? 'user' : 'system',
-      action: 'payout.failed',
+      action: needsReconciliation ? 'payout.processing_unknown' : 'payout.failed',
       entityType: 'payout',
       entityId: payoutId,
       hotelId: payout.hotel_id,
-      after: { status: 'failed', error: error.message },
+      after: { status: needsReconciliation ? 'processing' : 'failed', error: error.message },
       requestId,
     });
 
-    await publish(DOMAIN_EVENTS.PAYOUT_FAILED, {
-      payoutId,
-      hotelId: payout.hotel_id,
-      ownerId: payout.owner_id,
-      amount: parseFloat(payout.amount),
-      currency: payout.currency,
-      error: error.message,
-    });
+    if (!needsReconciliation) {
+      await publish(DOMAIN_EVENTS.PAYOUT_FAILED, {
+        payoutId,
+        hotelId: payout.hotel_id,
+        ownerId: payout.owner_id,
+        amount: parseFloat(payout.amount),
+        currency: payout.currency,
+        error: error.message,
+      });
+    }
+
+    if (error instanceof ApiError) {
+      throw error;
+    }
 
     throw new ApiError(502, 'PAYOUT_FAILED', error.message || 'Payout processing failed');
   }

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Eye } from "lucide-vue-next";
 import {
+  fetchPayoutSettings,
   fetchPayouts,
   generateEligiblePayouts,
   type PayoutListItem,
+  type PayoutSettings,
 } from "~/services/api/payouts";
 import { formatDateTime, formatMoney } from "~/utils/format";
 import { PAYOUT_STATUSES, payoutStatusTagType } from "~/utils/payouts";
@@ -14,7 +16,9 @@ const router = useRouter();
 const { t } = useI18n();
 
 const overview = ref<{ reload: () => Promise<void> } | null>(null);
-const refreshAll = () => Promise.all([load(), overview.value?.reload()]);
+const settings = ref<PayoutSettings | null>(null);
+const refreshAll = () =>
+  Promise.all([load(), loadSettings(), overview.value?.reload()]);
 const loading = ref(false);
 const listError = ref("");
 const listRequests = useRequestVersion();
@@ -58,6 +62,18 @@ const load = async () => {
     if (current()) listError.value = (error as Error).message;
   } finally {
     if (current()) loading.value = false;
+  }
+};
+
+const loadSettings = async () => {
+  if (!auth.activeHotelId || !can("payment.read")) {
+    settings.value = null;
+    return;
+  }
+  try {
+    settings.value = await fetchPayoutSettings();
+  } catch {
+    settings.value = null;
   }
 };
 
@@ -118,6 +134,7 @@ watch(
   () => {
     filters.page = 1;
     load();
+    loadSettings();
   },
   { immediate: true }
 );
@@ -160,6 +177,23 @@ watch(
     />
 
     <template v-else>
+      <el-alert
+        v-if="settings"
+        :title="
+          settings.autoGenerate
+            ? $t('payouts.settings.autoTitle')
+            : $t('payouts.settings.manualTitle')
+        "
+        :type="settings.autoGenerate ? 'info' : 'warning'"
+        :closable="false"
+        show-icon
+      >
+        {{
+          settings.autoGenerate
+            ? $t("payouts.settings.autoBody", { days: settings.holdDays })
+            : $t("payouts.settings.manualBody", { days: settings.holdDays })
+        }}
+      </el-alert>
       <MetricsOverview ref="overview" kind="payouts" distribution />
       <el-alert
         v-if="listError"

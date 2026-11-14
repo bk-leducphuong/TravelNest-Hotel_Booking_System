@@ -2,6 +2,10 @@
 
 > Part of [Phase 1 — Feature Test & Production-Readiness Review](../TEST-REVIEW-PLAN.md).
 > **Status:** 🟡 Partial · **Owner:** _TBD_ · **Tier:** 1
+>
+> **Follow-up (payout automation):** scheduled generation/processing, hotel and
+> owner scoping, refund-hold eligibility, and recovery handling were added in
+> `feat/payout-automation`. See [`docs/features/payouts.md`](../../../features/payouts.md).
 
 ## Scope
 
