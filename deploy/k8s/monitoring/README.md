@@ -163,6 +163,15 @@ and the `travelnest-test` cluster):
 The prebuilt Kubernetes monitoring dashboards stay untouched in the
 `GrafanaCloud` folder; these three are the only ones this repo owns.
 
+## Load testing
+
+The dashboards and thresholds above need traffic to be meaningful, and this
+deployment has no real users. [`../../../../loadtest/`](../../../../loadtest/)
+holds the k6 suites that generate it (anonymous read path, plus a gated
+booking-funnel run) and documents the rate-limiter caveat: the API allows 300
+requests / 15 min per IP, so a real run needs `RATE_LIMIT_ENABLED=false` on the
+target for its duration.
+
 ## Access
 
 - Dashboards: **grafana.com → your stack → Kubernetes → Monitoring** (cluster
