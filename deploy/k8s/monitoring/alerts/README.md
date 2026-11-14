@@ -43,7 +43,7 @@ Thresholds are derived from a measured baseline, not guessed. See
 | **Queue backlog high**                   | `sum(bullmq_queue_jobs{job="travelnest-worker",state="waiting"})`                                                                            | `> 200`    | 15m | `travelnest-capacity`        |
 | **DB pool saturated**                    | `sum(db_pool_connections{job="travelnest-api",state="used"}) / clamp_min(sum(db_pool_connections_max{job="travelnest-api"}), 1)`             | `> 0.9`    | 10m | `travelnest-capacity`        |
 | **Booking confirmation processing slow** | `histogram_quantile(0.95, sum by (le) (rate(booking_confirmation_processing_seconds_bucket{flow="prepay"}[15m])))`                           | `> 5`      | 10m | `travelnest-booking-funnel`  |
-| **Booking checkout p95 high**            | `histogram_quantile(0.95, sum by (le) (rate(booking_checkout_duration_seconds_bucket{flow="prepay"}[15m])))`                                 | `> 120`    | 15m | `travelnest-booking-funnel`  |
+| **Booking checkout p95 high**            | `histogram_quantile(0.95, sum by (le) (rate(booking_checkout_duration_seconds_bucket{flow="prepay"}[15m])))`                                 | `> 5`      | 15m | `travelnest-booking-funnel`  |
 
 ## Measured baseline
 
@@ -75,6 +75,21 @@ hotel detail 589 ms, rooms 330 ms, availability 124 ms, trending 129 ms.
 
 Search is the tail: it is ~4× the next route and drives the overall p95. If a
 regression is going to appear anywhere, it will appear there first.
+
+### Booking funnel
+
+Same generator, separate run (2026-11-14 12:25–12:31 UTC): 1 VU, 5m, **19
+bookings, 0 failures, 0 funnel breaks**, hold and booking both ~250 ms p95.
+
+| Metric | p95 | Threshold | Notes |
+| --- | --- | --- | --- |
+| `booking_checkout_duration_seconds` | 1.58 s | 5 s | hold created → booking row; 17/19 under 1 s |
+| `booking_confirmation_processing_seconds` | — | 5 s | needs a real Stripe payment + webhook; no data yet |
+
+This is also the run that proved the checkout histogram works at all: before the
+literal-timestamp fix it recorded **zero** observations, so that panel was empty
+and the rule could never fire. The 5 s threshold replaces a 120 s placeholder
+that was 76× the measurement.
 
 ## Linking rules to dashboards
 
