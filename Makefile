@@ -1,10 +1,11 @@
 ENV_FILE ?= server/.env.development
 ARGS ?=
 
-# Load testing (see loadtest/README.md).
-LOADTEST_BASE_URL ?= https://api.trestay.com
-LOADTEST_CITY ?= Hanoi
-LOADTEST_PEAK_VUS ?= 12
+# Load testing (see loadtest/README.md). These names match the k6 `__ENV`
+# variables so `BASE_URL=... make load-test-read` works as documented.
+BASE_URL ?= https://api.trestay.com
+CITY ?= Hanoi
+PEAK_VUS ?= 12
 LOADTEST_IMAGE ?= grafana/k6:2.4.0
 LOADTEST_DIR = loadtest
 # SMOKE=true swaps the ramp for a 20 s two-VU run that only validates the script.
@@ -36,10 +37,11 @@ load-test-read:
 	@mkdir -p $(LOADTEST_DIR)/results
 	docker run --rm -i \
 		--user "$(shell id -u):$(shell id -g)" \
+		--network host \
 		-v "$(CURDIR)/$(LOADTEST_DIR):/loadtest" \
-		-e BASE_URL="$(LOADTEST_BASE_URL)" \
-		-e CITY="$(LOADTEST_CITY)" \
-		-e PEAK_VUS="$(LOADTEST_PEAK_VUS)" \
+		-e BASE_URL="$(BASE_URL)" \
+		-e CITY="$(CITY)" \
+		-e PEAK_VUS="$(PEAK_VUS)" \
 		-e SMOKE="$(SMOKE)" \
 		-e RESULT_DIR=/loadtest/results \
 		$(LOADTEST_IMAGE) run /loadtest/k6/read-path.js $(ARGS)
@@ -53,9 +55,10 @@ load-test-booking:
 	@mkdir -p $(LOADTEST_DIR)/results
 	docker run --rm -i \
 		--user "$(shell id -u):$(shell id -g)" \
+		--network host \
 		-v "$(CURDIR)/$(LOADTEST_DIR):/loadtest" \
-		-e BASE_URL="$(LOADTEST_BASE_URL)" \
-		-e CITY="$(LOADTEST_CITY)" \
+		-e BASE_URL="$(BASE_URL)" \
+		-e CITY="$(CITY)" \
 		-e AUTH_TOKEN \
 		-e ALLOW_WRITES \
 		$(LOADTEST_IMAGE) run /loadtest/k6/booking-funnel.js $(ARGS)

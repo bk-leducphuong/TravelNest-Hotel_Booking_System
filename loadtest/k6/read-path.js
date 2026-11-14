@@ -125,7 +125,7 @@ export function setup() {
   }
 
   console.log(
-    `read-path: ${hotelIds.length} hotels, ${CHECK_IN} -> ${CHECK_OUT}, ` +
+    `read-path: target ${BASE_URL} — ${hotelIds.length} hotels, ${CHECK_IN} -> ${CHECK_OUT}, ` +
       (SMOKE ? 'smoke run (2 VUs, 20s)' : `peak ${PEAK_VUS} VUs`)
   );
 
