@@ -33,9 +33,16 @@ function secondsBetween(start, end) {
 /**
  * Checkout stage: how long from locking the rooms (hold) until the booking row
  * exists. Recorded after the creation transaction commits.
+ *
+ * `bookingCreatedAt` can be a Sequelize *literal*, not a Date: a freshly created
+ * row carries the column default (`CURRENT_TIMESTAMP`) until it is reloaded.
+ * `new Date(literal)` is invalid, so the observation was being dropped and every
+ * checkout went unrecorded. The row has just committed, so the current time is
+ * the correct end of the interval.
  */
 function recordBookingCheckout({ flow = DEFAULT_FLOW, holdCreatedAt, bookingCreatedAt }) {
-  const seconds = secondsBetween(holdCreatedAt, bookingCreatedAt);
+  const end = toMillis(bookingCreatedAt) === null ? Date.now() : bookingCreatedAt;
+  const seconds = secondsBetween(holdCreatedAt, end);
 
   if (seconds === null) {
     return;

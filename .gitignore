@@ -86,3 +86,6 @@ deploy/k8s/.env.local
 
 # Compiled Go service binaries
 /services/analytics/analytics/
+
+# Load-test run output (results/, k6 summary JSON)
+/loadtest/results/
