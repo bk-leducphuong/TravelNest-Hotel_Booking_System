@@ -89,6 +89,7 @@ deployment.
 | `standardFlowEnabled: false` | it is not a browser app |
 | `directAccessGrantsEnabled: true` | allows `grant_type=password` for k6 |
 | `access.token.lifespan: 1800` | the realm default is 300 s; a 10-minute run needs longer |
+| default scopes incl. `travelnest-claims` | that scope is what puts `email` / `email_verified` in the **access token**; without it every request 401s or 403s |
 | audience mapper → `travelnest-web` | the API rejects tokens without that audience (`KEYCLOAK_AUDIENCE`) |
 
 The **user** is not in the realm file — the reconcile job leaves `users` alone,

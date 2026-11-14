@@ -205,12 +205,7 @@
         "email",
         "travelnest-claims"
       ],
-      "optionalClientScopes": [
-        "address",
-        "phone",
-        "offline_access",
-        "microprofile-jwt"
-      ],
+      "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"],
       "attributes": {
         "access.token.lifespan": "1800"
       },
