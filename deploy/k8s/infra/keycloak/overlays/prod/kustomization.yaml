@@ -17,7 +17,7 @@ resources:
 images:
   - name: quay.io/keycloak/keycloak
     newName: docker.io/leducphuong/travelnest-keycloak
-    newTag: sha-3d906be
+    newTag: sha-44ba90a
 
 generators:
   - secret-generator.yaml
