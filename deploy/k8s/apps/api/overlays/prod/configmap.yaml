@@ -49,4 +49,6 @@ data:
   # Addresses that skip throttling entirely, for load tests and synthetic
   # probes. Empty = nobody bypasses. Set it to the load generator's egress IP
   # for the duration of a run; everything else stays rate limited.
-  # RATE_LIMIT_ALLOWLIST: "203.0.113.10"
+  # Temporary: tn-loadgen in hel1 during the prod latency baseline. Remove
+  # once the run is done — a stale allowlist entry is a standing bypass.
+  RATE_LIMIT_ALLOWLIST: "2.29.55.176"
