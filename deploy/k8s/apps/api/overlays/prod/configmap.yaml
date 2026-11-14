@@ -51,4 +51,7 @@ data:
   # for the duration of a run; everything else stays rate limited.
   # Temporary: tn-loadgen in hel1 during the prod latency baseline. Remove
   # once the run is done — a stale allowlist entry is a standing bypass.
-  RATE_LIMIT_ALLOWLIST: "2.29.55.176"
+  # Temporary: tn-loadgen in hel1 during the prod latency baseline. Both
+  # address families are listed because the generator prefers IPv6 egress
+  # (Cloudflare publishes AAAA), so an IPv4-only entry silently does nothing.
+  RATE_LIMIT_ALLOWLIST: "2.29.55.176,2a01:4f9:c015:d9b::/64"
