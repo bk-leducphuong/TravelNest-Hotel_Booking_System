@@ -25,22 +25,56 @@ webhook such as Slack/Discord).
 
 ## API latency and saturation rules
 
-These depend on the API's own metrics (`job="travelnest-api"`) and are **not
-applied yet** — create them in Grafana Cloud Alerting once the metrics have been
-flowing for a day so the thresholds can be baselined.
+These depend on the API's own metrics (`job="travelnest-api"`) and are **applied**
+— 17 rules in the `travelnest` folder, groups `travelnest-node`,
+`travelnest-workloads` and `travelnest-api-slo`.
+
+Thresholds are derived from a measured baseline, not guessed. See
+[Measured baseline](#measured-baseline) for the run that produced them.
 
 | Alert                                    | PromQL                                                                                                                                       | Fires when | For | Dashboard                    |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --- | ---------------------------- |
-| **API p95 latency high**                 | `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="travelnest-api"}[5m])))`                               | `> 0.5`    | 10m | `travelnest-api-performance` |
-| **Search p95 latency high**              | `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="travelnest-api",route="/api/v1/search/hotels"}[5m])))` | `> 0.5`    | 10m | `travelnest-api-performance` |
+| **API p95 latency high**                 | `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="travelnest-api"}[5m])))`                               | `> 1`      | 10m | `travelnest-api-performance` |
+| **Search p95 latency high**              | `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="travelnest-api",route="/api/v1/search/hotels"}[5m])))` | `> 1.5`    | 10m | `travelnest-api-performance` |
 | **API error ratio high**                 | `sum(rate(http_requests_total{job="travelnest-api",status_class="5xx"}[5m])) / sum(rate(http_requests_total{job="travelnest-api"}[5m]))`     | `> 0.01`   | 5m  | `travelnest-api-performance` |
-| **MySQL p95 high**                       | `histogram_quantile(0.95, sum by (le) (rate(db_query_duration_seconds_bucket[5m])))`                                                         | `> 0.05`   | 10m | `travelnest-api-performance` |
-| **Event loop lag p99**                   | `nodejs_eventloop_lag_p99_seconds{job="travelnest-api"}`                                                                                     | `> 0.05`   | 10m | `travelnest-capacity`        |
+| **MySQL p95 high**                       | `histogram_quantile(0.95, sum by (le) (rate(db_query_duration_seconds_bucket[5m])))`                                                         | `> 0.3`    | 10m | `travelnest-api-performance` |
+| **Event loop lag p99**                   | `nodejs_eventloop_lag_p99_seconds{job="travelnest-api"}`                                                                                     | `> 0.15`   | 10m | `travelnest-capacity`        |
 | **Worker job p95 high**                  | `histogram_quantile(0.95, sum by (le) (rate(job_duration_seconds_bucket{job="travelnest-worker"}[15m])))`                                    | `> 30`     | 15m | `travelnest-capacity`        |
 | **Queue backlog high**                   | `sum(bullmq_queue_jobs{job="travelnest-worker",state="waiting"})`                                                                            | `> 200`    | 15m | `travelnest-capacity`        |
 | **DB pool saturated**                    | `sum(db_pool_connections{job="travelnest-api",state="used"}) / clamp_min(sum(db_pool_connections_max{job="travelnest-api"}), 1)`             | `> 0.9`    | 10m | `travelnest-capacity`        |
 | **Booking confirmation processing slow** | `histogram_quantile(0.95, sum by (le) (rate(booking_confirmation_processing_seconds_bucket{flow="prepay"}[15m])))`                           | `> 5`      | 10m | `travelnest-booking-funnel`  |
 | **Booking checkout p95 high**            | `histogram_quantile(0.95, sum by (le) (rate(booking_checkout_duration_seconds_bucket{flow="prepay"}[15m])))`                                 | `> 120`    | 15m | `travelnest-booking-funnel`  |
+
+## Measured baseline
+
+Thresholds above are ~2× the p95 measured under sustained load, not a guess.
+
+| | |
+| --- | --- |
+| Run | 2026-11-14 12:03–12:14 UTC |
+| Generator | `tn-loadgen` (cx23, Helsinki `hel1`), k6 `grafana/k6:2.4.0` |
+| Load | 12 VUs, ramped, 10m30s, **4,217 requests / 6.7 req/s**, 0 failures, 0 × 429 |
+| Exempted | `RATE_LIMIT_ALLOWLIST` (both IPv4 and the server's IPv6 /64) |
+
+Server-side p95, from the in-process histograms the rules read:
+
+| Metric | p95 | Threshold | Headroom |
+| --- | --- | --- | --- |
+| `http_request_duration_seconds` (all routes) | 604 ms | 1 s | 1.7× |
+| `…{route="/api/v1/search/hotels"}` | 747 ms | 1.5 s | 2.0× |
+| `…{route="/api/v1/hotels/:hotelId"}` | 192 ms | — | — |
+| `…{route="/api/v1/hotels/:hotelId/rooms"}` | 67 ms | — | — |
+| `…{route="/api/v1/search/hotels/:hotelId/availability"}` | 25 ms | — | — |
+| `…{route="/api/v1/search/destinations/trending"}` | 43 ms | — | — |
+| `db_query_duration_seconds` | 138 ms | 300 ms | 2.2× |
+| `nodejs_eventloop_lag_p99_seconds` | 74 ms | 150 ms | 2.0× |
+
+Client-side p95 from the same run (k6, so it includes Cloudflare + the tunnel —
+300–450 ms of overhead the server-side numbers never see): search 1,046 ms,
+hotel detail 589 ms, rooms 330 ms, availability 124 ms, trending 129 ms.
+
+Search is the tail: it is ~4× the next route and drives the overall p95. If a
+regression is going to appear anywhere, it will appear there first.
 
 ## Linking rules to dashboards
 
