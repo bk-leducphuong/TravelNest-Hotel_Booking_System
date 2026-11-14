@@ -37,3 +37,5 @@ data:
   KEYCLOAK_INTERNAL_URL: http://keycloak:8080/realms/travelnest
   WORKER_HEALTH_PORT: "4001"
   REDIS_USERNAME: ""
+  # Traefik is the single trusted hop in front of the API in k3d as well.
+  TRUST_PROXY: "1"

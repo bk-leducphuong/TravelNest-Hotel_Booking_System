@@ -72,21 +72,38 @@ Until one of those exists, run the read path only.
 ## The rate limiter will throttle you
 
 `server/middlewares/rate-limitter.middleware.js` allows **300 requests / 15 min
-per IP** (`RATE_LIMIT_MAX`) and **60 writes / 15 min** (`RATE_LIMIT_WRITE_MAX`).
-A 12-VU read test issues a few thousand requests, so it hits HTTP 429 within
+per client** (`RATE_LIMIT_MAX`) and **60 writes / 15 min** (`RATE_LIMIT_WRITE_MAX`).
+A 12-VU read test issues a few thousand requests, so it trips HTTP 429 within
 seconds.
 
-The scripts abort after two consecutive 429s rather than reporting the throttle
-as latency. To run a real test, the target must disable throttling for the
-duration:
+Exempt the generator instead of disabling throttling — `RATE_LIMIT_ALLOWLIST`
+takes a comma-separated list of addresses and CIDR subnets that skip the global
+and write limiters, while every other client stays limited:
 
 ```yaml
 # deploy/k8s/apps/api/overlays/prod/configmap.yaml
-RATE_LIMIT_ENABLED: "false"
+RATE_LIMIT_ALLOWLIST: "203.0.113.10"        # the load VM's egress IP
 ```
 
-Commit → let Argo CD sync → run the test → revert the commit and sync again. For
-a local server, `RATE_LIMIT_ENABLED=false yarn dev:server` is enough.
+```bash
+# local: just export it before starting the server
+RATE_LIMIT_ALLOWLIST=127.0.0.1 node server.js
+```
+
+- Client identity comes from Cloudflare's `CF-Connecting-IP`, not `req.ip`, so
+  the allowlist works through Cloudflare Tunnel → Traefik. See
+  [`server/utils/clientIp.util.js`](../server/utils/clientIp.util.js).
+- The auth limiter is deliberately **not** exempted, so a bypass cannot be
+  turned into credential stuffing.
+- Addresses are matched exactly or by CIDR; malformed entries are ignored
+  rather than failing open.
+- Commit the allowlist → let Argo CD sync → run the test → remove it and sync
+  again. `RATE_LIMIT_ENABLED=false` still works as a blunt fallback, but it
+  removes throttling for everyone.
+
+The scripts abort after two consecutive 429s rather than reporting a throttle as
+latency, so a misconfigured allowlist fails loudly instead of producing a fast,
+meaningless curve.
 
 ## After a run
 

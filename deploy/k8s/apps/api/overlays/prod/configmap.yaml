@@ -41,3 +41,12 @@ data:
   KEYCLOAK_INTERNAL_URL: http://keycloak:8080/realms/travelnest
   WORKER_HEALTH_PORT: "4001"
   REDIS_USERNAME: ""
+  # One trusted hop (Traefik) in front of the API. Visitor identity for rate
+  # limiting does NOT come from here — it comes from CF-Connecting-IP, because
+  # cloudflared sits between Cloudflare and Traefik (see
+  # server/utils/clientIp.util.js).
+  TRUST_PROXY: "1"
+  # Addresses that skip throttling entirely, for load tests and synthetic
+  # probes. Empty = nobody bypasses. Set it to the load generator's egress IP
+  # for the duration of a run; everything else stays rate limited.
+  # RATE_LIMIT_ALLOWLIST: "203.0.113.10"
