@@ -4,9 +4,11 @@ const {
   authenticate,
   requirePermission,
   requireEntityInHotel,
+  isPlatformStaff,
 } = require('@middlewares/auth.middleware');
 const validate = require('@middlewares/validate.middleware');
 const { PERMISSIONS } = require('@constants/permissions');
+const ApiError = require('@utils/ApiError');
 const { Payouts, ConnectedPaymentAccounts } = require('@platform/database');
 
 const schema = require('./schemas');
@@ -28,13 +30,43 @@ const payoutInHotel = requireEntityInHotel(async (req) => {
   return payout?.hotel_id;
 });
 
-const connectedAccountInHotel = requireEntityInHotel(async (req) => {
-  const account = await ConnectedPaymentAccounts.findOne({
-    where: { id: req.params.accountId },
-    attributes: ['hotel_id'],
-  });
-  return account?.hotel_id;
-});
+/**
+ * Connected accounts can be hotel-scoped or owner-scoped (`hotel_id = null`).
+ * A hotel-scoped caller may manage either an account of their hotel or their
+ * own owner-level account. Platform staff bypass the check.
+ */
+const connectedAccountAccess = async (req, res, next) => {
+  try {
+    const account = await ConnectedPaymentAccounts.findOne({
+      where: { id: req.params.accountId },
+      attributes: ['id', 'hotel_id', 'user_id'],
+    });
+
+    if (!account) {
+      // Let the use-case return its normal 404.
+      return next();
+    }
+
+    if (isPlatformStaff(req)) {
+      return next();
+    }
+
+    const hotelContextId = req.hotelContext?.hotelId;
+    const accountInHotel = account.hotel_id && String(account.hotel_id) === String(hotelContextId);
+    const ownOwnerLevelAccount =
+      !account.hotel_id && String(account.user_id) === String(req.user.id);
+
+    if (accountInHotel || ownOwnerLevelAccount) {
+      return next();
+    }
+
+    return next(
+      new ApiError(403, 'RESOURCE_ACCESS_DENIED', 'You do not have access to this resource.')
+    );
+  } catch (error) {
+    return next(error);
+  }
+};
 
 /**
  * Admin payout routes (mounted at /api/v1/admin/payouts).
@@ -55,6 +87,12 @@ router.get(
   requireHotelPermission(PERMISSIONS.PAYMENT_READ),
   validate(schema.getHotelPayoutSummary),
   controller.getHotelPayoutSummaryHandler
+);
+
+router.get(
+  '/settings',
+  requireHotelPermission(PERMISSIONS.PAYMENT_READ),
+  controller.getPayoutSettingsHandler
 );
 
 // Batch generation + execution
@@ -91,7 +129,7 @@ router.post(
   '/connected-accounts/:accountId/link',
   requireHotelPermission(PERMISSIONS.PAYMENT_PROCESS),
   validate(schema.createAccountLink),
-  connectedAccountInHotel,
+  connectedAccountAccess,
   controller.createAccountLinkHandler
 );
 
@@ -99,7 +137,7 @@ router.post(
   '/connected-accounts/:accountId/sync',
   requireHotelPermission(PERMISSIONS.PAYMENT_PROCESS),
   validate(schema.syncConnectedAccount),
-  connectedAccountInHotel,
+  connectedAccountAccess,
   controller.syncConnectedAccountHandler
 );
 

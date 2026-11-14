@@ -58,6 +58,7 @@ export interface PayoutListItem {
   paid_at?: string | null;
   failure_code?: string | null;
   failure_message?: string | null;
+  metadata?: Record<string, unknown> | null;
   created_at: string;
   hotel?: PayoutHotelRef | null;
   owner?: PayoutOwnerRef | null;
@@ -127,6 +128,16 @@ export interface AccountLinkResult {
   expiresAt: number;
 }
 
+export interface PayoutSettings {
+  autoGenerate: boolean;
+  autoProcess: boolean;
+  holdDays: number;
+  generationIntervalMs: number;
+  processingIntervalMs: number;
+  staleMinutes: number;
+  minimumAmount: number;
+}
+
 function toQuery<T extends object>(filters: T): string {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
@@ -158,6 +169,11 @@ export async function fetchPayout(payoutId: string): Promise<PayoutDetail> {
   const response = await apiFetch<{ data: PayoutDetail }>(
     `/admin/payouts/${encodeURIComponent(payoutId)}`
   );
+  return response.data;
+}
+
+export async function fetchPayoutSettings(): Promise<PayoutSettings> {
+  const response = await apiFetch<{ data: PayoutSettings }>(`/admin/payouts/settings`);
   return response.data;
 }
 
