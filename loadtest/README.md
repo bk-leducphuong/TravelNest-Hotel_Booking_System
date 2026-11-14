@@ -58,16 +58,69 @@ AUTH_TOKEN=<keycloak access token> ALLOW_WRITES=true make load-test-booking
   and webhook, so this suite stops at checkout. Those panels stay empty until a
   Stripe test-mode flow exists.
 
-**Getting an `AUTH_TOKEN`:** the API authenticates with Keycloak bearer tokens
-and the `travelnest-web` client has direct-access grants disabled
-(`unauthorized_client`), so a password grant cannot be scripted today. Mint a
-token with either:
+**Getting an `AUTH_TOKEN`:** the API authenticates with Keycloak bearer tokens.
+The SPA client (`travelnest-web`) uses authorization-code + PKCE with direct
+access grants disabled (`unauthorized_client`), so it cannot be scripted. Use
+the dedicated `travelnest-loadtest` client instead:
 
-1. a dedicated Keycloak client with direct-access grants enabled, scoped to a
-   guest role, and a throwaway user; or
-2. a browser session — copy the `access_token` from the network tab.
+```bash
+export LOADTEST_USERNAME=loadtest@trestay.com
+read -rs LOADTEST_PASSWORD && export LOADTEST_PASSWORD
+loadtest/scripts/get-token.sh --verify     # sub / email / email_verified
+AUTH_TOKEN="$(loadtest/scripts/get-token.sh)" \
+  ALLOW_WRITES=true make load-test-booking
+```
+
+`KEYCLOAK_URL=http://localhost:8080` points the script at the local Keycloak.
 
 Until one of those exists, run the read path only.
+
+### The load-test client
+
+`travelnest-loadtest` is declared in
+[`server/infra/keycloak/travelnest-realm.json`](../server/infra/keycloak/travelnest-realm.json)
+and both k8s overlays. The `keycloak-realm-reconcile` PostSync job applies it
+with `partialImport … OVERWRITE`, so committing the client is the whole
+deployment.
+
+| Setting | Why |
+| --- | --- |
+| `publicClient: true` | no client secret to commit or rotate |
+| `standardFlowEnabled: false` | it is not a browser app |
+| `directAccessGrantsEnabled: true` | allows `grant_type=password` for k6 |
+| `access.token.lifespan: 1800` | the realm default is 300 s; a 10-minute run needs longer |
+| audience mapper → `travelnest-web` | the API rejects tokens without that audience (`KEYCLOAK_AUDIENCE`) |
+
+The **user** is not in the realm file — the reconcile job leaves `users` alone,
+and the file has none. Create it once per environment
+(**Realm `travelnest` → Users → Add user**), then:
+
+- **Email verified ✓** — `identity.service.js` returns
+  `403 EMAIL_VERIFICATION_REQUIRED` without the `email_verified` claim.
+- Credentials → **Set password**, *Temporary* off.
+- Default `user` realm role is enough; the guest endpoints only need a valid
+  token.
+
+The realm has `bruteForceProtected: true`, so a wrong password retried by the
+run locks the account and every later iteration 401s.
+
+### Cleanup
+
+A 10-minute run writes ~35 pending bookings, all tagged
+`special_requests LIKE 'k6 load test%'`:
+
+```sql
+DELETE br FROM booking_rooms br
+  JOIN bookings b ON b.id = br.booking_id
+  WHERE b.special_requests LIKE 'k6 load test%';
+
+DELETE FROM bookings WHERE special_requests LIKE 'k6 load test%';
+```
+
+Holds expire on their own. The first authenticated request also auto-provisions
+a `users` row for the load-test identity — remove it, and disable the client,
+when you are done: a public client with the password grant is a scriptable
+login endpoint for anyone who knows its ID.
 
 ## The rate limiter will throttle you
 

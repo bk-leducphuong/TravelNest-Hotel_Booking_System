@@ -49,6 +49,8 @@ load-test-read:
 # Booking funnel load test. Creates real holds and bookings, so it needs an
 # explicit opt-in: AUTH_TOKEN=<keycloak token> ALLOW_WRITES=true.
 # Both are passed to the container by name so the token never lands in argv.
+#   AUTH_TOKEN=... ALLOW_WRITES=true DURATION=2m make load-test-booking
+DURATION ?= 10m
 load-test-booking:
 	@test -n "$$AUTH_TOKEN" || { echo 'AUTH_TOKEN is required (see loadtest/README.md)'; exit 1; }
 	@test "$$ALLOW_WRITES" = "true" || { echo 'ALLOW_WRITES=true is required: this suite writes real bookings'; exit 1; }
@@ -61,4 +63,5 @@ load-test-booking:
 		-e CITY="$(CITY)" \
 		-e AUTH_TOKEN \
 		-e ALLOW_WRITES \
+		-e DURATION="$(DURATION)" \
 		$(LOADTEST_IMAGE) run /loadtest/k6/booking-funnel.js $(ARGS)

@@ -21,13 +21,15 @@
  *      `POST /bookings` carry the write limiter (60 requests / 15 min), so a
  *      burst would be throttled rather than measured. A 10-minute run creates
  *      ~35 bookings — enough for a p95, small enough to clean up.
- *   2. Each iteration books a different check-in date (offset 30–119 days) so
- *      the run spreads across inventory instead of exhausting one room-day
- *      and turning the tail into "sold out" responses.
+ *   2. The bookable date window is **discovered**, not assumed. Inventory only
+ *      extends a few weeks out (local: 30 days, prod: no availability at 60),
+ *      so a fixed "30–119 days ahead" spread produced zero bookable dates and
+ *      an empty run. `setup()` probes the next four weeks and only books dates
+ *      that actually return hotels.
  *
  * Because direct-access grants are disabled on the `travelnest-web` Keycloak
- * client, obtaining AUTH_TOKEN needs a dedicated load-test client or a
- * browser session. See loadtest/README.md.
+ * client, tokens come from the dedicated `travelnest-loadtest` client — see
+ * ../README.md and ../scripts/get-token.sh.
  */
 
 import http from 'k6/http';
@@ -41,6 +43,11 @@ const CITY = __ENV.CITY || 'Hanoi';
 const DURATION = __ENV.DURATION || '10m';
 const AUTH_TOKEN = __ENV.AUTH_TOKEN;
 const ALLOW_WRITES = __ENV.ALLOW_WRITES === 'true';
+
+/** Days from today to start looking for bookable inventory. */
+const WINDOW_START_DAYS = Number(__ENV.WINDOW_START_DAYS || 2);
+/** How many days to probe. Inventory rarely extends beyond a few weeks. */
+const WINDOW_DAYS = Number(__ENV.WINDOW_DAYS || 28);
 
 const rateLimited = new Counter('rate_limited');
 const funnelBroken = new Counter('funnel_broken');
@@ -84,6 +91,8 @@ export const options = {
     http_req_failed: ['rate<0.02'],
     rate_limited: ['count<1'],
     funnel_broken: ['count<3'],
+    'http_req_duration{name:funnel-search}': ['p(95)<2000'],
+    'http_req_duration{name:funnel-rooms}': ['p(95)<1500'],
     'http_req_duration{name:create-hold}': ['p(95)<3000'],
     'http_req_duration{name:create-booking}': ['p(95)<5000'],
   },
@@ -98,8 +107,11 @@ function authHeaders() {
   };
 }
 
-function request(method, url, name, body) {
-  const params = { ...authHeaders(), tags: { name } };
+function request(method, url, name, body, extraHeaders) {
+  const params = {
+    headers: { ...authHeaders().headers, ...extraHeaders },
+    tags: { name },
+  };
   const response =
     method === 'GET' ? http.get(url, params) : http.post(url, JSON.stringify(body), params);
 
@@ -108,8 +120,8 @@ function request(method, url, name, body) {
     consecutive429 += 1;
     if (consecutive429 >= 2) {
       exec.test.abort(
-        'HTTP 429 from the API rate limiter. Set RATE_LIMIT_ENABLED=false on ' +
-          'the target for the duration of the run.'
+        'HTTP 429 from the API rate limiter. Add the generator to ' +
+          'RATE_LIMIT_ALLOWLIST (see loadtest/README.md) and run again.'
       );
     }
   } else {
@@ -136,67 +148,77 @@ function json(response) {
   }
 }
 
-/** Resolve one bookable room to bootstrap the run. */
+function hotelsFor(checkIn, checkOut, name) {
+  const response = request(
+    'GET',
+    `${API}/search/hotels?city=${encodeURIComponent(CITY)}` +
+      `&checkIn=${checkIn}&checkOut=${checkOut}&adults=1&rooms=1`,
+    name
+  );
+
+  if (response.status !== 200) return [];
+  return json(response)?.data?.hotels ?? [];
+}
+
+/**
+ * Probe the window once and keep the offsets that actually have hotels.
+ *
+ * Booking a date with no inventory would measure "sold out", not checkout
+ * latency, so those dates are excluded before the run starts.
+ */
 export function setup() {
   guard();
 
-  const checkIn = isoDate(30);
-  const checkOut = isoDate(32);
-  const search = request(
-    'GET',
-    `${API}/search/hotels?city=${encodeURIComponent(CITY)}&checkIn=${checkIn}&checkOut=${checkOut}&adults=1&rooms=1`,
-    'setup-search'
+  const offsets = [];
+
+  for (let offset = WINDOW_START_DAYS; offset < WINDOW_START_DAYS + WINDOW_DAYS; offset += 1) {
+    const hotels = hotelsFor(isoDate(offset), isoDate(offset + 2), 'setup-search');
+    if (hotels.length > 0) offsets.push(offset);
+  }
+
+  if (offsets.length === 0) {
+    exec.test.abort(
+      `setup: no bookable inventory for "${CITY}" in the next ${WINDOW_DAYS} days. ` +
+        'Seed inventory, pick another CITY, or widen WINDOW_START_DAYS/WINDOW_DAYS.'
+    );
+  }
+
+  console.log(
+    `booking-funnel: target ${BASE_URL} — ${offsets.length} bookable dates ` +
+      `(+${offsets[0]}d .. +${offsets[offsets.length - 1]}d), ${DURATION} run`
   );
 
-  if (search.status !== 200) {
-    exec.test.abort(`setup: search returned HTTP ${search.status}`);
-  }
-
-  const hotels = json(search)?.data?.hotels ?? [];
-  if (hotels.length === 0) {
-    exec.test.abort(`setup: no hotels for "${CITY}"`);
-  }
-
-  const hotelId = hotels[0].hotel_id;
-  const rooms = request(
-    'GET',
-    `${API}/hotels/${hotelId}/rooms?checkInDate=${checkIn}&checkOutDate=${checkOut}` +
-      '&numberOfRooms=1&numberOfGuests=1',
-    'setup-rooms'
-  );
-
-  const roomList = json(rooms)?.data ?? [];
-  if (rooms.status !== 200 || roomList.length === 0) {
-    exec.test.abort(`setup: no rooms for hotel ${hotelId} (HTTP ${rooms.status})`);
-  }
-
-  console.log(`booking-funnel: hotel ${hotelId}, ${roomList.length} rooms, ${DURATION} run`);
-
-  return { hotelId, roomIds: roomList.map((room) => room.roomId).filter(Boolean) };
+  return { offsets };
 }
 
 export default function (data) {
   const iteration = exec.scenario.iterationInTest;
 
-  // Spread bookings across a wide check-in window so holds do not collide on a
-  // single room-day and turn inventory exhaustion into latency.
-  const offset = 30 + (iteration % 90);
+  // Rotate over the dates that had inventory at setup time.
+  const offset = data.offsets[iteration % data.offsets.length];
   const checkIn = isoDate(offset);
   const checkOut = isoDate(offset + 2);
-  const roomId = data.roomIds[iteration % data.roomIds.length];
 
-  // Re-resolve rooms per date: availability is per room-day, and holding a room
-  // that is already taken would measure a 409, not a booking.
+  // Mirrors a real guest: search, open a hotel, read its rooms, hold, book.
+  const hotels = hotelsFor(checkIn, checkOut, 'funnel-search');
+  if (hotels.length === 0) {
+    // Inventory can be consumed between setup and now; skip this date.
+    funnelBroken.add(1);
+    sleep(15);
+    return;
+  }
+
+  const hotel = hotels[iteration % hotels.length];
+
   const rooms = request(
     'GET',
-    `${API}/hotels/${data.hotelId}/rooms?checkInDate=${checkIn}&checkOutDate=${checkOut}` +
+    `${API}/hotels/${hotel.hotel_id}/rooms?checkInDate=${checkIn}&checkOutDate=${checkOut}` +
       '&numberOfRooms=1&numberOfGuests=1',
     'funnel-rooms'
   );
 
   const available = json(rooms)?.data ?? [];
   if (rooms.status !== 200 || available.length === 0) {
-    // An empty date is not a defect; skip it and try the next window.
     funnelBroken.add(1);
     sleep(15);
     return;
@@ -205,18 +227,17 @@ export default function (data) {
   const room = available[iteration % available.length];
 
   const hold = request('POST', `${API}/hold`, 'create-hold', {
-    hotelId: data.hotelId,
+    hotelId: hotel.hotel_id,
     checkInDate: checkIn,
     checkOutDate: checkOut,
     numberOfGuests: 1,
-    rooms: [{ roomId: room.roomId || roomId, quantity: 1 }],
+    rooms: [{ roomId: room.roomId, quantity: 1 }],
     currency: 'USD',
   });
 
   check(hold, { 'create-hold: 200/201': (r) => r.status === 200 || r.status === 201 });
 
-  const holdBody = json(hold);
-  const holdId = pick(holdBody, ['data.holdId', 'data.hold.holdId', 'data.hold.id', 'data.id']);
+  const holdId = pick(json(hold), ['data.holdId', 'data.hold.holdId', 'data.hold.id', 'data.id']);
 
   if (!holdId) {
     funnelBroken.add(1);
@@ -224,18 +245,26 @@ export default function (data) {
     return;
   }
 
-  const booking = request('POST', `${API}/bookings`, 'create-booking', {
-    holdId,
-    guestDetails: {
-      fullName: 'Load Test Guest',
-      email: 'loadtest@example.com',
-      phoneNumber: '+10000000000',
-      country: 'VN',
-      bookingFor: 'self',
-      travellingForWork: false,
+  const booking = request(
+    'POST',
+    `${API}/bookings`,
+    'create-booking',
+    {
+      holdId,
+      guestDetails: {
+        fullName: 'Load Test Guest',
+        email: 'loadtest@example.com',
+        phoneNumber: '+10000000000',
+        country: 'VN',
+        bookingFor: 'self',
+        travellingForWork: false,
+      },
+      specialRequests: 'k6 load test — safe to cancel',
     },
-    specialRequests: 'k6 load test — safe to cancel',
-  });
+    // The endpoint rejects writes without one. The hold id is already unique per
+    // iteration, so retrying the same booking stays idempotent.
+    { 'Idempotency-Key': holdId }
+  );
 
   check(booking, {
     'create-booking: 200/201': (r) => r.status === 200 || r.status === 201,
