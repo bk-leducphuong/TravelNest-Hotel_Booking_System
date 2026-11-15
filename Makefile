@@ -25,29 +25,41 @@ infra-check:
 
 # Load testing. One command each — run.sh resolves the target, the exemption and
 # the guest token. See loadtest/RUNBOOK.md.
+#
 #   make loadtest               read path against prod
 #   make loadtest-local         read path against localhost:3000
 #   make loadtest-funnel        booking funnel (no payment)
 #   make loadtest-funnel-pay    funnel + Stripe test payment
 #   make loadtest-remote        read path from an ephemeral Hetzner VM
 #   make loadtest-cleanup       delete load-test rows from prod
+#
+# Make parses its own flags before the recipe runs, so `make target --duration 10m`
+# fails with "unrecognized option". Pass knobs as make variables instead:
+#
+#   make loadtest-funnel-pay DURATION=10m
+#   make loadtest VUS=25 CITY="Da Nang"
+#   make loadtest ARGS="--no-preflight"        # anything not covered below
+DURATION ?=
+VUS ?=
+CITY ?=
+RUN_ARGS = $(ARGS) $(if $(DURATION),--duration "$(DURATION)") $(if $(VUS),--vus "$(VUS)") $(if $(CITY),--city "$(CITY)")
 loadtest:
-	@./loadtest/scripts/run.sh $(ARGS)
+	@./loadtest/scripts/run.sh $(RUN_ARGS)
 
 loadtest-local:
-	@./loadtest/scripts/run.sh --local $(ARGS)
+	@./loadtest/scripts/run.sh --local $(RUN_ARGS)
 
 loadtest-smoke:
-	@./loadtest/scripts/run.sh --smoke $(ARGS)
+	@./loadtest/scripts/run.sh --smoke $(RUN_ARGS)
 
 loadtest-funnel:
-	@./loadtest/scripts/run.sh --funnel $(ARGS)
+	@./loadtest/scripts/run.sh --funnel $(RUN_ARGS)
 
 loadtest-funnel-pay:
-	@./loadtest/scripts/run.sh --funnel --pay $(ARGS)
+	@./loadtest/scripts/run.sh --funnel --pay $(RUN_ARGS)
 
 loadtest-remote:
-	@./loadtest/scripts/run.sh --remote $(ARGS)
+	@./loadtest/scripts/run.sh --remote $(RUN_ARGS)
 
 loadtest-cleanup:
 	@./loadtest/scripts/cleanup.sh
