@@ -72,9 +72,9 @@ The API allows **300 requests / 15 min per client** and **60 writes / 15 min**
 (`RATE_LIMIT_MAX`, `RATE_LIMIT_WRITE_MAX`). A ramp issues thousands, so it will
 be throttled unless it is exempt.
 
-Two mechanisms exist; the token is the one to use:
-
-### Token (works from any address)
+Two mechanisms exist; the token is the one to use. **You do not set it by
+hand**: `run.sh` reads `RATE_LIMIT_BYPASS_TOKEN` from `deploy/k8s/.env.prod` and
+runs the preflight for you. The manual equivalent, if you need it:
 
 ```bash
 export BYPASS_TOKEN=$(sed -n 's/^RATE_LIMIT_BYPASS_TOKEN=//p' deploy/k8s/.env.prod)
@@ -101,35 +101,66 @@ If you do use it, list **both families** — a machine preferring IPv6 needs its
 v6 address or `/64`, otherwise an IPv4-only entry silently does nothing. That
 trap cost one debugging session already.
 
-## 4. Choosing where to run
+## 4. Running a test
 
-| Where                 | Command                                                               | Gives you                                                                        | Watch out for                                                        |
-| --------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| **Local API**         | `BASE_URL=http://localhost:3000 make load-test-read`                  | fastest iteration, no cost, no token needed (`RATE_LIMIT_ENABLED=false` locally) | measures your laptop, not the deployment; data never reaches Grafana |
-| **Laptop → prod**     | `BASE_URL=https://api.trestay.com BYPASS_TOKEN=… make load-test-read` | real deployment, real dashboards                                                 | your link caps throughput (~8–12 rps) and inflates the k6 p95        |
-| **Ephemeral Hetzner** | `./loadtest/scripts/run-on-hetzner.sh`                                | clean numbers, same region as prod, deletes itself                               | ~€0.01 per run, ~2 min setup                                         |
+One command. `scripts/run.sh` resolves the target, the bypass token and (for the
+funnel) a guest token, then runs k6 in Docker.
 
-Use the laptop for script changes and panel checks, the Hetzner runner for
-numbers you intend to quote.
+| Command                    | What it does                                             |
+| -------------------------- | -------------------------------------------------------- |
+| `make loadtest`            | read path → prod, 12 peak VUs, ~10m30s                   |
+| `make loadtest-local`      | read path → `http://localhost:3000`                      |
+| `make loadtest-smoke`      | read path, 2 VUs for 20 s — plumbing check               |
+| `make loadtest-funnel`     | booking funnel → prod, no payment                        |
+| `make loadtest-funnel-pay` | funnel + Stripe test payment (real confirmation metrics) |
+| `make loadtest-remote`     | read path from an ephemeral Hetzner VM                   |
+| `make loadtest-cleanup`    | delete the rows the runs created (prod)                  |
 
-### Ephemeral runner
+Anything else is a flag on `run.sh`:
 
 ```bash
-export BYPASS_TOKEN=$(sed -n 's/^RATE_LIMIT_BYPASS_TOKEN=//p' deploy/k8s/.env.prod)
-
-./loadtest/scripts/run-on-hetzner.sh                  # read path, 12 peak VUs, ~10m30s
-./loadtest/scripts/run-on-hetzner.sh --vus 25         # find the knee faster
-LOADTEST_PASSWORD=… ./loadtest/scripts/run-on-hetzner.sh --funnel --duration 5m
-./loadtest/scripts/run-on-hetzner.sh --keep           # leave it up (prints delete cmd)
+./loadtest/scripts/run.sh --vus 25
+./loadtest/scripts/run.sh --funnel --duration 10m
+./loadtest/scripts/run.sh --local --smoke
+./loadtest/scripts/run.sh --funnel --pay --no-preflight
 ```
 
-What it does, in order: create `cx23` in `hel1` from [`cloud-init.yaml`](./cloud-init.yaml)
-→ wait for SSH and `cloud-init status --wait` → rsync the suite → mint a token if
-`--funnel` → **preflight** (abort if the target answers with `RateLimit-*`) →
-run k6 → rsync the JSON summary back to `loadtest/results/<run-id>/` → delete the
-server from an `EXIT` trap, including on Ctrl-C.
+### One-time setup
 
-`--skip-preflight` exists for an environment where throttling is known to be off.
+```bash
+cp loadtest/.env.example loadtest/.env     # gitignored
+$EDITOR loadtest/.env                      # LOADTEST_PASSWORD is the only value you must fill
+```
+
+`BYPASS_TOKEN` and `STRIPE_SECRET_KEY` are read from `deploy/k8s/.env.prod`
+automatically. `loadtest/.env` only needs to override them if you are on a
+machine without that file.
+
+The preflight runs before every prod test and refuses to start if the target is
+still throttling you — better than discovering it 300 requests in.
+
+The script mints a fresh guest token for funnel runs (30-minute lifespan), so
+there is nothing to copy around.
+
+### Choosing a target
+
+| Target             | Measures                      | Watch out for                                                    |
+| ------------------ | ----------------------------- | ---------------------------------------------------------------- |
+| `--local`          | your machine                  | never reaches Grafana; server-side numbers still land on `:9464` |
+| `--prod` (default) | the deployment                | your link caps throughput (~8–12 rps) and inflates the k6 p95    |
+| `--remote`         | the deployment, from Helsinki | ~€0.01 per run, ~2 min setup, deleted on exit                    |
+
+Use the laptop for iterating and checking panels; `--remote` for numbers you
+intend to quote.
+
+### What `--remote` does
+
+Create `cx23` in `hel1` from [`cloud-init.yaml`](./cloud-init.yaml) → wait for SSH
+and `cloud-init status --wait` → rsync the suite → mint a token if `--funnel` →
+preflight → run k6 → rsync the JSON summary into `loadtest/results/<run-id>/` →
+delete the server from an `EXIT` trap, including on Ctrl-C.
+
+`--pay` is refused with `--remote`: the Stripe key must stay on your machine.
 
 ## 5. The suites
 
@@ -150,8 +181,9 @@ Total ~10m30s. The mix rotates on a 20-step cycle, so even a 20-second smoke run
 touches every endpoint.
 
 ```bash
-PEAK_VUS=25 CITY="Da Nang" BASE_URL=… make load-test-read
-SMOKE=true BASE_URL=… make load-test-read     # 2 VUs, 20 s, script check only
+make loadtest                                  # prod, 12 peak VUs, ~10m30s
+make loadtest-smoke                            # 2 VUs, 20 s, script check only
+./loadtest/scripts/run.sh --vus 25 --city "Da Nang"
 ```
 
 ### Booking funnel (`k6/booking-funnel.js`)
@@ -160,7 +192,8 @@ Writes real rows, so it is gated: it refuses to start without `AUTH_TOKEN` **and
 `ALLOW_WRITES=true`.
 
 ```bash
-AUTH_TOKEN=… ALLOW_WRITES=true DURATION=5m BASE_URL=… make load-test-booking
+make loadtest-funnel                           # 10m, no payment
+./loadtest/scripts/run.sh --funnel --duration 5m
 ```
 
 - One booking per 15 s, to stay under the write limiter and keep cleanup small.
@@ -189,17 +222,18 @@ tokens); the user has no pending required actions. See
 ### Paying bookings (realistic confirmation values)
 
 By default the funnel stops at `pending_payment`, so
-`booking_confirmation_*` never records. `PAY_NOW=true` makes each iteration pay
-the booking immediately, which is what puts realistic numbers on the
-confirmation panels:
+`booking_confirmation_*` never records. `--pay` makes each iteration pay the
+booking immediately, which is what puts realistic numbers on the confirmation
+panels:
 
 ```bash
-export STRIPE_SECRET_KEY=$(sed -n 's/^STRIPE_SECRET_KEY=//p' deploy/k8s/.env.prod)
-test "${STRIPE_SECRET_KEY%%_*}_" = sk_test_ || echo "refusing: not a test key"
-
-PAY_NOW=true ALLOW_WRITES=true AUTH_TOKEN=… DURATION=3m \
-  BASE_URL=https://api.trestay.com make load-test-booking
+make loadtest-funnel-pay
+./loadtest/scripts/run.sh --funnel --pay --duration 3m
 ```
+
+`run.sh` refuses to pay with a non-test key, and `STRIPE_SECRET_KEY` is read
+from `deploy/k8s/.env.prod` (or `loadtest/.env`) — it never reaches the
+ephemeral runner.
 
 Per iteration, after the booking is created:
 
@@ -468,7 +502,7 @@ the layer to suspect first** when overall p95 moves — it sits at 138 ms agains
 | `unauthorized_client` from Keycloak             | direct access grants disabled on the client | realm reconcile did not run; check the PostSync job            |
 | `funnel_broken` climbing                        | chosen dates have no inventory              | the suite probes for this; widen `WINDOW_DAYS`                 |
 | Funnel creates 0 bookings                       | hold failing                                | read the k6 `create-hold` check output                         |
-| `No data` on confirmation panels                | no confirmed booking yet                    | run the funnel with `PAY_NOW=true` (see §5)                     |
+| `No data` on confirmation panels                | no confirmed booking yet                    | `make loadtest-funnel-pay` (see §5)                            |
 | Server still listed after a run                 | script interrupted before the trap          | `hcloud server delete <name>`                                  |
 | Local run shows nothing in Grafana              | Alloy only scrapes the cluster              | expected — read the k6 summary                                 |
 
