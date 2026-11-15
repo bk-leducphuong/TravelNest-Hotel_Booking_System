@@ -32,10 +32,10 @@ API latency signal:
 | `GET /api/v1/search/destinations/trending`   | 5%     | cheap, cacheable, sanity check      |
 
 ```bash
-make load-test-read                          # default: prod, 12 peak VUs, ~10 min
-BASE_URL=http://localhost:3000 make load-test-read
-PEAK_VUS=25 make load-test-read              # find the knee faster
-CITY=Da\ Nang make load-test-read            # different data set
+make loadtest                 # prod, 12 peak VUs, ~10m30s
+make loadtest-local           # localhost:3000
+make loadtest-smoke           # 2 VUs, 20 s
+./loadtest/scripts/run.sh --vus 25 --city "Da Nang"
 ```
 
 Shape: 1 min ramp to 4 VUs, 1 min to peak, 8 min at peak, 30 s ramp down.
@@ -51,7 +51,8 @@ which is what feeds `booking_checkout_duration_seconds`. It creates real rows,
 so it stays behind two explicit gates:
 
 ```bash
-AUTH_TOKEN=<keycloak access token> ALLOW_WRITES=true make load-test-booking
+make loadtest-funnel          # no payment
+make loadtest-funnel-pay      # pays each booking with a Stripe test card
 ```
 
 - Throughput is ~1 booking / 15 s to stay under the write limiter (60 requests
@@ -60,29 +61,25 @@ AUTH_TOKEN=<keycloak access token> ALLOW_WRITES=true make load-test-booking
 - The bookable window is discovered at setup (probes the next four weeks), then
   each iteration rotates over the dates that actually have inventory.
 - The confirmation stages (`booking_confirmation_*`) need a payment and webhook.
-  `PAY_NOW=true` pays each booking immediately with a Stripe **test-mode** key,
-  which fills them with realistic values:
-
-```bash
-PAY_NOW=true STRIPE_SECRET_KEY=sk_test_… ALLOW_WRITES=true AUTH_TOKEN=… \
-  DURATION=3m make load-test-booking
-```
-
-Without it the suite stops at `pending_payment` and those panels show `0`.
-Confirmed payments write `payments`/`transactions`/`ledger_entries` too, so
-clean up with [`scripts/cleanup-bookings.sql`](./scripts/cleanup-bookings.sql).
+  `make loadtest-funnel-pay` pays each booking immediately with a Stripe
+  **test-mode** key, which fills them with realistic values. Without it the
+  suite stops at `pending_payment` and those panels show `0`. Confirmed payments
+  write `payments`/`transactions`/`ledger_entries` too, so finish with
+  `make loadtest-cleanup`.
 
 **Getting an `AUTH_TOKEN`:** the API authenticates with Keycloak bearer tokens.
 The SPA client (`travelnest-web`) uses authorization-code + PKCE with direct
 access grants disabled (`unauthorized_client`), so it cannot be scripted. Use
 the dedicated `travelnest-loadtest` client instead:
 
+`make loadtest-funnel` mints this token for you from `loadtest/.env`. The manual
+equivalent:
+
 ```bash
 export LOADTEST_USERNAME=loadtest@trestay.com
 read -rs LOADTEST_PASSWORD && export LOADTEST_PASSWORD
 loadtest/scripts/get-token.sh --verify     # sub / email / email_verified
-AUTH_TOKEN="$(loadtest/scripts/get-token.sh)" \
-  ALLOW_WRITES=true make load-test-booking
+AUTH_TOKEN="$(loadtest/scripts/get-token.sh)" make loadtest-funnel
 ```
 
 `KEYCLOAK_URL=http://localhost:8080` points the script at the local Keycloak.
@@ -154,8 +151,8 @@ credential stuffing.
 disabled. The value lives in the API Secret, never in the ConfigMap or Git.
 
 ```bash
-BYPASS_TOKEN="$RATE_LIMIT_BYPASS_TOKEN" BASE_URL=https://api.trestay.com \
-  make load-test-read
+# set automatically by run.sh from deploy/k8s/.env.prod
+BYPASS_TOKEN="$RATE_LIMIT_BYPASS_TOKEN" make loadtest
 ```
 
 This is the right choice for anything ephemeral: a throwaway Hetzner server gets
