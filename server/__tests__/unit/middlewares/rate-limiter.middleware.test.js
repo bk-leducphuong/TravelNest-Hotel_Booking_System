@@ -17,6 +17,7 @@ const ORIGINAL_ENV = {
   RATE_LIMIT_AUTH_MAX: process.env.RATE_LIMIT_AUTH_MAX,
   RATE_LIMIT_MAX: process.env.RATE_LIMIT_MAX,
   RATE_LIMIT_ALLOWLIST: process.env.RATE_LIMIT_ALLOWLIST,
+  RATE_LIMIT_BYPASS_TOKEN: process.env.RATE_LIMIT_BYPASS_TOKEN,
 };
 
 function loadAuthLimiter() {
@@ -57,6 +58,7 @@ describe('rate-limiter middleware (express-rate-limit v8)', () => {
     process.env.RATE_LIMIT_AUTH_MAX = '2';
     delete process.env.RATE_LIMIT_ALLOWLIST;
     delete process.env.RATE_LIMIT_MAX;
+    delete process.env.RATE_LIMIT_BYPASS_TOKEN;
   });
 
   afterEach(() => {
@@ -186,6 +188,91 @@ describe('rate-limiter middleware (express-rate-limit v8)', () => {
         const res = await request(app).get('/auth/probe').set('X-Forwarded-For', '203.0.113.9');
         expect(res.status).toBe(200);
       }
+    });
+  });
+
+  describe('RATE_LIMIT_BYPASS_TOKEN', () => {
+    beforeEach(() => {
+      process.env.RATE_LIMIT_MAX = '3';
+      process.env.RATE_LIMIT_BYPASS_TOKEN = 'load-test-token-0123456789abcdef';
+    });
+
+    it('exempts a caller holding the token, regardless of IP', async () => {
+      const app = buildApp(loadLimiter());
+
+      for (let i = 0; i < 8; i += 1) {
+        const res = await request(app)
+          .get('/auth/probe')
+          .set('X-Forwarded-For', `198.51.100.${i + 1}`)
+          .set('X-Load-Test-Token', 'load-test-token-0123456789abcdef');
+        expect(res.status).toBe(200);
+      }
+    });
+
+    it('rejects a wrong or missing token and keeps counting', async () => {
+      const app = buildApp(loadLimiter());
+
+      for (let i = 0; i < 3; i += 1) {
+        const res = await request(app)
+          .get('/auth/probe')
+          .set('X-Forwarded-For', '203.0.113.50')
+          .set('X-Load-Test-Token', 'wrong-token-0123456789abcdef');
+        expect(res.status).toBe(200);
+      }
+
+      expect(
+        (await request(app).get('/auth/probe').set('X-Forwarded-For', '203.0.113.50')).status
+      ).toBe(429);
+    });
+
+    it('is inert when the token is not configured', async () => {
+      delete process.env.RATE_LIMIT_BYPASS_TOKEN;
+      const app = buildApp(loadLimiter());
+
+      for (let i = 0; i < 3; i += 1) {
+        const res = await request(app)
+          .get('/auth/probe')
+          .set('X-Forwarded-For', '203.0.113.60')
+          .set('X-Load-Test-Token', 'load-test-token-0123456789abcdef');
+        expect(res.status).toBe(200);
+      }
+
+      expect(
+        (await request(app).get('/auth/probe').set('X-Forwarded-For', '203.0.113.60')).status
+      ).toBe(429);
+    });
+
+    it('does not exempt the auth limiter', async () => {
+      const app = buildApp(loadAuthLimiter());
+
+      for (let i = 0; i < 2; i += 1) {
+        const res = await request(app)
+          .get('/auth/probe')
+          .set('X-Forwarded-For', '203.0.113.70')
+          .set('X-Load-Test-Token', 'load-test-token-0123456789abcdef');
+        expect(res.status).toBe(200);
+      }
+
+      expect(
+        (
+          await request(app)
+            .get('/auth/probe')
+            .set('X-Forwarded-For', '203.0.113.70')
+            .set('X-Load-Test-Token', 'load-test-token-0123456789abcdef')
+        ).status
+      ).toBe(429);
+    });
+
+    it('handles a token of a different length without throwing', async () => {
+      const app = buildApp(loadLimiter());
+
+      const res = await request(app)
+        .get('/auth/probe')
+        .set('X-Forwarded-For', '203.0.113.80')
+        .set('X-Load-Test-Token', 'short');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['ratelimit-limit']).toBe('3');
     });
   });
 });

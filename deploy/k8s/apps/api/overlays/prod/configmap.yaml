@@ -47,11 +47,7 @@ data:
   # server/utils/clientIp.util.js).
   TRUST_PROXY: "1"
   # Addresses that skip throttling entirely, for load tests and synthetic
-  # probes. Empty = nobody bypasses. Set it to the load generator's egress IP
-  # for the duration of a run; everything else stays rate limited.
-  # Temporary: tn-loadgen in hel1 during the prod latency baseline. Remove
-  # once the run is done — a stale allowlist entry is a standing bypass.
-  # Temporary: tn-loadgen in hel1 during the prod latency baseline. Both
-  # address families are listed because the generator prefers IPv6 egress
-  # (Cloudflare publishes AAAA), so an IPv4-only entry silently does nothing.
-  RATE_LIMIT_ALLOWLIST: "2.29.55.176,2a01:4f9:c015:d9b::/64"
+  # probes. Prefer RATE_LIMIT_BYPASS_TOKEN (in the Secret) for anything
+  # ephemeral: a throwaway VM changes address every run, and a stale entry for
+  # a recycled IP is a standing bypass. Empty = nobody bypasses.
+  # RATE_LIMIT_ALLOWLIST: "203.0.113.10,2001:db8::/64"

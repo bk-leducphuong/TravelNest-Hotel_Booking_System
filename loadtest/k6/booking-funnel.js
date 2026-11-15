@@ -43,6 +43,8 @@ const CITY = __ENV.CITY || 'Hanoi';
 const DURATION = __ENV.DURATION || '10m';
 const AUTH_TOKEN = __ENV.AUTH_TOKEN;
 const ALLOW_WRITES = __ENV.ALLOW_WRITES === 'true';
+/** Optional rate-limiter exemption; see read-path.js. */
+const BYPASS_TOKEN = __ENV.BYPASS_TOKEN || '';
 
 /** Days from today to start looking for bookable inventory. */
 const WINDOW_START_DAYS = Number(__ENV.WINDOW_START_DAYS || 2);
@@ -99,12 +101,18 @@ export const options = {
 };
 
 function authHeaders() {
-  return {
-    headers: {
-      Authorization: `Bearer ${AUTH_TOKEN}`,
-      'Content-Type': 'application/json',
-    },
+  const headers = {
+    Authorization: `Bearer ${AUTH_TOKEN}`,
+    'Content-Type': 'application/json',
   };
+
+  // Optional rate-limiter exemption (see read-path.js): an ephemeral generator
+  // gets a new IP every run, so the token replaces an IP allowlist entry.
+  if (BYPASS_TOKEN) {
+    headers['X-Load-Test-Token'] = BYPASS_TOKEN;
+  }
+
+  return { headers };
 }
 
 function request(method, url, name, body, extraHeaders) {

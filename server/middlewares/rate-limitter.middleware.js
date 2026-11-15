@@ -1,3 +1,5 @@
+const nodeCrypto = require('crypto');
+
 const rateLimit = require('express-rate-limit');
 const { ipKeyGenerator } = rateLimit;
 const { RedisStore } = require('rate-limit-redis');
@@ -18,6 +20,33 @@ const isEnabled = String(process.env.RATE_LIMIT_ENABLED ?? 'true').toLowerCase()
  * cannot be turned into credential stuffing.
  */
 const allowlist = createIpAllowlist(process.env.RATE_LIMIT_ALLOWLIST);
+
+/**
+ * Shared secret that exempts a caller regardless of its address
+ * (`RATE_LIMIT_BYPASS_TOKEN`, sent as `X-Load-Test-Token`).
+ *
+ * IP allowlisting is useless for an ephemeral load generator: every run gets a
+ * new address, so the entry would need a config commit per test — and a stale
+ * entry can be inherited by whoever gets the recycled address. A secret token
+ * has neither problem. Empty means disabled, which is the default.
+ */
+const bypassToken = process.env.RATE_LIMIT_BYPASS_TOKEN || '';
+const BYPASS_HEADER = 'x-load-test-token';
+
+/** Constant-time comparison; length differences are rejected before comparing. */
+function hasValidBypassToken(req) {
+  if (!bypassToken) return false;
+
+  const supplied = req.get?.(BYPASS_HEADER);
+  if (typeof supplied !== 'string' || supplied.length === 0) return false;
+
+  const suppliedBuffer = Buffer.from(supplied);
+  const expectedBuffer = Buffer.from(bypassToken);
+
+  if (suppliedBuffer.length !== expectedBuffer.length) return false;
+
+  return nodeCrypto.timingSafeEqual(suppliedBuffer, expectedBuffer);
+}
 
 /**
  * Shared Redis store so limits hold across multiple API instances (the default
@@ -58,10 +87,11 @@ function isAllowlisted(req) {
 
 /**
  * @param {object} options
- * @param {boolean} [options.respectAllowlist] let `RATE_LIMIT_ALLOWLIST`
- *   addresses through without counting them (global and write limiters only).
+ * @param {boolean} [options.respectExemptions] let allowlisted addresses and
+ *   callers holding the bypass token through without counting them (global and
+ *   write limiters only).
  */
-function buildLimiter({ windowMs, max, prefix, skip, message, respectAllowlist = false }) {
+function buildLimiter({ windowMs, max, prefix, skip, message, respectExemptions = false }) {
   if (!isEnabled) {
     return (req, res, next) => next();
   }
@@ -70,7 +100,7 @@ function buildLimiter({ windowMs, max, prefix, skip, message, respectAllowlist =
   const text = message || 'Too many requests, please try again later.';
 
   const shouldSkip = (req) => {
-    if (respectAllowlist && isAllowlisted(req)) return true;
+    if (respectExemptions && (isAllowlisted(req) || hasValidBypassToken(req))) return true;
     return typeof skip === 'function' ? skip(req) : false;
   };
 
@@ -98,7 +128,7 @@ const globalLimiter = buildLimiter({
   windowMs: FIFTEEN_MINUTES,
   max: parseInt(process.env.RATE_LIMIT_MAX || '300', 10),
   prefix: 'rl:global:',
-  respectAllowlist: true,
+  respectExemptions: true,
   // Webhooks are provider-driven and health checks are polled by k8s; neither
   // should be throttled by client-IP limits.
   skip: (req) =>
@@ -120,7 +150,7 @@ const writeLimiter = buildLimiter({
   windowMs: FIFTEEN_MINUTES,
   max: parseInt(process.env.RATE_LIMIT_WRITE_MAX || '60', 10),
   prefix: 'rl:write:',
-  respectAllowlist: true,
+  respectExemptions: true,
   // Only throttle state-changing methods; reads stay on the global limit.
   skip: (req) => !['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method),
   message: 'Too many requests, please slow down and try again later.',
