@@ -33,6 +33,7 @@
  */
 
 import http from 'k6/http';
+import encoding from 'k6/encoding';
 import { check, sleep } from 'k6';
 import { Counter } from 'k6/metrics';
 import exec from 'k6/execution';
@@ -45,6 +46,16 @@ const AUTH_TOKEN = __ENV.AUTH_TOKEN;
 const ALLOW_WRITES = __ENV.ALLOW_WRITES === 'true';
 /** Optional rate-limiter exemption; see read-path.js. */
 const BYPASS_TOKEN = __ENV.BYPASS_TOKEN || '';
+
+/**
+ * Pay each booking immediately, so `booking_confirmation_duration_seconds`
+ * reflects a guest who pays right away instead of one who leaves the checkout
+ * page open. Requires a Stripe **test-mode** secret key; it never leaves the
+ * machine running this suite.
+ */
+const PAY_NOW = __ENV.PAY_NOW === 'true';
+const STRIPE_SECRET_KEY = __ENV.STRIPE_SECRET_KEY || '';
+const STRIPE_CONFIRM_TIMEOUT_S = Number(__ENV.STRIPE_CONFIRM_TIMEOUT_S || 25);
 
 /** Days from today to start looking for bookable inventory. */
 const WINDOW_START_DAYS = Number(__ENV.WINDOW_START_DAYS || 2);
@@ -69,6 +80,9 @@ function guard() {
         'see loadtest/README.md for how to mint one.'
     );
   }
+  if (PAY_NOW && !STRIPE_SECRET_KEY) {
+    exec.test.abort('PAY_NOW=true needs STRIPE_SECRET_KEY (test mode).');
+  }
 }
 
 guard();
@@ -85,8 +99,8 @@ export const options = {
     booking_funnel: {
       executor: 'constant-vus',
       vus: 1,
-      duration: DURATION,
-    },
+      duration: DURATION
+    }
   },
   thresholds: {
     checks: ['rate>0.98'],
@@ -96,14 +110,14 @@ export const options = {
     'http_req_duration{name:funnel-search}': ['p(95)<2000'],
     'http_req_duration{name:funnel-rooms}': ['p(95)<1500'],
     'http_req_duration{name:create-hold}': ['p(95)<3000'],
-    'http_req_duration{name:create-booking}': ['p(95)<5000'],
-  },
+    'http_req_duration{name:create-booking}': ['p(95)<5000']
+  }
 };
 
 function authHeaders() {
   const headers = {
     Authorization: `Bearer ${AUTH_TOKEN}`,
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json'
   };
 
   // Optional rate-limiter exemption (see read-path.js): an ephemeral generator
@@ -118,7 +132,7 @@ function authHeaders() {
 function request(method, url, name, body, extraHeaders) {
   const params = {
     headers: { ...authHeaders().headers, ...extraHeaders },
-    tags: { name },
+    tags: { name }
   };
   const response =
     method === 'GET' ? http.get(url, params) : http.post(url, JSON.stringify(body), params);
@@ -199,6 +213,58 @@ export function setup() {
   return { offsets };
 }
 
+/**
+ * Create a PaymentIntent for a pending booking and confirm it with a Stripe
+ * test payment method, then wait for the webhook to flip the booking.
+ *
+ * The confirmation interval the API records runs from the room hold, so paying
+ * immediately is what makes `booking_confirmation_duration_seconds` realistic.
+ * Returns the observed seconds from the client side, or null.
+ */
+function payBooking(bookingId) {
+  const started = Date.now();
+
+  const intent = request(
+    'POST',
+    `${API}/bookings/${bookingId}/payment-intent`,
+    'create-intent',
+    {}
+  );
+  const paymentIntentId = json(intent)?.data?.paymentIntentId;
+
+  if (!paymentIntentId) {
+    funnelBroken.add(1);
+    return null;
+  }
+
+  const confirm = http.post(
+    `https://api.stripe.com/v1/payment_intents/${paymentIntentId}/confirm`,
+    { payment_method: 'pm_card_visa' },
+    {
+      headers: {
+        Authorization: `Basic ${encoding.b64encode(`${STRIPE_SECRET_KEY}:`)}`
+      },
+      tags: { name: 'stripe-confirm' }
+    }
+  );
+
+  check(confirm, { 'stripe-confirm: 200': (r) => r.status === 200 });
+
+  // The booking flips to `confirmed` when the webhook lands, which can take a
+  // few seconds. Poll rather than assuming it is instant.
+  for (let waited = 0; waited < STRIPE_CONFIRM_TIMEOUT_S; waited += 1) {
+    const current = request('GET', `${API}/bookings/${bookingId}`, 'poll-booking');
+    const status = json(current)?.data?.booking?.status ?? json(current)?.data?.status;
+    if (status === 'confirmed') {
+      return (Date.now() - started) / 1000;
+    }
+    sleep(1);
+  }
+
+  funnelBroken.add(1);
+  return null;
+}
+
 export default function (data) {
   const iteration = exec.scenario.iterationInTest;
 
@@ -240,10 +306,12 @@ export default function (data) {
     checkOutDate: checkOut,
     numberOfGuests: 1,
     rooms: [{ roomId: room.roomId, quantity: 1 }],
-    currency: 'USD',
+    currency: 'USD'
   });
 
-  check(hold, { 'create-hold: 200/201': (r) => r.status === 200 || r.status === 201 });
+  check(hold, {
+    'create-hold: 200/201': (r) => r.status === 200 || r.status === 201
+  });
 
   const holdId = pick(json(hold), ['data.holdId', 'data.hold.holdId', 'data.hold.id', 'data.id']);
 
@@ -265,9 +333,9 @@ export default function (data) {
         phoneNumber: '+10000000000',
         country: 'VN',
         bookingFor: 'self',
-        travellingForWork: false,
+        travellingForWork: false
       },
-      specialRequests: 'k6 load test — safe to cancel',
+      specialRequests: 'k6 load test — safe to cancel'
     },
     // The endpoint rejects writes without one. The hold id is already unique per
     // iteration, so retrying the same booking stays idempotent.
@@ -275,19 +343,24 @@ export default function (data) {
   );
 
   check(booking, {
-    'create-booking: 200/201': (r) => r.status === 200 || r.status === 201,
+    'create-booking: 200/201': (r) => r.status === 200 || r.status === 201
   });
 
   const bookingId = pick(json(booking), [
     'data.bookingId',
     'data.booking.bookingId',
     'data.booking.id',
-    'data.id',
+    'data.id'
   ]);
 
   if (bookingId) {
-    request('GET', `${API}/bookings/${bookingId}`, 'get-booking');
+    if (PAY_NOW) {
+      payBooking(bookingId);
+    } else {
+      request('GET', `${API}/bookings/${bookingId}`, 'get-booking');
+    }
   }
 
-  sleep(15);
+  // Paying already waits for the webhook, so the pacing sleep stays short.
+  sleep(PAY_NOW ? 1 : 15);
 }

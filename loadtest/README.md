@@ -57,11 +57,20 @@ AUTH_TOKEN=<keycloak access token> ALLOW_WRITES=true make load-test-booking
 - Throughput is ~1 booking / 15 s to stay under the write limiter (60 requests
   per 15 min on `POST /hold` and `POST /bookings`). A 10-minute run creates ~35
   bookings.
-- Each iteration books a different check-in date (30–119 days out) so the run
-  spreads across inventory instead of exhausting one room-day.
-- The confirmation stages (`booking_confirmation_*`) need a real Stripe payment
-  and webhook, so this suite stops at checkout. Those panels stay empty until a
-  Stripe test-mode flow exists.
+- The bookable window is discovered at setup (probes the next four weeks), then
+  each iteration rotates over the dates that actually have inventory.
+- The confirmation stages (`booking_confirmation_*`) need a payment and webhook.
+  `PAY_NOW=true` pays each booking immediately with a Stripe **test-mode** key,
+  which fills them with realistic values:
+
+```bash
+PAY_NOW=true STRIPE_SECRET_KEY=sk_test_… ALLOW_WRITES=true AUTH_TOKEN=… \
+  DURATION=3m make load-test-booking
+```
+
+Without it the suite stops at `pending_payment` and those panels show `0`.
+Confirmed payments write `payments`/`transactions`/`ledger_entries` too, so
+clean up with [`scripts/cleanup-bookings.sql`](./scripts/cleanup-bookings.sql).
 
 **Getting an `AUTH_TOKEN`:** the API authenticates with Keycloak bearer tokens.
 The SPA client (`travelnest-web`) uses authorization-code + PKCE with direct

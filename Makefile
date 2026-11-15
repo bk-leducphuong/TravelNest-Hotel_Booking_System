@@ -65,5 +65,7 @@ load-test-booking:
 		-e AUTH_TOKEN \
 		-e ALLOW_WRITES \
 		-e BYPASS_TOKEN \
+		-e PAY_NOW \
+		-e STRIPE_SECRET_KEY \
 		-e DURATION="$(DURATION)" \
 		$(LOADTEST_IMAGE) run /loadtest/k6/booking-funnel.js $(ARGS)
