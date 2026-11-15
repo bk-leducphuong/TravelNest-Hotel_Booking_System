@@ -975,7 +975,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (queue) (rate(job_duration_seconds_count{cluster=~\"$cluster\", job=\"travelnest-worker\", status=\"failed\"}[15m]))",
+          "expr": "sum by (queue) (rate(job_duration_seconds_count{cluster=~\"$cluster\", job=\"travelnest-worker\", status=\"failed\"}[15m])) or vector(0)",
           "legendFormat": "{{queue}}",
           "range": true,
           "instant": false,
