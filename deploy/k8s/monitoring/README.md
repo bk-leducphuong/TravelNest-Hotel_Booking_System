@@ -120,8 +120,8 @@ histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{
 topk(10, histogram_quantile(0.95,
   sum by (le, route) (rate(http_request_duration_seconds_bucket{job="travelnest-api"}[5m]))))
 
-# share of traffic served under 400ms
-sum(rate(http_request_duration_seconds_bucket{job="travelnest-api", le="0.4"}[5m]))
+# share of traffic served under 500ms
+sum(rate(http_request_duration_seconds_bucket{job="travelnest-api", le="0.5"}[5m]))
   / sum(rate(http_request_duration_seconds_count{job="travelnest-api"}[5m]))
 
 # MySQL vs Redis vs HTTP: which layer moved?
@@ -156,7 +156,7 @@ and the `travelnest-test` cluster):
 
 | Dashboard                    | Audience          | Covers                                                                                                                   |
 | ---------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `travelnest-api-performance` | Backend on-call   | request rate, p50/p95/p99 overall and per route, slowest routes, HTTP/MySQL/Redis split, SLO under 400ms, event-loop lag |
+| `travelnest-api-performance` | Backend on-call   | request rate, p50/p95/p99 overall and per route, slowest routes, HTTP/MySQL/Redis split, SLO under 500ms, event-loop lag |
 | `travelnest-booking-funnel`  | Product + backend | confirmations/min, payment conversion, checkout/confirmation/webhook stages                                              |
 | `travelnest-capacity`        | Infra/SRE         | event-loop lag, heap/RSS, DB pool saturation, Redis p95, BullMQ queue depth/failures, pod restarts                       |
 

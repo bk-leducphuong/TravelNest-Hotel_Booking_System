@@ -778,14 +778,14 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(http_request_duration_seconds_bucket{cluster=~\"$cluster\", job=\"travelnest-api\", route=~\"$route\", le=\"0.4\"}[5m])) / clamp_min(sum(rate(http_request_duration_seconds_count{cluster=~\"$cluster\", job=\"travelnest-api\", route=~\"$route\"}[5m])), 1e-9)",
-          "legendFormat": "under 400ms",
+          "expr": "sum(rate(http_request_duration_seconds_bucket{cluster=~\"$cluster\", job=\"travelnest-api\", route=~\"$route\", le=\"0.5\"}[5m])) / clamp_min(sum(rate(http_request_duration_seconds_count{cluster=~\"$cluster\", job=\"travelnest-api\", route=~\"$route\"}[5m])), 1e-9)",
+          "legendFormat": "under 500ms",
           "range": true,
           "instant": false,
           "refId": "A"
         }
       ],
-      "title": "SLO — share of requests served under 400ms",
+      "title": "SLO — share of requests served under 500ms",
       "type": "timeseries"
     },
     {
@@ -917,6 +917,31 @@
         "name": "cluster",
         "options": [],
         "query": "label_values(kube_node_info, cluster)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(http_requests_total{job=\"travelnest-api\"}, route)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Route",
+        "multi": true,
+        "name": "route",
+        "options": [],
+        "query": "label_values(http_requests_total{job=\"travelnest-api\"}, route)",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,

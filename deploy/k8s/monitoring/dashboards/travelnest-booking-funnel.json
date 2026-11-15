@@ -73,7 +73,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(booking_confirmation_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[15m])) * 60",
+          "expr": "sum(rate(booking_confirmation_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[15m])) * 60 or vector(0)",
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
@@ -145,7 +145,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(booking_confirmation_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])) / clamp_min(sum(rate(booking_checkout_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])), 1e-9)",
+          "expr": "(sum(rate(booking_confirmation_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])) or vector(0)) / clamp_min(sum(rate(booking_checkout_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])), 1e-9)",
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
@@ -160,7 +160,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Business SLA. Includes the time the guest spends on the payment page, so it is not a server signal.",
+      "description": "Business SLA. Includes the time the guest spends on the payment page, so it is not a server signal. Leave empty until a real Stripe payment and webhook land: the funnel suite stops at pending payment.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -232,7 +232,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Server-side confirmation cost. Alert on this one; it does not include guest think time.",
+      "description": "Server-side confirmation cost. Alert on this one; it does not include guest think time. Empty until a real Stripe test payment is processed by the webhook.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -304,7 +304,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Checkout = hold → booking row. Business = hold → confirmed. System = webhook received → committed.",
+      "description": "Checkout = hold → booking row. Business = hold → confirmed. System = webhook received → committed. Checkout comes from the funnel suite; the confirmation stages need a real Stripe payment.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -528,7 +528,8 @@
         }
       ],
       "title": "Confirmation latency percentiles",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Empty until a real Stripe payment and webhook land."
     },
     {
       "datasource": {
@@ -612,7 +613,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(booking_confirmation_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])) / clamp_min(sum(rate(booking_checkout_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])), 1e-9)",
+          "expr": "(sum(rate(booking_confirmation_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])) or vector(0)) / clamp_min(sum(rate(booking_checkout_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])), 1e-9)",
           "legendFormat": "conversion",
           "range": true,
           "instant": false,
@@ -703,7 +704,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(booking_checkout_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[15m])) * 60",
+          "expr": "sum(rate(booking_checkout_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[15m])) * 60 or vector(0)",
           "legendFormat": "checkout started",
           "range": true,
           "instant": false,
@@ -715,7 +716,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(booking_confirmation_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[15m])) * 60",
+          "expr": "sum(rate(booking_confirmation_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[15m])) * 60 or vector(0)",
           "legendFormat": "confirmed",
           "range": true,
           "instant": false,
