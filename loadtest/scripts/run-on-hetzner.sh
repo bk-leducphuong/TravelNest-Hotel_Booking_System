@@ -132,7 +132,9 @@ hcloud server create \
   --user-data-from-file "${USER_DATA}" >/dev/null
 CREATED="true"
 
-IP="$(hcloud server ip "${SERVER_NAME}")"
+IP="$(hcloud server list -o noheader -o columns=name,ipv4 |
+  awk -v name="${SERVER_NAME}" '$1 == name { print $2; exit }')"
+[[ -n "${IP}" ]] || { printf 'could not resolve the IP of %s\n' "${SERVER_NAME}" >&2; exit 1; }
 printf 'server up: %s\n' "${IP}"
 
 ssh_run() {
@@ -161,7 +163,8 @@ if [[ -n "${BYPASS_TOKEN:-}" ]]; then
 fi
 
 if [[ "${MODE}" == "funnel" ]]; then
-  printf 'LOADTEST_PASSWORD=%s\n' "${LOADTEST_PASSWORD}" |
+  # Just the value: the file is read with `cat` into LOADTEST_PASSWORD.
+  printf '%s' "${LOADTEST_PASSWORD}" |
     ssh_run 'umask 077 && cat > /root/.lt-pass'
   ssh_run "cd /root/loadtest && KEYCLOAK_URL='${KEYCLOAK_URL:-https://keycloak.trestay.com}' \
     LOADTEST_USERNAME='${LOADTEST_USERNAME:-loadtest@trestay.com}' \
@@ -180,7 +183,13 @@ fi
 
 if [[ "${SKIP_PREFLIGHT}" != "true" ]]; then
   printf 'preflight: checking the target from the generator\n'
-  HEADERS="$(ssh_run "curl -s -D - -o /dev/null $([[ -n "${BYPASS_TOKEN:-}" ]] && printf -- "-H 'X-Load-Test-Token: %s'" "${BYPASS_TOKEN}") '${BASE_URL}/api/v1/search/destinations/trending?limit=4'")"
+  # The token is expanded inside the remote shell from the env file, so it
+  # never appears in a process list on either machine.
+  PREFLIGHT_CMD='set -a; [ -f /root/.k6.env ] && . /root/.k6.env; set +a; '
+  PREFLIGHT_CMD+='curl -s -D - -o /dev/null '
+  PREFLIGHT_CMD+='-H "X-Load-Test-Token: ${BYPASS_TOKEN:-}" '
+  PREFLIGHT_CMD+="'${BASE_URL}/api/v1/search/destinations/trending?limit=4'"
+  HEADERS="$(ssh_run "sh -c '${PREFLIGHT_CMD}'")"
   if grep -qi '^ratelimit-limit' <<<"${HEADERS}"; then
     printf '  throttled: the API returned RateLimit headers.\n' >&2
     printf '  Set RATE_LIMIT_BYPASS_TOKEN on the target and pass BYPASS_TOKEN, or run with --skip-preflight.\n' >&2
@@ -191,6 +200,11 @@ fi
 
 RUN_ID="$(date +%Y%m%d-%H%M%S)"
 mkdir -p "${LOADTEST_DIR}/results"
+
+# k6 writes its JSON summary under RESULT_DIR; the directory has to exist and be
+# writable by the container user before the run, otherwise the summary is lost
+# while the console output still looks fine.
+ssh_run 'mkdir -p /root/loadtest/results && chmod 777 /root/loadtest/results'
 
 if [[ "${MODE}" == "funnel" ]]; then
   printf '\nrunning booking funnel: %s for %s\n\n' "${BASE_URL}" "${DURATION}"
@@ -209,6 +223,9 @@ else
 fi
 
 printf 'collecting results...\n'
-rsync -az -e "ssh -i ${SSH_KEY} ${SSH_OPTS[*]} -o UserKnownHostsFile=${KNOWN_HOSTS}" \
-  "root@${IP}:/root/loadtest/results/" "${LOADTEST_DIR}/results/${RUN_ID}/" || true
-printf 'results saved to loadtest/results/%s/\n' "${RUN_ID}"
+if rsync -az -e "ssh -i ${SSH_KEY} ${SSH_OPTS[*]} -o UserKnownHostsFile=${KNOWN_HOSTS}" \
+  "root@${IP}:/root/loadtest/results/" "${LOADTEST_DIR}/results/${RUN_ID}/"; then
+  printf 'results saved to loadtest/results/%s/\n' "${RUN_ID}"
+else
+  printf 'no k6 JSON summary was retrieved (the console summary above is still valid)\n' >&2
+fi
