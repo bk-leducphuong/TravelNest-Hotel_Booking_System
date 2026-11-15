@@ -186,6 +186,53 @@ The client is `travelnest-loadtest` (public, direct access grants, 30-minute
 tokens); the user has no pending required actions. See
 [`README.md`](./README.md) for how the client is declared.
 
+### Paying bookings (realistic confirmation values)
+
+By default the funnel stops at `pending_payment`, so
+`booking_confirmation_*` never records. `PAY_NOW=true` makes each iteration pay
+the booking immediately, which is what puts realistic numbers on the
+confirmation panels:
+
+```bash
+export STRIPE_SECRET_KEY=$(sed -n 's/^STRIPE_SECRET_KEY=//p' deploy/k8s/.env.prod)
+test "${STRIPE_SECRET_KEY%%_*}_" = sk_test_ || echo "refusing: not a test key"
+
+PAY_NOW=true ALLOW_WRITES=true AUTH_TOKEN=… DURATION=3m \
+  BASE_URL=https://api.trestay.com make load-test-booking
+```
+
+Per iteration, after the booking is created:
+
+1. `POST /api/v1/bookings/:id/payment-intent` → `paymentIntentId`
+2. `POST https://api.stripe.com/v1/payment_intents/:id/confirm` with `pm_card_visa`
+3. poll `GET /api/v1/bookings/:id` until the webhook flips it to `confirmed`
+
+Prod is in **Stripe test mode** (`sk_test_…`), so no money moves. The key stays
+on the machine running k6 — never pass it to the ephemeral runner. Refuse to run
+with a `sk_live_` key.
+
+Measured, 17 bookings in ~4 minutes:
+
+| Signal                                                          | Value                  |
+| --------------------------------------------------------------- | ---------------------- |
+| `booking_confirmation_duration_seconds` p50 / p95 / p99         | 5.1 s / 9.7 s / 21.9 s |
+| `booking_confirmation_processing_seconds` p95 (webhook handler) | 49 ms                  |
+| Payment conversion                                              | 100%                   |
+
+The spread is Stripe's webhook delivery plus the guest's confirmation step, which
+is exactly what the business SLA is supposed to include. The webhook handler
+itself — the number worth alerting on — is tens of milliseconds.
+
+Two notes:
+
+- Paying waits for the webhook, so an iteration takes ~10 s instead of ~1 s. A
+  3-minute run yields ~16 confirmations; a 10-minute run ~60. Percentiles want
+  the latter.
+- The funnel's client-side thresholds (`create-hold`, `funnel-rooms`) assume a
+  generator near the cluster. Over a home link they can cross on network jitter
+  alone — the server saw 135 ms p95 for `POST /hold` while the client saw 10 s.
+  Use the ephemeral runner if the threshold result matters.
+
 ## 6. Reading the k6 summary
 
 ```
@@ -421,7 +468,7 @@ the layer to suspect first** when overall p95 moves — it sits at 138 ms agains
 | `unauthorized_client` from Keycloak             | direct access grants disabled on the client | realm reconcile did not run; check the PostSync job            |
 | `funnel_broken` climbing                        | chosen dates have no inventory              | the suite probes for this; widen `WINDOW_DAYS`                 |
 | Funnel creates 0 bookings                       | hold failing                                | read the k6 `create-hold` check output                         |
-| `No data` on confirmation panels                | no confirmed booking yet                    | expected; needs a real Stripe payment                          |
+| `No data` on confirmation panels                | no confirmed booking yet                    | run the funnel with `PAY_NOW=true` (see §5)                     |
 | Server still listed after a run                 | script interrupted before the trap          | `hcloud server delete <name>`                                  |
 | Local run shows nothing in Grafana              | Alloy only scrapes the cluster              | expected — read the k6 summary                                 |
 
@@ -432,19 +479,25 @@ the layer to suspect first** when overall p95 moves — it sits at 138 ms agains
 - **Stopping a Hetzner server does not stop billing.** Only deletion does. A
   stopped box costs the same as a running one (€6.49/mo for cx23, plus €0.60/mo
   for the IPv4).
-- A 5-minute funnel run creates ~20 bookings and a 10-minute one ~35. Remove them
-  afterwards:
+- A 5-minute funnel run creates ~20 bookings, a 10-minute one ~35. With
+  `PAY_NOW` each one also writes `payments`, `transactions` and
+  `ledger_entries`, and flips the booking to `confirmed`. Clean up with
+  [`scripts/cleanup-bookings.sql`](./scripts/cleanup-bookings.sql), which deletes
+  children before parents and is safe to re-run:
 
-```sql
-DELETE br FROM booking_rooms br
-  JOIN bookings b ON b.id = br.booking_id
-  WHERE b.special_requests LIKE 'k6 load test%';
-
-DELETE FROM bookings WHERE special_requests LIKE 'k6 load test%';
+```bash
+scp loadtest/scripts/cleanup-bookings.sql hetzner:/tmp/cleanup.sql
+ssh hetzner 'sudo kubectl exec -i -n travelnest mysql-0 -- \
+  sh -c '\''mysql -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE" -t < /dev/stdin'\'' < /tmp/cleanup.sql'
 ```
 
-Holds expire on their own. The auto-provisioned `users` row for
-`loadtest@trestay.com` is left in place and reused by later runs.
+Locally, the same file runs through `make infra-mysql`.
+
+The counters in Prometheus survive the cleanup — deleting rows does not erase
+the observations the panels and alerts use.
+
+The auto-provisioned `users` row for `loadtest@trestay.com` is left in place and
+reused by later runs.
 
 ## Where things live
 
