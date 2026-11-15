@@ -130,34 +130,64 @@ per client** (`RATE_LIMIT_MAX`) and **60 writes / 15 min** (`RATE_LIMIT_WRITE_MA
 A 12-VU read test issues a few thousand requests, so it trips HTTP 429 within
 seconds.
 
-Exempt the generator instead of disabling throttling — `RATE_LIMIT_ALLOWLIST`
-takes a comma-separated list of addresses and CIDR subnets that skip the global
-and write limiters, while every other client stays limited:
+Two mechanisms exempt a generator, both honoured by the **global and write**
+limiters only — auth keeps its limit, so a bypass cannot be turned into
+credential stuffing.
 
-```yaml
-# deploy/k8s/apps/api/overlays/prod/configmap.yaml
-RATE_LIMIT_ALLOWLIST: "203.0.113.10"        # the load VM's egress IP
-```
+### Bypass token (preferred)
+
+`RATE_LIMIT_BYPASS_TOKEN` on the API, sent as `X-Load-Test-Token`. Empty means
+disabled. The value lives in the API Secret, never in the ConfigMap or Git.
 
 ```bash
-# local: just export it before starting the server
-RATE_LIMIT_ALLOWLIST=127.0.0.1 node server.js
+BYPASS_TOKEN="$RATE_LIMIT_BYPASS_TOKEN" BASE_URL=https://api.trestay.com \
+  make load-test-read
 ```
 
-- Client identity comes from Cloudflare's `CF-Connecting-IP`, not `req.ip`, so
-  the allowlist works through Cloudflare Tunnel → Traefik. See
+This is the right choice for anything ephemeral: a throwaway Hetzner server gets
+a new IP every run, so an IP allowlist would need a config commit per test — and
+a forgotten entry can be inherited by whoever is assigned the recycled address.
+
+### IP allowlist
+
+`RATE_LIMIT_ALLOWLIST` takes addresses and CIDR subnets. Useful for a long-lived
+box or local development:
+
+```bash
+RATE_LIMIT_ALLOWLIST=127.0.0.1,::1 node server.js
+```
+
+- Client identity comes from Cloudflare's `CF-Connecting-IP`, not `req.ip`. See
   [`server/utils/clientIp.util.js`](../server/utils/clientIp.util.js).
-- The auth limiter is deliberately **not** exempted, so a bypass cannot be
-  turned into credential stuffing.
-- Addresses are matched exactly or by CIDR; malformed entries are ignored
-  rather than failing open.
-- Commit the allowlist → let Argo CD sync → run the test → remove it and sync
-  again. `RATE_LIMIT_ENABLED=false` still works as a blunt fallback, but it
-  removes throttling for everyone.
+- Both address families matter: a machine that egresses over IPv6 needs its v6
+  address (or `/64`) listed, otherwise an IPv4-only entry silently does nothing.
+- Remove entries when the machine goes away. A stale entry for a recycled IP is
+  a standing bypass.
 
 The scripts abort after two consecutive 429s rather than reporting a throttle as
-latency, so a misconfigured allowlist fails loudly instead of producing a fast,
+latency, so a misconfigured exemption fails loudly instead of producing a fast,
 meaningless curve.
+
+## Running from a throwaway Hetzner server
+
+`scripts/run-on-hetzner.sh` creates a `cx23` in `hel1`, waits for cloud-init
+(Docker + jq + rsync + the k6 image), syncs the suite, runs it, pulls the k6
+JSON back, and **deletes the server on exit** — including on Ctrl-C.
+
+```bash
+export BYPASS_TOKEN=...          # from the api-secret
+./loadtest/scripts/run-on-hetzner.sh                 # read path, 12 VUs
+./loadtest/scripts/run-on-hetzner.sh --vus 25
+LOADTEST_PASSWORD=... ./loadtest/scripts/run-on-hetzner.sh --funnel --duration 5m
+```
+
+A run costs roughly **one cent** (€0.0104/h, rounded up to a full hour). The
+script runs a preflight check first and refuses to start if the target answers
+with `RateLimit-*` headers, so a throttled run fails in seconds instead of
+wasting ten minutes.
+
+`--keep` leaves the server running and prints the delete command. Note that
+**stopping** a Hetzner server does not stop billing — only deletion does.
 
 ## After a run
 

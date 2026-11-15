@@ -1,0 +1,15 @@
+#cloud-config
+#
+# Bootstrap for the ephemeral load generator: Docker, jq (needed by
+# get-token.sh) and rsync, plus the pinned k6 image so the box is ready the
+# moment `cloud-init status --wait` returns.
+#
+# __K6_IMAGE__ is substituted by scripts/run-on-hetzner.sh.
+package_update: true
+packages:
+  - docker.io
+  - jq
+  - rsync
+runcmd:
+  - systemctl enable --now docker
+  - docker pull __K6_IMAGE__

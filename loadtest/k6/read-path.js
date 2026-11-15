@@ -38,6 +38,23 @@ const HOLD_DURATION = __ENV.HOLD_DURATION || '8m';
 /** SMOKE=true swaps the ramp for a 20 s two-VU run: checks the script, not the server. */
 const SMOKE = __ENV.SMOKE === 'true';
 
+/**
+ * Optional shared secret that exempts this run from the API's rate limiter
+ * (`RATE_LIMIT_BYPASS_TOKEN` on the server, sent as `X-Load-Test-Token`).
+ * Needed when the generator's address changes between runs — an IP allowlist
+ * cannot follow an ephemeral VM.
+ */
+const BYPASS_TOKEN = __ENV.BYPASS_TOKEN || '';
+
+/** Request params shared by every call: name tag plus the bypass header. */
+function params(name) {
+  const options = { tags: { name } };
+  if (BYPASS_TOKEN) {
+    options.headers = { 'X-Load-Test-Token': BYPASS_TOKEN };
+  }
+  return options;
+}
+
 const rateLimited = new Counter('rate_limited');
 
 /** Consecutive 429s seen by this VU; 2 aborts the run. */
@@ -100,7 +117,7 @@ export function setup() {
     `${API}/search/hotels?city=${encodeURIComponent(CITY)}` +
     `&checkIn=${CHECK_IN}&checkOut=${CHECK_OUT}&adults=2&rooms=1`;
 
-  const response = http.get(url, { tags: { name: 'setup-search' } });
+  const response = http.get(url, params('setup-search'));
 
   if (response.status !== 200) {
     exec.test.abort(
@@ -139,7 +156,7 @@ export function setup() {
  * the summary table key off.
  */
 function get(url, name) {
-  const response = http.get(url, { tags: { name } });
+  const response = http.get(url, params(name));
 
   if (response.status === 429) {
     rateLimited.add(1);

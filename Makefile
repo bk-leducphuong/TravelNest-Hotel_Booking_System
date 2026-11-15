@@ -43,6 +43,7 @@ load-test-read:
 		-e CITY="$(CITY)" \
 		-e PEAK_VUS="$(PEAK_VUS)" \
 		-e SMOKE="$(SMOKE)" \
+		-e BYPASS_TOKEN \
 		-e RESULT_DIR=/loadtest/results \
 		$(LOADTEST_IMAGE) run /loadtest/k6/read-path.js $(ARGS)
 
@@ -63,5 +64,6 @@ load-test-booking:
 		-e CITY="$(CITY)" \
 		-e AUTH_TOKEN \
 		-e ALLOW_WRITES \
+		-e BYPASS_TOKEN \
 		-e DURATION="$(DURATION)" \
 		$(LOADTEST_IMAGE) run /loadtest/k6/booking-funnel.js $(ARGS)
