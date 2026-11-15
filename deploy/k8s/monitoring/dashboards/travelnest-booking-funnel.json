@@ -145,7 +145,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "(sum(rate(booking_confirmation_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])) or vector(0)) / clamp_min(sum(rate(booking_checkout_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])), 1e-9)",
+          "expr": "clamp_max((sum(rate(booking_confirmation_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])) or vector(0)) / clamp_min(sum(rate(booking_checkout_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])), 1e-9), 1)",
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
@@ -160,7 +160,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Business SLA. Includes the time the guest spends on the payment page, so it is not a server signal. Leave empty until a real Stripe payment and webhook land: the funnel suite stops at pending payment.",
+      "description": "Business SLA over the dashboard time range. Includes the time the guest spends on the payment page, so it is not a server signal. Blank until a run with --pay lands in the range; the funnel suite without --pay stops at pending payment.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -217,7 +217,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(booking_confirmation_duration_seconds_bucket{cluster=~\"$cluster\", flow=\"prepay\"}[30m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(booking_confirmation_duration_seconds_bucket{cluster=~\"$cluster\", flow=\"prepay\"}[$__range])))",
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
@@ -232,7 +232,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Server-side confirmation cost. Alert on this one; it does not include guest think time. Empty until a real Stripe test payment is processed by the webhook.",
+      "description": "Server-side confirmation cost over the dashboard time range. Alert on this one; it does not include guest think time. Blank until a Stripe test payment is processed by the webhook inside the range.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -289,7 +289,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(booking_confirmation_processing_seconds_bucket{cluster=~\"$cluster\", flow=\"prepay\"}[15m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(booking_confirmation_processing_seconds_bucket{cluster=~\"$cluster\", flow=\"prepay\"}[$__range])))",
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
@@ -613,7 +613,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "(sum(rate(booking_confirmation_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])) or vector(0)) / clamp_min(sum(rate(booking_checkout_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])), 1e-9)",
+          "expr": "clamp_max((sum(rate(booking_confirmation_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])) or vector(0)) / clamp_min(sum(rate(booking_checkout_duration_seconds_count{cluster=~\"$cluster\", flow=\"prepay\"}[1h])), 1e-9), 1)",
           "legendFormat": "conversion",
           "range": true,
           "instant": false,

@@ -319,7 +319,7 @@ will often be empty even though everything works.
 | #   | Panel                            | Read it as                                                         |
 | --- | -------------------------------- | ------------------------------------------------------------------ |
 | 1   | Requests / s                     | traffic level. Confirm the ramp registered at all                  |
-| 2   | p95 latency                      | headline SLO. Threshold 1 s                                        |
+| 2   | p95 latency                      | headline SLO. Threshold 1 s; over the dashboard range              |
 | 3   | p99 latency                      | tail; watch for p99 ≫ p95                                          |
 | 4   | 5xx ratio                        | server errors only; 4xx is client behaviour                        |
 | 5   | Latency percentiles — all routes | p50/p95/p99 over time; the shape of the curve                      |
@@ -349,9 +349,17 @@ at the query plan or the buffer pool.
 
 Panels 11–18 need a **confirmed** booking. The synthetic run stops at
 `pending_payment`, so only the checkout stage (`booking_checkout_duration_seconds`)
-fills unless a real Stripe test payment is processed. Panels are wrapped in
-`or vector(0)` so they read **0**, not "No data", when nothing is confirmed —
-that is expected, not broken.
+fills unless a real Stripe test payment is processed (`--pay`).
+
+Two conventions keep these panels honest:
+
+- **The stat boxes (2, 3, 13, 14) summarize the dashboard time range**, not the
+  last five minutes — a run that finished an hour ago still shows its numbers.
+  A blank box means the run is outside the range; widen it (e.g. `Last 6 hours`)
+  or pick the window that covers the run.
+- **Counting panels end in `or vector(0)`** so a zero reads **0**, not
+  `No data`. A real `No data` (13/14 on a `--funnel` run without `--pay`) means
+  no confirmed booking in the range at all.
 
 ### Capacity (`travelnest-capacity`)
 
@@ -362,7 +370,7 @@ that is expected, not broken.
 | 26    | Redis p95 by command                            | cache latency; small and flat normally            |
 | 27    | Queue depth by queue                            | BullMQ backlog (bookingExpiry, etc.)              |
 | 28    | Worker job p95 by queue                         | background job latency                            |
-| 29    | Worker job failures                             | non-zero demands a look                           |
+| 29    | Worker job failures                             | non-zero demands a look; flat 0 is healthy        |
 | 30    | Pod restarts (15m)                              | anything above 0 means something is crash-looping |
 
 ## 8. The four signals

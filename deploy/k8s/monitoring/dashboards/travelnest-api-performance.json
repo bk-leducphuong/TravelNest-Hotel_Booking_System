@@ -88,7 +88,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "95th percentile across all routes. Excludes health, /metrics, Bull Board and Swagger.",
+      "description": "95th percentile across all routes, over the dashboard time range. Excludes health, /metrics, Bull Board and Swagger.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -145,7 +145,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{cluster=~\"$cluster\", job=\"travelnest-api\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{cluster=~\"$cluster\", job=\"travelnest-api\"}[$__range])))",
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
@@ -188,6 +188,7 @@
         },
         "overrides": []
       },
+      "description": "99th percentile across all routes, over the dashboard time range. The tail is what the SLO and the alert rules care about.",
       "gridPos": {
         "h": 4,
         "w": 6,
@@ -216,7 +217,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{cluster=~\"$cluster\", job=\"travelnest-api\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{cluster=~\"$cluster\", job=\"travelnest-api\"}[$__range])))",
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
@@ -231,7 +232,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Share of requests answered with a 5xx. Excludes 4xx (client errors).",
+      "description": "Share of requests answered with a 5xx. Excludes 4xx (client errors). Stable at 0.00% because zero errors is a value, not missing data.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -288,7 +289,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(http_requests_total{cluster=~\"$cluster\", job=\"travelnest-api\", status_class=\"5xx\"}[5m])) / clamp_min(sum(rate(http_requests_total{cluster=~\"$cluster\", job=\"travelnest-api\"}[5m])), 1e-9)",
+          "expr": "(sum(rate(http_requests_total{cluster=~\"$cluster\", job=\"travelnest-api\", status_class=\"5xx\"}[5m])) or vector(0)) / clamp_min(sum(rate(http_requests_total{cluster=~\"$cluster\", job=\"travelnest-api\"}[5m])), 1e-9)",
           "legendFormat": "__auto",
           "range": false,
           "instant": true,

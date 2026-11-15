@@ -13,7 +13,7 @@ Grafana, not by this repo):
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------- | --- | -------------------------- |
 | **Node memory high**                | `(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100`                                                  | `> 90`     | 5m  | K8s Monitoring (Nodes)     |
 | **Node disk high**                  | `(1 - node_filesystem_avail_bytes{fstype!~"tmpfs\|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs\|overlay"}) * 100` | `> 85`     | 10m | K8s Monitoring (Nodes)     |
-| **Node not ready**                  | `kube_node_status_condition{condition="Ready",status="true"} == 0`                                                         | `== 1`     | 2m  | K8s Monitoring (Nodes)     |
+| **Node not ready**                  | `kube_node_status_condition{condition="Ready",status="true"} == 0`                                                         | node reports Ready=false | 2m  | K8s Monitoring (Nodes)     |
 | **Pod CrashLooping**                | `kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"} > 0`                                                  | `> 0`      | 5m  | K8s Monitoring (Workloads) |
 | **Pod restarting**                  | `increase(kube_pod_container_status_restarts_total[15m])`                                                                  | `> 3`      | 0s  | K8s Monitoring (Workloads) |
 | **Container OOMKilled**             | `kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} > 0`                                                 | `> 0`      | 0s  | K8s Monitoring (Workloads) |
@@ -36,7 +36,7 @@ Thresholds are derived from a measured baseline, not guessed. See
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --- | ---------------------------- |
 | **API p95 latency high**                 | `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="travelnest-api"}[5m])))`                               | `> 1`      | 10m | `travelnest-api-performance` |
 | **Search p95 latency high**              | `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="travelnest-api",route="/api/v1/search/hotels"}[5m])))` | `> 1.5`    | 10m | `travelnest-api-performance` |
-| **API error ratio high**                 | `sum(rate(http_requests_total{job="travelnest-api",status_class="5xx"}[5m])) / sum(rate(http_requests_total{job="travelnest-api"}[5m]))`     | `> 0.01`   | 5m  | `travelnest-api-performance` |
+| **API error ratio high**                 | `(sum(rate(http_requests_total{job="travelnest-api",status_class="5xx"}[5m])) or vector(0)) / clamp_min(sum(rate(http_requests_total{job="travelnest-api"}[5m])), 1e-9)` | `> 0.01`   | 5m  | `travelnest-api-performance` |
 | **MySQL p95 high**                       | `histogram_quantile(0.95, sum by (le) (rate(db_query_duration_seconds_bucket[5m])))`                                                         | `> 0.3`    | 10m | `travelnest-api-performance` |
 | **Event loop lag p99**                   | `nodejs_eventloop_lag_p99_seconds{job="travelnest-api"}`                                                                                     | `> 0.15`   | 10m | `travelnest-capacity`        |
 | **Worker job p95 high**                  | `histogram_quantile(0.95, sum by (le) (rate(job_duration_seconds_bucket{job="travelnest-worker"}[15m])))`                                    | `> 30`     | 15m | `travelnest-capacity`        |
@@ -44,6 +44,21 @@ Thresholds are derived from a measured baseline, not guessed. See
 | **DB pool saturated**                    | `sum(db_pool_connections{job="travelnest-api",state="used"}) / clamp_min(sum(db_pool_connections_max{job="travelnest-api"}), 1)`             | `> 0.9`    | 10m | `travelnest-capacity`        |
 | **Booking confirmation processing slow** | `histogram_quantile(0.95, sum by (le) (rate(booking_confirmation_processing_seconds_bucket{flow="prepay"}[15m])))`                           | `> 5`      | 10m | `travelnest-booking-funnel`  |
 | **Booking checkout p95 high**            | `histogram_quantile(0.95, sum by (le) (rate(booking_checkout_duration_seconds_bucket{flow="prepay"}[15m])))`                                 | `> 5`      | 15m | `travelnest-booking-funnel`  |
+
+### `Normal (NoData)` is not a broken rule
+
+Rules that can only produce a series when something is wrong (`Node not ready`,
+`Pod CrashLooping`, `Container OOMKilled`, `Deployment replicas unavailable`)
+evaluate to an empty vector while the workload is healthy. Grafana shows that as
+**Normal (NoData)**; the `noDataState: OK` on each rule keeps it from firing.
+This is the intended state — the rule fires the moment the series appears with a
+value that crosses the threshold.
+
+Where a metric is simply absent until the first event, the query returns an
+explicit `0` instead (`or vector(0)`), so a healthy system reads zero rather
+than `No data`: the 5xx ratio uses this, and so do the dashboard's 5xx and
+worker-failure panels. Without it a perfectly healthy API shows `No data` on
+those panels, which reads like a broken dashboard.
 
 ## Measured baseline
 
