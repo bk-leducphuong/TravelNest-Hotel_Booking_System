@@ -35,7 +35,8 @@ API latency signal:
 make loadtest                 # prod, 12 peak VUs, ~10m30s
 make loadtest-local           # localhost:3000
 make loadtest-smoke           # 2 VUs, 20 s
-./loadtest/scripts/run.sh --vus 25 --city "Da Nang"
+make loadtest VUS=25 CITY="Da Nang"            # knobs are make variables
+./loadtest/scripts/run.sh --vus 25 --city "Da Nang"   # or flags on run.sh
 ```
 
 Shape: 1 min ramp to 4 VUs, 1 min to peak, 8 min at peak, 30 s ramp down.

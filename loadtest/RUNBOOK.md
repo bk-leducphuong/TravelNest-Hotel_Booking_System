@@ -116,7 +116,16 @@ funnel) a guest token, then runs k6 in Docker.
 | `make loadtest-remote`     | read path from an ephemeral Hetzner VM                   |
 | `make loadtest-cleanup`    | delete the rows the runs created (prod)                  |
 
-Anything else is a flag on `run.sh`:
+Knobs go in as **make variables**, not flags — `make` parses `--duration` itself
+and fails with "unrecognized option" before the recipe runs:
+
+```bash
+make loadtest VUS=25 CITY="Da Nang"
+make loadtest-funnel-pay DURATION=10m
+make loadtest ARGS="--no-preflight"   # anything not covered by VUS/CITY/DURATION
+```
+
+The same options are flags on `run.sh` directly:
 
 ```bash
 ./loadtest/scripts/run.sh --vus 25
