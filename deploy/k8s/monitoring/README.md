@@ -168,9 +168,16 @@ The prebuilt Kubernetes monitoring dashboards stay untouched in the
 The dashboards and thresholds above need traffic to be meaningful, and this
 deployment has no real users. [`../../../../loadtest/`](../../../../loadtest/)
 holds the k6 suites that generate it (anonymous read path, plus a gated
-booking-funnel run) and documents the rate-limiter caveat: the API allows 300
-requests / 15 min per IP, so a real run needs `RATE_LIMIT_ENABLED=false` on the
-target for its duration.
+booking-funnel run).
+
+The API allows 300 requests / 15 min per client, so a real run needs an
+exemption: send `X-Load-Test-Token` with the value of `RATE_LIMIT_BYPASS_TOKEN`
+(from the api-secret). IP allowlisting is the alternative for long-lived
+machines only.
+
+[`../../../../loadtest/RUNBOOK.md`](../../../../loadtest/RUNBOOK.md) covers how
+to run a test, read the k6 summary, walk the dashboards panel by panel, and
+troubleshoot empty panels.
 
 ## Access
 

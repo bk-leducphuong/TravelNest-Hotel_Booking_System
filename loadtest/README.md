@@ -1,5 +1,10 @@
 # Load testing
 
+> **Running a test, or reading the results?** Use [`RUNBOOK.md`](./RUNBOOK.md).
+> It covers the bypass token, the three ways to run, a panel-by-panel dashboard
+> guide, the PromQL cookbook, all 17 alert rules and a troubleshooting table.
+> This file explains why the suites exist and how they are built.
+
 [k6](https://k6.io) suites that generate the traffic this environment otherwise
 never sees. There are no real users on this deployment, so a load test is the
 only thing that:
@@ -18,13 +23,13 @@ k6 runs from the `grafana/k6:2.4.0` container, so nothing needs installing.
 Anonymous, read-only, no writes. Drives the five routes that produce most of the
 API latency signal:
 
-| Endpoint                                   | Weight | Why                                       |
-| ------------------------------------------ | ------ | ----------------------------------------- |
-| `GET /api/v1/search/hotels`                | 30%    | heaviest query; owns the MySQL tail       |
-| `GET /api/v1/hotels/:hotelId`              | 25%    | detail page, media joins                  |
-| `GET /api/v1/hotels/:hotelId/rooms`        | 20%    | availability + pricing                    |
-| `GET /api/v1/search/hotels/:id/availability` | 20%  | per-hotel availability                    |
-| `GET /api/v1/search/destinations/trending` | 5%     | cheap, cacheable, sanity check            |
+| Endpoint                                     | Weight | Why                                 |
+| -------------------------------------------- | ------ | ----------------------------------- |
+| `GET /api/v1/search/hotels`                  | 30%    | heaviest query; owns the MySQL tail |
+| `GET /api/v1/hotels/:hotelId`                | 25%    | detail page, media joins            |
+| `GET /api/v1/hotels/:hotelId/rooms`          | 20%    | availability + pricing              |
+| `GET /api/v1/search/hotels/:id/availability` | 20%    | per-hotel availability              |
+| `GET /api/v1/search/destinations/trending`   | 5%     | cheap, cacheable, sanity check      |
 
 ```bash
 make load-test-read                          # default: prod, 12 peak VUs, ~10 min
@@ -83,14 +88,14 @@ and both k8s overlays. The `keycloak-realm-reconcile` PostSync job applies it
 with `partialImport … OVERWRITE`, so committing the client is the whole
 deployment.
 
-| Setting | Why |
-| --- | --- |
-| `publicClient: true` | no client secret to commit or rotate |
-| `standardFlowEnabled: false` | it is not a browser app |
-| `directAccessGrantsEnabled: true` | allows `grant_type=password` for k6 |
-| `access.token.lifespan: 1800` | the realm default is 300 s; a 10-minute run needs longer |
+| Setting                                  | Why                                                                                                               |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `publicClient: true`                     | no client secret to commit or rotate                                                                              |
+| `standardFlowEnabled: false`             | it is not a browser app                                                                                           |
+| `directAccessGrantsEnabled: true`        | allows `grant_type=password` for k6                                                                               |
+| `access.token.lifespan: 1800`            | the realm default is 300 s; a 10-minute run needs longer                                                          |
 | default scopes incl. `travelnest-claims` | that scope is what puts `email` / `email_verified` in the **access token**; without it every request 401s or 403s |
-| audience mapper → `travelnest-web` | the API rejects tokens without that audience (`KEYCLOAK_AUDIENCE`) |
+| audience mapper → `travelnest-web`       | the API rejects tokens without that audience (`KEYCLOAK_AUDIENCE`)                                                |
 
 The **user** is not in the realm file — the reconcile job leaves `users` alone,
 and the file has none. Create it once per environment
@@ -98,7 +103,7 @@ and the file has none. Create it once per environment
 
 - **Email verified ✓** — `identity.service.js` returns
   `403 EMAIL_VERIFICATION_REQUIRED` without the `email_verified` claim.
-- Credentials → **Set password**, *Temporary* off.
+- Credentials → **Set password**, _Temporary_ off.
 - Default `user` realm role is enough; the guest endpoints only need a valid
   token.
 
@@ -205,5 +210,5 @@ wasting ten minutes.
 
 The VPS is a single CAX21 with one API replica capped at 1 CPU, sharing the box
 with MySQL, Redis, MinIO, MongoDB, NATS and Keycloak. A load test tells you where
-*that* deployment bends. It is not a capacity plan, and it does not replace
+_that_ deployment bends. It is not a capacity plan, and it does not replace
 traffic from real users — there are none.
