@@ -25,6 +25,9 @@ router.get(
 
 router.get('/geo/ip', getIpLocation);
 
+// Mounted at /api/v1/search in routes/v1/index.js. Middleware runs left to
+// right: attach optional identity, validate/sanitize query, then call the
+// controller. Searching is public; identity adds favorites and recent history.
 router.get('/hotels', optionalAuthenticate, validate(searchSchema.searchHotels), searchHotels);
 
 router.get('/deals', optionalAuthenticate, validate(searchSchema.getHotelDeals), getHotelDeals);

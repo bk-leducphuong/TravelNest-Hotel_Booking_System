@@ -17,6 +17,12 @@ const { normalizeText, compactKey } = require('@utils/placeName');
 /** Hard cap for a text-only query that matches no location. */
 const TEXT_CANDIDATE_CAP = 500;
 
+/**
+ * Add a correlated membership check against current amenity tables. Comparing
+ * COUNT(DISTINCT code) with the number of requested codes implements AND
+ * semantics: selecting WIFI and POOL requires both, not either one.
+ * This augments the query arrays in place; it does not execute SQL.
+ */
 function buildAmenitiesCondition(amenities, where, replacements) {
   const codes = [...new Set(amenities.map((code) => String(code).trim().toUpperCase()))].filter(
     Boolean
@@ -48,13 +54,10 @@ function buildAmenitiesCondition(amenities, where, replacements) {
  * evaluate. Longitude wrap-around at the antimeridian is handled by dropping the
  * longitude bound and relying on the exact filter.
  *
- * Index note (measured on the 5k-row dev snapshot with EXPLAIN ANALYZE):
- * - City-less geo searches use `idx_coordinates` as a range scan over the
- *   bounding box (~196 estimated rows, 36 actual, <1 ms).
- * - Destination-scoped searches use `idx_city_id_hss` (80 rows, <0.2 ms).
- * A POINT + SPATIAL index is therefore not justified yet; revisit only when the
- * snapshot table (or p95 geo latency) grows enough that the bbox scan becomes
- * the bottleneck.
+ * The cheap latitude/longitude bounds narrow candidates before the exact
+ * spherical-distance check (Earth radius 6371 km). LEAST(1, ...) prevents
+ * floating-point rounding above 1 from taking ACOS outside its domain.
+ * Coordinates alone add distance for display/ranking; radius adds exclusion.
  */
 function buildGeoCondition(params, where, replacements, select) {
   const { latitude, longitude, radius } = params;
@@ -95,6 +98,12 @@ function buildGeoCondition(params, where, replacements, select) {
   where.push(`${distanceExpression} <= :radiusKm`);
 }
 
+/**
+ * Add hotel-name matching when no geographic destination was resolved.
+ * Tier precedence: compact exact (4), normalized exact (3), prefix (2),
+ * substring (1). The repository retains highest tiers before its text cap;
+ * relevance ranking later adds a tier boost. Return true to mark text mode.
+ */
 function buildNameTier(select, where, replacements, text) {
   const normalized = normalizeText(text);
   const compact = compactKey(text);
@@ -132,7 +141,9 @@ function buildNameTier(select, where, replacements, text) {
 }
 
 /**
- * Build the candidate query.
+ * Build SQL plus named replacements without touching the database. City ID
+ * takes precedence over country ID, then hotel-name intent. Static filters
+ * combine with AND; price/availability remain the offer stage's responsibility.
  *
  * @param {object} params search params (already destination-resolved)
  * @returns {{ sql: string, replacements: object, textOnly: boolean, cap: number }}
@@ -195,6 +206,8 @@ function buildCandidateQuery(params) {
     buildAmenitiesCondition(amenities, where, replacements);
   }
 
+  // Map viewport bounds replace radius handling in this branch. west > east
+  // means the viewport crosses the antimeridian, so longitude uses OR.
   if (params.mapSearch && params.bounds) {
     Object.assign(replacements, params.bounds);
     where.push('s.latitude BETWEEN :south AND :north');
@@ -207,6 +220,9 @@ function buildCandidateQuery(params) {
     buildGeoCondition(params, where, replacements, select);
   }
 
+  // List pagination is deliberately absent: inventory may reject candidates.
+  // Map mode fetches 2001 rows as a sentinel so the application can reject
+  // areas above its 2000-candidate limit rather than silently losing hotels.
   const sql = `
     SELECT ${select.join(',\n      ')}
       FROM hotel_search_snapshots s

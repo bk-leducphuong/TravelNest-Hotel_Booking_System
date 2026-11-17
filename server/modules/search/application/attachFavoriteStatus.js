@@ -2,7 +2,9 @@ const identity = require('@modules/identity');
 
 /**
  * Attach the authenticated user's favorite status to the hotels on this page.
- * Anonymous users get `is_favorite: false`.
+ * Anonymous users get `is_favorite: false` without a favorite lookup. For an
+ * authenticated user, one cross-module read fetches favorites for this page
+ * only. Mutates response hotel objects in place; does not reorder/filter them.
  */
 async function attachFavoriteStatus(response, userId) {
   const hotels = response?.data?.hotels || [];

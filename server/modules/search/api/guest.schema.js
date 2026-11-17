@@ -3,13 +3,15 @@ const Joi = require('joi');
 const { pagination } = require('@platform/validation/common.schema');
 
 /**
- * Search validation schemas for V2 API
- * Following RESTful API standards
+ * Query/body contracts for /api/v1/search. validate.middleware applies Joi
+ * coercion and defaults, strips unknown fields, and forwards invalid input as
+ * a 400 VALIDATION_ERROR before the controller runs.
  */
 
 /**
  * GET /api/v1/search/hotels
- * Search hotels with hybrid ES + DB architecture
+ * MySQL hotel search: destination/static filters first, per-stay offers second.
+ * Prices are average nightly amounts per room; ratings use the 0-10 scale.
  */
 exports.searchHotels = {
   query: Joi.object({
@@ -34,7 +36,9 @@ exports.searchHotels = {
       'any.required': 'checkOut is required',
     }),
 
-    // Legacy date field support
+    // Legacy date aliases are declared here, but canonical checkIn/checkOut
+    // remain required above. The custom mapping below does not remove those
+    // required-field checks; callers should send the canonical fields.
     checkInDate: Joi.date().iso().greater('now'),
     checkOutDate: Joi.date().iso().greater(Joi.ref('checkInDate')),
 
@@ -123,7 +127,9 @@ exports.searchHotels = {
         value.city = value.location;
       }
 
-      // Validate date range (max 30 nights)
+      // Derive the duration from dates instead of trusting numberOfDays. The
+      // inventory query later independently derives its own date-only window.
+      // This validation calculates nights locally; it does not add value.nights.
       const checkIn = new Date(value.checkIn);
       const checkOut = new Date(value.checkOut);
       const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));

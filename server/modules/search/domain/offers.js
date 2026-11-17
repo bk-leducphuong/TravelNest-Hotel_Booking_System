@@ -1,7 +1,7 @@
 /**
  * Room-offer rules (pure).
  *
- * A "offer" is one bookable room type for the whole requested stay. Every
+ * An offer is one available room type for the whole requested stay. Every
  * calculation here is shared by hotel search and the single-hotel availability
  * endpoint so both always agree on what is bookable.
  */
@@ -52,6 +52,7 @@ function normalizeOffer(row, { nights, rooms }) {
   };
 }
 
+/** Compare one-room stay subtotals; room ID resolves equal-price ties. */
 function byPriceThenRoom(a, b) {
   const aMinor = toMinorUnits(a.total_price) ?? Number.MAX_SAFE_INTEGER;
   const bMinor = toMinorUnits(b.total_price) ?? Number.MAX_SAFE_INTEGER;
@@ -61,7 +62,12 @@ function byPriceThenRoom(a, b) {
 /**
  * Apply the request-specific offer constraints and pick the cheapest eligible
  * offer. Budget is applied before selection so a hotel is never represented by
- * an offer the guest cannot actually buy.
+ * an offer that fails those filters. This is eligibility at search time; it
+ * does not guarantee inventory will still be available when booking starts.
+ *
+ * Offers arrive after automatic promotions. Price bounds are inclusive and
+ * apply to the average per-room nightly amount, not the whole-party subtotal.
+ * This function returns one offer and does not mutate/filter the input array.
  *
  * @param {Array<object>} offers normalized offers for one hotel
  * @param {object} params
@@ -96,8 +102,10 @@ function selectOffer(offers, params = {}) {
 }
 
 /**
- * Total bookable rooms for the stay across the hotel's eligible room types.
- * This is a per-night quantity (never a sum across dates).
+ * Sum each supplied room type's minimum nightly quantity across the stay.
+ * The caller passes inventory/capacity-qualified offers, including offers that
+ * may fail its budget/cancellation/payment filters. This is a display aggregate,
+ * not proof that an arbitrary combination of room types can fit the party.
  */
 function sumAvailableRooms(offers) {
   return offers.reduce((total, offer) => total + (Number(offer.available_rooms) || 0), 0);

@@ -1,8 +1,8 @@
 /**
  * Batched room-offer SQL for MySQL-only search.
  *
- * One query resolves availability + pricing for every candidate hotel, replacing
- * the previous per-hotel fan-out. Eligibility rules:
+ * Each query resolves availability + pricing for one chunk of candidate
+ * hotels. Rows are grouped by room type across the stay. Eligibility rules:
  *
  * - every requested night must have an `open` inventory row
  * - nightly available quantity = total_rooms - booked_rooms - held_rooms
@@ -15,6 +15,9 @@
  * offer never stitches different room types across nights.
  */
 
+// Search exposes a cancellation capability flag: any matching active rule
+// with a refund window qualifies. EXISTS does not choose the latest rule or
+// evaluate a guest-specific cancellation deadline; booking resolves its policy.
 const FREE_CANCELLATION_EXISTS = `EXISTS (
     SELECT 1
       FROM hotel_cancellation_rules hcr
@@ -79,17 +82,26 @@ function buildOffersQuery(params) {
     totalGuests,
   };
 
+  // Only placeholder names are generated into SQL; hotel IDs remain values
+  // in replacements. The builder never executes SQL or reserves inventory.
   const hotelPlaceholders = hotelIds.map((hotelId, index) => {
     replacements[`hotel${index}`] = hotelId;
     return `:hotel${index}`;
   });
 
+  // WHERE removes closed/missing nights before aggregation. HAVING then
+  // rejects partial stays and bottleneck shortages. For nightly quantities
+  // [3, 1], a two-room request fails even though their sum is 4.
   const having = [
     'covered_nights = :nights',
     'min_available_rooms >= :rooms',
     'currency_count = 1',
   ];
 
+  // [checkIn, checkOut) excludes checkout day. SUM is a ONE-room stay
+  // subtotal, AVG is its nightly average, and MIN(currency) extracts the one
+  // currency allowed by HAVING. Capacity uses adults + children together and
+  // assumes all requested rooms use this same room type.
   const sql = `
     SELECT
       r.hotel_id,

@@ -14,18 +14,21 @@ const searchUseCases = {
 const logger = require('@config/logger.config');
 const { getAuthenticatedUserId } = require('@helpers/auth-context.helper');
 
+/** Preserve omitted numeric filters as undefined; zero is a supplied value. */
 function parseNumber(value) {
   if (value === undefined || value === null || value === '') return undefined;
   const parsed = parseFloat(value);
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+/** Normalize counts/page values for downstream application functions. */
 function parseInteger(value) {
   if (value === undefined || value === null || value === '') return undefined;
   const parsed = parseInt(value, 10);
   return Number.isInteger(parsed) ? parsed : undefined;
 }
 
+/** Accept repeated query values or comma-separated lists and normalize items. */
 function parseList(value, mapper = (item) => item) {
   if (value === undefined || value === null || value === '') return undefined;
   const rawValues = Array.isArray(value) ? value : String(value).split(',');
@@ -36,6 +39,7 @@ function parseList(value, mapper = (item) => item) {
   return values.length > 0 ? values : undefined;
 }
 
+/** Distinguish explicit false from an omitted flag (undefined). */
 function parseBoolean(value) {
   if (value === true || value === 'true') return true;
   if (value === false || value === 'false') return false;
@@ -44,7 +48,13 @@ function parseBoolean(value) {
 
 /**
  * GET /api/v1/search/hotels
- * Search hotels with hybrid ES + DB architecture
+ * HTTP adapter for MySQL search. Route validation has already sanitized the
+ * query; this handler translates it into application parameters, resolves the
+ * optional user, and returns the response envelope built by the application.
+ * SQL, availability checks and ranking belong to the application/repository.
+ *
+ * Errors propagate to Express error handling. History and analytics are
+ * best-effort side effects and are not awaited before sending the response.
  *
  * Query params:
  * - Location: city, country, latitude, longitude, radius
@@ -91,6 +101,8 @@ const searchHotels = async (req, res) => {
   };
 
   const userId = getAuthenticatedUserId(req);
+  // The destination is returned separately for history/analytics enrichment;
+  // searchResults is the public { success, data } response sent to the browser.
   const { destination, searchResults } = await searchUseCases.searchHotels(searchParams, userId);
 
   // Enrich the stored recent search with the resolved destination so the client
@@ -110,7 +122,8 @@ const searchHotels = async (req, res) => {
         : destination?.country_name || searchParams.country,
   };
 
-  // Publish search analytics asynchronously (don't wait)
+  // Start side effects after a successful search. These calls return promises
+  // without being awaited here; their failures must not fail the hotel response.
   const analyticsData = {
     ...searchParams,
     destinationId: destination?.id,

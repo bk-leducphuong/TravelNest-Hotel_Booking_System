@@ -24,6 +24,13 @@ export default {
   updateRooms({ commit }, rooms) {
     commit('setRooms', rooms);
   },
+  /**
+   * Save core criteria locally (up to 10 distinct entries), then request a
+   * best-effort analytics event through POST /search/log. The server endpoint
+   * publishes an event; it does not synchronously insert search history into
+   * MySQL. Redis user history is recorded separately by GET /search/hotels.
+   * Errors are caught here so history persistence does not fail hotel search.
+   */
   async saveSearchInformation({ state }, extra = {}) {
     try {
       const latitude = extra.latitude == null || extra.latitude === '' ? NaN : Number(extra.latitude);
@@ -72,7 +79,7 @@ export default {
         JSON.stringify(mergeRecentSearch(searchHistory, entry, 10))
       );
 
-      // save search information to database
+      // Publish analytics through the API; downstream consumers own storage.
       await SearchService.saveSearch(searchData);
     } catch (error) {
       console.error(error);

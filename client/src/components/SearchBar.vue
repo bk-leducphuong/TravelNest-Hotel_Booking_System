@@ -248,6 +248,11 @@
         'updateChildren',
         'updateRooms',
       ]),
+      /**
+       * Element Plus autocomplete expects results through cb(), not a return
+       * value. Convert destination suggestions into UI items while retaining
+       * the stable destination ID used by the eventual hotel request.
+       */
       async querySearch(queryString, cb) {
         if (!queryString || !queryString.trim()) {
           cb([]);
@@ -270,6 +275,8 @@
           cb([]);
         }
       },
+      // Remember both ID and label so editing the text after selecting a
+      // suggestion cannot accidentally keep searching the old destination ID.
       handleSelect(item) {
         this.selectedLocation = item.name || item.value;
         this.selectedDestinationId = item.id || null;
@@ -288,6 +295,11 @@
       hideGuestSelector() {
         this.showGuestSelector = false;
       },
+      /**
+       * Validate the stay, then navigate. The results page route watcher makes
+       * the hotel API request; this component only collects criteria in Vuex
+       * and serializes them into a refreshable/shareable search URL.
+       */
       async submitSearch() {
         this.clearFeedback();
         if (
@@ -301,7 +313,8 @@
           return;
         }
 
-        // Redirect user to search results page with query params
+        // Route fields use the UI names (checkInDate/checkOutDate/location).
+        // SearchResults translates them to API names (checkIn/checkOut/city).
         const query = {
           location: this.selectedLocation,
           checkInDate: this.checkInDate,

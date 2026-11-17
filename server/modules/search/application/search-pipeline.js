@@ -12,7 +12,7 @@ const { toDateOnly, countNights } = require('../domain/stay');
  *   validate/normalize
  *     -> resolve destination / text intent   (application/resolveDestination)
  *     -> filter candidate hotels             (one snapshot query)
- *     -> batched availability + offers       (one inventory query)
+ *     -> batched availability + offers       (one query per hotel-ID chunk)
  *     -> choose one eligible offer per hotel (domain/offers)
  *     -> rank / facets / paginate            (domain/ranking, application/search-response)
  *
@@ -20,6 +20,12 @@ const { toDateOnly, countNights } = require('../domain/stay');
  * atomically.
  */
 
+/**
+ * Convert API dates into the [checkIn, checkOut) inventory window. Checkout is
+ * excluded: Dec 10 -> Dec 12 needs rows for Dec 10 and Dec 11 (two nights).
+ * Return nights here for pricing/query coverage; do not trust UI stay length.
+ * Invalid dates also fail here for internal callers that bypass Joi.
+ */
 function buildStay(params) {
   const checkIn = toDateOnly(params.checkIn);
   const checkOut = toDateOnly(params.checkOut);
@@ -40,7 +46,12 @@ async function findCandidates(params) {
   return await searchRepository.findCandidateHotels(params);
 }
 
-/** Group aggregated offer rows by hotel and normalize their units. */
+/**
+ * Convert SQL aggregate rows into offers, grouped as Map<hotelId, Offer[]>.
+ * Each SQL row represents one room type across the entire stay, rather than
+ * one physical room or one night. Normalization also computes totals for the
+ * requested quantity without multiplying the per-room nightly display price.
+ */
 function groupOffers(rows, { nights, rooms }) {
   const byHotel = new Map();
 
@@ -55,7 +66,10 @@ function groupOffers(rows, { nights, rooms }) {
 }
 
 /**
- * Availability + offers for every candidate hotel in one query.
+ * Availability + offers for all candidate hotels, batched by the repository.
+ * The repository returns only room types that cover every night and satisfy
+ * quantity/capacity rules. This function normalizes those rows, then delegates
+ * discounts to the promotion module before budget filtering is applied.
  */
 async function getOffers(candidateHotels, params) {
   if (candidateHotels.length === 0) return new Map();
@@ -91,8 +105,10 @@ async function getOffers(candidateHotels, params) {
  * eligible offer for the whole requested stay.
  *
  * The winning offer is the cheapest one that passes the request's offer
- * constraints (budget + free-cancellation), so `min_price_for_dates` is always
- * a price the guest can actually book.
+ * constraints (budget, cancellation and payment policy). Budget compares the
+ * discounted average nightly price per room. min_price_for_dates is the stay
+ * subtotal for ONE room; min_price_for_requested_rooms includes room quantity.
+ * These are search-time offers: booking must recheck and hold inventory.
  */
 function buildHotelResults(candidateHotels, offersByHotel, params) {
   const freeCancellationOnly =
@@ -117,7 +133,8 @@ function buildHotelResults(candidateHotels, offersByHotel, params) {
     hotels.push({
       ...hotel,
       // Hotel capability (any eligible offer can be cancelled), not just the
-      // winning offer, so the card label and the facet match the old contract.
+      // winning offer. Here offers have passed inventory/capacity checks, but
+      // have not all necessarily passed the requested budget/payment filters.
       has_free_cancellation: offers.some((offer) => offer.has_free_cancellation),
       // The card shows the selected offer's price, so its payment condition must
       // match that price too.
@@ -138,6 +155,8 @@ function buildHotelResults(candidateHotels, offersByHotel, params) {
       has_sale: Boolean(selectedOffer.has_sale),
       promotion: selectedOffer.promotion || null,
       selected_offer: selectedOffer,
+      // Keep the available offer list, not just the winning offer. This list
+      // is not narrowed by selectOffer's budget/cancellation/payment filters.
       available_rooms: offers,
       total_available_rooms: sumAvailableRooms(offers),
     });
