@@ -1,4 +1,5 @@
 <script>
+  import { Delete } from '@element-plus/icons-vue'
   import Header from '@/components/Header.vue'
   import Footer from '@/components/Footer.vue'
   import EmptyState from '@/components/common/EmptyState.vue'
@@ -15,13 +16,19 @@
 
   export default {
     name: 'Messages',
-    components: { Header, Footer, EmptyState, ErrorState },
+    components: { Delete, Header, Footer, EmptyState, ErrorState },
     data() {
       return {
         conversations: [],
         loading: true,
         loadError: false,
+        search: '',
+        searching: false,
+        searchError: '',
+        searchTimer: null,
         activeId: null,
+        activeSnapshot: null,
+        deletingId: null,
         messages: [],
         messagesLoading: false,
         hasMore: false,
@@ -44,10 +51,16 @@
     },
     computed: {
       activeConversation() {
-        return this.conversations.find((conversation) => conversation.id === this.activeId) || null
+        return (
+          this.conversations.find((conversation) => conversation.id === this.activeId) ||
+          this.activeSnapshot
+        )
       },
       locale() {
         return this.$i18n.locale
+      },
+      hasSearch() {
+        return this.search.trim().length > 0
       },
       canSend() {
         return (
@@ -58,11 +71,33 @@
         )
       },
       emptyInbox() {
-        return !this.loading && !this.loadError && this.conversations.length === 0
+        return (
+          !this.loading && !this.loadError && this.conversations.length === 0 && !this.hasSearch
+        )
+      },
+      noSearchResults() {
+        return (
+          !this.loading &&
+          !this.searching &&
+          !this.loadError &&
+          this.conversations.length === 0 &&
+          this.hasSearch
+        )
+      }
+    },
+    watch: {
+      search() {
+        if (this.searchTimer) {
+          clearTimeout(this.searchTimer)
+        }
+        this.searchTimer = setTimeout(() => {
+          this.searchTimer = null
+          this.loadConversations()
+        }, 250)
       }
     },
     async mounted() {
-      await this.loadConversations()
+      await this.loadConversations({ initial: true })
       await this.connectSocket()
 
       const bookingId = this.$route.query.bookingId
@@ -77,10 +112,14 @@
         this.socket.off('chat:message', this.onIncomingMessage)
         this.socket.off('chat:activity', this.onActivity)
         this.socket.off('chat:typing', this.onTyping)
+        this.socket.off('chat:deleted', this.onConversationDeleted)
         this.leaveActiveRoom()
       }
       if (this.typingTimer) {
         clearTimeout(this.typingTimer)
+      }
+      if (this.searchTimer) {
+        clearTimeout(this.searchTimer)
       }
       this.clearAttachments()
     },
@@ -131,16 +170,31 @@
         this.pendingAttachmentKeys = []
         this.attachmentError = ''
       },
-      async loadConversations() {
+      async loadConversations({ initial = false } = {}) {
+        const term = this.search.trim()
         this.loadError = false
-        this.loading = true
+        this.searchError = ''
+        if (initial) {
+          this.loading = true
+        } else {
+          this.searching = true
+        }
+
         try {
-          const response = await MessagingService.listConversations({ limit: 50 })
+          const response = await MessagingService.listConversations({
+            limit: 50,
+            ...(term ? { q: term } : {})
+          })
           this.conversations = response?.data || []
         } catch (error) {
-          this.loadError = true
+          if (initial) {
+            this.loadError = true
+          } else {
+            this.searchError = this.$t('messages.searchError')
+          }
         } finally {
           this.loading = false
+          this.searching = false
         }
       },
       async connectSocket() {
@@ -149,6 +203,7 @@
           this.socket.on('chat:message', this.onIncomingMessage)
           this.socket.on('chat:activity', this.onActivity)
           this.socket.on('chat:typing', this.onTyping)
+          this.socket.on('chat:deleted', this.onConversationDeleted)
         } catch (error) {
           // Realtime is an enhancement: history still loads over REST.
           this.socket = null
@@ -177,6 +232,7 @@
         }
 
         this.activeId = conversation.id
+        this.activeSnapshot = conversation
         this.mobileThread = true
         this.messages = []
         this.hasMore = false
@@ -334,6 +390,10 @@
           conversation.unreadCount = Number(conversation.unreadCount || 0) + 1
         }
       },
+      onConversationDeleted(payload) {
+        if (!payload?.conversationId) return
+        this.removeConversation(payload.conversationId)
+      },
       onTyping(payload) {
         if (payload?.conversationId !== this.activeId || payload?.side === 'guest') return
 
@@ -362,6 +422,55 @@
       },
       backToInbox() {
         this.mobileThread = false
+      },
+      async confirmDelete(conversation) {
+        if (!conversation || this.deletingId) return
+
+        try {
+          const { ElMessageBox } = await import('element-plus')
+          await ElMessageBox.confirm(
+            this.$t('messages.deleteConfirm', { hotel: this.hotelName(conversation) }),
+            this.$t('messages.deleteTitle'),
+            {
+              type: 'warning',
+              confirmButtonText: this.$t('messages.delete'),
+              cancelButtonText: this.$t('messages.cancel'),
+              confirmButtonClass: 'el-button--danger'
+            }
+          )
+        } catch (error) {
+          // The dialog was dismissed; nothing to do.
+          return
+        }
+
+        this.deletingId = conversation.id
+        try {
+          await MessagingService.deleteConversation(conversation.id)
+          this.removeConversation(conversation.id)
+        } catch (error) {
+          this.sendError = this.$t('messages.deleteError')
+        } finally {
+          this.deletingId = null
+        }
+      },
+      removeConversation(conversationId) {
+        if (!conversationId) return
+
+        if (this.activeId === conversationId) {
+          this.leaveActiveRoom()
+          this.activeId = null
+          this.activeSnapshot = null
+          this.messages = []
+          this.hasMore = false
+          this.latestSeq = 0
+          this.mobileThread = false
+          this.draft = ''
+          this.clearAttachments()
+        }
+
+        this.conversations = this.conversations.filter(
+          (conversation) => conversation.id !== conversationId
+        )
       },
       hotelName(conversation) {
         return conversation?.hotel?.name || this.$t('messages.unknownHotel')
@@ -394,6 +503,19 @@
         <header class="inbox-header">
           <h1 class="guest-page-title">{{ $t('messages.title') }}</h1>
           <p class="inbox-subtitle">{{ $t('messages.subtitle') }}</p>
+          <div class="inbox-search">
+            <input
+              v-model="search"
+              type="search"
+              class="inbox-search-input"
+              :placeholder="$t('messages.searchPlaceholder')"
+              :aria-label="$t('messages.searchPlaceholder')"
+            />
+            <span v-if="searching" class="inbox-search-status" role="status">
+              {{ $t('messages.searching') }}
+            </span>
+          </div>
+          <p v-if="searchError" class="inbox-search-error" role="alert">{{ searchError }}</p>
         </header>
 
         <ErrorState
@@ -401,7 +523,7 @@
           :title="$t('messages.loadError')"
           :message="$t('messages.loadErrorHint')"
           :retry-label="$t('messages.retry')"
-          @retry="loadConversations"
+          @retry="loadConversations({ initial: true })"
         />
 
         <EmptyState
@@ -410,8 +532,19 @@
           :message="$t('messages.empty.description')"
         />
 
+        <EmptyState
+          v-else-if="noSearchResults"
+          :title="$t('messages.noSearchResults.title')"
+          :message="$t('messages.noSearchResults.description')"
+        />
+
         <ul v-else-if="!loading" class="conversation-list">
-          <li v-for="conversation in conversations" :key="conversation.id">
+          <li
+            v-for="conversation in conversations"
+            :key="conversation.id"
+            class="conversation-item"
+            :class="{ 'is-active': conversation.id === activeId }"
+          >
             <button
               type="button"
               class="conversation-card"
@@ -439,6 +572,16 @@
                 :max="99"
                 class="conversation-badge"
               />
+            </button>
+            <button
+              type="button"
+              class="conversation-delete"
+              :aria-label="$t('messages.deleteAria', { hotel: hotelName(conversation) })"
+              :title="$t('messages.delete')"
+              :disabled="deletingId === conversation.id"
+              @click.stop="confirmDelete(conversation)"
+            >
+              <ElIcon :size="16"><Delete /></ElIcon>
             </button>
           </li>
         </ul>
@@ -647,6 +790,42 @@
     font-size: $font-size-sm;
   }
 
+  .inbox-search {
+    position: relative;
+    margin-top: $spacing-sm;
+  }
+
+  .inbox-search-input {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-lg;
+    background: $white;
+    font: inherit;
+    font-size: $font-size-sm;
+  }
+
+  .inbox-search-input:focus {
+    outline: 2px solid rgba(0, 113, 194, 0.25);
+    border-color: $primary-color-light;
+  }
+
+  .inbox-search-status {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    color: $text-secondary;
+    font-size: $font-size-xs;
+  }
+
+  .inbox-search-error {
+    margin: 6px 0 0;
+    color: $error-color;
+    font-size: $font-size-xs;
+  }
+
   .conversation-list {
     flex: 1;
     min-height: 0;
@@ -656,12 +835,16 @@
     overflow-y: auto;
   }
 
+  .conversation-item {
+    position: relative;
+  }
+
   .conversation-card {
     position: relative;
     display: flex;
     gap: $spacing-sm;
     width: 100%;
-    padding: $spacing-sm $spacing-md;
+    padding: $spacing-sm 44px $spacing-sm $spacing-md;
     border: none;
     border-radius: $border-radius-lg;
     background: transparent;
@@ -735,6 +918,56 @@
     position: absolute;
     top: $spacing-sm;
     right: $spacing-sm;
+  }
+
+  .conversation-delete {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: $text-secondary;
+    cursor: pointer;
+    opacity: 0;
+    transition:
+      opacity 0.15s ease,
+      background-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .conversation-item:hover .conversation-delete,
+  .conversation-item:focus-within .conversation-delete,
+  .conversation-item.is-active .conversation-delete {
+    opacity: 1;
+  }
+
+  .conversation-delete:hover {
+    background: #fdecec;
+    color: $error-color;
+  }
+
+  .conversation-delete:focus-visible {
+    opacity: 1;
+    outline: 2px solid $primary-color;
+    outline-offset: 2px;
+  }
+
+  .conversation-delete:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+
+  @media (hover: none) {
+    .conversation-delete {
+      opacity: 1;
+    }
   }
 
   .inbox-loading,

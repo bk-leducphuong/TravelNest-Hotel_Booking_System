@@ -105,12 +105,49 @@ class ConversationRepository {
   }
 
   /**
-   * Inbox for a guest: every thread they participate in, newest activity first.
+   * Hide a thread from the guest's inbox. The thread and its messages stay
+   * intact for the hotel and are restored if the guest opens the booking again.
    */
-  async findForGuest(guestUserId, { limit, offset, unreadOnly = false } = {}) {
-    const where = { guest_user_id: guestUserId };
+  async hideForGuest(conversationId, guestUserId) {
+    const [affected] = await Conversations.update(
+      { guest_deleted_at: new Date() },
+      { where: { id: conversationId, guest_user_id: guestUserId } }
+    );
+
+    return affected;
+  }
+
+  async restoreForGuest(conversationId, guestUserId) {
+    const [affected] = await Conversations.update(
+      { guest_deleted_at: null },
+      {
+        where: {
+          id: conversationId,
+          guest_user_id: guestUserId,
+          guest_deleted_at: { [Op.ne]: null },
+        },
+      }
+    );
+
+    return affected;
+  }
+
+  /**
+   * Inbox for a guest: every thread they participate in, newest activity first.
+   * Threads the guest deleted and search terms match on hotel name or booking
+   * code, so the inbox can search the whole set, not just the loaded page.
+   */
+  async findForGuest(guestUserId, { limit, offset, unreadOnly = false, q } = {}) {
+    const where = { guest_user_id: guestUserId, guest_deleted_at: null };
     if (unreadOnly) {
       where[Op.and] = [buildUnreadLiteral(guestUserId, 'hotel')];
+    }
+    if (q) {
+      const like = likeTerm(q);
+      where[Op.or] = [
+        { '$hotel.name$': { [Op.like]: like } },
+        { '$booking.booking_code$': { [Op.like]: like } },
+      ];
     }
 
     return Conversations.findAndCountAll({
@@ -183,6 +220,8 @@ class ConversationRepository {
    */
   async countUnreadByScope({ scope, scopeValue, readerUserId, otherSide }) {
     const scopeColumn = scope === 'guest' ? 'c.guest_user_id' : 'c.hotel_id';
+    // A deleted thread must not keep raising the guest's badge.
+    const deletedFilter = scope === 'guest' ? 'AND c.guest_deleted_at IS NULL' : '';
 
     const rows = await sequelize.query(
       `SELECT COUNT(*) AS unread
@@ -191,6 +230,7 @@ class ConversationRepository {
          LEFT JOIN conversation_reads cr
            ON cr.conversation_id = c.id AND cr.user_id = :readerUserId
         WHERE ${scopeColumn} = :scopeValue
+          ${deletedFilter}
           AND m.sender_side = :otherSide
           AND m.seq > COALESCE(cr.last_read_seq, 0)`,
       {
@@ -201,6 +241,15 @@ class ConversationRepository {
 
     return Number(rows[0]?.unread || 0);
   }
+}
+
+/**
+ * Escape LIKE metacharacters so a user typing `%` or `_` searches literally
+ * instead of matching every conversation.
+ */
+function likeTerm(value) {
+  const escaped = String(value).replace(/[\\%_]/g, (char) => `\\${char}`);
+  return `%${escaped}%`;
 }
 
 /**

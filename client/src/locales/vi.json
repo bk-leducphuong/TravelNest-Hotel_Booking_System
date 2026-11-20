@@ -417,6 +417,7 @@
   "bookingFlow.noCancelledBookingsTitle": "Không có đơn đã hủy",
   "bookingFlow.noCancelledBookingsMessage": "Các chuyến đi đã hủy và trạng thái hoàn tiền sẽ xuất hiện ở đây.",
   "bookingFlow.bookedOn": "Đặt ngày {date}",
+  "bookingFlow.bookedOnLabel": "Đặt ngày",
   "bookingFlow.freeCancellation": "Miễn phí hủy",
   "bookingFlow.paymentMethod": "Phương thức thanh toán",
   "bookingFlow.useNewCard": "Dùng thẻ mới",
@@ -1124,6 +1125,11 @@
   "account.menu.messages": "Tin nhắn",
   "messages.title": "Tin nhắn",
   "messages.subtitle": "Trao đổi với khách sạn về kỳ nghỉ của bạn",
+  "messages.searchPlaceholder": "Tìm theo tên khách sạn hoặc mã đơn",
+  "messages.searching": "Đang tìm…",
+  "messages.searchError": "Không tìm kiếm được hội thoại.",
+  "messages.noSearchResults.title": "Không tìm thấy hội thoại phù hợp",
+  "messages.noSearchResults.description": "Hãy thử tên khách sạn hoặc mã đơn khác.",
   "messages.messageHotel": "Nhắn cho khách sạn",
   "messages.bookingLabel": "Đơn {code}",
   "messages.unknownHotel": "Khách sạn",
@@ -1155,5 +1161,11 @@
   "messages.sending": "Đang gửi…",
   "messages.select.title": "Chọn một hội thoại",
   "messages.select.description": "Chọn một hội thoại ở bên trái để xem tin nhắn.",
-  "messages.back": "Quay lại danh sách"
+  "messages.back": "Quay lại danh sách",
+  "messages.delete": "Xóa",
+  "messages.deleteTitle": "Xóa hội thoại?",
+  "messages.deleteConfirm": "Xóa hội thoại với {hotel}? Hội thoại sẽ bị ẩn khỏi hộp thư của bạn. Khách sạn vẫn giữ lịch sử.",
+  "messages.deleteAria": "Xóa hội thoại với {hotel}",
+  "messages.deleteError": "Không xóa được hội thoại.",
+  "messages.cancel": "Hủy"
 }

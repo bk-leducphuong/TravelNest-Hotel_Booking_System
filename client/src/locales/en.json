@@ -413,6 +413,7 @@
   "bookingFlow.noCancelledBookingsTitle": "No cancelled bookings",
   "bookingFlow.noCancelledBookingsMessage": "Cancelled stays and their refund status will appear here.",
   "bookingFlow.bookedOn": "Booked on {date}",
+  "bookingFlow.bookedOnLabel": "Booked on",
   "bookingFlow.freeCancellation": "Free cancellation",
   "bookingFlow.paymentMethod": "Payment method",
   "bookingFlow.useNewCard": "Use a new card",
@@ -1124,6 +1125,11 @@
   "account.menu.messages": "Messages",
   "messages.title": "Messages",
   "messages.subtitle": "Talk to the hotel about your stay",
+  "messages.searchPlaceholder": "Search by hotel or booking code",
+  "messages.searching": "Searching…",
+  "messages.searchError": "Could not search your conversations.",
+  "messages.noSearchResults.title": "No matching conversations",
+  "messages.noSearchResults.description": "Try another hotel name or booking code.",
   "messages.messageHotel": "Message hotel",
   "messages.bookingLabel": "Booking {code}",
   "messages.unknownHotel": "Hotel",
@@ -1155,5 +1161,11 @@
   "messages.sending": "Sending…",
   "messages.select.title": "Select a conversation",
   "messages.select.description": "Choose a conversation on the left to read the messages.",
-  "messages.back": "Back to conversations"
+  "messages.back": "Back to conversations",
+  "messages.delete": "Delete",
+  "messages.deleteTitle": "Delete conversation?",
+  "messages.deleteConfirm": "Delete the conversation with {hotel}? It will be removed from your inbox. The hotel keeps the history.",
+  "messages.deleteAria": "Delete conversation with {hotel}",
+  "messages.deleteError": "Could not delete the conversation.",
+  "messages.cancel": "Cancel"
 }

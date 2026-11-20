@@ -50,6 +50,11 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.STRING(280),
         allowNull: true,
       },
+      guest_deleted_at: {
+        type: DataTypes.DATE(6),
+        allowNull: true,
+        comment: 'Set when the guest deletes the thread from their inbox',
+      },
       status: {
         type: DataTypes.ENUM('open', 'archived'),
         allowNull: false,

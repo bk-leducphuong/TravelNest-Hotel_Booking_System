@@ -34,6 +34,10 @@ export const MessagingService = {
     return http.post(`/conversations/${conversationId}/read`, { lastSeq })
   },
 
+  deleteConversation(conversationId) {
+    return http.delete(`/conversations/${conversationId}`)
+  },
+
   getUnreadCount() {
     return http.get('/conversations/unread-count')
   }

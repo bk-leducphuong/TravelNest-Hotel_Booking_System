@@ -3,6 +3,7 @@
   import { BookingService } from '@/services/booking.service';
   import { normalizeBooking, guestMoney, promotionBadgeDescriptor, promotionDisplayName } from '@/utils/guestPresentation';
   import { stayNights, formatStayDate } from '@/utils/stay';
+  import { formatDateTime as formatDateTimeValue } from '@/utils/datetime';
   import { getFirstImageUrl } from '@/utils/images';
   import MediaImage from '@/components/ui/MediaImage.vue';
   import RefundTracker from '@/components/booking/RefundTracker.vue';
@@ -45,6 +46,9 @@
     methods: {
       guestMoney,
       formatStayDate,
+      formatDateTime(value) {
+        return formatDateTimeValue(value, this.$i18n.locale);
+      },
       getFirstImageUrl,
       promotionLabel(promotion) {
         const name = promotionDisplayName(promotion);
@@ -142,6 +146,10 @@
             <div>
               <dt>{{ $t('bookingFlow.lengthOfStay') }}</dt>
               <dd>{{ $t('bookingFlow.nightPlural', { count: nights }) }}</dd>
+            </div>
+            <div>
+              <dt>{{ $t('bookingFlow.bookedOnLabel') }}</dt>
+              <dd>{{ formatDateTime(booking.created_at) }}</dd>
             </div>
             <div>
               <dt>{{ $t('hotelDetails.table.guests') }}</dt>

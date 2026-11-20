@@ -28,6 +28,13 @@ router.post(
 
 router.get('/unread-count', validate(schema.unreadCount), controller.unreadCountHandler);
 
+router.delete(
+  '/:conversationId',
+  writeLimiter,
+  validate(schema.deleteConversation),
+  controller.deleteConversationHandler
+);
+
 router.get(
   '/:conversationId/messages',
   validate(schema.getMessages),

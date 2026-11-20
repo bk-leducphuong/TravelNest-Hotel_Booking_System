@@ -15,11 +15,14 @@ const pagination = {
 
 const conversationParams = Joi.object({ conversationId: uuid.required() }).required();
 const uploadAttachments = { params: conversationParams };
+const deleteConversation = { params: conversationParams };
 
 const listConversations = {
   query: Joi.object({
     ...pagination,
     unreadOnly: Joi.boolean().default(false),
+    // Matches hotel name or booking code, case-insensitively.
+    q: Joi.string().trim().max(100).allow(''),
   }).unknown(false),
 };
 
@@ -69,4 +72,5 @@ module.exports = {
   unreadCount,
   conversationParams,
   uploadAttachments,
+  deleteConversation,
 };
