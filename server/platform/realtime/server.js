@@ -2,7 +2,11 @@ const { Server } = require('socket.io');
 const logger = require('@config/logger.config');
 const { ROLES } = require('@constants/roles');
 
-const { socketAuthentication, socketAuthorization } = require('./auth');
+const {
+  socketAuthentication,
+  socketAuthorization,
+  socketPropertyAuthorization,
+} = require('./auth');
 
 // Import namespace controllers
 const publicController = require('./namespaces/public');
@@ -13,6 +17,32 @@ const adminController = require('./namespaces/admin');
 
 let io;
 
+function normalizeOrigin(value) {
+  return String(value || '')
+    .trim()
+    .replace(/\/+$/, '');
+}
+
+/**
+ * Browser origins allowed to open a socket. The guest and admin apps are
+ * separate origins, so the single CLIENT_HOST value used previously blocked
+ * the admin console's `/property` connection.
+ */
+const allowedSocketOrigins = [
+  process.env.CLIENT_HOST,
+  process.env.ADMIN_CLIENT_HOST,
+  process.env.SUPERADMIN_CLIENT_HOST,
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:8000',
+  'http://127.0.0.1:8000',
+  'http://localhost:8100',
+  'http://127.0.0.1:8100',
+  'http://localhost:3000',
+]
+  .map(normalizeOrigin)
+  .filter(Boolean);
+
 /**
  * Initialize Socket.IO server with multiple namespaces
  * @param {http.Server} server - HTTP server instance
@@ -22,7 +52,12 @@ const initSocket = (server) => {
   // Initialize Socket.IO server
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_HOST || '*',
+      origin(origin, callback) {
+        if (!origin || allowedSocketOrigins.includes(normalizeOrigin(origin))) {
+          return callback(null, true);
+        }
+        return callback(new Error(`Origin ${origin} is not allowed by socket CORS`));
+      },
       methods: ['GET', 'POST'],
       credentials: true,
     },
@@ -70,9 +105,7 @@ const initSocket = (server) => {
   const propertyNamespace = io.of('/property');
 
   propertyNamespace.use(socketAuthentication);
-  propertyNamespace.use(
-    socketAuthorization([ROLES.OWNER, ROLES.MANAGER, ROLES.STAFF, ROLES.ADMIN])
-  );
+  propertyNamespace.use(socketPropertyAuthorization);
 
   propertyNamespace.on('connection', (socket) => {
     logger.info(`Property user connected to /property`, {

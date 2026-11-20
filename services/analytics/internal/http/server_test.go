@@ -10,7 +10,7 @@ import (
 
 // A read query must outlive the caller. The API proxies requests with a short
 // timeout; when it aborts, the incoming request context is canceled, which used
-// to cancel the Mongo aggregation (erroring out) and leave the Redis cache cold
+// to cancel the MySQL query (erroring out) and leave the Redis cache cold
 // so every later call repeated the slow scan.
 func TestReadContextSurvivesCallerCancellation(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/analytics/trending/hotels", nil)
@@ -30,7 +30,7 @@ func TestReadContextSurvivesCallerCancellation(t *testing.T) {
 }
 
 // The detached context still needs a bound so a pathological query cannot hold
-// a Mongo connection open indefinitely.
+// a MySQL connection open indefinitely.
 func TestReadContextHasDeadline(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/analytics/trending/hotels", nil)
 

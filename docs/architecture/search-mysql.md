@@ -2,7 +2,7 @@
 
 Status: implemented. Elasticsearch is no longer part of the search path, the
 health checks, the internal task registry, the seeders or the deployment
-manifests. MongoDB remains the analytics store; Redis remains session/cache/
+manifests. Analytics events live in MySQL (`analytics_*` tables); Redis remains session/cache/
 hold state; NATS/Go analytics is unchanged.
 
 ## Request flow
@@ -188,7 +188,7 @@ filtering, and one row per hotel with the cheapest eligible offer.
 npx jest --config jest.integration.config.js __tests__/integration/search.repository.test.js --runInBand
 ```
 
-The integration suite starts MySQL/Redis/MongoDB containers; all 10 cases pass
+The integration suite starts MySQL/Redis containers; all 10 cases pass
 locally.
 
 ## Deferred (documented, not implemented)

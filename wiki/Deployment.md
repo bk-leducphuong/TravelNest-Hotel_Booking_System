@@ -48,7 +48,6 @@ deploy/k8s/
 ├── infra/                 Stateful services in cluster
 │   ├── keycloak/
 │   ├── minio/
-│   ├── mongodb/
 │   ├── mysql/             (+ prod backup CronJob)
 │   ├── nats/
 │   └── redis/
@@ -108,7 +107,7 @@ not distinguish `develop` from `master` tags and hit Docker Hub rate limits).
 
 - **Cloudflare Tunnel** (public ingress, plus Access in front of Argo CD)
 
-Everything else — MySQL, Redis, MinIO, MongoDB, NATS, Keycloak — runs in-cluster.
+Everything else — MySQL, Redis, MinIO, NATS, Keycloak — runs in-cluster.
 
 ---
 

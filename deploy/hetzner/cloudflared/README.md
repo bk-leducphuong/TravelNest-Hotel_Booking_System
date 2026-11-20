@@ -33,9 +33,8 @@ header, which `cloudflared` preserves.
 | `argocd.deployserver.work` | `argocd-server:80` (Argo CD dashboard; gated by Cloudflare Access) |
 | `mysql.deployserver.work` | `tcp://localhost:13306` (raw TCP; Cloudflare Access + `cloudflared access tcp`) |
 | `redis.deployserver.work` | `tcp://localhost:16379` (raw TCP; Cloudflare Access + `cloudflared access tcp`) |
-| `mongodb.deployserver.work` | `tcp://localhost:27017` (raw TCP; Cloudflare Access + `cloudflared access tcp`) |
 
-The `mysql`/`redis`/`mongodb` hostnames are **not** HTTP and do not go through
+The `mysql`/`redis` hostnames are **not** HTTP and do not go through
 Traefik — they are raw TCP served by `cloudflared access tcp`, with the loopback
 ports published by `deploy/hetzner/db-access`. See that directory's README.
 

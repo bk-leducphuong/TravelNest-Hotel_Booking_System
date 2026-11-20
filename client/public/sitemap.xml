@@ -57,4 +57,22 @@
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
+  <url>
+    <loc>https://trestay.com/about</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://trestay.com/about" />
+    <xhtml:link rel="alternate" hreflang="vi" href="https://trestay.com/vi/about" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://trestay.com/about" />
+    <lastmod>2026-11-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://trestay.com/vi/about</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://trestay.com/about" />
+    <xhtml:link rel="alternate" hreflang="vi" href="https://trestay.com/vi/about" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://trestay.com/about" />
+    <lastmod>2026-11-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
 </urlset>

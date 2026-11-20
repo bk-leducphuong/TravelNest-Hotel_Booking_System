@@ -27,6 +27,9 @@ type SearchPerformed struct {
 	UserID          *string   `json:"userId"`
 	DestinationID   *string   `json:"destinationId"`
 	DestinationType string    `json:"destinationType"`
+	Latitude        *float64  `json:"latitude"`
+	Longitude       *float64  `json:"longitude"`
+	Radius          *int      `json:"radius"`
 	CheckInDate     *DateOnly `json:"checkInDate"`
 	CheckOutDate    *DateOnly `json:"checkOutDate"`
 	Adults          int       `json:"adults"`

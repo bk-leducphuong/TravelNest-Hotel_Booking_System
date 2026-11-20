@@ -125,14 +125,14 @@ async function processRefundAttempt({ refundId, refund: supplied }) {
       });
     }
   } catch (error) {
-    await deferRefund(claim, error);
+    await deferRefund(claim, error, Boolean(error.permanent));
     return null;
   }
   try {
     return await reconcileRefund(refund.id, provider);
   } catch (error) {
     // A local failure never means Stripe failed. The same operation is reconciled on recovery.
-    await deferRefund(claim, error);
+    await deferRefund(claim, error, Boolean(error.permanent));
     throw error;
   }
 }

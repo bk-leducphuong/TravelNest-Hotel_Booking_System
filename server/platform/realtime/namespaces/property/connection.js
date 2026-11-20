@@ -9,6 +9,7 @@ const { registerSubscribeBookings, registerUpdateBookingStatus } = require('./ha
 const { registerUpdateInventory } = require('./handlers/inventory');
 const { registerSubscribeAnalytics } = require('./handlers/analytics');
 const { registerDisconnect, registerError } = require('./handlers/lifecycle');
+const { registerChatHandlers } = require('../chat');
 
 /**
  * Handle new connection to the /property namespace: join rooms, send the
@@ -63,6 +64,15 @@ function handleConnection(namespace, socket) {
   });
 
   const context = { namespace, socket, userId, userRoles, hotelRoles };
+
+  // Guest <-> hotel threads: staff can join any thread addressed to a hotel they
+  // work at, including owners and managers.
+  registerChatHandlers({
+    namespace,
+    socket,
+    userId,
+    hotelIds: hotelRoles.map((hotelRole) => hotelRole.hotelId).filter(Boolean),
+  });
 
   registerSetActiveHotel(context);
   registerSubscribeBookings(context);

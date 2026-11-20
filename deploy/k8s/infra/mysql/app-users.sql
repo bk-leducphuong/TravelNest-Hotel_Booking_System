@@ -13,6 +13,7 @@
 
 CREATE USER IF NOT EXISTS 'travelnest_media'@'%' IDENTIFIED BY '<DB_PASSWORD>';
 CREATE USER IF NOT EXISTS 'travelnest_notification'@'%' IDENTIFIED BY '<DB_PASSWORD>';
+CREATE USER IF NOT EXISTS 'travelnest_analytics'@'%' IDENTIFIED BY '<DB_PASSWORD>';
 
 -- media owns images / image_variants; it may only read users/rooms.
 GRANT SELECT, INSERT, UPDATE ON `travelnest`.`images` TO 'travelnest_media'@'%';
@@ -27,5 +28,9 @@ GRANT SELECT ON `travelnest`.`hotel_users` TO 'travelnest_notification'@'%';
 GRANT SELECT ON `travelnest`.`user_roles` TO 'travelnest_notification'@'%';
 GRANT SELECT ON `travelnest`.`roles` TO 'travelnest_notification'@'%';
 GRANT SELECT ON `travelnest`.`users` TO 'travelnest_notification'@'%';
+
+-- analytics owns the two analytics event tables.
+GRANT SELECT, INSERT, UPDATE, DELETE ON `travelnest`.`analytics_search_logs` TO 'travelnest_analytics'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON `travelnest`.`analytics_hotel_view_events` TO 'travelnest_analytics'@'%';
 
 FLUSH PRIVILEGES;

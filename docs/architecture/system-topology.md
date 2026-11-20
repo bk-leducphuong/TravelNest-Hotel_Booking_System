@@ -30,7 +30,7 @@ flowchart TB
 
   subgraph D["Data — exactly one writer per table"]
     mysql[("MySQL<br/>owned table sets, per service")]
-    mongo[("MongoDB<br/>analytics")]
+    analyticsdb[("MySQL<br/>analytics")]
     redis[("Redis<br/>cache + holds")]
     minio[("MinIO<br/>media objects")]
   end
@@ -56,7 +56,7 @@ flowchart TB
   payments --> mysql
   notifications --> mysql
   search --> mysql
-  analytics --> mongo
+  analytics --> analyticsdb
   media --> minio
   media -. "metadata read" .-> mysql
   booking --> redis

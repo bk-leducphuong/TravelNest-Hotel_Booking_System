@@ -46,7 +46,7 @@ exposed through a **Cloudflare Tunnel**.
 | Microservices    | Go services: analytics, media, notification (NATS messaging)          |
 | Primary Database | MySQL 8.0                                                             |
 | Hotel Search     | MySQL (no external engine)                                            |
-| Analytics        | MongoDB + Mongoose, ClickHouse                                        |
+| Analytics        | MySQL event tables (`analytics_*`)                                    |
 | Cache & Queues   | Redis 7                                                               |
 | Object Storage   | MinIO / S3-compatible                                                 |
 | Payments         | Stripe                                                                |

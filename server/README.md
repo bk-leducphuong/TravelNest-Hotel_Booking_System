@@ -13,7 +13,7 @@ It powers search, bookings, reviews, notifications, payments, and analytics for 
   - BullMQ for background jobs (booking expiry, hold expiry, hotel snapshots, etc.)
 - **Search & Analytics**:
   - MySQL-only hotel search (denormalized `hotel_search_snapshots` + daily `room_inventory`)
-  - MongoDB + Mongoose for search and view analytics
+  - MySQL analytics event tables (`analytics_search_logs`, `analytics_hotel_view_events`)
 - **Storage**: MinIO / S3-compatible storage for media
 - **Auth & Security**:
   - Session-based authentication
@@ -41,7 +41,6 @@ flowchart LR
     API["Express API\n(server.js)"] --> MQ["Redis + BullMQ"]
     API --> DB[(MySQL)]
     API --> RDS[(Redis)]
-    API --> MDB[(MongoDB Analytics)]
     API --> MINIO[(MinIO / S3)]
   end
 
@@ -63,8 +62,6 @@ flowchart LR
 
 - Node.js 18+ and npm
 - A running MySQL and Redis instance (local Docker is fine for development)
-- Optional (but recommended for full feature set):
-  - MongoDB
 
 ### Environment Variables
 
@@ -76,8 +73,6 @@ At minimum you will need:
   - `PORT` (default: `3000`)
 - **Database**
   - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
-- **MongoDB analytics**
-  - `MONGODB_URI`, `MONGODB_DATABASE`
 - **Redis**
   - `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` (if enabled)
 - **Sessions & Security**
@@ -117,21 +112,22 @@ npm run seed:all:quick
 Useful database commands:
 
 - Run all seeds: `npm run seed:all`
-- Clear database, MongoDB analytics, and MinIO seed images: `npm run seed:clear`
+- Clear database, analytics events, and MinIO seed images: `npm run seed:clear`
 - Clear and reseed: `npm run seed:all:clear`
 - Run a specific seed, for example:
   - `npm run seed:user`
   - `npm run seed:hotel`
   - `npm run seed:booking`
 
-### MongoDB Analytics Setup (Optional for Local Dev)
+### Analytics Setup (Optional for Local Dev)
 
-Hotel search is MySQL-only; there is no search engine to index. If you have
-MongoDB running locally you can seed the analytics collections:
+Hotel search is MySQL-only; there is no search engine to index. The analytics
+event tables are created by the regular migrations; you can fill them with seed
+data:
 
 ```bash
-npm run mongo:seed:search_logs
-npm run mongo:seed:hotel_views
+npm run analytics:seed:search_logs
+npm run analytics:seed:hotel_views
 ```
 
 For local development you can skip this if you do not need analytics data.
@@ -195,15 +191,15 @@ server/
 ├── controllers/v1/   HTTP request handlers
 ├── events/           NATS event publishers/subscribers
 ├── helpers/          Helper utilities
-├── infra/            Dockerfiles, migrations, ES/Mongo setup scripts
+├── infra/            Dockerfiles and migrations
 ├── interfaces/       Interface definitions
 ├── middlewares/      Auth, error, rate-limiter, validation, request-logger
-├── models/           Sequelize models (MySQL) + Mongoose models (MongoDB)
+├── models/           Sequelize models (MySQL)
 ├── queues/           BullMQ queue definitions
 ├── repositories/     Database access layer
 ├── routes/v1/        API route definitions
 ├── scripts/          Utility scripts (clear-db, infra helpers, keycloak)
-├── seeders/          Database, ES, MongoDB seeders
+├── seeders/          Database and analytics seeders
 ├── services/         Business logic layer
 ├── socket/           Socket.IO setup and controllers
 ├── validators/v1/    Joi request validation schemas

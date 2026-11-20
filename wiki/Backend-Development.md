@@ -32,7 +32,7 @@ server/
 ├── middlewares/        Auth, error, rate-limiter, validation
 ├── helpers/            Shared helpers
 ├── utils/              Shared utilities
-├── infra/              Dockerfiles, migrations, ES/Mongo setup
+├── infra/              Dockerfiles, migrations, ES setup
 ├── scripts/            Utility scripts
 ├── seeders/            Data seeders
 └── __tests__/          Unit + integration tests

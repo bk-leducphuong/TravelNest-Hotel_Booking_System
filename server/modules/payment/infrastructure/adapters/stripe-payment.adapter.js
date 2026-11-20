@@ -54,7 +54,7 @@ class StripePaymentAdapter extends StripeCustomerAdapter {
         }
       }
 
-      const paymentIntent = await this.stripe.paymentIntents.create(intentParams);
+      const paymentIntent = await this.getClient().paymentIntents.create(intentParams);
 
       return {
         id: paymentIntent.id,
@@ -66,7 +66,7 @@ class StripePaymentAdapter extends StripeCustomerAdapter {
         raw: paymentIntent,
       };
     } catch (error) {
-      logger.error('Stripe payment creation failed:', error);
+      logger.error({ error: error.message, code: error.code }, 'Stripe payment creation failed');
       throw normalizeStripeError(error);
     }
   }
@@ -76,7 +76,7 @@ class StripePaymentAdapter extends StripeCustomerAdapter {
    */
   async getPayment(paymentId) {
     try {
-      const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentId);
+      const paymentIntent = await this.getClient().paymentIntents.retrieve(paymentId);
 
       return {
         id: paymentIntent.id,
@@ -88,7 +88,7 @@ class StripePaymentAdapter extends StripeCustomerAdapter {
         raw: paymentIntent,
       };
     } catch (error) {
-      logger.error('Stripe payment retrieval failed:', error);
+      logger.error({ error: error.message, code: error.code }, 'Stripe payment retrieval failed');
       throw normalizeStripeError(error);
     }
   }
@@ -98,7 +98,7 @@ class StripePaymentAdapter extends StripeCustomerAdapter {
    */
   async cancelPayment(paymentId) {
     try {
-      const paymentIntent = await this.stripe.paymentIntents.cancel(paymentId);
+      const paymentIntent = await this.getClient().paymentIntents.cancel(paymentId);
 
       return {
         id: paymentIntent.id,
@@ -106,7 +106,10 @@ class StripePaymentAdapter extends StripeCustomerAdapter {
         provider: 'stripe',
       };
     } catch (error) {
-      logger.error('Stripe payment cancellation failed:', error);
+      logger.error(
+        { error: error.message, code: error.code },
+        'Stripe payment cancellation failed'
+      );
       throw normalizeStripeError(error);
     }
   }
@@ -119,14 +122,14 @@ class StripePaymentAdapter extends StripeCustomerAdapter {
 
     try {
       // Get the charge ID from payment intent
-      const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentId);
+      const paymentIntent = await this.getClient().paymentIntents.retrieve(paymentId);
       const chargeId = paymentIntent.latest_charge;
 
       if (!chargeId) {
         throw new Error('No charge found for this payment intent');
       }
 
-      const refund = await this.stripe.refunds.create({
+      const refund = await this.getClient().refunds.create({
         charge: chargeId,
         amount: amount ? Math.round(amount) : undefined, // Partial or full refund
         reason: reason || 'requested_by_customer',
@@ -145,7 +148,7 @@ class StripePaymentAdapter extends StripeCustomerAdapter {
         raw: refund,
       };
     } catch (error) {
-      logger.error('Stripe refund creation failed:', error);
+      logger.error({ error: error.message, code: error.code }, 'Stripe refund creation failed');
       throw normalizeStripeError(error);
     }
   }
@@ -158,7 +161,7 @@ class StripePaymentAdapter extends StripeCustomerAdapter {
     const { chargeId, amount, reason, metadata, idempotencyKey } = params;
 
     try {
-      const refund = await this.stripe.refunds.create(
+      const refund = await this.getClient().refunds.create(
         {
           charge: chargeId,
           amount: Math.round(amount),
@@ -178,26 +181,26 @@ class StripePaymentAdapter extends StripeCustomerAdapter {
         raw: refund,
       };
     } catch (error) {
-      logger.error('Stripe charge refund failed:', error);
+      logger.error({ error: error.message, code: error.code }, 'Stripe charge refund failed');
       throw normalizeStripeError(error);
     }
   }
 
   async listRefundsForCharge(chargeId) {
     const ids = [];
-    for await (const refund of this.stripe.refunds.list({ charge: chargeId, limit: 100 }))
+    for await (const refund of this.getClient().refunds.list({ charge: chargeId, limit: 100 }))
       ids.push(refund.id);
     return ids;
   }
 
   async getRefund(refundId) {
-    const refund = await this.stripe.refunds.retrieve(refundId);
+    const refund = await this.getClient().refunds.retrieve(refundId);
     return { id: refund.id, status: this.normalizeRefundStatus(refund.status), raw: refund };
   }
 
   async findRefundForRecord(chargeId, recordId) {
     let found = null;
-    for await (const refund of this.stripe.refunds.list({ charge: chargeId, limit: 100 })) {
+    for await (const refund of this.getClient().refunds.list({ charge: chargeId, limit: 100 })) {
       if (refund.metadata?.refund_record_id === recordId) {
         if (found)
           throw new Error(
@@ -225,7 +228,11 @@ class StripePaymentAdapter extends StripeCustomerAdapter {
         return JSON.parse(payload.toString());
       }
 
-      const event = this.stripe.webhooks.constructEvent(payload, signature, this.webhookSecret);
+      const event = this.getClient().webhooks.constructEvent(
+        payload,
+        signature,
+        this.webhookSecret
+      );
 
       return {
         id: event.id,
@@ -240,7 +247,10 @@ class StripePaymentAdapter extends StripeCustomerAdapter {
         raw: event,
       };
     } catch (error) {
-      logger.error('Stripe webhook verification failed:', error);
+      logger.error(
+        { error: error.message, code: error.code },
+        'Stripe webhook verification failed'
+      );
       throw new Error('Webhook signature verification failed');
     }
   }

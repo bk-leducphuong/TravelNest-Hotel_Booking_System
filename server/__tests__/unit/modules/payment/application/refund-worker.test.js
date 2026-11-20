@@ -13,6 +13,7 @@ jest.mock('@modules/payment/infrastructure/adapters/stripe-payment.adapter', () 
 const sequelize = require('@config/database.config');
 const refunds = require('@modules/payment/infrastructure/refund.repository');
 const transactions = require('@modules/payment/infrastructure/transaction-admin.repository');
+const outbox = require('@modules/payment/infrastructure/outbox.repository');
 const StripeAdapter = require('@modules/payment/infrastructure/adapters/stripe-payment.adapter');
 const { reconcileRefund } = require('@modules/payment/application/reconcileRefund');
 // Constructor is evaluated at import time; methods remain mocks while Jest resets their implementations.
@@ -21,6 +22,7 @@ StripeAdapter.mockImplementation(() => provider);
 const { processRefundAttempt } = require('@modules/payment/application/admin/processRefundAttempt');
 let row;
 beforeEach(() => {
+  jest.clearAllMocks();
   row = {
     id: 'r1',
     transaction_id: 't1',
@@ -96,4 +98,23 @@ it('polls an existing provider refund rather than creating a replacement', async
   await processRefundAttempt({ refundId: 'r1' });
   expect(provider.getRefund).toHaveBeenCalledWith('re1');
   expect(provider.refundCharge).not.toHaveBeenCalled();
+});
+it('parks a misconfigured payment provider for review instead of burning retries', async () => {
+  const error = new Error('Stripe is not configured: STRIPE_SECRET_KEY is missing');
+  error.code = 'stripe_not_configured';
+  error.permanent = true;
+  provider.refundCharge.mockRejectedValue(error);
+  await processRefundAttempt({ refundId: 'r1' });
+  expect(row).toMatchObject({
+    status: 'processing',
+    workflow_state: 'needs_attention',
+    failureCode: 'stripe_not_configured',
+    next_retry_at: null,
+  });
+  expect(outbox.record).toHaveBeenCalledWith(
+    'refund-attention-r1',
+    'payment.refund_failed',
+    expect.objectContaining({ refundId: 'r1', needsAttention: true }),
+    expect.anything()
+  );
 });

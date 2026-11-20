@@ -7,17 +7,17 @@ import (
 
 	"github.com/nats-io/nats.go"
 	"github.com/travelnest/services/analytics/internal/model"
-	"github.com/travelnest/services/analytics/internal/mongo"
+	analyticsmysql "github.com/travelnest/services/analytics/internal/mysql"
 )
 
 type Consumer struct {
 	js     nats.JetStreamContext
 	stream string
-	repo   *mongo.Repository
+	repo   *analyticsmysql.Repository
 	logger *slog.Logger
 }
 
-func NewConsumer(js nats.JetStreamContext, stream string, repo *mongo.Repository, logger *slog.Logger) *Consumer {
+func NewConsumer(js nats.JetStreamContext, stream string, repo *analyticsmysql.Repository, logger *slog.Logger) *Consumer {
 	return &Consumer{js: js, stream: stream, repo: repo, logger: logger}
 }
 
@@ -138,6 +138,9 @@ func searchLogFromEvent(event SearchPerformed) model.SearchLog {
 		UserID:          event.UserID,
 		DestinationID:   event.DestinationID,
 		DestinationType: event.DestinationType,
+		Latitude:        event.Latitude,
+		Longitude:       event.Longitude,
+		Radius:          event.Radius,
 		SearchTime:      event.OccurredAt,
 		Adults:          event.Adults,
 		Children:        event.Children,

@@ -72,6 +72,10 @@ const PERMISSIONS = {
   SUPPORT_RESPOND_TICKETS: 'support.respond_tickets',
   SUPPORT_VIEW_USER_DETAILS: 'support.view_user_details',
 
+  // ============ MESSAGING PERMISSIONS (guest <-> hotel threads) ============
+  CHAT_READ: 'chat.read',
+  CHAT_RESPOND: 'chat.respond',
+
   // ============ PLATFORM PERMISSIONS (cross-tenant monitoring) ============
   // Gate the /api/v1/superadmin console. These are platform-wide (no hotel
   // context) and read-only in v1. `platform.user.pii_read` is deliberately
@@ -143,6 +147,9 @@ const PERMISSION_DESCRIPTIONS = {
   [PERMISSIONS.SUPPORT_RESPOND_TICKETS]: 'Respond to support tickets',
   [PERMISSIONS.SUPPORT_VIEW_USER_DETAILS]: 'View user details for support',
 
+  [PERMISSIONS.CHAT_READ]: 'Read guest conversation threads for a hotel',
+  [PERMISSIONS.CHAT_RESPOND]: 'Reply to guests in a conversation thread',
+
   [PERMISSIONS.PLATFORM_OVERVIEW_READ]: 'View platform-wide monitoring overview',
   [PERMISSIONS.PLATFORM_HOTEL_READ]: 'View any hotel across the platform',
   [PERMISSIONS.PLATFORM_USER_READ]: 'View any user across the platform (PII masked)',
@@ -190,6 +197,8 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.REVIEW_REPLY,
     PERMISSIONS.NOTIFICATION_READ,
     PERMISSIONS.NOTIFICATION_SEND,
+    PERMISSIONS.CHAT_READ,
+    PERMISSIONS.CHAT_RESPOND,
   ],
 
   // Hotel manager - full hotel management
@@ -214,6 +223,8 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.PAYMENT_READ,
     PERMISSIONS.NOTIFICATION_READ,
     PERMISSIONS.NOTIFICATION_SEND,
+    PERMISSIONS.CHAT_READ,
+    PERMISSIONS.CHAT_RESPOND,
     PERMISSIONS.REPORT_VIEW,
   ],
 
@@ -245,6 +256,8 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.NOTIFICATION_SEND,
     PERMISSIONS.REPORT_VIEW,
     PERMISSIONS.REPORT_EXPORT,
+    PERMISSIONS.CHAT_READ,
+    PERMISSIONS.CHAT_RESPOND,
   ],
 
   // Support agent - can view and help users

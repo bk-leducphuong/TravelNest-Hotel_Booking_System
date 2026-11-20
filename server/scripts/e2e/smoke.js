@@ -4,7 +4,7 @@
  * End-to-end API smoke test for the TravelNest server.
  *
  * This script starts nothing: it assumes the dependencies (MySQL, Redis, NATS,
- * MongoDB, MinIO, and optionally Keycloak / the Go services)
+ * MinIO, and optionally Keycloak / the Go services)
  * are running, the API is listening, and the database has been seeded
  * (`npm run seed:all`).
  *

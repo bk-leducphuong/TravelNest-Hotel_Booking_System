@@ -8,7 +8,8 @@
         ><RouterLink to="/flights">{{ $t('footer.flightFinder') }}</RouterLink
         ><RouterLink to="/transfers">{{ $t('footer.airportTransfers') }}</RouterLink
         ><RouterLink to="/account-settings">{{ $t('account.menu.manageAccount') }}</RouterLink
-        ><RouterLink to="/join">{{ $t('userHeader.postProperty') }}</RouterLink>
+        ><RouterLink to="/join">{{ $t('userHeader.postProperty') }}</RouterLink
+        ><RouterLink to="/about">{{ $t('about.link') }}</RouterLink>
       </nav>
       <p>© {{ new Date().getFullYear() }} Trestay · {{ $t('guest.footerTagline') }}</p>
       <p class="guest-footer-legal">{{ $t('footer.disclaimer') }}</p>

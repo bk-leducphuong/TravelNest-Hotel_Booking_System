@@ -31,6 +31,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     icon: "bookings",
   },
   {
+    labelKey: "nav.messages",
+    to: "/messages",
+    permission: "chat.read",
+    group: "reservations",
+    icon: "messages",
+  },
+  {
     labelKey: "nav.rooms",
     to: "/rooms",
     permission: "room.read",

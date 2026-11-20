@@ -30,7 +30,7 @@ Start the required services via Docker:
 # Start MySQL + Redis (minimum for API)
 docker compose -f server/infra/docker-compose.yml up -d mysql redis
 
-# Or start everything (MySQL, Redis, MongoDB, MinIO, NATS, Keycloak)
+# Or start everything (MySQL, Redis, MinIO, NATS, Keycloak)
 docker compose -f server/infra/docker-compose.yml up -d
 ```
 
@@ -117,7 +117,7 @@ yarn test                # Test all packages
 | `server/`                | `.env.format`  | `DB_*`, `REDIS_*`, `ES_*`, `STRIPE_*`, `MINIO_*` |
 | `client/`                | `.env.format`  | `VITE_API_BASE_URL`, `VITE_STRIPE_PUBLIC_KEY`    |
 | `admin-client/`          | `.env.example` | `NUXT_PUBLIC_API_BASE`                           |
-| `services/analytics/`    | `.env.format`  | `NATS_*`, `REDIS_*`, `MONGODB_*`                 |
+| `services/analytics/`    | `.env.format`  | `NATS_*`, `REDIS_*`, `MYSQL_DSN`                 |
 | `services/media/`        | `.env.format`  | `NATS_*`, `MINIO_*`, `MYSQL_*`                   |
 | `services/notification/` | `.env.format`  | `NATS_*`, `MYSQL_*`, `SMTP_*`                    |
 

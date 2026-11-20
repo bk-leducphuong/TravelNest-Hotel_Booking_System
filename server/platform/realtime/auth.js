@@ -134,6 +134,40 @@ const socketPermissionCheck = (requiredPermissions) => {
   };
 };
 
+/**
+ * Property namespace gate: a hotel membership is enough. Requiring a *global*
+ * owner/manager/staff role locked out real hotel owners and staff, whose global
+ * role is usually just `user` and whose authority lives in `hotel_users`.
+ * Platform admins without a hotel membership are still allowed to connect.
+ */
+const socketPropertyAuthorization = async (socket, next) => {
+  try {
+    if (!socket.user) {
+      return next(new ApiError(401, 'UNAUTHORIZED', 'Authentication required'));
+    }
+
+    const isPlatformAdmin = (socket.user.roles || []).includes(ROLES.ADMIN);
+    const hasHotelRole = (socket.user.hotelRoles || []).length > 0;
+
+    if (!isPlatformAdmin && !hasHotelRole) {
+      logger.warn(`User ${socket.user.id} attempted property socket access without a hotel role`, {
+        userId: socket.user.id,
+        userRoles: socket.user.roles,
+        hotelRoles: socket.user.hotelRoles,
+        socketId: socket.id,
+      });
+      return next(
+        new ApiError(403, 'FORBIDDEN', 'A hotel role is required for the property namespace')
+      );
+    }
+
+    return next();
+  } catch (error) {
+    logger.error({ error: error.message }, 'Socket property authorization error');
+    return next(new ApiError(500, 'AUTH_ERROR', 'Property authorization failed'));
+  }
+};
+
 const socketHotelContext = (required = true) => {
   return async (socket, next) => {
     try {
@@ -185,6 +219,7 @@ function requireHotelRole(role) {
 module.exports = {
   socketAuthentication,
   socketAuthorization,
+  socketPropertyAuthorization,
   socketPermissionCheck,
   socketHotelContext,
   requireHotelRole,

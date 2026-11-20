@@ -9,9 +9,12 @@ data:
   # "TravelNest API Docs JSON"). Everything else on the API stays public.
   ENABLE_API_DOCS: "true"
   PORT: "3000"
-  CLIENT_HOST: https://deployserver.work
-  ADMIN_CLIENT_HOST: https://admin.deployserver.work
-  SUPERADMIN_CLIENT_HOST: https://superadmin.deployserver.work
+  # Prometheus metrics listener, scraped in-cluster only (see the pod
+  # annotations in deploy/k8s/apps/api/base/deployment.yaml).
+  METRICS_PORT: "9464"
+  CLIENT_HOST: https://trestay.com
+  ADMIN_CLIENT_HOST: https://admin.trestay.com
+  SUPERADMIN_CLIENT_HOST: https://superadmin.trestay.com
   DB_USER: travelnest
   DB_NAME: travelnest
   REDIS_DB: "1"
@@ -24,10 +27,9 @@ data:
   ANALYTICS_SERVICE_TIMEOUT_MS: "2000"
   MEDIA_SERVICE_TIMEOUT_MS: "30000"
   NOTIFICATION_SERVICE_TIMEOUT_MS: "10000"
-  MONGODB_DATABASE: travelnest_analytics
-  API_BASE_URL: https://api.deployserver.work/api/v1
-  EXTERNAL_BASE_URL: https://api.deployserver.work
-  KEYCLOAK_ISSUER: https://keycloak.deployserver.work/realms/travelnest
+  API_BASE_URL: https://api.trestay.com/api/v1
+  EXTERNAL_BASE_URL: https://api.trestay.com
+  KEYCLOAK_ISSUER: https://keycloak.trestay.com/realms/travelnest
   KEYCLOAK_CLIENT_ID: travelnest-web
   KEYCLOAK_AUDIENCE: travelnest-web
   KEYCLOAK_CLOCK_SKEW_SECONDS: "60"
@@ -39,3 +41,13 @@ data:
   KEYCLOAK_INTERNAL_URL: http://keycloak:8080/realms/travelnest
   WORKER_HEALTH_PORT: "4001"
   REDIS_USERNAME: ""
+  # One trusted hop (Traefik) in front of the API. Visitor identity for rate
+  # limiting does NOT come from here — it comes from CF-Connecting-IP, because
+  # cloudflared sits between Cloudflare and Traefik (see
+  # server/utils/clientIp.util.js).
+  TRUST_PROXY: "1"
+  # Addresses that skip throttling entirely, for load tests and synthetic
+  # probes. Prefer RATE_LIMIT_BYPASS_TOKEN (in the Secret) for anything
+  # ephemeral: a throwaway VM changes address every run, and a stale entry for
+  # a recycled IP is a standing bypass. Empty = nobody bypasses.
+  # RATE_LIMIT_ALLOWLIST: "203.0.113.10,2001:db8::/64"

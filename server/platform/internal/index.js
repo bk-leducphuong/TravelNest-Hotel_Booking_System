@@ -1,18 +1,18 @@
-const { DATABASE_SEEDERS, MONGODB_SEEDERS } = require('./registries');
+const { DATABASE_SEEDERS, ANALYTICS_SEEDERS } = require('./registries');
 const {
   assertKnownTask,
   buildDatabaseSeedArgs,
   buildImageSeedArgs,
   buildImageSeedEnv,
   buildCityImageSeedArgs,
-  buildMongodbSeedArgs,
+  buildAnalyticsSeedArgs,
 } = require('./args');
 const { runScript, runningTasks } = require('./runner');
 
 /**
  * Internal maintenance tooling (superadmin API).
  *
- * Migrations and database/MongoDB seeders, run as child processes so
+ * Migrations and database/analytics seeders, run as child processes so
  * a long job can't take down the API process. Each task is guarded against
  * concurrent runs. Not a domain module - operational plumbing.
  */
@@ -53,11 +53,11 @@ async function runCityImageSeeder(body = {}) {
   });
 }
 
-async function runMongodbSeeder(target, body = {}) {
-  const script = assertKnownTask(MONGODB_SEEDERS, target, 'MongoDB seeder');
-  const args = buildMongodbSeedArgs(target, body);
+async function runAnalyticsSeeder(target, body = {}) {
+  const script = assertKnownTask(ANALYTICS_SEEDERS, target, 'analytics seeder');
+  const args = buildAnalyticsSeedArgs(target, body);
 
-  return runScript(`mongodb:seed:${target}`, script, args, {
+  return runScript(`analytics:seed:${target}`, script, args, {
     timeoutMs: body.timeoutMs,
   });
 }
@@ -65,7 +65,7 @@ async function runMongodbSeeder(target, body = {}) {
 function listTasks() {
   return {
     databaseSeeders: Object.keys(DATABASE_SEEDERS),
-    mongodbSeeders: Object.keys(MONGODB_SEEDERS),
+    analyticsSeeders: Object.keys(ANALYTICS_SEEDERS),
     runningTasks: Array.from(runningTasks.keys()),
   };
 }
@@ -75,6 +75,6 @@ module.exports = {
   runDatabaseSeeder,
   runImageSeeder,
   runCityImageSeeder,
-  runMongodbSeeder,
+  runAnalyticsSeeder,
   listTasks,
 };

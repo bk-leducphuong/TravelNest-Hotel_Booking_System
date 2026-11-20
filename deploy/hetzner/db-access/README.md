@@ -1,6 +1,6 @@
 # Remote database access (Cloudflare Tunnel + Access)
 
-This directory lets you reach the in-cluster **MySQL / Redis / MongoDB** from
+This directory lets you reach the in-cluster **MySQL / Redis** from
 anywhere — through the existing Cloudflare Tunnel, protected by Cloudflare
 Access (email OTP) — **without opening any database port** on the VPS or
 publishing the databases as raw public endpoints.
@@ -15,7 +15,7 @@ DBeaver ─▶ 127.0.0.1:3306
 Three pieces:
 
 1. **Tunnel ingress** — `deploy/hetzner/cloudflared/config.yml` maps
-   `mysql|redis|mongodb.deployserver.work` to `tcp://localhost:<port>`.
+   `mysql|redis.deployserver.work` to `tcp://localhost:<port>`.
 2. **Host port-forwards** — `travelnest-portforward@<name>.service` publishes the
    ClusterIP services on loopback (installed by `install-db-portforwards.sh`).
 3. **Cloudflare Access** — an Access application per hostname (email OTP).
@@ -24,7 +24,7 @@ Three pieces:
 
 ```bash
 # Proxyied CNAMEs pointing at the tunnel.
-for h in mysql redis mongodb; do
+for h in mysql redis; do
   cf dns records create -z deployserver.work --body \
     "{\"type\":\"CNAME\",\"name\":\"${h}.deployserver.work\",\"content\":\"f3cf83fa-a17c-4e1e-ae43-8c2774b0def8.cfargotunnel.com\",\"proxied\":true,\"ttl\":1}"
 done
@@ -42,7 +42,7 @@ cf zero-trust access applications create --body '{
     "include": [{ "email": { "email": "you@example.com" } }]
   }]
 }'
-# repeat for redis.deployserver.work and mongodb.deployserver.work
+# repeat for redis.deployserver.work
 ```
 
 > Access is the only thing guarding these endpoints. Keep the policy list tight.
@@ -52,10 +52,10 @@ cf zero-trust access applications create --body '{
 
 ```bash
 sudo deploy/hetzner/db-access/install-db-portforwards.sh
-ss -ltnp | grep -E '13306|16379|27017'   # all four should show 127.0.0.1
+ss -ltnp | grep -E '13306|16379'   # both should show 127.0.0.1
 ```
 
-Instances: `travelnest-portforward@{mysql,redis,mongodb}.service`
+Instances: `travelnest-portforward@{mysql,redis}.service`
 (`systemctl status travelnest-portforward@mysql`).
 
 ## 3. Client (laptop)
@@ -65,12 +65,10 @@ Instances: `travelnest-portforward@{mysql,redis,mongodb}.service`
 cloudflared access tcp --hostname mysql.deployserver.work --url 127.0.0.1:3306
 # Redis
 cloudflared access tcp --hostname redis.deployserver.work --url 127.0.0.1:6379
-# MongoDB
-cloudflared access tcp --hostname mongodb.deployserver.work --url 127.0.0.1:27017
 ```
 
 Then point your client at `127.0.0.1:<port>` (DBeaver, TablePlus, `redis-cli`,
-`mongosh`, …). The first connection opens a browser to complete the Access
+…). The first connection opens a browser to complete the Access
 email-OTP login.
 
 Non-interactive clients (CI, scripts) should use an Access **service token**
@@ -80,9 +78,8 @@ instead of email OTP.
 
 - **MySQL**: the app's `travelnest` user (`DB_USER` / `DB_PASSWORD` in
   `deploy/k8s/.env.prod`).
-- **Redis / MongoDB**: authentication is enabled (see the `overlays/prod` for
-  the `redis` and `mongodb` infra apps) — use `REDIS_PASSWORD` /
-  `MONGODB_USER` + `MONGODB_PASSWORD` from `deploy/k8s/.env.prod`.
+- **Redis**: authentication is enabled (see `infra/redis/overlays/prod`) — use
+  `REDIS_PASSWORD` from `deploy/k8s/.env.prod`.
 
 ## Caveats
 

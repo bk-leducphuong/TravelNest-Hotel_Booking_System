@@ -8,6 +8,7 @@ const paymentModule = require('@modules/payment');
 const bookingModule = require('@modules/booking');
 const payoutModule = require('@modules/payout');
 const promotionModule = require('@modules/promotion');
+const messagingModule = require('@modules/messaging');
 const meRoutes = require('./me.routes');
 
 const router = express.Router();
@@ -31,5 +32,6 @@ router.use('/inventory', inventoryModule.adminRoutes);
 router.use('/payments', paymentModule.adminRoutes);
 router.use('/bookings', bookingModule.adminRoutes);
 router.use('/payouts', payoutModule.adminRoutes);
+router.use('/conversations', messagingModule.adminRoutes);
 
 module.exports = router;

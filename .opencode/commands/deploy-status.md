@@ -16,7 +16,7 @@ Run these and summarise the results:
 3. Recent prod API errors (last ~200 lines):
    `ssh hetzner 'sudo kubectl -n travelnest logs deploy/api --tail=200'`
 4. Host health: disk, memory, and the key units:
-   `ssh hetzner 'df -h /; free -h; systemctl is-active k3s cloudflared travelnest-portforward@mysql travelnest-portforward@redis travelnest-portforward@mongodb'`
+   `ssh hetzner 'df -h /; free -h; systemctl is-active k3s cloudflared travelnest-portforward@mysql travelnest-portforward@redis'`
 5. Grafana Cloud firing alerts (if `gcx` is authenticated):
    `gcx alert rules list`
 

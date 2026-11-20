@@ -31,7 +31,7 @@ Use Node and Yarn versions declared in the root `package.json`, Docker Compose, 
 | Admin app            | `http://localhost:8000`                                            |
 | Worker health        | `http://localhost:4001/health` when running on the host            |
 | MySQL                | Actual Compose mapping is `3306:3306`; verify environment settings |
-| Redis / MongoDB      | `6379` / `27017`                                                   |
+| Redis                | `6379`                                                             |
 | MinIO API / console  | `9000` / `9001`                                                    |
 | Keycloak             | `8080`                                                             |
 | NATS / monitoring    | `4222` / `8222`                                                    |
@@ -52,7 +52,7 @@ These steps change the local database and create sandbox financial records. Conf
 ```bash
 docker compose --env-file server/.env.development \
   -f server/infra/docker-compose.yml \
-  up -d mysql redis mongodb minio nats mailpit keycloak
+  up -d mysql redis minio nats mailpit keycloak
 
 make infra-check
 make infra-mysql ARGS="-e 'SELECT DATABASE(), @@hostname, @@port;'"

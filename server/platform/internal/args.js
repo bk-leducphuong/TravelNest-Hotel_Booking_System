@@ -144,7 +144,7 @@ function buildCityImageSeedArgs(body = {}) {
   return args;
 }
 
-function buildMongodbSeedArgs(target, body = {}) {
+function buildAnalyticsSeedArgs(target, body = {}) {
   const args = [];
 
   booleanFlag(args, body.clear === true || body.clearExisting === true, '--clear');
@@ -172,5 +172,5 @@ module.exports = {
   buildImageSeedArgs,
   buildImageSeedEnv,
   buildCityImageSeedArgs,
-  buildMongodbSeedArgs,
+  buildAnalyticsSeedArgs,
 };

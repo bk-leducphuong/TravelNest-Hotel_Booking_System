@@ -13,6 +13,7 @@ import {
   RotateCcw,
   CreditCard,
   Star,
+  MessageSquare,
   Settings,
   Users,
 } from "lucide-vue-next";
@@ -31,6 +32,7 @@ const icons = {
   refunds: RotateCcw,
   accounts: CreditCard,
   reviews: Star,
+  messages: MessageSquare,
   settings: Settings,
   team: Users,
 };

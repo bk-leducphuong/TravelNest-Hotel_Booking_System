@@ -15,7 +15,7 @@ Deployment is **Kubernetes + Argo CD GitOps** only — manifests live in
 | Terraform (managed cloud tier)  | `deploy/terraform/` | Optional / alternate   |
 
 The live cluster is a single-node **k3s** cluster on a Hetzner CAX21 VPS (ARM64).
-MySQL, Redis, MinIO, MongoDB, NATS and Keycloak run **in-cluster**. Hotel search
+MySQL, Redis, MinIO, NATS and Keycloak run **in-cluster**. Hotel search
 is MySQL-only, so there is no external search engine. Public traffic arrives
 through a **Cloudflare Tunnel**.
 
@@ -35,7 +35,6 @@ deploy/k8s/
 ├── infra/                 In-cluster stateful services (base + overlays)
 │   ├── keycloak/          Identity provider
 │   ├── minio/             Object storage
-│   ├── mongodb/           Analytics events
 │   ├── mysql/             Primary database (+ prod backup CronJob)
 │   ├── nats/              Message bus
 │   └── redis/             Cache and queues
@@ -89,7 +88,6 @@ manifest-level detail and [`deploy/docs/CICD.md`](docs/CICD.md) for the pipeline
 | ------------- | ---------- | ---------------------------------------------------- |
 | **MySQL 8.0** | in-cluster | Primary application database                         |
 | **Redis 7**   | in-cluster | Caching, sessions, BullMQ queues                     |
-| **MongoDB**   | in-cluster | Analytics events                                     |
 | **MinIO**     | in-cluster | S3-compatible object storage (media + MySQL backups) |
 | **NATS**      | in-cluster | JetStream event bus for microservices                |
 | **Keycloak**  | in-cluster | Identity and access management                       |

@@ -1,0 +1,59 @@
+# Grafana Cloud monitoring via the k8s-monitoring Helm chart.
+#
+# This manifest is rendered by the root app (`travelnest-root`, path
+# deploy/k8s/environments/prod) so the Application itself is GitOps-managed.
+#
+# A single Argo CD Application with three sources:
+#   1. deploy/k8s/monitoring/secrets  (kustomize + KSOPS) -> Namespace + the
+#      `grafana-cloud-remote-config` Secret holding the Grafana Cloud
+#      credentials.
+#   2. This repository, referenced as `values`, so the chart can read
+#      deploy/k8s/monitoring/values.yaml.
+#   3. the grafana/k8s-monitoring Helm chart.
+#
+# Deployed under the `default` AppProject (not `travelnest`) because the chart
+# creates cluster-scoped RBAC (ClusterRole/ClusterRoleBinding), DaemonSets and a
+# new namespace, which the tight `travelnest` AppProject deliberately disallows.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: monitoring
+  annotations:
+    # Safety valve: pruning this Application would cascade-delete the whole
+    # monitoring stack (namespace, Secret, Alloy, dashboards' scrape). If the
+    # manifest is ever removed from Git, leave the app in place and delete it
+    # deliberately instead.
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  sources:
+    # Source 1: the sealed Secret (decrypted by KSOPS at render time).
+    - repoURL: https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System.git
+      targetRevision: master
+      path: deploy/k8s/monitoring/secrets
+    # Source 2: value files. `$values/` paths below are relative to the repo
+    # root of this source.
+    - repoURL: https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System.git
+      targetRevision: master
+      ref: values
+    # Source 3: the chart. No secrets live here — the token is read from the
+    # Secret created by source 1.
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: k8s-monitoring
+      targetRevision: 4.5.3
+      helm:
+        releaseName: grafana-cloud
+        valueFiles:
+          - $values/deploy/k8s/monitoring/values.yaml

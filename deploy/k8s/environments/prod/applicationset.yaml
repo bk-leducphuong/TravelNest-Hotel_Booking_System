@@ -20,8 +20,8 @@ spec:
   generators:
     - list:
         elements:
-          # Self-contained cluster (single-node k3s): MySQL, Redis, MongoDB,
-          # NATS and Keycloak all run in-cluster. Object storage is Cloudflare
+          # Self-contained cluster (single-node k3s): MySQL, Redis, NATS and
+          # Keycloak all run in-cluster. Object storage is Cloudflare
           # R2 (not in-cluster); its credentials arrive through the sealed prod
           # secrets. Hotel search is MySQL-backed, so there is no external
           # search engine to configure.
@@ -30,9 +30,6 @@ spec:
             wave: "10"
           - name: travelnest-redis
             path: deploy/k8s/infra/redis/overlays/prod
-            wave: "10"
-          - name: travelnest-mongodb
-            path: deploy/k8s/infra/mongodb/overlays/prod
             wave: "10"
           - name: travelnest-nats
             path: deploy/k8s/infra/nats

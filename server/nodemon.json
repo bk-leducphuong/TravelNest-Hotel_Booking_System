@@ -5,7 +5,7 @@
     "**/infra/minio-data-test/**",
     "**/infra/database/migrations/**",
     "**/seeders/database/**",
-    "**/seeders/mongodb/**",
+    "**/seeders/analytics/**",
     "**/docs/**"
   ]
 }

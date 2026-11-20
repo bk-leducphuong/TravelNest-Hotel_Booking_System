@@ -4,6 +4,7 @@ const logger = require('@config/logger.config');
 const sequelize = require('@config/database.config');
 const bookingModule = require('@modules/booking');
 const promotionModule = require('@modules/promotion');
+const { recordBookingConfirmation } = require('@platform/metrics');
 const ledgerService = require('../ledger.service');
 
 const transactionRepository = require('../../infrastructure/transaction.repository');
@@ -11,6 +12,41 @@ const paymentRepository = require('../../infrastructure/payment.repository');
 
 const { fromMinorUnits } = require('../../domain/money');
 const { createObligation } = require('../refund-obligations');
+
+function metadataOf(transaction) {
+  const metadata = transaction && transaction.metadata;
+
+  if (!metadata) {
+    return {};
+  }
+
+  if (typeof metadata === 'string') {
+    try {
+      return JSON.parse(metadata);
+    } catch (error) {
+      return {};
+    }
+  }
+
+  return metadata;
+}
+
+/** Earliest booking creation time, so multi-room bookings count once. */
+function earliestCreatedAt(bookings) {
+  return (bookings || []).reduce((earliest, booking) => {
+    const value = booking && booking.created_at;
+    if (!value) {
+      return earliest;
+    }
+
+    const millis = new Date(value).getTime();
+    if (!Number.isFinite(millis)) {
+      return earliest;
+    }
+
+    return earliest === null || millis < earliest.millis ? { value, millis } : earliest;
+  }, null);
+}
 
 /**
  * Handle a `payment_intent.succeeded` webhook. Idempotent: safe to call more
@@ -20,6 +56,7 @@ async function handlePaymentSucceeded(context) {
   const { paymentIntentId, bookingCode, bookingId, transactionId, hotelId, buyerId, currency } =
     context;
   const amount = fromMinorUnits(context.amount, currency);
+  const processingStartedAt = new Date();
 
   logger.info('Processing payment succeeded', { paymentIntentId, bookingCode });
 
@@ -182,6 +219,7 @@ async function handlePaymentSucceeded(context) {
     }
 
     // 4. Confirm bookings. The new flow creates pending-payment bookings before payment.
+    const createdBookings = [];
     if (existingBookings.length === 0) {
       const { bookedRooms, checkInDate, checkOutDate, numberOfGuests } = context;
 
@@ -203,6 +241,8 @@ async function handlePaymentSucceeded(context) {
             },
             { transaction }
           );
+
+          createdBookings.push(createdBooking);
 
           if (!primaryBooking) {
             primaryBooking = createdBooking;
@@ -238,6 +278,23 @@ async function handlePaymentSucceeded(context) {
     );
 
     await transaction.commit();
+
+    // Only successful confirmations are observed: the early returns above are
+    // idempotent replays or late payments that end in a refund, not a booking.
+    if (primaryBooking) {
+      const confirmedAt = new Date();
+      const earliest = earliestCreatedAt(
+        existingBookings.length > 0 ? existingBookings : createdBookings
+      );
+
+      recordBookingConfirmation({
+        flow: 'prepay',
+        holdCreatedAt: metadataOf(dbTransaction).hold_created_at || null,
+        bookingCreatedAt: earliest ? earliest.value : null,
+        confirmedAt,
+        processingStartedAt,
+      });
+    }
 
     logger.info('Payment succeeded processed successfully', { paymentIntentId, bookingCode });
 

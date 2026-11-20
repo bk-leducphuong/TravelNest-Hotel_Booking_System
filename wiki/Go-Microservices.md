@@ -19,7 +19,7 @@ TravelNest has three Go microservices under `services/`, communicating with the 
 │
 │ Data Stores:
 │ ┌────────┐ ┌──────┐ ┌────────┐
-│ │MongoDB │ │MinIO │ │ MySQL  │
+│ │ MySQL  │ │MinIO │ │ MySQL  │
 │ └────────┘ └──────┘ └────────┘
 ```
 
@@ -28,9 +28,9 @@ TravelNest has three Go microservices under `services/`, communicating with the 
 Handles search analytics and hotel view tracking.
 
 - **Language**: Go 1.22
-- **Dependencies**: NATS, Redis, MongoDB
+- **Dependencies**: NATS, Redis, MySQL
 - **Events consumed**: search.queries, hotel.views
-- **Storage**: MongoDB (analytics data)
+- **Storage**: MySQL (`analytics_search_logs`, `analytics_hotel_view_events`)
 
 ## Media Service (`services/media/`)
 

@@ -15,6 +15,13 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: worker
+      annotations:
+        # BullMQ job-duration metrics share the health port (4001). Scraped by
+        # the Alloy collector via annotationAutodiscovery.
+        k8s.grafana.com/scrape: "true"
+        k8s.grafana.com/job: travelnest-worker
+        k8s.grafana.com/metrics.portName: health
+        k8s.grafana.com/metrics.path: /metrics
     spec:
       containers:
         - name: worker
