@@ -1,5 +1,9 @@
 <script>
   import { Delete } from '@element-plus/icons-vue'
+  // ElMessageBox is opened from JS, so the auto-import resolver cannot add its
+  // stylesheet; import it explicitly or the dialog renders unstyled.
+  import { ElMessageBox } from 'element-plus'
+  import 'element-plus/es/components/message-box/style/css'
   import Header from '@/components/Header.vue'
   import Footer from '@/components/Footer.vue'
   import EmptyState from '@/components/common/EmptyState.vue'
@@ -427,7 +431,6 @@
         if (!conversation || this.deletingId) return
 
         try {
-          const { ElMessageBox } = await import('element-plus')
           await ElMessageBox.confirm(
             this.$t('messages.deleteConfirm', { hotel: this.hotelName(conversation) }),
             this.$t('messages.deleteTitle'),
