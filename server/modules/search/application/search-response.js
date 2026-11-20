@@ -3,10 +3,12 @@ const { buildFilterOptions } = require('../domain/facets');
 /**
  * Build the paginated search response envelope.
  *
- * Facets and totals are computed over the complete eligible set (before
- * pagination), never over a candidate cap or a single page.
+ * Facets and totals use all eligible hotels supplied by the application before
+ * slicing a page. Text-only searches may already have been capped by the
+ * repository, so these totals are not necessarily every database name match.
  */
 
+/** Echo the application search context; this does not recompute filters. */
 function buildFiltersApplied(params) {
   return {
     destinationId: params.destinationId,
@@ -40,6 +42,7 @@ function buildFiltersApplied(params) {
   };
 }
 
+/** Page numbers are 1-based. An empty result has totalPages=0. */
 function buildPagination(params, total) {
   const { page, limit } = params;
   const totalPages = Math.ceil(total / limit);
@@ -54,6 +57,12 @@ function buildPagination(params, total) {
   };
 }
 
+/**
+ * Accept already-ranked eligible hotels. Slice only the card list; calculate
+ * counts and filter options from the unsliced list to keep page changes from
+ * changing sidebar counts. No further SQL runs here. search_time_ms measures
+ * work up to this formatting call, before favorites and controller side effects.
+ */
 function formatSearchResponse(hotels, params, candidateCount, startTime) {
   const { page, limit } = params;
   const offset = (page - 1) * limit;
@@ -78,7 +87,10 @@ function formatSearchResponse(hotels, params, candidateCount, startTime) {
 }
 
 /**
- * Build the response envelope for a search with no candidates/availability.
+ * Use the same response shape when there are no candidates or no qualifying
+ * offers. This is a successful search with an empty list, not an HTTP error.
+ * The empty envelope reports candidates=0 even when candidates existed but
+ * none survived offer filtering; it does not preserve the earlier count.
  */
 function formatEmptyResponse(params, startTime) {
   return {

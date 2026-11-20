@@ -15,10 +15,17 @@ function roundCoordinate(value) {
 
 /**
  * Publish a search-performed event for the analytics pipeline.
+ * Called both by the hotel GET controller and the explicit POST /search/log
+ * endpoint. publish() hands the event to platform transports; this function
+ * does not insert an analytics table row. Search results can be returned before
+ * the GET controller's logging promise settles.
  * Best-effort: returns null on failure.
  */
 async function saveSearchLog(searchData, userId = null, metadata = {}) {
   try {
+    // Each invocation receives its own event ID; separate GET/POST logging
+    // calls are not deduplicated here. Coordinates are rounded before leaving
+    // the module, and the payload contains no raw user IP address.
     const eventId = uuidv4();
     const occurredAt = new Date();
     const radius = Number(searchData.radius);

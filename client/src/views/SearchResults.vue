@@ -140,8 +140,12 @@
       },
     },
     watch: {
+      // The URL drives initial load, shared links, back/forward, filters and
+      // pagination. Restore Vuex/form state before constructing API params.
       '$route.query': {
         async handler() {
+          // History saving is awaited below. If another navigation happens
+          // meanwhile, only the newest watcher may start its hotel request.
           const version = ++this.queryVersion;
           this.locationError = null;
           if (this.isSearchUrlValid()) {
@@ -238,6 +242,8 @@
         }
         return value;
       },
+      // SearchBar and this page share Vuex criteria. URL values remain strings
+      // here; searchHotels converts guest counts before sending the request.
       updateSearchDataInStore() {
         this.updateLocation(this.$route.query.location);
         this.updateCheckInDate(this.$route.query.checkInDate);
@@ -276,6 +282,9 @@
           locationSource,
         });
       },
+      // Avoid saving the same core criteria repeatedly for sort/page changes.
+      // The Vuex action saves local history and POSTs /search/log; the GET hotel
+      // endpoint also publishes analytics, so this is a separate logging path.
       async saveSearchInformationOnce() {
         const searchKey = this.getSearchCriteriaKey();
         if (searchKey === this.lastSavedSearchKey) return;
@@ -323,6 +332,8 @@
       getMergedAmenities(filters = this.filters) {
         return Array.from(new Set([...(filters.amenities || []), ...(filters.mealPlans || [])]));
       },
+      // Convert URL/UI filters into the backend contract. Meal-plan selections
+      // are sent as amenity codes; arrays become comma-separated query values.
       buildFilterParams() {
         const params = {};
         const amenities = this.getMergedAmenities();
@@ -369,6 +380,8 @@
         nextQuery.page = 1;
         return nextQuery;
       },
+      // Changing filters resets page=1 in serializeFiltersToQuery, then the
+      // route watcher fetches fresh results rather than filtering this page.
       handleFilterChange(nextFilters) {
         this.$router.push({
           query: this.serializeFiltersToQuery(nextFilters),
@@ -384,6 +397,11 @@
         this.filterHotels();
         this.clearFilters();
       },
+      /**
+       * Translate route-backed Vuex state to API params, fetch one page, and
+       * update cards/sidebar/pagination. searchVersion ignores stale responses
+       * when requests finish out of order; it does not cancel those requests.
+       */
       async searchHotels() {
         if (!this.isSearchUrlValid()) return;
         const version = ++this.searchVersion;
@@ -414,8 +432,10 @@
             params.destinationId = this.$route.query.destinationId;
           }
 
-          const response = await SearchService.searchHotels(params);
+          const response = await SearchService.searchHotels(params); 
           if (version !== this.searchVersion) return;
+          // http.js already unwraps Axios response.data. The remaining data
+          // property belongs to the API envelope { success, data: { hotels } }.
           const result = response?.data ?? response;
           const list = result?.hotels ?? [];
           const pag = result?.pagination ?? {};
@@ -635,6 +655,9 @@
           container?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
       },
+      // This name box searches ONLY the currently fetched page in memory.
+      // Unlike sidebar filters, it does not change the URL or call the API,
+      // and it does not recalculate the backend pagination total.
       filterHotels() {
         const query = this.searchQuery.trim().toLowerCase();
         const name = (h) => (h.hotel_name || h.name || '').toLowerCase();
