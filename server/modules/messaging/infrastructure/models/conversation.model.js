@@ -87,6 +87,10 @@ module.exports = function (sequelize, DataTypes) {
           name: 'conversations_guest_last_message',
           fields: [{ name: 'guest_user_id' }, { name: 'last_message_at' }],
         },
+        {
+          name: 'conversations_guest_deleted',
+          fields: [{ name: 'guest_user_id' }, { name: 'guest_deleted_at' }],
+        },
       ],
     }
   );
