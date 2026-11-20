@@ -24,6 +24,7 @@ const emptyResponse = { data: [], meta: { page: 1, limit: 10, total: 0 } };
 // interpolates {placeholders} so text assertions keep working.
 const messages = {
   'bookingFlow.paginationSummary': 'Showing {start}-{end} of {total} bookings',
+  'bookingFlow.bookedOn': 'Booked on {date}',
 };
 
 const translate = (key, params) => {
@@ -199,6 +200,19 @@ describe('Bookings', () => {
       false,
       expect.objectContaining({ page: 1, limit: 10, bookedAfter: expect.any(String) })
     );
+  });
+
+  it('shows when the booking was created, including the time', async () => {
+    const { wrapper } = mountView({
+      response: { data: [bookingRow('ABC123')], meta: { page: 1, limit: 10, total: 1 } },
+    });
+    await flushPromises();
+
+    const booked = wrapper.find('.trip-booked').text();
+    expect(booked).toContain('Booked on');
+    expect(booked).toContain('2026');
+    expect(booked).toMatch(/\d{1,2}:\d{2}/);
+    wrapper.unmount();
   });
 
   it('maps the dropdown options to rolling windows', () => {

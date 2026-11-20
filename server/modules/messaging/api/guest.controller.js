@@ -7,6 +7,7 @@ const { sendGuestMessage } = require('../application/sendMessage');
 const { markGuestConversationRead } = require('../application/markConversationRead');
 const { getGuestUnreadCount } = require('../application/getUnreadCount');
 const { uploadGuestAttachments } = require('../application/uploadAttachments');
+const { deleteConversationForGuest } = require('../application/deleteConversationForGuest');
 const { toConversationDto } = require('../application/serializers');
 
 /**
@@ -19,6 +20,7 @@ const listConversationsHandler = async (req, res) => {
     page: req.query.page,
     limit: req.query.limit,
     unreadOnly: req.query.unreadOnly,
+    q: req.query.q,
   });
 
   res.status(200).json({
@@ -93,6 +95,15 @@ const unreadCountHandler = async (req, res) => {
   res.status(200).json({ data: result });
 };
 
+const deleteConversationHandler = async (req, res) => {
+  await deleteConversationForGuest({
+    userId: req.user.id,
+    conversationId: req.params.conversationId,
+  });
+
+  res.status(204).end();
+};
+
 module.exports = {
   listConversationsHandler,
   openConversationHandler,
@@ -101,4 +112,5 @@ module.exports = {
   uploadAttachmentsHandler,
   markReadHandler,
   unreadCountHandler,
+  deleteConversationHandler,
 };

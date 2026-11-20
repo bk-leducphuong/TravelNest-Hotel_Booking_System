@@ -77,6 +77,10 @@ async function openConversationForGuest({ userId, bookingId }) {
     if (String(existing.guest_user_id) !== String(userId)) {
       throw new ApiError(404, 'CONVERSATION_NOT_FOUND', 'Conversation not found.');
     }
+    // Reopening from the booking undoes an inbox delete.
+    if (existing.guest_deleted_at) {
+      await conversationRepository.restoreForGuest(existing.id, userId);
+    }
     return detailOr(existing);
   }
 
