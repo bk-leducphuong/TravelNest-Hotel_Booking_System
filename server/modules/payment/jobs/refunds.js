@@ -8,6 +8,8 @@ const { processRefundAttempt } = require('../application/admin/processRefundAtte
 
 let queue;
 let reconciliationQueue;
+
+// Reuse the producer connection when scheduling recovery jobs within this process.
 function getQueue() {
   if (!queue) {
     queue = new Queue('refundRecovery', {
@@ -18,20 +20,27 @@ function getQueue() {
   }
   return queue;
 }
+
+/** Recover due refunds, then deliver the events saved by payment/cancellation transactions. */
 async function processRefundRecovery() {
   // The SQL obligation is the durable work item. Redis loss does not lose it.
+  // The repository excludes refunds waiting for backoff, an active lease, or manual attention.
   const due = await refunds.due(50);
+  // Bound provider/database load: process at most five refunds in parallel per batch.
   for (let index = 0; index < due.length; index += 5) {
     await Promise.all(
       due.slice(index, index + 5).map(async (refund) => {
         try {
+          // The application service owns leasing, Stripe idempotency, retries, and reconciliation.
           await processRefundAttempt({ refundId: refund.id });
         } catch (error) {
+          // One deferred refund must not prevent the remaining refunds from being attempted.
           logger.error({ refundId: refund.id, error: error.message }, 'Refund recovery deferred');
         }
       })
     );
   }
+  // Events are committed with business changes and delivered separately after those commits.
   for (const event of await outbox.pending(100)) {
     if (event.event_type === 'payment.refund_succeeded') {
       const current = await refunds.findById(event.payload.refundId);

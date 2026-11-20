@@ -9,6 +9,9 @@ function normalizeStripeError(error) {
   normalizedError.type = error.type || 'api_error';
   normalizedError.statusCode = error.statusCode || 500;
   normalizedError.provider = 'stripe';
+  // Deployment/configuration faults are not worth retrying on a backoff loop;
+  // keep the flag so callers can route them straight to manual attention.
+  normalizedError.permanent = Boolean(error.permanent);
   normalizedError.raw = error;
 
   return normalizedError;

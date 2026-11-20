@@ -15,7 +15,28 @@ const { normalizeStripeError } = require('./stripe-error');
  */
 class StripeCustomerAdapter {
   constructor() {
-    this.stripe = stripeConfig.client;
+    this.stripe = stripeConfig.client || null;
+  }
+
+  /**
+   * Return the Stripe SDK client.
+   *
+   * Missing credentials are a deployment error, not a provider error: without
+   * this guard every call surfaces as an opaque
+   * `Cannot read properties of undefined (reading 'refunds')`, which hides the
+   * real cause from operators and from the refund worker's failure codes.
+   */
+  getClient() {
+    if (!this.stripe) {
+      const error = new Error(
+        'Stripe is not configured: STRIPE_SECRET_KEY is missing from this process environment'
+      );
+      error.code = 'stripe_not_configured';
+      // Nothing was sent to Stripe, so retrying cannot recover on its own.
+      error.permanent = true;
+      throw error;
+    }
+    return this.stripe;
   }
 
   /**
@@ -45,11 +66,14 @@ class StripeCustomerAdapter {
    */
   async getPaymentMethod(paymentMethodId) {
     try {
-      const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
+      const paymentMethod = await this.getClient().paymentMethods.retrieve(paymentMethodId);
 
       return this.normalizePaymentMethod(paymentMethod);
     } catch (error) {
-      logger.error('Stripe payment method retrieval failed:', error);
+      logger.error(
+        { error: error.message, code: error.code },
+        'Stripe payment method retrieval failed'
+      );
       throw normalizeStripeError(error);
     }
   }
@@ -59,7 +83,7 @@ class StripeCustomerAdapter {
    */
   async createCustomer({ email, name, metadata } = {}) {
     try {
-      const customer = await this.stripe.customers.create({
+      const customer = await this.getClient().customers.create({
         email: email || undefined,
         name: name || undefined,
         metadata: metadata || {},
@@ -67,7 +91,7 @@ class StripeCustomerAdapter {
 
       return { id: customer.id, email: customer.email, provider: 'stripe' };
     } catch (error) {
-      logger.error('Stripe customer creation failed:', error);
+      logger.error({ error: error.message, code: error.code }, 'Stripe customer creation failed');
       throw normalizeStripeError(error);
     }
   }
@@ -77,7 +101,7 @@ class StripeCustomerAdapter {
    */
   async getCustomer(customerId) {
     try {
-      const customer = await this.stripe.customers.retrieve(customerId);
+      const customer = await this.getClient().customers.retrieve(customerId);
 
       return {
         id: customer.id,
@@ -88,7 +112,7 @@ class StripeCustomerAdapter {
         provider: 'stripe',
       };
     } catch (error) {
-      logger.error('Stripe customer retrieval failed:', error);
+      logger.error({ error: error.message, code: error.code }, 'Stripe customer retrieval failed');
       throw normalizeStripeError(error);
     }
   }
@@ -98,7 +122,7 @@ class StripeCustomerAdapter {
    */
   async updateCustomerDefaultPaymentMethod(customerId, paymentMethodId) {
     try {
-      const customer = await this.stripe.customers.update(customerId, {
+      const customer = await this.getClient().customers.update(customerId, {
         invoice_settings: { default_payment_method: paymentMethodId || null },
       });
 
@@ -108,7 +132,10 @@ class StripeCustomerAdapter {
         provider: 'stripe',
       };
     } catch (error) {
-      logger.error('Stripe customer default update failed:', error);
+      logger.error(
+        { error: error.message, code: error.code },
+        'Stripe customer default update failed'
+      );
       throw normalizeStripeError(error);
     }
   }
@@ -118,7 +145,7 @@ class StripeCustomerAdapter {
    */
   async createSetupIntent({ customerId, metadata } = {}) {
     try {
-      const setupIntent = await this.stripe.setupIntents.create({
+      const setupIntent = await this.getClient().setupIntents.create({
         customer: customerId,
         payment_method_types: ['card'],
         usage: 'off_session',
@@ -133,7 +160,10 @@ class StripeCustomerAdapter {
         provider: 'stripe',
       };
     } catch (error) {
-      logger.error('Stripe setup intent creation failed:', error);
+      logger.error(
+        { error: error.message, code: error.code },
+        'Stripe setup intent creation failed'
+      );
       throw normalizeStripeError(error);
     }
   }
@@ -143,7 +173,7 @@ class StripeCustomerAdapter {
    */
   async getSetupIntent(setupIntentId) {
     try {
-      const setupIntent = await this.stripe.setupIntents.retrieve(setupIntentId);
+      const setupIntent = await this.getClient().setupIntents.retrieve(setupIntentId);
 
       return {
         id: setupIntent.id,
@@ -154,7 +184,10 @@ class StripeCustomerAdapter {
         raw: setupIntent,
       };
     } catch (error) {
-      logger.error('Stripe setup intent retrieval failed:', error);
+      logger.error(
+        { error: error.message, code: error.code },
+        'Stripe setup intent retrieval failed'
+      );
       throw normalizeStripeError(error);
     }
   }
@@ -164,14 +197,17 @@ class StripeCustomerAdapter {
    */
   async listPaymentMethods(customerId) {
     try {
-      const result = await this.stripe.paymentMethods.list({
+      const result = await this.getClient().paymentMethods.list({
         customer: customerId,
         type: 'card',
       });
 
       return result.data.map((paymentMethod) => this.normalizePaymentMethod(paymentMethod));
     } catch (error) {
-      logger.error('Stripe payment method listing failed:', error);
+      logger.error(
+        { error: error.message, code: error.code },
+        'Stripe payment method listing failed'
+      );
       throw normalizeStripeError(error);
     }
   }
@@ -181,7 +217,7 @@ class StripeCustomerAdapter {
    */
   async detachPaymentMethod(paymentMethodId) {
     try {
-      const paymentMethod = await this.stripe.paymentMethods.detach(paymentMethodId);
+      const paymentMethod = await this.getClient().paymentMethods.detach(paymentMethodId);
 
       return {
         id: paymentMethod.id,
@@ -189,7 +225,10 @@ class StripeCustomerAdapter {
         provider: 'stripe',
       };
     } catch (error) {
-      logger.error('Stripe payment method detach failed:', error);
+      logger.error(
+        { error: error.message, code: error.code },
+        'Stripe payment method detach failed'
+      );
       throw normalizeStripeError(error);
     }
   }
