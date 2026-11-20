@@ -32,11 +32,18 @@ const statusDialog = reactive({
   failureMessage: "",
 });
 
-const netAmount = computed(() =>
-  payout.value
-    ? Number(payout.value.amount || 0) -
-      Number(payout.value.platform_fee_amount || 0)
-    : 0
+const netAmount = computed(() => Number(payout.value?.amount || 0));
+
+const ownerDebtDeduction = computed(() => {
+  const value = payout.value?.metadata?.owner_debt_deduction;
+  return Number(value || 0);
+});
+
+const grossAmount = computed(
+  () =>
+    netAmount.value +
+    Number(payout.value?.platform_fee_amount || 0) +
+    ownerDebtDeduction.value
 );
 
 const availableTransitions = computed(() =>
@@ -190,11 +197,17 @@ watch(
           <span class="font-medium">{{ $t("payouts.section.overview") }}</span>
         </template>
         <el-descriptions :column="1">
-          <el-descriptions-item :label="$t('payouts.col.amount')">
-            {{ formatMoney(payout.amount, payout.currency) }}
+          <el-descriptions-item :label="$t('payouts.col.gross')">
+            {{ formatMoney(grossAmount, payout.currency) }}
           </el-descriptions-item>
           <el-descriptions-item :label="$t('payouts.col.platformFee')">
             {{ formatMoney(payout.platform_fee_amount, payout.currency) }}
+          </el-descriptions-item>
+          <el-descriptions-item
+            v-if="ownerDebtDeduction > 0"
+            :label="$t('payouts.col.debtDeduction')"
+          >
+            {{ formatMoney(ownerDebtDeduction, payout.currency) }}
           </el-descriptions-item>
           <el-descriptions-item :label="$t('payouts.col.net')">
             {{ formatMoney(netAmount, payout.currency) }}

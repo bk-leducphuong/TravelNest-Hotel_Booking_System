@@ -38,6 +38,7 @@ const getHotelPayoutSummary = {
 const generateEligiblePayouts = {
   body: Joi.object({
     cutoffDate: isoDate,
+    hotelId: uuid,
     ownerId: uuid,
   }).required(),
 };

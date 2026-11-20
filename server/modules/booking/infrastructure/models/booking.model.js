@@ -233,6 +233,12 @@ module.exports = function (sequelize, DataTypes) {
           fields: [{ name: 'status' }, { name: 'expires_at' }],
           comment: 'For finding expirable bookings by status',
         },
+        {
+          name: 'idx_bookings_payout_eligibility',
+          using: 'BTREE',
+          fields: [{ name: 'hotel_id' }, { name: 'status' }, { name: 'check_out_date' }],
+          comment: 'Payout eligibility scan by hotel and stay end date',
+        },
       ],
     }
   );
