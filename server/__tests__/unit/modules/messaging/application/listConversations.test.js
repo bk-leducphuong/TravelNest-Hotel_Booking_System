@@ -73,6 +73,33 @@ describe('listGuestConversations', () => {
       'hotel'
     );
   });
+
+  it('passes a trimmed search term to the inbox query', async () => {
+    conversationRepository.findForGuest.mockResolvedValue({ rows: [], count: 0 });
+    conversationRepository.countUnreadForConversations.mockResolvedValue(new Map());
+
+    await listGuestConversations({
+      userId: GUEST_ID,
+      page: 1,
+      limit: 20,
+      q: '  TN-1  ',
+    });
+
+    expect(conversationRepository.findForGuest).toHaveBeenCalledWith(
+      GUEST_ID,
+      expect.objectContaining({ q: 'TN-1' })
+    );
+  });
+
+  it('omits the search term when the query is blank', async () => {
+    conversationRepository.findForGuest.mockResolvedValue({ rows: [], count: 0 });
+    conversationRepository.countUnreadForConversations.mockResolvedValue(new Map());
+
+    await listGuestConversations({ userId: GUEST_ID, page: 1, limit: 20, q: '   ' });
+
+    const [, options] = conversationRepository.findForGuest.mock.calls[0];
+    expect(options).not.toHaveProperty('q');
+  });
 });
 
 describe('listHotelConversations', () => {

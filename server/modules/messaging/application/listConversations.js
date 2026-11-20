@@ -6,7 +6,7 @@ function paginate({ page = 1, limit = DEFAULT_PAGE_SIZE }) {
   return { page, limit, offset: (page - 1) * limit };
 }
 
-async function listGuestConversations({ userId, page, limit, unreadOnly = false }) {
+async function listGuestConversations({ userId, page, limit, unreadOnly = false, q }) {
   const {
     page: safePage,
     limit: safeLimit,
@@ -16,10 +16,13 @@ async function listGuestConversations({ userId, page, limit, unreadOnly = false 
     limit: Number(limit) || DEFAULT_PAGE_SIZE,
   });
 
+  const term = String(q || '').trim();
+
   const { rows, count } = await conversationRepository.findForGuest(userId, {
     limit: safeLimit,
     offset,
     unreadOnly,
+    ...(term ? { q: term } : {}),
   });
 
   const unread = await conversationRepository.countUnreadForConversations(

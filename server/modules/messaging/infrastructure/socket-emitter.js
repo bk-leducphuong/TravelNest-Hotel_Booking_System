@@ -71,4 +71,24 @@ function emitReadReceipt({ conversation, readerUserId, lastReadSeq }) {
   deliver('chat:read', room, payload, '/property');
 }
 
-module.exports = { emitNewMessage, emitReadReceipt, messageRoom };
+/**
+ * Tell the guest's other tabs that a thread left their inbox. `chat:read`
+ * refreshes the header badge, which no longer counts the hidden thread.
+ */
+function emitConversationDeleted({ conversation, guestUserId }) {
+  const userRoom = `user_${guestUserId}`;
+
+  deliver('chat:deleted', userRoom, { conversationId: conversation.id }, '/user');
+  deliver(
+    'chat:read',
+    userRoom,
+    {
+      conversationId: conversation.id,
+      userId: guestUserId,
+      lastReadSeq: Number(conversation.last_message_seq || 0),
+    },
+    '/user'
+  );
+}
+
+module.exports = { emitNewMessage, emitReadReceipt, emitConversationDeleted, messageRoom };

@@ -7,6 +7,7 @@
   import ErrorState from '@/components/common/ErrorState.vue';
   import MediaImage from '@/components/ui/MediaImage.vue';
   import { guestMoney } from '@/utils/guestPresentation';
+  import { formatDateTime as formatDateTimeValue } from '@/utils/datetime';
   import PaginationControls from '@/components/common/PaginationControls.vue';
   import { mapActions } from 'vuex';
   import router from '@/router/index.js';
@@ -221,6 +222,10 @@
         if (!y || !m || !d) return s;
         return `${d}/${m}/${y}`;
       },
+      // Absolute creation timestamp, including the time of day.
+      formatDateTime(value) {
+        return formatDateTimeValue(value, this.$i18n.locale);
+      },
       // The trip dropdown now filters server-side (rolling window on bookedOn),
       // so paging and the total stay consistent across pages.
       async arrangeBookings(criteria) {
@@ -365,6 +370,13 @@
           <h2>{{ booking.hotel?.name }}</h2>
           <p>{{ formatDate(booking.checkInDate) }} → {{ formatDate(booking.checkOutDate) }}</p>
           <p class="guest-subtitle">{{ booking.booking_code }}</p>
+          <p class="guest-subtitle trip-booked">
+            {{
+              $t('bookingFlow.bookedOn', {
+                date: formatDateTime(booking.bookedOn),
+              })
+            }}
+          </p>
         </div>
         <div class="trip-action">
           <strong>{{ guestMoney(booking.totalPrice, booking.currency, $i18n.locale) }}</strong
