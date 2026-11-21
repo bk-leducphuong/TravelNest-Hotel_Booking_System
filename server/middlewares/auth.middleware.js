@@ -335,4 +335,5 @@ module.exports = {
   requireEntityInHotel,
   requirePlatformStaffOrHotels,
   collectPermissionNames,
+  isPlatformStaff,
 };

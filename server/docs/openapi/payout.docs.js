@@ -471,7 +471,8 @@
  *     description: |
  *       Creates a Stripe Connect account for an owner (optionally hotel-scoped) and stores
  *       the local mirror. Fails with 409 when an account already exists for the
- *       owner/hotel. Requires the `payment.process` permission and hotel context.
+ *       owner/hotel. Requires the `payment.manage_connected_accounts` permission
+ *       and hotel context.
  *     tags:
  *       - Admin
  *     security:
@@ -541,7 +542,7 @@
  *                 success: { type: boolean, example: false }
  *                 message: { type: string }
  *       403:
- *         description: Insufficient permissions (`payment.process`)
+ *         description: Insufficient permissions (`payment.manage_connected_accounts`)
  *         content:
  *           application/json:
  *             schema:
@@ -635,7 +636,7 @@
  *     description: |
  *       Creates (or refreshes) a Stripe hosted onboarding link so the owner can complete KYC.
  *       Defaults the refresh/return URLs to `CLIENT_HOST` when not supplied. Requires the
- *       `payment.process` permission and hotel context.
+ *       `payment.manage_connected_accounts` permission and hotel context.
  *     tags:
  *       - Admin
  *     security:
@@ -692,7 +693,7 @@
  *                 success: { type: boolean, example: false }
  *                 message: { type: string }
  *       403:
- *         description: Insufficient permissions (`payment.process`)
+ *         description: Insufficient permissions (`payment.manage_connected_accounts`)
  *         content:
  *           application/json:
  *             schema:
@@ -720,7 +721,7 @@
  *     description: |
  *       Pulls the latest account status from Stripe (charges/payouts enabled, requirements,
  *       capabilities, onboarding status) and mirrors it locally. Requires the
- *       `payment.process` permission and hotel context.
+ *       `payment.manage_connected_accounts` permission and hotel context.
  *     tags:
  *       - Admin
  *     security:
@@ -762,7 +763,7 @@
  *                 success: { type: boolean, example: false }
  *                 message: { type: string }
  *       403:
- *         description: Insufficient permissions (`payment.process`)
+ *         description: Insufficient permissions (`payment.manage_connected_accounts`)
  *         content:
  *           application/json:
  *             schema:

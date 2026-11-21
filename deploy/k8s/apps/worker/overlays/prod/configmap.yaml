@@ -12,3 +12,14 @@ data:
   NATS_CLIENT_NAME: travelnest-worker
   WORKER_HEALTH_PORT: "4001"
   REDIS_USERNAME: ""
+  # Payout automation is opt-in per environment. Enable generation first, then
+  # processing after a Stripe test-mode canary (see docs/features/payouts.md).
+  PAYOUT_AUTO_GENERATE: "false"
+  PAYOUT_AUTO_PROCESS: "false"
+  PAYOUT_GENERATION_INTERVAL_MS: "86400000"
+  PAYOUT_PROCESSING_INTERVAL_MS: "300000"
+  PAYOUT_HOLD_DAYS: "7"
+  PAYOUT_MIN_AMOUNT: "0"
+  PAYOUT_STALE_MINUTES: "60"
+  PAYOUT_BATCH_SIZE: "500"
+  PAYOUT_RECOVERY_BATCH_SIZE: "50"

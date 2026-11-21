@@ -4,20 +4,37 @@ const { auditService } = require('@platform/audit');
 const connectedAccountRepository = require('../../infrastructure/connected-account.repository');
 const { getStripe } = require('../../infrastructure/stripe-client');
 const { deriveOnboardingStatus } = require('../../domain/payout-rules');
+const { resolveCreateConnectedAccountScope } = require('./connected-account-scope');
 
 /**
  * Create a Stripe Connect account for an owner (optionally hotel-scoped) and
  * persist the local mirror.
+ *
+ * The owner must actually have the `owner` role on the target hotel (or on at
+ * least one hotel for an owner-level account); hotel-scoped callers cannot
+ * create an account for a foreign hotel or arbitrary user.
  */
 async function createConnectAccount(
   { hotelId, ownerId, email, country, accountType, isDefault } = {},
-  { actorUserId, requestId } = {}
+  { actorUserId, actorHotelId, isPlatformStaff, requestId } = {}
 ) {
   if (!ownerId) {
     throw new ApiError(400, 'MISSING_OWNER', 'ownerId is required to create a connect account');
   }
 
-  const existing = await connectedAccountRepository.findExisting({ hotelId, ownerId });
+  const scope = await resolveCreateConnectedAccountScope({
+    hotelId,
+    ownerId,
+    actorUserId,
+    actorHotelId,
+    isPlatformStaff,
+  });
+  const effectiveHotelId = scope.hotelId;
+
+  const existing = await connectedAccountRepository.findExisting({
+    hotelId: effectiveHotelId,
+    ownerId,
+  });
   if (existing) {
     throw new ApiError(
       409,
@@ -34,14 +51,14 @@ async function createConnectAccount(
     email,
     capabilities: { transfers: { requested: true } },
     metadata: {
-      hotel_id: hotelId || '',
+      hotel_id: effectiveHotelId || '',
       owner_id: ownerId,
     },
   });
 
   const account = await connectedAccountRepository.create({
     userId: ownerId,
-    hotelId,
+    hotelId: effectiveHotelId,
     provider: 'stripe',
     providerAccountId: stripeAccount.id,
     accountType: accountType || 'express',
@@ -61,7 +78,7 @@ async function createConnectAccount(
     action: 'payout.connect_account_created',
     entityType: 'connected_payment_account',
     entityId: account.id,
-    hotelId: hotelId || null,
+    hotelId: effectiveHotelId || null,
     after: { providerAccountId: stripeAccount.id, onboardingStatus: account.onboarding_status },
     requestId,
   });
