@@ -1,0 +1,51 @@
+flowchart TB
+  subgraph VPS["Hetzner VPS · Helsinki · single server"]
+    subgraph K3S["k3s cluster · travelnest-test"]
+      subgraph Sources["Telemetry sources"]
+        API["API Pod<br/>:9464/metrics"]
+        Worker["Worker Pod<br/>:4001/metrics"]
+        Kubelet["Kubelet / cAdvisor<br/>Container CPU, memory, filesystem"]
+        KSM["kube-state-metrics<br/>Pod, Deployment and PVC state"]
+        Node["node-exporter<br/>Host CPU, RAM, disk and network"]
+        Logs["Container stdout / stderr<br/>API, worker, services and infrastructure"]
+        Events["Kubernetes events<br/>Scheduling, probes and restarts"]
+      end
+
+      subgraph Monitoring["monitoring namespace"]
+        Alloy["Grafana Alloy · DaemonSet<br/>Discover → collect → label → forward"]
+        LogPipeline["PLANNED: Alloy log pipeline<br/>Collect → parse → redact → label"]
+      end
+
+      API -->|"Scrape metrics"| Alloy
+      Worker -->|"Scrape metrics"| Alloy
+      Kubelet -->|"Scrape metrics"| Alloy
+      KSM -->|"Scrape metrics"| Alloy
+      Node -->|"Scrape metrics"| Alloy
+      Logs -.->|"Collect Pod logs"| LogPipeline
+      Events -.->|"Collect events as logs"| LogPipeline
+    end
+  end
+
+  subgraph Cloud["Grafana Cloud · outside the VPS"]
+    Metrics[("Cloud Metrics<br/>Prometheus-compatible storage")]
+    Loki[("PLANNED: Cloud Logs / Loki<br/>Log storage and indexing")]
+    Grafana["Grafana<br/>Dashboards and Explore"]
+    Alerts["Grafana Alerting<br/>Existing project metric rules"]
+
+    Metrics -->|"PromQL queries / results"| Grafana
+    Metrics -->|"Rule evaluation"| Alerts
+    Loki -.->|"LogQL queries / results"| Grafana
+    Loki -.->|"Optional log alert rules"| Alerts
+  end
+
+  Alloy -->|"HTTPS · Prometheus remote_write"| Metrics
+  LogPipeline -.->|"HTTPS · Loki push API"| Loki
+  Grafana --> Engineer["You<br/>Investigate metrics and logs"]
+
+  subgraph GitOps["Configuration and deployment"]
+    Git["Git repository<br/>Monitoring values + encrypted Secret"]
+    Argo["Argo CD<br/>monitoring Application"]
+    Git --> Argo
+  end
+
+  Argo -->|"Reconcile chart, collectors and exporters"| Monitoring
