@@ -1,0 +1,87 @@
+erDiagram
+  users ||--o{ connected_payment_accounts : owns
+  hotels |o--o{ connected_payment_accounts : scopes
+  hotels ||--o{ payouts : receives_settlement
+  users ||--o{ payouts : receives
+  connected_payment_accounts ||--o{ payouts : routes
+  transactions |o--o{ payouts : optional_source
+  payouts ||--o{ payout_items : contains
+  bookings ||--o| payout_items : included_once
+  transactions |o--o{ payout_items : source_payment
+  payouts |o--o{ ledger_entries : settlement_postings
+  ledger_accounts ||--o{ ledger_entries : receives_postings
+
+  users {
+    UUID id PK
+  }
+  hotels {
+    UUID id PK
+  }
+  bookings {
+    UUID id PK
+    UUID hotel_id FK
+    string status
+    date check_out_date
+    decimal total_price
+    decimal platform_commission_amount
+    string currency
+    json cancellation_decision
+  }
+  transactions {
+    UUID id PK
+    string transaction_type
+    string status
+    decimal amount
+    string currency
+  }
+  connected_payment_accounts {
+    UUID id PK
+    UUID user_id FK
+    UUID hotel_id FK "nullable"
+    string provider
+    string provider_account_id
+    string account_type
+    boolean payouts_enabled
+    boolean details_submitted
+    string onboarding_status
+  }
+  payouts {
+    UUID id PK
+    UUID hotel_id FK
+    UUID owner_id FK
+    UUID connected_payment_account_id FK
+    UUID transaction_id FK "nullable"
+    decimal amount
+    decimal platform_fee_amount
+    string currency
+    string status
+    string provider_transfer_id UK "nullable"
+    string provider_payout_id UK "nullable"
+    datetime paid_at "nullable"
+    string failure_code "nullable"
+    json metadata "includes owner_debt_deduction"
+  }
+  payout_items {
+    UUID id PK
+    UUID payout_id FK
+    UUID booking_id FK, UK
+    UUID transaction_id FK "nullable"
+    decimal gross_amount
+    decimal platform_fee_amount
+    decimal net_amount
+    string currency
+  }
+  ledger_accounts {
+    UUID id PK
+  }
+  ledger_entries {
+    UUID id PK
+    UUID ledger_account_id FK
+    UUID payout_id FK "nullable"
+    UUID entry_group_id
+    string entry_group_key
+    string direction
+    decimal amount
+    string currency
+    string event_type
+  }
