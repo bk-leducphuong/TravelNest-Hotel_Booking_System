@@ -1,10 +1,10 @@
 const sequelize = require('@config/database.config');
 const logger = require('@config/logger.config');
-const notificationModule = require('@modules/notification');
 const paymentModule = require('@modules/payment');
 const ApiError = require('@utils/ApiError');
 
-const { settleTransfer } = require('./settleTransfer');
+const settings = require('./payout-settings');
+const payoutTransferService = require('./payout-transfer.service');
 
 const payoutRepository = require('../infrastructure/payout.repository');
 
@@ -14,16 +14,22 @@ class PayoutService {
     const platformFeeAmount = this.roundMoney(payoutData.platformFeeAmount || 0);
     const requestedConnectedAccountId =
       payoutData.connectedPaymentAccountId || payoutData.connected_payment_account_id;
+    const hotelId = payoutData.hotelId || payoutData.hotel_id;
+    const currency = (payoutData.currency || 'USD').toUpperCase();
 
     if (payoutAmount <= 0) {
       throw new ApiError(400, 'INVALID_PAYOUT_AMOUNT', 'Payout amount must be greater than zero');
+    }
+
+    if (!hotelId) {
+      throw new ApiError(400, 'PAYOUT_HOTEL_REQUIRED', 'A payout must belong to a hotel');
     }
 
     const connectedAccount = requestedConnectedAccountId
       ? await payoutRepository.findConnectedAccountById(requestedConnectedAccountId, options)
       : await payoutRepository.findReadyConnectedAccount(
           {
-            hotelId: payoutData.hotelId || payoutData.hotel_id,
+            hotelId,
             ownerId: payoutData.ownerId || payoutData.owner_id,
           },
           options
@@ -49,13 +55,7 @@ class PayoutService {
 
     const create = async (transaction) => {
       const txOptions = { ...options, transaction };
-      await paymentModule.lockHotelBalance(
-        connectedAccount.hotel_id || payoutData.hotelId || payoutData.hotel_id,
-        payoutData.currency || 'USD',
-        txOptions
-      );
-      const hotelId = payoutData.hotelId || payoutData.hotel_id;
-      const currency = payoutData.currency || 'USD';
+      await paymentModule.lockHotelBalance(hotelId, currency, txOptions);
       const available = await paymentModule.availableHotelBalance(hotelId, currency, txOptions);
       const reserved = await payoutRepository.sumReserved(hotelId, currency, null, txOptions);
       const payable = Math.max(0, this.roundMoney(available - reserved));
@@ -73,6 +73,7 @@ class PayoutService {
           ...payoutData,
           ownerId,
           amount,
+          currency,
           platformFeeAmount,
           connectedPaymentAccountId: connectedAccount.id,
           status: payoutData.status || 'pending',
@@ -91,11 +92,15 @@ class PayoutService {
     const transaction = await paymentModule.getTransactionById(transactionId);
 
     if (!transaction) {
-      throw new Error('Transaction not found');
+      throw new ApiError(404, 'TRANSACTION_NOT_FOUND', 'Transaction not found');
     }
 
     if (transaction.status !== 'completed') {
-      throw new Error('Only completed transactions can be paid out');
+      throw new ApiError(
+        409,
+        'TRANSACTION_NOT_COMPLETED',
+        'Only completed transactions can be paid out'
+      );
     }
 
     const platformFeeAmount = this.calculatePlatformFee(
@@ -124,18 +129,33 @@ class PayoutService {
     );
   }
 
+  /**
+   * Generate payouts for every eligible booking.
+   *
+   * Bookings are grouped per hotel/owner/currency and settled in one payout per
+   * group (one `payout_items` row per booking) to keep Stripe transfers and the
+   * owner's payout history manageable. The unique `payout_items.booking_id`
+   * constraint is the final duplicate guard, so a concurrent run can safely
+   * retry after the duplicate row rolls its transaction back.
+   */
   async createEligiblePayouts(options = {}) {
-    const cutoffDate = options.cutoffDate || new Date();
-    const eligibleBookings = await payoutRepository.findEligibleBookingsForPayout(cutoffDate);
-    const created = [];
+    const cutoffDate = options.cutoffDate || settings.getEligibilityCutoffDate();
+    const eligibleBookings = await payoutRepository.findEligibleBookingsForPayout(
+      cutoffDate,
+      { hotelId: options.hotelId || options.hotel_id },
+      { limit: options.limit || settings.getBatchSize() }
+    );
+    const ownerCache = new Map();
+    const groups = new Map();
 
     for (const booking of eligibleBookings) {
       const bookingData = booking.toJSON ? booking.toJSON() : booking;
       if (bookingData.payout_item) continue;
 
       const transaction = bookingData.transaction;
-      const ownerId =
-        options.ownerId || (await paymentModule.getPrimaryOwnerByHotelId(bookingData.hotel_id));
+      if (!transaction) continue;
+
+      const ownerId = await this.resolveOwnerId(bookingData.hotel_id, options.ownerId, ownerCache);
 
       if (!ownerId) {
         logger.warn('Skipping payout creation; hotel owner not found', {
@@ -145,31 +165,72 @@ class PayoutService {
         continue;
       }
 
-      const platformFeeAmount = this.roundMoney(
-        bookingData.platform_commission_amount ||
-          this.calculatePlatformFee(bookingData.total_price, options.platformFeeRate)
-      );
+      if (options.ownerId && String(ownerId) !== String(options.ownerId)) continue;
+
       const grossAmount = this.roundMoney(bookingData.total_price);
+      const platformFeeAmount = this.roundMoney(
+        bookingData.platform_commission_amount ??
+          this.calculatePlatformFee(grossAmount, options.platformFeeRate)
+      );
       const netAmount = this.roundMoney(grossAmount - platformFeeAmount);
 
       if (netAmount <= 0) continue;
 
-      let payout;
+      const currency = (bookingData.currency || 'USD').toUpperCase();
+      const groupKey = [bookingData.hotel_id, ownerId, currency].join('|');
+      let group = groups.get(groupKey);
+
+      if (!group) {
+        group = {
+          hotelId: bookingData.hotel_id,
+          ownerId,
+          currency,
+          grossAmount: 0,
+          platformFeeAmount: 0,
+          netAmount: 0,
+          periodStart: null,
+          periodEnd: null,
+          bookings: [],
+        };
+        groups.set(groupKey, group);
+      }
+
+      group.grossAmount = this.roundMoney(group.grossAmount + grossAmount);
+      group.platformFeeAmount = this.roundMoney(group.platformFeeAmount + platformFeeAmount);
+      group.netAmount = this.roundMoney(group.netAmount + netAmount);
+      group.periodStart = this.earlierDate(group.periodStart, bookingData.check_in_date);
+      group.periodEnd = this.laterDate(group.periodEnd, bookingData.check_out_date);
+      group.bookings.push({
+        booking: bookingData,
+        transaction,
+        grossAmount,
+        platformFeeAmount,
+        netAmount,
+      });
+    }
+
+    const created = [];
+    const minimum = options.minimumAmount ?? settings.getMinimumPayoutAmount();
+
+    for (const group of groups.values()) {
+      if (group.netAmount < minimum) continue;
+
       try {
-        payout = await this.withTransaction(async (dbTransaction) => {
+        const payout = await this.withTransaction(async (dbTransaction) => {
           const createdPayout = await this.createManualPayout(
             {
-              hotelId: bookingData.hotel_id,
-              ownerId,
-              transactionId: transaction.id,
-              amount: netAmount,
-              currency: bookingData.currency,
-              platformFeeAmount,
-              periodStart: bookingData.check_in_date,
-              periodEnd: bookingData.check_out_date,
+              hotelId: group.hotelId,
+              ownerId: group.ownerId,
+              amount: group.netAmount,
+              currency: group.currency,
+              platformFeeAmount: group.platformFeeAmount,
+              periodStart: group.periodStart,
+              periodEnd: group.periodEnd,
               metadata: {
-                booking_id: bookingData.id,
-                booking_code: bookingData.booking_code,
+                booking_ids: group.bookings.map((item) => item.booking.id),
+                booking_count: group.bookings.length,
+                gross_amount: group.grossAmount,
+                net_amount: group.netAmount,
                 payout_eligibility_cutoff: cutoffDate,
               },
             },
@@ -177,23 +238,34 @@ class PayoutService {
           );
 
           await payoutRepository.createItems(
-            [
-              {
-                payoutId: createdPayout.id,
-                bookingId: bookingData.id,
-                transactionId: transaction.id,
-                grossAmount,
-                platformFeeAmount,
-                netAmount: Number(createdPayout.amount),
-                currency: bookingData.currency,
-              },
-            ],
+            group.bookings.map((item) => ({
+              payoutId: createdPayout.id,
+              bookingId: item.booking.id,
+              transactionId: item.transaction.id,
+              grossAmount: item.grossAmount,
+              platformFeeAmount: item.platformFeeAmount,
+              netAmount: item.netAmount,
+              currency: group.currency,
+            })),
             { transaction: dbTransaction }
           );
 
           return createdPayout;
         });
+        created.push(payout);
       } catch (error) {
+        // Another worker may have claimed one of the bookings between our read
+        // and the insert. The unique booking_id index rolls the whole group
+        // back, so the next run can pick it up safely.
+        if (error.name === 'SequelizeUniqueConstraintError') {
+          logger.warn('Skipping payout group already claimed by another run', {
+            hotelId: group.hotelId,
+            ownerId: group.ownerId,
+            bookingIds: group.bookings.map((item) => item.booking.id),
+          });
+          continue;
+        }
+
         // Owners without a payout-ready connected account are skipped, not
         // failed — so batch generation is not blocked by onboarding gaps.
         if (
@@ -203,16 +275,16 @@ class PayoutService {
             'PAYOUT_BALANCE_RESERVED',
           ].includes(error.code)
         ) {
-          logger.warn('Skipping payout; no ready connected account', {
-            bookingId: bookingData.id,
-            hotelId: bookingData.hotel_id,
+          logger.warn('Skipping payout; no ready connected account or balance reserved', {
+            hotelId: group.hotelId,
+            ownerId: group.ownerId,
+            bookingCount: group.bookings.length,
+            code: error.code,
           });
           continue;
         }
         throw error;
       }
-
-      created.push(payout);
     }
 
     return {
@@ -223,110 +295,31 @@ class PayoutService {
   }
 
   async processStripeTransfer(payoutId) {
-    const payout = await payoutRepository.findById(payoutId);
+    return await payoutTransferService.processStripeTransfer(payoutId);
+  }
 
-    if (!payout) {
-      throw new Error('Payout not found');
-    }
+  async claimPayoutForTransfer(payoutId) {
+    return await payoutTransferService.claimPayoutForTransfer(payoutId);
+  }
 
-    if (payout.status !== 'pending') {
-      throw new Error('Only pending payouts can be processed');
-    }
+  async resumeStripeTransfer(payoutId) {
+    return await payoutTransferService.resumeStripeTransfer(payoutId);
+  }
 
-    const providerAccountId = payout.connected_payment_account?.provider_account_id;
-    if (!providerAccountId) {
-      throw new Error('Payout connected account is missing provider account ID');
-    }
+  async executeTransfer(payout, providerAccountId, options) {
+    return await payoutTransferService.executeTransfer(payout, providerAccountId, options);
+  }
 
-    if (!process.env.STRIPE_SECRET_KEY) {
-      throw new Error('STRIPE_SECRET_KEY is not configured');
-    }
+  async failTransfer(payout, error, options) {
+    return await payoutTransferService.failTransfer(payout, error, options);
+  }
 
-    await sequelize.transaction(async (transaction) => {
-      const options = { transaction };
-      await paymentModule.lockHotelBalance(payout.hotel_id, payout.currency, options);
-      const current = await payoutRepository.findForClaim(payout.id, {
-        ...options,
-        lock: transaction.LOCK.UPDATE,
-      });
-      if (current.status !== 'pending')
-        throw new ApiError(409, 'PAYOUT_ALREADY_CLAIMED', 'Payout already claimed');
-      const available = await paymentModule.availableHotelBalance(
-        payout.hotel_id,
-        payout.currency,
-        options
-      );
-      const reserved = await payoutRepository.sumReserved(
-        payout.hotel_id,
-        payout.currency,
-        payout.id,
-        options
-      );
-      if (Number(payout.amount) > available - reserved + 0.001)
-        throw new ApiError(
-          409,
-          'PAYOUT_BALANCE_RESERVED',
-          'Refund obligations or owner debt must be settled before this payout'
-        );
-      await payoutRepository.update(payout.id, { status: 'processing' }, options);
-    });
+  async notify(payout, status, reason) {
+    return await payoutTransferService.notify(payout, status, reason);
+  }
 
-    let settled = false;
-    try {
-      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-      const transfer = await stripe.transfers.create(
-        {
-          amount: this.toMinorUnits(payout.amount),
-          currency: payout.currency.toLowerCase(),
-          destination: providerAccountId,
-          metadata: {
-            payout_id: payout.id,
-            hotel_id: payout.hotel_id,
-            owner_id: payout.owner_id,
-            transaction_id: payout.transaction_id || '',
-          },
-        },
-        { idempotencyKey: `payout-${payout.id}`, timeout: 30000, maxNetworkRetries: 0 }
-      );
-
-      await settleTransfer(payout, transfer);
-      settled = true;
-
-      await notificationModule.sendPayoutNotification({
-        hotelId: payout.hotel_id,
-        ownerId: payout.owner_id,
-        payoutId: payout.id,
-        status: 'completed',
-        amount: payout.amount,
-      });
-
-      return await payoutRepository.findById(payout.id);
-    } catch (error) {
-      if (settled) {
-        logger.error(
-          { payoutId: payout.id, error: error.message },
-          'Payout settled; notification failed'
-        );
-        return payoutRepository.findById(payout.id);
-      }
-      logger.error('Stripe transfer failed for payout:', error);
-
-      await payoutRepository.update(payout.id, {
-        status: 'processing',
-        failureCode: error.code || error.type || 'stripe_transfer_outcome_unknown',
-        failureMessage: error.message,
-      });
-
-      await notificationModule.sendPayoutNotification({
-        hotelId: payout.hotel_id,
-        ownerId: payout.owner_id,
-        payoutId: payout.id,
-        status: 'processing',
-        amount: payout.amount,
-      });
-
-      throw error;
-    }
+  isDefinitiveTransferError(error) {
+    return payoutTransferService.isDefinitiveTransferError(error);
   }
 
   async markPayoutStatus(payoutId, status, updateData = {}) {
@@ -343,12 +336,42 @@ class PayoutService {
     return await payoutRepository.findById(payoutId);
   }
 
-  calculatePlatformFee(amount, feeRate = 0) {
-    return this.roundMoney(parseFloat(amount || 0) * parseFloat(feeRate || 0));
+  async resolveOwnerId(hotelId, requestedOwnerId, cache) {
+    if (requestedOwnerId) return requestedOwnerId;
+    if (cache.has(hotelId)) return cache.get(hotelId);
+
+    const ownerId = await paymentModule.getPrimaryOwnerByHotelId(hotelId);
+    cache.set(hotelId, ownerId || null);
+    return ownerId || null;
   }
 
-  toMinorUnits(amount) {
-    return Math.round(parseFloat(amount) * 100);
+  earlierDate(current, candidate) {
+    if (!candidate) return current;
+    const date = new Date(candidate);
+    if (!current || date < current) return date;
+    return current;
+  }
+
+  laterDate(current, candidate) {
+    if (!candidate) return current;
+    const date = new Date(candidate);
+    if (!current || date > current) return date;
+    return current;
+  }
+
+  calculatePlatformFee(amount, feeRate) {
+    const rate = this.normalizeFeeRate(
+      feeRate !== undefined && feeRate !== null && feeRate !== ''
+        ? feeRate
+        : process.env.PLATFORM_FEE_RATE || 0
+    );
+    return this.roundMoney(parseFloat(amount || 0) * rate);
+  }
+
+  normalizeFeeRate(feeRate) {
+    const parsedRate = parseFloat(feeRate || 0);
+    if (!Number.isFinite(parsedRate) || parsedRate <= 0) return 0;
+    return parsedRate > 1 ? parsedRate / 100 : parsedRate;
   }
 
   roundMoney(value) {

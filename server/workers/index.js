@@ -10,6 +10,9 @@ const paymentModule = require('@modules/payment');
 const promotionModule = require('@modules/promotion');
 const superadminModule = require('@modules/superadmin');
 const { getMetrics, instrumentQueueDepths, instrumentWorker } = require('@platform/metrics');
+const payoutModule = require('@modules/payout');
+
+const payoutJobs = payoutModule.jobs.payouts;
 
 const workers = [
   jobs.holdExpiry.createWorker(),
@@ -18,6 +21,9 @@ const workers = [
   paymentModule.jobs.refunds.createReconciliationWorker(),
   promotionModule.jobs.promotionReconcile.createWorker(),
   superadminModule.jobs.platformStatsRefresh.createWorker(),
+  payoutJobs.createGenerationWorker(),
+  payoutJobs.createProcessingWorker(),
+  payoutJobs.createRecoveryWorker(),
 ];
 
 // Job duration histograms, scraped from the same port as the health check.
@@ -82,6 +88,7 @@ async function startWorkers() {
     await paymentModule.jobs.refunds.schedule();
     await promotionModule.jobs.promotionReconcile.schedule();
     await superadminModule.jobs.platformStatsRefresh.schedule();
+    await payoutJobs.schedule();
 
     // Queue depth is scraped from the health port. Queues hold Redis
     // connections, so reuse the instances the workers already use.
@@ -92,6 +99,9 @@ async function startWorkers() {
       paymentModule.jobs.refunds.getReconciliationQueue(),
       promotionModule.jobs.promotionReconcile.queue,
       superadminModule.jobs.platformStatsRefresh.queue,
+      payoutJobs.getQueue(payoutJobs.QUEUES.GENERATION),
+      payoutJobs.getQueue(payoutJobs.QUEUES.PROCESSING),
+      payoutJobs.getQueue(payoutJobs.QUEUES.RECOVERY),
     ];
     instrumentQueueDepths(() => queues);
 

@@ -1,3 +1,5 @@
+const paymentModule = require('@modules/payment');
+
 const payoutRepository = require('../../infrastructure/payout.repository');
 const { isAccountPayoutReady } = require('../../domain/payout-rules');
 
@@ -25,7 +27,8 @@ async function getHotelPayoutSummary(hotelId) {
     }
   }
 
-  const account = await payoutRepository.findReadyConnectedAccount({ hotelId });
+  const ownerId = await paymentModule.getPrimaryOwnerByHotelId(hotelId);
+  const account = await payoutRepository.findReadyConnectedAccount({ hotelId, ownerId });
 
   const round = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
 

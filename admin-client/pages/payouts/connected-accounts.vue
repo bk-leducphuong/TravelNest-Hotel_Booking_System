@@ -80,7 +80,7 @@ useEditorGuard(
   saving
 );
 const confirmCreate = async () => {
-  if (saving.value || !can("payment.process")) return;
+  if (saving.value || !can("payment.manage_connected_accounts")) return;
   if (!createDialog.ownerId) {
     ElMessage.warning(t("payouts.connectedAccounts.toast.ownerRequired"));
     return;
@@ -106,7 +106,7 @@ const confirmCreate = async () => {
 };
 
 const onboard = async (account: ConnectedAccount) => {
-  if (saving.value || !can("payment.process")) return;
+  if (saving.value || !can("payment.manage_connected_accounts")) return;
   saving.value = true;
   try {
     const link = await createAccountLink(account.id);
@@ -120,7 +120,7 @@ const onboard = async (account: ConnectedAccount) => {
 };
 
 const sync = async (account: ConnectedAccount) => {
-  if (saving.value || !can("payment.process")) return;
+  if (saving.value || !can("payment.manage_connected_accounts")) return;
   saving.value = true;
   try {
     await syncConnectedAccount(account.id);
@@ -153,7 +153,7 @@ watch(
           <NuxtLink to="/payouts"
             ><el-button>{{ $t("nav.payouts") }}</el-button></NuxtLink
           >
-          <Can permission="payment.process">
+          <Can permission="payment.manage_connected_accounts">
             <el-button
               type="primary"
               :disabled="!auth.activeHotelId"
@@ -284,7 +284,7 @@ watch(
                 formatDateTime(row.last_synced_at)
               }}</template>
             </el-table-column>
-            <Can permission="payment.process">
+            <Can permission="payment.manage_connected_accounts">
               <el-table-column
                 :label="$t('common.actions')"
                 width="180"

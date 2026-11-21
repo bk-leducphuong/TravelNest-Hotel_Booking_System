@@ -36,6 +36,15 @@ spec:
                 name: worker-config
             - secretRef:
                 name: worker-secret
+          env:
+            # Payout automation creates Stripe transfers from the worker. Reuse
+            # the API's Stripe key so both processes are configured identically;
+            # the worker secret intentionally does not duplicate payment keys.
+            - name: STRIPE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: STRIPE_SECRET_KEY
           ports:
             - containerPort: 4001
               name: health

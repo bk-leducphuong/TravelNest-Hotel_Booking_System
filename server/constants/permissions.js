@@ -50,6 +50,10 @@ const PERMISSIONS = {
   PAYMENT_READ: 'payment.read',
   PAYMENT_PROCESS: 'payment.process',
   PAYMENT_REFUND: 'payment.refund',
+  // Hotel-scoped Stripe Connect onboarding/account management. Deliberately
+  // separate from `payment.process`, which also gates payout generation,
+  // transfers, and manual payout status overrides.
+  PAYMENT_MANAGE_CONNECTED_ACCOUNTS: 'payment.manage_connected_accounts',
 
   // ============ NOTIFICATION PERMISSIONS ============
   NOTIFICATION_READ: 'notification.read',
@@ -129,6 +133,8 @@ const PERMISSION_DESCRIPTIONS = {
   [PERMISSIONS.PAYMENT_READ]: 'View payment details',
   [PERMISSIONS.PAYMENT_PROCESS]: 'Process payments',
   [PERMISSIONS.PAYMENT_REFUND]: 'Process refunds',
+  [PERMISSIONS.PAYMENT_MANAGE_CONNECTED_ACCOUNTS]:
+    'Create and manage hotel Stripe Connect payout accounts',
 
   [PERMISSIONS.NOTIFICATION_READ]: 'View notifications',
   [PERMISSIONS.NOTIFICATION_SEND]: 'Send notifications',
@@ -252,6 +258,7 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.REVIEW_REPLY,
     PERMISSIONS.PAYMENT_READ,
     PERMISSIONS.PAYMENT_REFUND,
+    PERMISSIONS.PAYMENT_MANAGE_CONNECTED_ACCOUNTS,
     PERMISSIONS.NOTIFICATION_READ,
     PERMISSIONS.NOTIFICATION_SEND,
     PERMISSIONS.REPORT_VIEW,
