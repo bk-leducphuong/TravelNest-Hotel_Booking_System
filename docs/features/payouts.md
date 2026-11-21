@@ -109,6 +109,19 @@ Mounted at `/api/v1/admin/payouts` (owner/admin BFF):
 Hotel-scoped callers cannot read or mutate another hotel's payout/account;
 `ownerId` filters are validated against hotel ownership.
 
+### Permissions
+
+| Action | Permission |
+|---|---|
+| View payouts, summaries, settings, connected accounts | `payment.read` |
+| Generate payouts, process transfers, override payout status | `payment.process` |
+| Create a Connect account, open onboarding, sync status | `payment.manage_connected_accounts` |
+
+Owners receive `payment.manage_connected_accounts` so they can complete payout
+onboarding themselves. It is intentionally narrower than `payment.process`,
+which also unlocks payout generation and manual status changes. Owners do not
+receive `payment.process` by default.
+
 ## Scheduled automation
 
 Jobs live in `server/modules/payout/jobs/payouts.js` and are started by

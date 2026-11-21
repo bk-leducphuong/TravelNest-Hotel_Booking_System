@@ -120,14 +120,14 @@ router.get(
 
 router.post(
   '/connected-accounts',
-  requireHotelPermission(PERMISSIONS.PAYMENT_PROCESS),
+  requireHotelPermission(PERMISSIONS.PAYMENT_MANAGE_CONNECTED_ACCOUNTS),
   validate(schema.createConnectAccount),
   controller.createConnectAccountHandler
 );
 
 router.post(
   '/connected-accounts/:accountId/link',
-  requireHotelPermission(PERMISSIONS.PAYMENT_PROCESS),
+  requireHotelPermission(PERMISSIONS.PAYMENT_MANAGE_CONNECTED_ACCOUNTS),
   validate(schema.createAccountLink),
   connectedAccountAccess,
   controller.createAccountLinkHandler
@@ -135,7 +135,7 @@ router.post(
 
 router.post(
   '/connected-accounts/:accountId/sync',
-  requireHotelPermission(PERMISSIONS.PAYMENT_PROCESS),
+  requireHotelPermission(PERMISSIONS.PAYMENT_MANAGE_CONNECTED_ACCOUNTS),
   validate(schema.syncConnectedAccount),
   connectedAccountAccess,
   controller.syncConnectedAccountHandler
