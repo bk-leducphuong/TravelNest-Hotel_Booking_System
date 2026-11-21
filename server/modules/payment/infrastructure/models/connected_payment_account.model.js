@@ -17,6 +17,7 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
         primaryKey: true,
         defaultValue: () => uuidv7(),
+        comment: 'Primary key (UUID v7).',
       },
       user_id: {
         type: DataTypes.UUID,
@@ -63,6 +64,7 @@ module.exports = function (sequelize, DataTypes) {
         validate: {
           len: [2, 2],
         },
+        comment: 'Two-letter ISO country code of the connected account.',
       },
       default_currency: {
         type: DataTypes.STRING(3),
@@ -74,21 +76,25 @@ module.exports = function (sequelize, DataTypes) {
             }
           },
         },
+        comment: 'Default ISO 4217 currency used for charges and payouts.',
       },
       charges_enabled: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
+        comment: 'Whether the provider allows charges on this account.',
       },
       payouts_enabled: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
+        comment: 'Whether the provider allows payouts from this account.',
       },
       details_submitted: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
+        comment: 'Whether onboarding details have been submitted to the provider.',
       },
       onboarding_status: {
         type: DataTypes.ENUM(...PAYMENT_ACCOUNT_ONBOARDING_STATUSES),
@@ -99,14 +105,17 @@ module.exports = function (sequelize, DataTypes) {
       disabled_reason: {
         type: DataTypes.STRING(255),
         allowNull: true,
+        comment: 'Reason the provider disabled the account, when applicable.',
       },
       requirements_currently_due: {
         type: DataTypes.JSON,
         allowNull: true,
+        comment: 'Onboarding requirements currently blocking the account.',
       },
       requirements_eventually_due: {
         type: DataTypes.JSON,
         allowNull: true,
+        comment: 'Onboarding requirements that must be satisfied later.',
       },
       capabilities: {
         type: DataTypes.JSON,
@@ -127,20 +136,24 @@ module.exports = function (sequelize, DataTypes) {
       metadata: {
         type: DataTypes.JSON,
         allowNull: true,
+        comment: 'Additional connected account metadata.',
       },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        comment: 'Row creation timestamp.',
       },
       updated_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        comment: 'Row last update timestamp.',
       },
       deleted_at: {
         type: DataTypes.DATE,
         allowNull: true,
+        comment: 'Soft-delete timestamp.',
       },
     },
     {

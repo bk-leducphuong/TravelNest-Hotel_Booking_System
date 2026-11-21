@@ -14,6 +14,7 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
         primaryKey: true,
         defaultValue: () => uuidv7(),
+        comment: 'Primary key (UUID v7).',
       },
       ledger_account_id: {
         type: DataTypes.UUID,
@@ -22,6 +23,7 @@ module.exports = function (sequelize, DataTypes) {
           model: 'ledger_accounts',
           key: 'id',
         },
+        comment: 'Ledger account this entry posts to.',
       },
       entry_group_id: {
         type: DataTypes.UUID,
@@ -36,10 +38,12 @@ module.exports = function (sequelize, DataTypes) {
       direction: {
         type: DataTypes.ENUM(...LEDGER_ENTRY_DIRECTIONS),
         allowNull: false,
+        comment: 'Debit or credit direction of the entry.',
       },
       amount: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
+        comment: 'Entry amount in the entry currency.',
       },
       currency: {
         type: DataTypes.STRING(3),
@@ -52,10 +56,12 @@ module.exports = function (sequelize, DataTypes) {
             }
           },
         },
+        comment: 'ISO 4217 three-letter currency code.',
       },
       event_type: {
         type: DataTypes.ENUM(...LEDGER_EVENT_TYPES),
         allowNull: false,
+        comment: 'Business event that produced the ledger entry.',
       },
       booking_id: {
         type: DataTypes.UUID,
@@ -64,6 +70,7 @@ module.exports = function (sequelize, DataTypes) {
           model: 'bookings',
           key: 'id',
         },
+        comment: 'Related booking, when applicable.',
       },
       transaction_id: {
         type: DataTypes.UUID,
@@ -72,6 +79,7 @@ module.exports = function (sequelize, DataTypes) {
           model: 'transactions',
           key: 'id',
         },
+        comment: 'Related transaction, when applicable.',
       },
       payment_id: {
         type: DataTypes.UUID,
@@ -80,6 +88,7 @@ module.exports = function (sequelize, DataTypes) {
           model: 'payments',
           key: 'id',
         },
+        comment: 'Related payment, when applicable.',
       },
       refund_id: {
         type: DataTypes.UUID,
@@ -88,6 +97,7 @@ module.exports = function (sequelize, DataTypes) {
           model: 'refunds',
           key: 'id',
         },
+        comment: 'Related refund, when applicable.',
       },
       payout_id: {
         type: DataTypes.UUID,
@@ -96,6 +106,7 @@ module.exports = function (sequelize, DataTypes) {
           model: 'payouts',
           key: 'id',
         },
+        comment: 'Related payout, when applicable.',
       },
       hotel_id: {
         type: DataTypes.UUID,
@@ -104,6 +115,7 @@ module.exports = function (sequelize, DataTypes) {
           model: 'hotels',
           key: 'id',
         },
+        comment: 'Hotel the entry is attributed to, when applicable.',
       },
       buyer_id: {
         type: DataTypes.UUID,
@@ -112,6 +124,7 @@ module.exports = function (sequelize, DataTypes) {
           model: 'users',
           key: 'id',
         },
+        comment: 'Buyer the entry is attributed to, when applicable.',
       },
       owner_id: {
         type: DataTypes.UUID,
@@ -120,40 +133,49 @@ module.exports = function (sequelize, DataTypes) {
           model: 'users',
           key: 'id',
         },
+        comment: 'Owner (hotel or provider owner) the entry is attributed to, when applicable.',
       },
       provider: {
         type: DataTypes.ENUM(...PAYMENT_ACCOUNT_PROVIDERS),
         allowNull: true,
+        comment: 'Payment provider that produced the underlying money movement.',
       },
       provider_event_id: {
         type: DataTypes.STRING(255),
         allowNull: true,
+        comment: 'Provider event ID that triggered the entry.',
       },
       provider_balance_transaction_id: {
         type: DataTypes.STRING(255),
         allowNull: true,
+        comment: 'Provider balance transaction backing the entry.',
       },
       idempotency_key: {
         type: DataTypes.STRING(255),
         allowNull: false,
+        comment: 'Unique key making the ledger posting idempotent.',
       },
       description: {
         type: DataTypes.STRING(500),
         allowNull: true,
+        comment: 'Human-readable description of the entry.',
       },
       metadata: {
         type: DataTypes.JSON,
         allowNull: true,
+        comment: 'Additional ledger entry metadata.',
       },
       posted_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        comment: 'Accounting posting timestamp.',
       },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        comment: 'Row creation timestamp.',
       },
     },
     {

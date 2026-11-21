@@ -10,6 +10,7 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
         primaryKey: true,
         defaultValue: () => uuidv7(),
+        comment: 'Primary key (UUID v7).',
       },
       booking_id: {
         type: DataTypes.UUID,
@@ -18,6 +19,7 @@ module.exports = function (sequelize, DataTypes) {
           model: 'bookings',
           key: 'id',
         },
+        comment: 'Booking the refund is issued for.',
       },
       transaction_id: {
         type: DataTypes.UUID,
@@ -26,6 +28,7 @@ module.exports = function (sequelize, DataTypes) {
           model: 'transactions',
           key: 'id',
         },
+        comment: 'Original transaction being refunded.',
       },
       buyer_id: {
         type: DataTypes.UUID,
@@ -34,6 +37,7 @@ module.exports = function (sequelize, DataTypes) {
           model: 'users',
           key: 'id',
         },
+        comment: 'User who receives the refund.',
       },
       hotel_id: {
         type: DataTypes.UUID,
@@ -42,19 +46,50 @@ module.exports = function (sequelize, DataTypes) {
           model: 'hotels',
           key: 'id',
         },
+        comment: 'Hotel whose funds are being refunded.',
       },
       provider: {
         type: DataTypes.ENUM('stripe'),
         allowNull: false,
         defaultValue: 'stripe',
+        comment: 'Payment provider processing the refund.',
       },
-      idempotency_key: { type: DataTypes.STRING(255), allowNull: true },
-      workflow_state: { type: DataTypes.STRING(32), allowNull: true },
-      attempt_count: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
-      first_attempt_at: { type: DataTypes.DATE, allowNull: true },
-      next_retry_at: { type: DataTypes.DATE, allowNull: true },
-      lease_until: { type: DataTypes.DATE, allowNull: true },
-      lease_token: { type: DataTypes.UUID, allowNull: true },
+      idempotency_key: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        comment: 'Client-supplied key preventing duplicate refunds.',
+      },
+      workflow_state: {
+        type: DataTypes.STRING(32),
+        allowNull: true,
+        comment: 'Internal workflow state of the refund job.',
+      },
+      attempt_count: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        comment: 'Number of processing attempts made so far.',
+      },
+      first_attempt_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'Timestamp of the first processing attempt.',
+      },
+      next_retry_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'Timestamp when the next retry is due.',
+      },
+      lease_until: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'Lease expiry timestamp for the worker processing the refund.',
+      },
+      lease_token: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        comment: 'Token identifying the worker that holds the processing lease.',
+      },
       provider_refund_id: {
         type: DataTypes.STRING(255),
         allowNull: true,
@@ -63,16 +98,19 @@ module.exports = function (sequelize, DataTypes) {
       amount: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
+        comment: 'Refund amount in the refund currency.',
       },
       currency: {
         type: DataTypes.STRING(3),
         allowNull: false,
         defaultValue: 'USD',
+        comment: 'ISO 4217 three-letter currency code.',
       },
       status: {
         type: DataTypes.ENUM('pending', 'processing', 'succeeded', 'failed', 'cancelled'),
         allowNull: false,
         defaultValue: 'pending',
+        comment: 'Current lifecycle status of the refund.',
       },
       reason: {
         type: DataTypes.ENUM(
@@ -85,46 +123,56 @@ module.exports = function (sequelize, DataTypes) {
         ),
         allowNull: false,
         defaultValue: 'customer_request',
+        comment: 'Business reason why the refund was issued.',
       },
       eligibility: {
         type: DataTypes.ENUM('eligible', 'ineligible', 'manual_review'),
         allowNull: false,
         defaultValue: 'manual_review',
+        comment: 'Refund policy eligibility outcome for the booking.',
       },
       free_cancellation_deadline: {
         type: DataTypes.DATE,
         allowNull: true,
+        comment: 'Deadline until which a free cancellation refund is allowed.',
       },
       requested_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        comment: 'Timestamp when the refund was requested.',
       },
       processed_at: {
         type: DataTypes.DATE,
         allowNull: true,
+        comment: 'Timestamp when the refund finished processing.',
       },
       failure_code: {
         type: DataTypes.STRING(100),
         allowNull: true,
+        comment: 'Provider error code when the refund fails.',
       },
       failure_message: {
         type: DataTypes.TEXT,
         allowNull: true,
+        comment: 'Human-readable failure message returned by the provider.',
       },
       metadata: {
         type: DataTypes.JSON,
         allowNull: true,
+        comment: 'Additional refund metadata.',
       },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        comment: 'Row creation timestamp.',
       },
       updated_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        comment: 'Row last update timestamp.',
       },
     },
     {
