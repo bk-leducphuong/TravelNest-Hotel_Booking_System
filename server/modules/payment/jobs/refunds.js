@@ -45,6 +45,7 @@ async function processRefundRecovery() {
     if (event.event_type === 'payment.refund_succeeded') {
       const current = await refunds.findById(event.payload.refundId);
       if (current?.status !== 'succeeded') {
+        // A later provider failure may supersede success. Retire the stale success event.
         await outbox.delivered(event.id);
         continue;
       }
@@ -54,12 +55,16 @@ async function processRefundRecovery() {
       result.local?.some((item) => item === null) ||
       result.responses?.some((item) => item.error || item.result === null)
     ) {
+      // Leave the event pending so a later run can retry delivery.
       throw new Error(`Refund outbox delivery failed: ${event.id}`);
     }
+    // A crash before this acknowledgement can cause redelivery; consumers must be idempotent.
     await outbox.delivered(event.id);
   }
   return { scanned: due.length };
 }
+
+// Log both worker-level errors and failed job executions.
 function attachLogging(worker) {
   worker.on('error', (error) => logger.error({ error: error.message }, 'Refund worker error'));
   worker.on('failed', (job, error) =>
@@ -68,11 +73,14 @@ function attachLogging(worker) {
   return worker;
 }
 function createWorker() {
+  // Each worker runs one recovery job at a time; that job still processes batches in parallel.
   return attachLogging(
     new Worker('refundRecovery', processRefundRecovery, { ...config.workerOptions, concurrency: 1 })
   );
 }
 function createReconciliationWorker() {
+  // The provider-to-ledger sweep checks existing refunds, including completed/attention records.
+  // It repairs local state from Stripe and never creates a new provider refund.
   return attachLogging(
     new Worker(
       'refundReconciliation',
@@ -95,12 +103,15 @@ function getReconciliationQueue() {
   return reconciliationQueue;
 }
 
+// Register recurring triggers. Per-refund retry times remain persisted in MySQL.
 async function schedule() {
+  // Daily sweep catches provider/local drift even if webhook delivery was missed.
   await getReconciliationQueue().add(
     'reconcile-refunds',
     {},
     { jobId: 'refund-reconciliation', repeat: { every: 86400000 } }
   );
+  // Poll every 15 seconds for due work; this is not a fixed retry delay for each refund.
   return getQueue().add(
     'recover-refunds',
     {},

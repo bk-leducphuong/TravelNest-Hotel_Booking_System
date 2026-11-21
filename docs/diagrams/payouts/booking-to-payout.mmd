@@ -1,0 +1,37 @@
+sequenceDiagram
+  autonumber
+  participant Trigger as Admin or generation worker
+  participant Service as Payout service
+  participant DB as MySQL
+  participant Processor as Admin or processing worker
+  participant Stripe as Stripe
+  participant Recovery as Recovery worker
+  Trigger->>Service: Generate eligible payouts
+  Service->>DB: Find paid bookings past checkout hold
+  DB-->>Service: Eligible bookings
+  Service->>Service: Group by hotel, owner and currency
+  Service->>DB: Check ready account and available balance
+  Service->>DB: Atomically create pending payout and booking items
+  Processor->>Service: Process payout
+  Service->>DB: Lock balance and payout, then recheck funds
+  Service->>DB: Set processing
+  Service->>Stripe: Create transfer with key payout-ID
+  alt Transfer response received
+    Stripe-->>Service: Transfer ID
+    Service->>DB: Atomically commit ledger settlement and paid status
+  else Definitive rejection
+    Stripe-->>Service: Rejected request
+    Service->>DB: Set failed
+  else Timeout or uncertain outcome
+    Service->>DB: Keep processing and save error
+    Recovery->>Service: Resume stale payout
+    Service->>Stripe: Retrieve known transfer or replay original key
+    Stripe-->>Service: Transfer result
+    alt Transfer confirmed
+      Service->>DB: Commit ledger settlement and paid status
+    else Still uncertain
+      Service->>DB: Keep processing for later reconciliation
+    else Definitive failure
+      Service->>DB: Set failed
+    end
+  end

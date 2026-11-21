@@ -1,10 +1,10 @@
 /**
  * Search ranking rules (pure).
  *
- * The previous "smart score" summed an uncapped rating term with capped
- * popularity/review terms, so a hotel with a single 10/10 review outranked a
- * hotel with hundreds of 9/10 reviews. The features below are documented,
- * deterministic and normalized to 0..1 before weighting.
+ * Operates on the full eligible set before pagination, without database calls.
+ * Relevance combines review-count-adjusted quality, relative booking popularity
+ * and optional distance. Explicit sorts use their named field instead.
+ * Hotel-name intent adds a separate tier boost above the business score.
  *
  * Version the config (`version`) whenever weights or scales change so results
  * can be reproduced against a recorded dataset.
@@ -33,6 +33,7 @@ const RANKING_CONFIG = Object.freeze({
   nameMatchTierWeight: 10,
 });
 
+/** Keep missing/invalid metrics distinct from a real numeric zero. */
 function finiteOrNull(value) {
   if (value === null || value === undefined || value === '') return null;
   const parsed = Number(value);
@@ -84,6 +85,7 @@ function calculateDistanceScore(hotel, scaleKm = RANKING_CONFIG.distanceScaleKm)
   return 1 - Math.min(distance / scale, 1);
 }
 
+/** Map SQL name-match tiers 0..4 into 0..1 before applying the tier boost. */
 function normalizeTier(tier) {
   const value = finiteOrNull(tier) ?? 0;
   return Math.min(Math.max(value, 0), 4) / 4;
@@ -105,7 +107,9 @@ function activeWeights(hasAnchor) {
 }
 
 /**
- * Relevance score in 0..1 plus its components, for explainability/debugging.
+ * Return relevance score and components for debugging. Business features are
+ * normalized to 0..1; the additional hotel-name tier boost can take the final
+ * score above 1. A missing distance contributes zero when distance is active.
  */
 function calculateRelevanceScore(hotel, context) {
   const {
@@ -141,6 +145,7 @@ function calculateRelevanceScore(hotel, context) {
   };
 }
 
+/** direction=1 sorts ascending, -1 descending; missing values stay last. */
 function compareNullsLast(a, b, direction = 1) {
   const left = finiteOrNull(a);
   const right = finiteOrNull(b);
@@ -152,6 +157,7 @@ function compareNullsLast(a, b, direction = 1) {
   return (left - right) * direction;
 }
 
+/** Stable UUID tie-breaker prevents arbitrary ordering across equal scores. */
 function byHotelId(a, b) {
   return String(a.hotel_id).localeCompare(String(b.hotel_id));
 }
@@ -173,6 +179,8 @@ function rankAndSort(hotels, sortBy, options = {}) {
   const { hasAnchor = false, distanceScaleKm, nameIntent = false } = options;
 
   switch (sortBy) {
+    // Compare full-stay prices for one room. All hotels share the requested
+    // dates/quantity; ranking uses the promotion-adjusted selected offer.
     case 'price_asc':
       sorted.sort(
         (a, b) =>

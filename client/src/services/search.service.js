@@ -3,7 +3,10 @@ import http from './http';
 export const SearchService = {
   /**
    * GET /api/v1/search/hotels
-   * Search hotels with hybrid ES + DB architecture.
+   * Fetch MySQL-backed hotel results for canonical API params (checkIn,
+   * checkOut, city/destinationId, guests, filters and pagination). The shared
+   * http client prefixes /api/v1 and returns the JSON body, not Axios metadata.
+   * SearchResults.vue owns translation from route fields such as checkInDate.
    */
   searchHotels(params) {
     return http.get('/search/hotels', { params });

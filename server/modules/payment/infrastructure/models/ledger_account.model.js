@@ -13,6 +13,7 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
         primaryKey: true,
         defaultValue: () => uuidv7(),
+        comment: 'Primary key (UUID v7).',
       },
       account_key: {
         type: DataTypes.STRING(255),
@@ -22,10 +23,12 @@ module.exports = function (sequelize, DataTypes) {
       account_type: {
         type: DataTypes.ENUM(...LEDGER_ACCOUNT_TYPES),
         allowNull: false,
+        comment: 'Chart-of-accounts type, e.g. asset, liability, or revenue.',
       },
       owner_type: {
         type: DataTypes.ENUM(...LEDGER_OWNER_TYPES),
         allowNull: false,
+        comment: 'Kind of entity that owns the account.',
       },
       owner_id: {
         type: DataTypes.UUID,
@@ -43,24 +46,29 @@ module.exports = function (sequelize, DataTypes) {
             }
           },
         },
+        comment: 'ISO 4217 three-letter currency code.',
       },
       name: {
         type: DataTypes.STRING(255),
         allowNull: false,
+        comment: 'Human-readable account name.',
       },
       metadata: {
         type: DataTypes.JSON,
         allowNull: true,
+        comment: 'Additional ledger account metadata.',
       },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        comment: 'Row creation timestamp.',
       },
       updated_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        comment: 'Row last update timestamp.',
       },
     },
     {

@@ -10,6 +10,7 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
         primaryKey: true,
         defaultValue: () => uuidv7(),
+        comment: 'Primary key (UUID v7).',
       },
       event_id: {
         type: DataTypes.STRING(255),
@@ -35,20 +36,24 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        comment: 'Timestamp when the webhook event was processed.',
       },
       status: {
         type: DataTypes.ENUM('processing', 'processed', 'failed'),
         allowNull: false,
         defaultValue: 'processed',
+        comment: 'Processing outcome of the webhook event.',
       },
       error_message: {
         type: DataTypes.TEXT,
         allowNull: true,
+        comment: 'Error details when webhook processing fails.',
       },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        comment: 'Row creation timestamp.',
       },
     },
     {

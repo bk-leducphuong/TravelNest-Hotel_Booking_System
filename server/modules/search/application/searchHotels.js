@@ -28,8 +28,12 @@ function toDestinationSummary(destination) {
  * read model, compute batched availability + eligible offers, rank, facet and
  * paginate. Elasticsearch is not part of this path.
  *
+ * Execution order: resolve destination -> candidates -> offers -> eligibility
+ * -> ranking -> facets/pagination -> favorites. Only favorites depend on the
+ * signed-in user; shared prices use public automatic promotions.
+ *
  * @param {object} params - validated search params
- * @param {number|null} userId
+ * @param {string|number|null} userId
  * @returns {Promise<{ destination: object, searchResults: object }>}
  */
 async function searchHotels(params, userId = null) {
@@ -45,6 +49,9 @@ async function searchHotels(params, userId = null) {
       ? null
       : (params.city || params.country || params.location || '').trim() || null;
 
+    // Build a new application context without mutating the HTTP parameters.
+    // A city/country ID scopes the snapshot query; unresolved text instead
+    // supplies nameText for hotel-name matching. Children count toward capacity.
     const validated = {
       ...params,
       destinationId: destination?.id || null,
@@ -57,6 +64,8 @@ async function searchHotels(params, userId = null) {
       totalGuests: (Number(params.adults) || 0) + (Number(params.children) || 0),
     };
 
+    // Candidates satisfy hotel-level criteria, not date availability. Do not
+    // paginate yet: a candidate may be removed by inventory or offer filters.
     const candidateHotels = await findCandidates(validated);
 
     if (params.mapSearch && candidateHotels.length > 2000) {
@@ -70,6 +79,8 @@ async function searchHotels(params, userId = null) {
       };
     }
 
+    // Fetch whole-stay room offers in batches and apply public promotions.
+    // The Map is keyed by hotel_id, avoiding a separate room query per hotel.
     const offersByHotel = await getOffers(candidateHotels, validated);
     const eligibleHotels = buildHotelResults(candidateHotels, offersByHotel, validated);
 
@@ -97,6 +108,8 @@ async function searchHotels(params, userId = null) {
       startTime
     );
 
+    // Personalize only the paginated hotels. Favorite lookup cannot affect
+    // eligibility, ranking, total counts, or the prices chosen above.
     await attachFavoriteStatus(response, userId);
 
     logger.info(

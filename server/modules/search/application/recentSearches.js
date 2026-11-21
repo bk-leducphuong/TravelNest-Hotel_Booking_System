@@ -76,6 +76,14 @@ function isStaleSearch(search, now = new Date()) {
 /**
  * Store a compact representation of the user's recent search in Redis.
  */
+/**
+ * Keep signed-in search history in a Redis sorted set keyed by user. Members
+ * are JSON criteria; scores are timestamps so recent entries sort last.
+ * Remove older entries with matching core criteria, add the current entry,
+ * trim the oldest beyond maxItems, and renew the key's expiry (default 30 days).
+ * These are separate Redis operations, not one atomic transaction. The hotel
+ * controller starts this work without awaiting it before returning results.
+ */
 async function recordRecentSearch(
   userId,
   rawParams,

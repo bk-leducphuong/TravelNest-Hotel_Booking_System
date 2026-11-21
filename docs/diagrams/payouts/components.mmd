@@ -1,0 +1,16 @@
+flowchart TB
+  admin["Hotel admin: Connect setup and payouts"]
+  superadmin["Superadmin: view payout records"]
+  backend["Express backend: accounts, payouts and ledger"]
+  workers["BullMQ workers + Redis: generate, process and recover"]
+  db[("MySQL: bookings, accounts, payouts and ledger")]
+  stripe["Stripe: onboarding and owner Connect balances"]
+  bank["Owner's bank account"]
+
+  admin -->|"Hotel-scoped API"| backend
+  superadmin -->|"Read-only finance API"| backend
+  workers -->|"Run payout operations"| backend
+  backend -->|"Read and write"| db
+  backend -->|"Account setup and transfers"| stripe
+  stripe -->|"Status webhooks"| backend
+  stripe -->|"Separate bank payout"| bank

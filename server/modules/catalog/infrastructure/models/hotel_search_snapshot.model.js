@@ -3,16 +3,14 @@
  *
  * Purpose: Denormalized read model for hotel search
  * - One row per hotel
- * - No joins required for candidate filtering
- * - Updated asynchronously via events/jobs
+ * - Stores hotel-level fields together to reduce joins during candidate reads
+ * - Snapshot rebuild/update paths live in the catalog repository and seeders
  * - Hotel names are stored pre-normalized for MySQL name matching
  *
- * Use Cases:
- * - Fast location-based searches (map & distance)
- * - Date availability checking
- * - Price range filtering
- * - Rating and popularity sorting
- * - Amenity filtering
+ * Search reads location, name, rating, class and popularity from this model.
+ * Required amenity checks also consult the live amenity tables. For a specific
+ * stay, rooms + room_inventory supply availability and prices; snapshot price
+ * and availability summaries are not authoritative for requested dates.
  */
 
 const Sequelize = require('sequelize');

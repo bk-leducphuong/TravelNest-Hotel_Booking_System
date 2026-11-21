@@ -10,6 +10,7 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
         primaryKey: true,
         defaultValue: () => uuidv7(),
+        comment: 'Primary key (UUID v7).',
       },
       user_id: {
         type: DataTypes.UUID,
@@ -20,6 +21,7 @@ module.exports = function (sequelize, DataTypes) {
         },
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
+        comment: 'User who owns the saved payment method.',
       },
       stripe_customer_id: {
         type: DataTypes.STRING(255),
@@ -35,22 +37,27 @@ module.exports = function (sequelize, DataTypes) {
       brand: {
         type: DataTypes.STRING(50),
         allowNull: true,
+        comment: 'Card brand, e.g. visa or mastercard.',
       },
       last4: {
         type: DataTypes.STRING(4),
         allowNull: true,
+        comment: 'Last four digits of the card.',
       },
       exp_month: {
         type: DataTypes.INTEGER,
         allowNull: true,
+        comment: 'Card expiration month (1-12).',
       },
       exp_year: {
         type: DataTypes.INTEGER,
         allowNull: true,
+        comment: 'Card expiration year (four digits).',
       },
       cardholder_name: {
         type: DataTypes.STRING(255),
         allowNull: true,
+        comment: 'Name printed on the card.',
       },
       is_default: {
         type: DataTypes.BOOLEAN,
@@ -61,16 +68,19 @@ module.exports = function (sequelize, DataTypes) {
       metadata: {
         type: DataTypes.JSON,
         allowNull: true,
+        comment: 'Additional saved payment method metadata.',
       },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        comment: 'Row creation timestamp.',
       },
       updated_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        comment: 'Row last update timestamp.',
       },
     },
     {

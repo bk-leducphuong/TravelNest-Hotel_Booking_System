@@ -10,6 +10,7 @@ module.exports = function (sequelize, DataTypes) {
         allowNull: false,
         primaryKey: true,
         defaultValue: () => uuidv7(),
+        comment: 'Primary key (UUID v7).',
       },
       booking_id: {
         type: DataTypes.UUID,
@@ -18,6 +19,7 @@ module.exports = function (sequelize, DataTypes) {
           model: 'bookings',
           key: 'id',
         },
+        comment: 'Booking this transaction belongs to; null for non-booking money movements.',
       },
       buyer_id: {
         type: DataTypes.UUID,
@@ -26,6 +28,7 @@ module.exports = function (sequelize, DataTypes) {
           model: 'users',
           key: 'id',
         },
+        comment: 'User who pays for the transaction.',
       },
       hotel_id: {
         type: DataTypes.UUID,
@@ -34,15 +37,18 @@ module.exports = function (sequelize, DataTypes) {
           model: 'hotels',
           key: 'id',
         },
+        comment: 'Hotel the transaction funds are attributed to.',
       },
       amount: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
+        comment: 'Transaction amount in the transaction currency.',
       },
       currency: {
         type: DataTypes.STRING(3),
         allowNull: false,
         defaultValue: 'USD',
+        comment: 'ISO 4217 three-letter currency code.',
       },
       status: {
         type: DataTypes.ENUM(
@@ -56,11 +62,13 @@ module.exports = function (sequelize, DataTypes) {
         ),
         allowNull: false,
         defaultValue: 'pending',
+        comment: 'Overall lifecycle status of the transaction.',
       },
       transaction_type: {
         type: DataTypes.ENUM('payment', 'refund', 'payout'),
         allowNull: false,
         defaultValue: 'payment',
+        comment: 'Kind of money movement: payment, refund, or payout.',
       },
       payment_method: {
         type: DataTypes.STRING(50),
@@ -70,26 +78,32 @@ module.exports = function (sequelize, DataTypes) {
       stripe_payment_intent_id: {
         type: DataTypes.STRING(255),
         allowNull: true,
+        comment: 'Stripe PaymentIntent ID linked to the transaction (unique).',
       },
       stripe_charge_id: {
         type: DataTypes.STRING(255),
         allowNull: true,
+        comment: 'Stripe Charge ID created for the transaction.',
       },
       stripe_customer_id: {
         type: DataTypes.STRING(255),
         allowNull: true,
+        comment: 'Stripe Customer ID the transaction was charged to.',
       },
       stripe_refund_id: {
         type: DataTypes.STRING(255),
         allowNull: true,
+        comment: 'Stripe Refund ID when the transaction was refunded.',
       },
       failure_code: {
         type: DataTypes.STRING(100),
         allowNull: true,
+        comment: 'Provider error code when the transaction fails.',
       },
       failure_message: {
         type: DataTypes.TEXT,
         allowNull: true,
+        comment: 'Human-readable failure message returned by the provider.',
       },
       metadata: {
         type: DataTypes.JSON,
@@ -100,15 +114,18 @@ module.exports = function (sequelize, DataTypes) {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        comment: 'Row creation timestamp.',
       },
       updated_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: Sequelize.Sequelize.literal('CURRENT_TIMESTAMP'),
+        comment: 'Row last update timestamp.',
       },
       completed_at: {
         type: DataTypes.DATE,
         allowNull: true,
+        comment: 'Timestamp when the transaction reached a terminal successful state.',
       },
     },
     {

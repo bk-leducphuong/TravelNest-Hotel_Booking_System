@@ -12,15 +12,17 @@ const { normalizeList } = require('../domain/filters');
 /**
  * Search Repository - MySQL-only search data access.
  *
- * Two set-based queries replace the previous Elasticsearch search plus
- * per-hotel room/pricing fan-out:
- *   1. candidate hotels from `hotel_search_snapshots`
- *   2. availability + eligible offers for all candidates in one batched query
+ * Two query stages avoid per-hotel room/pricing fan-out:
+ *   1. candidates from hotel_search_snapshots (plus amenity checks when needed)
+ *   2. availability + offers, one query per chunk of candidate hotel IDs
+ * Destination resolution, promotions and favorites have their own data access;
+ * these stages are not a promise that the entire HTTP request uses two queries.
  *
  * Only repositories may import Sequelize models. All user input is passed as
  * named bindings; sort expressions are never interpolated.
  */
 
+/** MySQL DECIMAL fields may be strings; retain null for missing values. */
 function toNumber(value) {
   if (value === null || value === undefined) return null;
   const parsed = Number(value);
@@ -28,11 +30,17 @@ function toNumber(value) {
 }
 
 /**
- * Candidate ids per offer query. Above this, MySQL stops using the
- * `rooms.hotel_id` range and scans the table; ~2000 keeps the index plan.
+ * Candidate IDs per offer query. A bounded IN list helps MySQL retain an index
+ * range plan on rooms.hotel_id for large searches. The exact optimizer choice
+ * still depends on data size, statistics and MySQL configuration.
  */
 const OFFER_CHUNK_SIZE = 2000;
 
+/**
+ * Map raw database values to the hotel-card/search contract. Numeric fields
+ * and JSON amenities are normalized here so domain filters/ranking need no
+ * Sequelize knowledge. Stay-specific price and availability are merged later.
+ */
 function normalizeCandidate(row) {
   return {
     hotel_id: row.hotel_id,
@@ -58,9 +66,10 @@ class SearchRepository {
   /**
    * Candidate hotels for a resolved destination / hotel-name intent.
    *
-   * Location-filtered sets are never truncated: totals, facets and ranking must
-   * see the complete eligible set. A text-only query (no resolvable location)
-   * keeps the highest-tier matches and is capped so a degenerate input like
+   * Normal list searches scoped by city/country are not truncated: totals,
+   * facets and ranking must see the complete eligible set. A text-only query
+   * (no resolvable location) keeps the highest-tier matches and is capped so
+   * a degenerate input like
    * "hotel" cannot fan out into thousands of inventory scans.
    */
   async findCandidateHotels(params) {
@@ -82,18 +91,20 @@ class SearchRepository {
       'Text-only hotel search exceeded the candidate cap; keeping highest-tier matches'
     );
 
+    // The SQL query has already fetched/ordered the matches. This slice limits
+    // subsequent inventory work, not the initial snapshot scan. Totals for
+    // text-only searches therefore describe this retained candidate universe.
     return candidates.slice(0, cap);
   }
 
   /**
    * Availability + eligible offers for all candidate hotels.
    *
-   * One query per chunk of candidate ids. MySQL switches the `rooms` access path
-   * from an index range to a full scan once the `IN` list grows past a few
-   * thousand values, so large sets (a country-wide search over ~12k hotels) are
-   * split and run in parallel against the connection pool. Each chunk keeps the
-   * range plan, and hotels are never split across chunks, so a hotel's offers
-   * still come from a single statement.
+   * Large ID sets are split into chunks to avoid oversized IN lists and favor
+   * indexed access. Promise.all schedules chunks concurrently; the Sequelize
+   * connection pool controls actual database concurrency. Hotels are never
+   * split across chunks, so each hotel's room types share a single statement.
+   * There is no booking lock/hold here and no transaction spanning all chunks.
    *
    * @returns {Promise<Array<object>>} aggregated rows (one per hotel room type)
    */
@@ -121,7 +132,11 @@ class SearchRepository {
     return results.flat();
   }
 
-  /** Internal: run one offer query for a chunk of hotels. */
+  /**
+   * Build SQL and execute it at the data-access boundary. Named replacements
+   * supply input values separately from SQL structure. An empty ID list yields
+   * no query, preventing invalid IN () SQL and accidental unscoped reads.
+   */
   async runOffersQuery(params) {
     const query = buildOffersQuery(params);
     if (!query) return [];
@@ -195,7 +210,7 @@ class SearchRepository {
     return scored.sort((a, b) => b.score - a.score).slice(0, limit);
   }
 
-  /** Maximum number of candidates a text-only query will scan. */
+  /** Maximum text-only candidates retained for downstream offer queries. */
   get textCandidateCap() {
     return TEXT_CANDIDATE_CAP;
   }
