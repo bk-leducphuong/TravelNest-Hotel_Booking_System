@@ -1,0 +1,103 @@
+---
+config:
+  theme: redux-color
+  look: neo
+  themeVariables:
+    fontSize: 14px
+---
+erDiagram
+  hotels ||--o{ promotions : defines
+  hotels ||--o{ rooms : contains
+  promotions ||--o{ promotion_rooms : targets
+  rooms ||--o{ promotion_rooms : selected_by
+  promotions ||--o{ promotion_user_usage : tracks
+  users ||--o{ promotion_user_usage : accumulates
+  promotions ||--o{ promotion_redemptions : records
+  users ||--o{ promotion_redemptions : uses
+  hotels ||--o{ promotion_redemptions : scopes
+  bookings ||--o| promotion_redemptions : reserves_once
+  promotions |o--o{ bookings : discounts
+  users ||--o{ bookings : buys
+  hotels ||--o{ bookings : hosts
+
+  hotels {
+    UUID id PK
+    string timezone
+  }
+  users {
+    UUID id PK
+  }
+  rooms {
+    UUID id PK
+    UUID hotel_id FK
+    string room_name
+  }
+  promotions {
+    UUID id PK
+    UUID hotel_id FK
+    string mode "automatic or code"
+    string code "nullable"
+    string normalized_code "nullable; unique with hotel_id"
+    string name
+    string status "draft, active, paused, archived"
+    string discount_type "percentage or fixed"
+    decimal discount_value "nullable; fixed amount"
+    int discount_basis_points "nullable; percentage"
+    string currency
+    decimal max_discount_amount "nullable"
+    string room_scope "all or selected"
+    datetime booking_starts_at "nullable"
+    datetime booking_ends_at "nullable"
+    date stay_starts_on "nullable"
+    date stay_ends_on "nullable"
+    int min_nights "nullable"
+    decimal min_subtotal "nullable"
+    int min_advance_days "nullable"
+    int total_use_limit "nullable"
+    int per_user_limit "nullable"
+    int reserved_count
+    int redeemed_count
+    int version
+  }
+  promotion_rooms {
+    UUID id PK
+    UUID promotion_id FK "unique with room_id"
+    UUID room_id FK
+  }
+  promotion_user_usage {
+    UUID id PK
+    UUID promotion_id FK "unique with buyer_id"
+    UUID buyer_id FK
+    int reserved_count
+    int redeemed_count
+  }
+  promotion_redemptions {
+    UUID id PK
+    UUID promotion_id FK
+    UUID booking_id FK, UK
+    UUID buyer_id FK
+    UUID hotel_id FK
+    string status "reserved, redeemed, released"
+    decimal discount_amount
+    string currency
+    int promotion_version
+    json promotion_snapshot "nullable; terms and allocation"
+    datetime reservation_expires_at "nullable"
+    datetime reserved_at "nullable"
+    datetime redeemed_at "nullable"
+    datetime released_at "nullable"
+    string release_reason "nullable"
+  }
+  bookings {
+    UUID id PK
+    UUID buyer_id FK
+    UUID hotel_id FK
+    UUID promotion_id FK "nullable"
+    decimal discount_amount
+    string pricing_fingerprint "nullable"
+    json price_breakdown "nullable"
+    string status
+    string payment_policy
+    decimal total_price
+    string currency
+  }
