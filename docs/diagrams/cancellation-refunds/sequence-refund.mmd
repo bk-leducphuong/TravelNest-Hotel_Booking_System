@@ -1,0 +1,33 @@
+sequenceDiagram
+    autonumber
+    participant Worker as Refund Worker
+    participant DB as MySQL
+    participant Stripe
+    participant API as Backend API
+    actor Guest
+
+    Worker->>DB: Pick up due refunds every 15 seconds
+    DB-->>Worker: Refund details
+    Worker->>Stripe: Find existing refund or submit safely
+
+    alt Refund succeeded
+        Stripe-->>Worker: Success
+        Worker->>DB: Save success and update accounting
+    else Refund still pending
+        Stripe-->>Worker: Pending
+        Worker->>DB: Schedule another check
+    else Error or failed refund
+        Worker->>DB: Record outcome for retry or manual attention
+    end
+
+    opt Stripe sends a later update
+        Stripe->>API: Refund webhook
+        API->>Stripe: Retrieve current refund status
+        Stripe-->>API: Current status
+        API->>DB: Update refund and accounting
+    end
+
+    Guest->>API: Check refund status
+    API->>DB: Read refund status
+    DB-->>API: Current status
+    API-->>Guest: Show refund progress

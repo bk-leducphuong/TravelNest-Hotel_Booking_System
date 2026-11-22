@@ -1,0 +1,95 @@
+erDiagram
+    users ||--o{ bookings : makes
+    hotels ||--o{ bookings : receives
+    bookings |o--o{ transactions : links
+    users ||--o{ transactions : pays
+    hotels ||--o{ transactions : associated_with
+    bookings ||--o{ refunds : has
+    transactions ||--o{ refunds : funds
+    users ||--o{ refunds : receives
+    hotels ||--o{ refunds : associated_with
+    refunds |o--o{ ledger_entries : referenced_by
+    ledger_accounts ||--o{ ledger_entries : contains
+
+    users {
+        uuid id PK
+    }
+    hotels {
+        uuid id PK
+    }
+    bookings {
+        uuid id PK
+        uuid buyer_id FK
+        uuid hotel_id FK
+        decimal total_price
+        string currency
+        string status
+        datetime cancelled_at
+        json cancellation_policy_snapshot
+        json cancellation_quote
+        json cancellation_decision
+    }
+    transactions {
+        uuid id PK
+        uuid booking_id FK "Nullable and non-unique"
+        uuid buyer_id FK
+        uuid hotel_id FK
+        decimal amount
+        string currency
+        string status
+        string stripe_charge_id
+    }
+    refunds {
+        uuid id PK
+        uuid booking_id FK
+        uuid transaction_id FK
+        uuid buyer_id FK
+        uuid hotel_id FK
+        decimal amount
+        string currency
+        string status
+        string eligibility
+        string reason
+        string provider_refund_id UK "Nullable"
+        string idempotency_key UK "Nullable"
+        string workflow_state
+        int attempt_count
+        datetime first_attempt_at
+        datetime next_retry_at
+        datetime lease_until
+        uuid lease_token
+        datetime requested_at
+        datetime processed_at
+        string failure_code
+        text failure_message
+        json metadata
+    }
+    ledger_entries {
+        uuid id PK
+        uuid ledger_account_id FK
+        uuid refund_id FK "Nullable"
+        uuid entry_group_id
+        string entry_group_key
+        string idempotency_key UK
+        string direction
+        decimal amount
+        string currency
+        string event_type
+        datetime posted_at
+    }
+    ledger_accounts {
+        uuid id PK
+        string account_key UK
+        string account_type
+        string owner_type
+        uuid owner_id
+        string currency
+    }
+    payment_outbox {
+        uuid id PK
+        string event_key UK
+        string event_type
+        json payload
+        datetime delivered_at
+        datetime created_at
+    }

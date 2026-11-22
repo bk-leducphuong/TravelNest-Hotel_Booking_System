@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    actor Guest
+    participant API as Booking Service
+    participant DB as MySQL
+
+    Guest->>API: Request cancellation quote
+    API->>DB: Read booking policy and payment
+    API->>API: Calculate refund and cancellation fee
+    API->>DB: Save quote valid for five minutes
+    API-->>Guest: Show refund amount and terms
+    Guest->>API: Confirm cancellation
+    API->>API: Recheck quote under database locks
+
+    alt Quote expired or terms changed
+        API-->>Guest: Ask guest to review a fresh quote
+    else Quote valid
+        API->>DB: Cancel booking and release rooms if required
+        API->>DB: Save refund obligation or review or no-refund decision
+        API->>DB: Save events and commit all changes together
+        API-->>Guest: Booking cancelled with refund status
+    end
