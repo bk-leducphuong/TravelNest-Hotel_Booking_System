@@ -1,0 +1,37 @@
+---
+config:
+  theme: redux-color
+  look: neo
+  themeVariables:
+    fontSize: 14px
+---
+sequenceDiagram
+  autonumber
+  actor Guest
+  participant App as Booking / payment
+  participant Promotion as Promotion module
+  participant DB as MySQL
+
+  Guest->>App: Preview stay with optional promo code
+  App->>Promotion: Find best eligible offer
+  Promotion->>DB: Read offers and usage limits
+  Promotion-->>App: Discounted quote
+  App-->>Guest: Show total and price fingerprint
+  Note over App,Promotion: Offers do not stack<br/>Preview uses no capacity
+
+  Guest->>App: Confirm booking
+  App->>Promotion: Recheck current quote
+  Promotion-->>App: Validated price and selected offer
+  App->>DB: Begin transaction and create booking
+  App->>Promotion: Reserve selected promotion
+  Promotion->>DB: Check limits under locks and save reservation
+  App->>DB: Commit booking and reservation
+  App-->>Guest: Booking and payment details
+
+  alt Payment succeeds
+    App->>Promotion: Redeem reservation
+    Promotion->>DB: Mark redeemed and update usage
+  else Unpaid booking cancelled or expired
+    App->>Promotion: Release reservation
+    Promotion->>DB: Mark released and restore capacity
+  end

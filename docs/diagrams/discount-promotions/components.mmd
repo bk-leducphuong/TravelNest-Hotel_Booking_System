@@ -1,0 +1,33 @@
+---
+config:
+  theme: redux-color
+  look: neo
+  themeVariables:
+    fontSize: 14px
+---
+flowchart TB
+  guest["Guest app: deals, room offers and checkout"]
+  admin["Hotel admin: manage promotions and view usage"]
+
+  subgraph backend["Express API process"]
+    manage["Promotion admin API: permissions, validation and campaign management"]
+    browse["Search and catalog: automatic offers"]
+    booking["Booking: hold preview, live pricing and checkout"]
+    promotion["Promotion module: eligibility, best offer and redemption lifecycle"]
+    payment["Payment: redeem on successful confirmation"]
+    repository["Promotion repositories: queries and row locks"]
+  end
+
+  workers["BullMQ workers + Redis: reconcile overdue reservations"]
+  db[("MySQL: promotions, room targets, usage and redemptions")]
+
+  admin -->|"Hotel-scoped API"| manage
+  guest -->|"Browse deals and availability"| browse
+  guest -->|"Preview code and create booking"| booking
+  manage -->|"Campaign terms and room scope"| repository
+  browse -->|"Automatic offers only"| promotion
+  booking -->|"Quote, reserve and release"| promotion
+  payment -->|"Redeem in booking transaction"| promotion
+  workers -->|"Repair using current booking state"| promotion
+  promotion -->|"Read and transactional writes"| repository
+  repository -->|"SQL"| db
