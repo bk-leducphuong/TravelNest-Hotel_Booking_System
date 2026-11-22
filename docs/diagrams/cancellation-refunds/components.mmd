@@ -1,0 +1,43 @@
+%%{init: {"theme": "neutral", "flowchart": {"nodeSpacing": 30, "rankSpacing": 50}}}%%
+flowchart TB
+    guest["Guest app"]
+    admin["Hotel admin app"]
+
+    subgraph api["Express API process"]
+        booking["Booking component: policy, quote and cancellation"]
+        payment["Payment component: refund obligations and review"]
+        inventory["Inventory component: release booked rooms"]
+        webhook["Stripe webhook handler"]
+    end
+
+    subgraph background["Background worker process"]
+        recovery["Refund recovery and outbox delivery: every 15 seconds"]
+        daily["Refund reconciliation sweep: daily"]
+    end
+
+    reconcile["Shared refund reconciliation and ledger services"]
+    db[("MySQL: bookings, refunds, ledger and outbox")]
+    redis[("Redis and BullMQ schedules")]
+    stripe["Stripe payment provider"]
+    events["Event subscribers: notifications and realtime"]
+
+    guest -->|"Quote, cancel and track refund"| booking
+    admin -->|"Force cancellation"| booking
+    admin -->|"Refund and review actions"| payment
+    booking --> payment
+    booking --> inventory
+    booking --> db
+    payment --> db
+    inventory --> db
+    redis -.-> recovery
+    redis -.-> daily
+    recovery -->|"Claim durable obligations and read outbox"| db
+    recovery -->|"Create or retrieve refunds"| stripe
+    daily -->|"Retrieve existing refunds"| stripe
+    recovery --> reconcile
+    daily --> reconcile
+    stripe -->|"Refund events"| webhook
+    webhook -->|"Retrieve authoritative refund"| stripe
+    webhook --> reconcile
+    reconcile -->|"Commit outcome, payment totals, ledger and events"| db
+    recovery -->|"Publish committed outbox events"| events
