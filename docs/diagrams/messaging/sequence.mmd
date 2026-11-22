@@ -1,0 +1,34 @@
+---
+config:
+  theme: redux-color
+  look: neo
+  themeVariables:
+    fontSize: 14px
+---
+sequenceDiagram
+  autonumber
+  actor Guest
+  participant API as Messaging API
+  participant DB as MySQL
+  actor Hotel as Hotel staff
+
+  Guest->>API: Open conversation for own booking
+  API->>DB: Find or create booking conversation
+  API-->>Guest: Conversation details
+  Guest->>API: Join chat room via Socket.IO
+  Hotel->>API: Join chat room via Socket.IO
+  Note over Guest,Hotel: Room joins require conversation access
+
+  Guest->>API: Send message via HTTP with retry key
+  API->>API: Check access, send window and content
+  API->>DB: Lock thread, allocate sequence and save message
+  Note over API,DB: Commit message and inbox preview together
+  API-->>Guest: chat:message via Socket.IO
+  API-->>Hotel: chat:message via Socket.IO
+  API-->>Guest: HTTP response with saved message
+
+  Hotel->>API: Mark latest message read via HTTP
+  API->>DB: Advance reader cursor
+  API-->>Guest: chat:read receipt via Socket.IO
+  API-->>Hotel: Read confirmation
+  Note over API,Hotel: Missed realtime updates are recovered from HTTP history

@@ -1,0 +1,66 @@
+---
+config:
+  theme: redux-color
+  look: neo
+  themeVariables:
+    fontSize: 14px
+---
+erDiagram
+  hotels ||--o{ conversations : owns
+  bookings |o--o| conversations : has_thread
+  users ||--o{ conversations : guest_participant
+  conversations ||--o{ messages : contains
+  users |o--o{ messages : sends
+  conversations ||--o{ conversation_reads : tracks_readers
+  users ||--o{ conversation_reads : reads
+  messages ||--o{ message_attachments : includes
+
+  hotels {
+    UUID id PK
+  }
+  bookings {
+    UUID id PK
+  }
+  users {
+    UUID id PK
+  }
+  conversations {
+    UUID id PK
+    UUID hotel_id FK
+    UUID booking_id FK, UK "nullable"
+    UUID guest_user_id FK
+    bigint last_message_seq
+    datetime last_message_at "nullable"
+    string last_message_preview "nullable"
+    datetime guest_deleted_at "nullable, guest inbox only"
+    string status "open or archived"
+  }
+  messages {
+    UUID id PK
+    UUID conversation_id FK
+    bigint seq "unique with conversation_id"
+    UUID sender_user_id FK "nullable, system or deleted user"
+    string sender_side "guest, hotel or system"
+    string type "text, system or image"
+    text body
+    UUID client_message_id "nullable, unique with conversation_id"
+    boolean flagged
+    string flag_reason "nullable"
+    datetime created_at
+  }
+  conversation_reads {
+    UUID conversation_id PK, FK
+    UUID user_id PK, FK
+    bigint last_read_seq
+    bigint last_notified_seq
+    datetime muted_at "nullable"
+  }
+  message_attachments {
+    UUID id PK
+    UUID message_id FK
+    string object_key UK
+    string mime_type
+    bigint size_bytes
+    int position "unique with message_id"
+    datetime created_at
+  }

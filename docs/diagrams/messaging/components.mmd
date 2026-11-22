@@ -1,0 +1,38 @@
+---
+config:
+  theme: redux-color
+  look: neo
+  themeVariables:
+    fontSize: 14px
+---
+flowchart TB
+  guest["Guest app: booking conversations and messages"]
+  admin["Hotel admin: guest inbox and replies"]
+
+  subgraph backend["Express API process"]
+    api["Messaging API: authentication, hotel permissions and validation"]
+    messaging["Messaging module: conversations, messages and read state"]
+    repository["Repositories: thread locks, message ordering and retry keys"]
+    realtime["Socket.IO: authorized rooms, delivery and typing"]
+    attachments["Image attachments: validate uploads and sign download URLs"]
+    events["Booking event subscribers: open threads and post system messages"]
+  end
+
+  db[("MySQL: conversations, messages, attachments and read cursors")]
+  storage[("MinIO: private chat images")]
+  booking["Booking module: booking context and domain events"]
+
+  guest -->|"HTTP: open, send, read and upload"| api
+  admin -->|"Hotel-scoped HTTP API"| api
+  api --> messaging
+  messaging --> repository
+  repository -->|"SQL"| db
+  messaging -->|"Upload and resolve image keys"| attachments
+  attachments -->|"Store images and sign URLs"| storage
+  messaging -->|"Committed messages and read receipts"| realtime
+  guest <-->|"Socket connection"| realtime
+  admin <-->|"Socket connection"| realtime
+  realtime -->|"Check conversation access"| messaging
+  booking -->|"Booking created or status changed"| events
+  events --> messaging
+  messaging -->|"Read booking context"| booking
