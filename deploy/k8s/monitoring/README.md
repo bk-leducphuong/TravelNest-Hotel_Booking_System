@@ -128,17 +128,19 @@ the metrics `job="travelnest-api"` — use `service_name` for log queries. Add
 `k8s.grafana.com/logs.job: travelnest-api` to a Deployment's pod annotations if
 you want the metric name in logs too.
 
-The API and worker write pino JSON, so parse it in LogQL:
+The API and worker write pino JSON with a **numeric** `level` (30 info, 40
+warn, 50 error), so parse it in LogQL:
 
 ```logql
 {cluster="travelnest-test", service_name="api"} | json | level >= 40
 {cluster="travelnest-test", service_name="worker"} | json | msg =~ ".*failed.*"
-{cluster="travelnest-test"} |= "error" | json | line_format "{{.msg}}"
+{cluster="travelnest-test"} | json | msg =~ "(?i)error"
 ```
 
-Filter with the LogQL `level` extracted from JSON rather than pino's numeric
-`level` field. Other containers (nginx, keycloak, mysql, redis, nats) log plain
-text and arrive unparsed.
+Other services are inconsistent: `notification` and `argocd-*` use string levels
+(`"INFO"`, `"info"`), where `level >= 40` fails with a `LabelFilterErr` — filter
+those with `| json | level =~ "(?i)error|warn"`. nginx, keycloak, mysql, redis
+and nats log plain text and arrive unparsed.
 
 What is _not_ shipped: the `monitoring` namespace (Alloy's own logs, avoiding a
 feedback loop), rotated log files older than the tail position, and anything
