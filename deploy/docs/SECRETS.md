@@ -127,11 +127,11 @@ committed.
 The local k3d environment uses the **same** SOPS + age + KSOPS mechanism as prod,
 but with its own values and its own encrypted files:
 
-| | Prod | Local |
-|---|---|---|
-| Values file | `deploy/k8s/.env.prod` (gitignored) | `deploy/k8s/.env.local` (gitignored) |
-| Templates | `**/overlays/prod/secret.template.yaml`, `infra/minio/` | `**/overlays/local/secret.template.yaml`, `local/minio/` |
-| Seal script | `seal-prod-secrets.sh` | `seal-local-secrets.sh` |
+|             | Prod                                    | Local                                                                   |
+| ----------- | --------------------------------------- | ----------------------------------------------------------------------- |
+| Values file | `deploy/k8s/.env.prod` (gitignored)     | `deploy/k8s/.env.local` (gitignored)                                    |
+| Templates   | `**/overlays/prod/secret.template.yaml` | `**/overlays/local/secret.template.yaml`, `infra/minio/overlays/local/` |
+| Seal script | `seal-prod-secrets.sh`                  | `seal-local-secrets.sh`                                                 |
 
 The two seal scripts are mutually exclusive by design — each excludes the other
 environment's paths — so sealing one can never overwrite the other's

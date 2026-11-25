@@ -5,28 +5,41 @@ to Cloudflare R2, then decommission the volume.
 
 ## Why
 
-| Item | Current |
-| --- | --- |
-| Hetzner volume `volume-hel1-1` (164 GB, network-attached) | ~$12.58/mo |
-| Objects | 491,245 across 2 buckets |
-| `uploads` | 491,226 objects / ~79 GiB |
-| `travelnest-backups` | 19 objects / 4.9 GiB |
-| MinIO pod memory limit | 512 Mi (restart-looping under load) |
+| Item                                                      | Before migration                    |
+| --------------------------------------------------------- | ----------------------------------- |
+| Hetzner volume `volume-hel1-1` (164 GB, network-attached) | ~$12.58/mo                          |
+| Objects                                                   | 491,245 across 2 buckets            |
+| `uploads`                                                 | 491,226 objects / ~79 GiB           |
+| `travelnest-backups`                                      | 19 objects / 4.9 GiB                |
+| MinIO pod memory limit                                    | 512 Mi (restart-looping under load) |
 
 R2 keeps the same S3 API, charges only for stored bytes (~$1.26/mo for 84 GiB)
 and has no egress fees.
 
 ## Status
 
-Phases 1–2 are **complete** (2026-10-31):
+**Complete.** The copy ran on 2026-10-31 and the in-cluster MinIO was retired on
+2026-11-01 (#170): prod's `ApplicationSet` has no `minio` entry, and
+`api`, `worker`, `media` and the MySQL backup CronJob all read/write R2.
 
-| | |
-| --- | --- |
-| Objects in R2 | 245,615 (only keys referenced by `images.object_key`) |
-| Bytes | 70.1 GiB |
-| Verification | 0 missing / 0 extra keys; 10/10 sampled MD5s identical |
-| Backups | 20 objects / 5.1 GiB, byte-identical |
-| Public path | `https://media.deployserver.work/<key>` returns the object |
+|               |                                                            |
+| ------------- | ---------------------------------------------------------- |
+| Objects in R2 | 245,615 (only keys referenced by `images.object_key`)      |
+| Bytes         | 70.1 GiB                                                   |
+| Verification  | 0 missing / 0 extra keys; 10/10 sampled MD5s identical     |
+| Backups       | 20 objects / 5.1 GiB, byte-identical                       |
+| Public path   | `https://media.deployserver.work/<key>` returns the object |
+
+Current production wiring:
+
+- `api` / `worker` secrets set `MINIO_ENDPOINT=<ACCOUNT_ID>.r2.cloudflarestorage.com`,
+  `MINIO_PORT=443`, `MINIO_USE_SSL=true`, `MINIO_REGION=auto`.
+- `media` sets `MINIO_ENDPOINT` (from `MEDIA_MINIO_ENDPOINT`) plus
+  `PUBLIC_OBJECT_BASE_URL=https://media.deployserver.work`.
+- The `mysql-backup` CronJob uploads through `S3_ENDPOINT` from `backup-secret`,
+  not the old `http://minio:9000`.
+- MinIO manifests remain only in `deploy/k8s/infra/minio/overlays/local` for the
+  local k3d environment.
 
 Two things learned during the copy:
 
@@ -134,7 +147,7 @@ End-to-end spot check:
 curl -sI https://media.deployserver.work/<object_key>   # 200, image/avif
 ```
 
-## Phase 3 — Cut over
+## Phase 3 — Cut over (done)
 
 1. Scale `media` and `worker` to 0, run a final delta `rclone copy`, re-verify.
 2. Update `deploy/k8s/.env.prod`:
@@ -152,20 +165,20 @@ MINIO_SECRET_KEY=<R2_TOKEN_SECRET>
 ```
 
 3. Reseal secrets: `./deploy/scripts/secrets/seal-prod-secrets.sh`.
-4. Media service must send a region to minio-go
-   (`services/media/internal/storage/minio.go` currently omits `Region`, which
-   makes it sign with `us-east-1`; R2 expects `auto`).
+4. Media service must send a region to minio-go (`services/media/internal/storage/minio.go`;
+   without `MINIO_REGION=auto` it signs with `us-east-1`). Done.
 5. Update GitHub repo variables `VITE_MINIO_URL` and `NUXT_PUBLIC_MEDIA_BASE` to
    `https://media.deployserver.work`, then rebuild client/admin/superadmin —
    these are baked in at build time.
-6. Repoint the backup CronJob
-   (`deploy/k8s/infra/mysql/overlays/prod/backup-cronjob.yaml` hardcodes
-   `endpoint="http://minio:9000"`).
+6. The backup CronJob now reads `S3_ENDPOINT` from `backup-secret`
+   (`deploy/k8s/infra/mysql/overlays/prod/backup-cronjob.yaml`). Done.
 7. Scale `media`/`worker` back up and confirm Argo CD is synced.
 
-## Phase 4 — Remove the volume
+## Phase 4 — Remove the volume (done)
 
-Only after a soak period with no rollback needed.
+The MinIO app was removed from prod on 2026-11-01. That deletes its Deployment,
+Service, Ingress and `minio-data` PVC, freeing the Hetzner volume. The commands
+below are kept as the historical record.
 
 ```bash
 kubectl delete pvc minio-data -n travelnest   # PV has Prune=false
@@ -180,9 +193,9 @@ Then delete the `minio` app from Argo CD. Root disk ends at ~20 GB / 75 GB used.
 
 ## Rollback
 
-Until Phase 4, the MinIO volume still holds every object. Reverting means
-restoring the previous `.env.prod` values, resealing, and rebuilding the
-frontends at the old `VITE_MINIO_URL`.
+No longer available: MinIO and its PVC were removed, so the only copy of every
+object is R2. Restoring from R2 means pointing the `MINIO_*` secrets back at an
+S3-compatible endpoint; the frontends no longer bake a MinIO URL.
 
 ## Known cleanup opportunity
 

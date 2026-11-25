@@ -61,16 +61,16 @@ The server loads `.env.${NODE_ENV}` in `server/server.js`; development usually m
 Pick the tool that matches the environment you mean. The full procedures live in
 the project skills — load them on demand instead of guessing.
 
-| Environment                                       | How to reach it                                                         | Details                        |
-| ------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------ |
-| Local dev services (MySQL, Redis, MinIO)          | `make infra-*` (loads `server/.env.development`)                        | skill `travelnest-local-infra` |
-| Local Kubernetes (k3d)                            | `KUBECONFIG=~/.kube/travelnest-local.yaml kubectl ...`                  | skill `travelnest-local-infra` |
-| Prod VPS (Hetzner CAX21)                          | `ssh hetzner` (deploy user) / `ssh hetzner-root`                        | skill `travelnest-prod-ops`    |
-| Prod k3s cluster                                  | `kubectl` / `argocd` **over ssh** (no prod kubeconfig locally)          | skill `travelnest-prod-ops`    |
-| Prod MySQL / Redis                                | `cloudflared access tcp` + creds from gitignored `deploy/k8s/.env.prod` | skill `travelnest-prod-ops`    |
-| Prod deploys                                      | Argo CD GitOps only — never `kubectl apply` by hand                     | `deploy/docs/CICD.md`          |
-| Grafana Cloud                                     | `gcx` CLI; token sealed in `deploy/k8s/monitoring/secrets/`             | skill `travelnest-prod-ops`    |
-| Hetzner / Cloudflare                              | `hcloud`, `cf`, `cloudflared`                                           | skill `travelnest-prod-ops`    |
+| Environment                              | How to reach it                                                         | Details                        |
+| ---------------------------------------- | ----------------------------------------------------------------------- | ------------------------------ |
+| Local dev services (MySQL, Redis, MinIO) | `make infra-*` (loads `server/.env.development`)                        | skill `travelnest-local-infra` |
+| Local Kubernetes (k3d)                   | `KUBECONFIG=~/.kube/travelnest-local.yaml kubectl ...`                  | skill `travelnest-local-infra` |
+| Prod VPS (Hetzner CAX21)                 | `ssh hetzner` (deploy user) / `ssh hetzner-root`                        | skill `travelnest-prod-ops`    |
+| Prod k3s cluster                         | `kubectl` / `argocd` **over ssh** (no prod kubeconfig locally)          | skill `travelnest-prod-ops`    |
+| Prod MySQL / Redis                       | `cloudflared access tcp` + creds from gitignored `deploy/k8s/.env.prod` | skill `travelnest-prod-ops`    |
+| Prod deploys                             | Argo CD GitOps only — never `kubectl apply` by hand                     | `deploy/docs/CICD.md`          |
+| Grafana Cloud                            | `gcx` CLI; token sealed in `deploy/k8s/monitoring/secrets/`             | skill `travelnest-prod-ops`    |
+| Hetzner / Cloudflare                     | `hcloud`, `cf`, `cloudflared`                                           | skill `travelnest-prod-ops`    |
 
 Installed on this machine: `mysql`, `redis-cli`, `stripe`,
 `cloudflared`, `hcloud`, `cf`, `kubectl`, `argocd`, `k3d`, `kustomize`,
@@ -131,7 +131,7 @@ Backend tests use Jest. Integration tests may require Docker/Testcontainers and 
 
 ## Backend Data And Services
 
-Primary storage is MySQL via Sequelize. Redis is used for sessions, cache/rate limiting, and BullMQ. Analytics events (search logs and hotel view events) live in MySQL tables owned by the Go analytics service. Hotel search is MySQL-only (denormalized `hotel_search_snapshots` read model + daily `room_inventory`). MinIO/S3-compatible storage handles media. Stripe, SMTP/Nodemailer, Infobip, OAuth providers, and Socket.IO are integrated.
+Primary storage is MySQL via Sequelize. Redis is used for sessions, cache/rate limiting, and BullMQ. Analytics events (search logs and hotel view events) live in MySQL tables owned by the Go analytics service. Hotel search is MySQL-only (denormalized `hotel_search_snapshots` read model + daily `room_inventory`). S3-compatible storage handles media (Cloudflare R2 in prod, MinIO locally). Stripe, SMTP/Nodemailer, Infobip, OAuth providers, and Socket.IO are integrated.
 
 ### Real Infra Access For Debugging
 

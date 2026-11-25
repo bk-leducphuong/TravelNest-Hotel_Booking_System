@@ -122,10 +122,11 @@ Container stdout/stderr from every pod outside the `monitoring` namespace goes
 to Loki (`grafanacloud-<stack>-logs`), in Explore or `gcx logs query`.
 
 Every stream is labelled `cluster`, `namespace`, `pod`, `container` and
-`service_name` (from the `app.kubernetes.io/name` pod label). Logs use
-`service_name` where metrics use `job`: `{service_name="api"}` ↔
-`job="travelnest-api"`. Add `k8s.grafana.com/logs.job: <name>` to a Deployment's
-pod annotations if you want a matching `job` label.
+`service_name` (from the `app.kubernetes.io/name` pod label). `job` also exists
+but is `<namespace>/<name>` (`job="travelnest/api"`), which does **not** match
+the metrics `job="travelnest-api"` — use `service_name` for log queries. Add
+`k8s.grafana.com/logs.job: travelnest-api` to a Deployment's pod annotations if
+you want the metric name in logs too.
 
 The API and worker write pino JSON, so parse it in LogQL:
 

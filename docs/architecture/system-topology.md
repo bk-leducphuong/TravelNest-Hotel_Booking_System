@@ -32,7 +32,7 @@ flowchart TB
     mysql[("MySQL<br/>owned table sets, per service")]
     analyticsdb[("MySQL<br/>analytics")]
     redis[("Redis<br/>cache + holds")]
-    minio[("MinIO<br/>media objects")]
+    minio[("S3-compatible object store<br/>Cloudflare R2 in prod<br/>MinIO locally")]
   end
 
   guest --> gw

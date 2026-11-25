@@ -47,7 +47,7 @@ deploy/k8s/
 │   └── worker/            BullMQ worker
 ├── infra/                 Stateful services in cluster
 │   ├── keycloak/
-│   ├── minio/
+│   ├── minio/             (local k3d only; prod uses Cloudflare R2)
 │   ├── mysql/             (+ prod backup CronJob)
 │   ├── nats/
 │   └── redis/
@@ -106,8 +106,11 @@ not distinguish `develop` from `master` tags and hit Docker Hub rate limits).
 ## External Managed Services
 
 - **Cloudflare Tunnel** (public ingress, plus Access in front of Argo CD)
+- **Cloudflare R2** (media objects + nightly MySQL backups; public media URL
+  `https://media.deployserver.work`)
 
-Everything else — MySQL, Redis, MinIO, NATS, Keycloak — runs in-cluster.
+Everything else — MySQL, Redis, NATS, Keycloak — runs in-cluster. MinIO exists
+only in the local k3d environment.
 
 ---
 

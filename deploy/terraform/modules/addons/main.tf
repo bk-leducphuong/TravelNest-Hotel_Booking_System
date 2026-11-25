@@ -178,7 +178,7 @@ resource "helm_release" "external_dns" {
 }
 
 # ---------------------------------------------------------------------------
-# Argo CD (GitOps engine; KSOPS/Image Updater are patched afterwards)
+# Argo CD (GitOps engine; KSOPS is patched afterwards)
 # ---------------------------------------------------------------------------
 resource "helm_release" "argocd" {
   name             = "argo-cd"

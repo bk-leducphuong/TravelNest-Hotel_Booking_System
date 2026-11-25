@@ -11,28 +11,31 @@ header, which `cloudflared` preserves.
 
 ## Tunnel
 
-| | |
-|---|---|
-| Name | `travelnest` |
-| ID | `f3cf83fa-a17c-4e1e-ae43-8c2774b0def8` |
-| Management | **locally-managed** (`config_src: local`) |
-| Runtime | systemd unit `cloudflared.service` on the VPS host |
-| Account | `938ceca1e7de73dcb1f962d4c48a462e` |
-| Zone | `deployserver.work` |
+|            |                                                                             |
+| ---------- | --------------------------------------------------------------------------- |
+| Name       | `travelnest`                                                                |
+| ID         | `f3cf83fa-a17c-4e1e-ae43-8c2774b0def8`                                      |
+| Management | **locally-managed** (`config_src: local`)                                   |
+| Runtime    | systemd unit `cloudflared.service` on the VPS host                          |
+| Account    | `938ceca1e7de73dcb1f962d4c48a462e`                                          |
+| Zone       | `deployserver.work`, `trestay.com` (new primary domain; both stay routable) |
 
 ## Hostnames
 
-| Hostname | Backend (in k3s) |
-|---|---|
-| `deployserver.work` | `frontend:80` |
-| `api.deployserver.work` | `api:3000` |
-| `admin.deployserver.work` | `admin-client:80` |
-| `superadmin.deployserver.work` | `superadmin-client:80` |
-| `storage.deployserver.work` | `minio:9000` |
-| `keycloak.deployserver.work` | `keycloak:8080` |
-| `argocd.deployserver.work` | `argocd-server:80` (Argo CD dashboard; gated by Cloudflare Access) |
-| `mysql.deployserver.work` | `tcp://localhost:13306` (raw TCP; Cloudflare Access + `cloudflared access tcp`) |
-| `redis.deployserver.work` | `tcp://localhost:16379` (raw TCP; Cloudflare Access + `cloudflared access tcp`) |
+| Hostname                                                  | Backend (in k3s)                                                                             |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `deployserver.work` / `trestay.com`                       | `frontend:80`                                                                                |
+| `api.deployserver.work` / `api.trestay.com`               | `api:3000`                                                                                   |
+| `admin.deployserver.work` / `admin.trestay.com`           | `admin-client:80`                                                                            |
+| `superadmin.deployserver.work` / `superadmin.trestay.com` | `superadmin-client:80`                                                                       |
+| `keycloak.deployserver.work` / `keycloak.trestay.com`     | `keycloak:8080`                                                                              |
+| `argocd.deployserver.work` / `argocd.trestay.com`         | `argocd-server:80` (Argo CD dashboard; gated by Cloudflare Access)                           |
+| `mysql.deployserver.work`                                 | `tcp://localhost:13306` (raw TCP; Cloudflare Access + `cloudflared access tcp`)              |
+| `redis.deployserver.work`                                 | `tcp://localhost:16379` (raw TCP; Cloudflare Access + `cloudflared access tcp`)              |
+| `storage.deployserver.work` / `storage.trestay.com`       | _(no backend — MinIO was retired in #170; these ingress rules are stale and can be removed)_ |
+
+Media is served by **Cloudflare R2** at `https://media.deployserver.work`, using an
+R2 custom domain. It is not a tunnel hostname and needs no `cloudflared` rule.
 
 The `mysql`/`redis` hostnames are **not** HTTP and do not go through
 Traefik — they are raw TCP served by `cloudflared access tcp`, with the loopback
@@ -107,11 +110,13 @@ cf zones edit -z deployserver.work --paused=false        # resume
 `argocd.deployserver.work` serves the Argo CD UI. Two pieces:
 
 1. **Insecure mode** — Argo CD serves plain HTTP (Cloudflare terminates TLS):
+
    ```bash
    kubectl -n argocd patch cm argocd-cmd-params-cm \
      --type merge -p '{"data":{"server.insecure":"true"}}'
    kubectl -n argocd rollout restart deploy/argocd-server
    ```
+
    Then expose it with an Ingress (`deploy/k8s/bootstrap/argocd/argocd-server-ingress.yaml`).
 
 2. **Cloudflare Access (Zero Trust)** — an Access application on

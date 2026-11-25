@@ -99,8 +99,9 @@ KSOPS — see [`SECRETS.md`](SECRETS.md).
 
 ## Operational Notes
 
-- A single-node k3s cluster runs MySQL, Redis, MinIO, NATS and Keycloak
-  **in-cluster**. Hotel search is MySQL-only; there is no external search engine.
+- A single-node k3s cluster runs MySQL, Redis, NATS and Keycloak **in-cluster**.
+  Object storage (media + MySQL backups) is **Cloudflare R2**, not in-cluster.
+  Hotel search is MySQL-only; there is no external search engine.
 - Cloudflare Tunnel provides public ingress and is kept outside the cluster for
   simpler recovery.
 - Rollbacks are a `git revert` of the promotion commit; Argo CD re-syncs to the

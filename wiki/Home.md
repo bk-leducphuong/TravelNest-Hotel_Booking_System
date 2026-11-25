@@ -25,7 +25,7 @@ exposed through a **Cloudflare Tunnel**.
 | Superadmin console    | [superadmin.deployserver.work](https://superadmin.deployserver.work)                    |
 | Backend API (Swagger) | [api.deployserver.work/api-docs](https://api.deployserver.work/api-docs)                |
 | Keycloak              | [keycloak.deployserver.work](https://keycloak.deployserver.work)                        |
-| Media storage (MinIO) | [storage.deployserver.work](https://storage.deployserver.work)                          |
+| Media storage (R2)    | [media.deployserver.work](https://media.deployserver.work)                              |
 | Argo CD               | [argocd.deployserver.work](https://argocd.deployserver.work) (behind Cloudflare Access) |
 
 ## Quick Links
@@ -48,7 +48,7 @@ exposed through a **Cloudflare Tunnel**.
 | Hotel Search     | MySQL (no external engine)                                            |
 | Analytics        | MySQL event tables (`analytics_*`)                                    |
 | Cache & Queues   | Redis 7                                                               |
-| Object Storage   | MinIO / S3-compatible                                                 |
+| Object Storage   | Cloudflare R2 (S3-compatible; MinIO locally)                          |
 | Payments         | Stripe                                                                |
 | Notifications    | Nodemailer, Infobip (SMS), Socket.IO                                  |
 | Auth             | Session-based, Passport (Google, Twitter), Keycloak                   |

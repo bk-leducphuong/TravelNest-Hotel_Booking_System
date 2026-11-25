@@ -32,7 +32,7 @@ The whole stack runs on a single-node **k3s** cluster on a Hetzner VPS (ARM64), 
          ┌──────────────────────────┼──────────────────────┐
          │          │                      │              │
     ┌────┴────┐ ┌───┴────┐          ┌──────┴───┐     ┌────┴───┐
-    │  MySQL  │ │ Redis  │          │  MySQL   │     │ MinIO  │
+    │  MySQL  │ │ Redis  │          │  MySQL   │     │ R2/S3  │
     │(SQL+srch)│ │(Cache) │          │(Analyt.) │     │(Stor.) │
     └─────────┘ └───┬────┘          └──────────┘     └────────┘
                     │
@@ -71,7 +71,7 @@ The whole stack runs on a single-node **k3s** cluster on a Hetzner VPS (ARM64), 
 - **MySQL 8.0**: Primary relational database (Sequelize ORM, 47+ models)
 - **Redis 7**: Caching, session storage, BullMQ queue backend
 - **MySQL analytics tables**: Search logs and hotel view events (`analytics_*`)
-- **MinIO**: S3-compatible object storage for images and media
+- **Object storage**: S3-compatible (Cloudflare R2 in production, MinIO locally) for images and media
 
 ### External Integrations
 

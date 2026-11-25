@@ -19,7 +19,7 @@ TravelNest has three Go microservices under `services/`, communicating with the 
 │
 │ Data Stores:
 │ ┌────────┐ ┌──────┐ ┌────────┐
-│ │ MySQL  │ │MinIO │ │ MySQL  │
+│ │ MySQL  │ │R2/S3 │ │ MySQL  │
 │ └────────┘ └──────┘ └────────┘
 ```
 
@@ -37,9 +37,9 @@ Handles search analytics and hotel view tracking.
 Handles image processing and media management.
 
 - **Language**: Go 1.22
-- **Dependencies**: NATS, MinIO, MySQL
+- **Dependencies**: NATS, S3-compatible storage (MinIO locally), MySQL
 - **Events consumed**: media.process, image.resize
-- **Storage**: MinIO (images), MySQL (metadata)
+- **Storage**: S3-compatible object storage (Cloudflare R2 in prod), MySQL (metadata)
 
 ## Notification Service (`services/notification/`)
 

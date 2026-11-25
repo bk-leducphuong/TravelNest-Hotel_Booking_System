@@ -115,7 +115,7 @@ jobs:
       # values are resolved by the caller and cannot read its `env`.
       build_args: |
         NUXT_PUBLIC_API_BASE=${{ vars.NUXT_PUBLIC_API_BASE || 'https://api.deployserver.work/api/v1' }}
-        NUXT_PUBLIC_MEDIA_BASE=${{ vars.NUXT_PUBLIC_MEDIA_BASE || vars.VITE_MINIO_URL || 'https://storage.deployserver.work/uploads/' }}
+        NUXT_PUBLIC_MEDIA_BASE=${{ vars.NUXT_PUBLIC_MEDIA_BASE || vars.VITE_MINIO_URL || 'https://media.deployserver.work' }}
         NUXT_PUBLIC_KEYCLOAK_URL=${{ vars.NUXT_PUBLIC_KEYCLOAK_URL || 'https://keycloak.deployserver.work' }}
         NUXT_PUBLIC_KEYCLOAK_REALM=${{ vars.NUXT_PUBLIC_KEYCLOAK_REALM || 'travelnest' }}
         NUXT_PUBLIC_KEYCLOAK_CLIENT_ID=${{ vars.NUXT_PUBLIC_KEYCLOAK_CLIENT_ID || 'travelnest-admin' }}

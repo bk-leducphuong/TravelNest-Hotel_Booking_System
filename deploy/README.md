@@ -15,9 +15,10 @@ Deployment is **Kubernetes + Argo CD GitOps** only — manifests live in
 | Terraform (managed cloud tier)  | `deploy/terraform/` | Optional / alternate   |
 
 The live cluster is a single-node **k3s** cluster on a Hetzner CAX21 VPS (ARM64).
-MySQL, Redis, MinIO, NATS and Keycloak run **in-cluster**. Hotel search
-is MySQL-only, so there is no external search engine. Public traffic arrives
-through a **Cloudflare Tunnel**.
+MySQL, Redis, NATS and Keycloak run **in-cluster**; media and MySQL backups live
+in **Cloudflare R2** (external, S3-compatible). Hotel search is MySQL-only, so
+there is no external search engine. Public traffic arrives through a
+**Cloudflare Tunnel**.
 
 ## Kubernetes GitOps Layout
 
@@ -34,7 +35,7 @@ deploy/k8s/
 │   └── worker/            BullMQ worker
 ├── infra/                 In-cluster stateful services (base + overlays)
 │   ├── keycloak/          Identity provider
-│   ├── minio/             Object storage
+│   ├── minio/             Object storage (local environment only)
 │   ├── mysql/             Primary database (+ prod backup CronJob)
 │   ├── nats/              Message bus
 │   └── redis/             Cache and queues
@@ -84,20 +85,25 @@ manifest-level detail and [`deploy/docs/CICD.md`](docs/CICD.md) for the pipeline
 
 ## Infrastructure Services
 
-| Service       | Where      | Purpose                                              |
-| ------------- | ---------- | ---------------------------------------------------- |
-| **MySQL 8.0** | in-cluster | Primary application database                         |
-| **Redis 7**   | in-cluster | Caching, sessions, BullMQ queues                     |
-| **MinIO**     | in-cluster | S3-compatible object storage (media + MySQL backups) |
-| **NATS**      | in-cluster | JetStream event bus for microservices                |
-| **Keycloak**  | in-cluster | Identity and access management                       |
+| Service           | Where      | Purpose                                              |
+| ----------------- | ---------- | ---------------------------------------------------- |
+| **MySQL 8.0**     | in-cluster | Primary application database                         |
+| **Redis 7**       | in-cluster | Caching, sessions, BullMQ queues                     |
+| **Cloudflare R2** | external   | S3-compatible object storage (media + MySQL backups) |
+| **NATS**          | in-cluster | JetStream event bus for microservices                |
+| **Keycloak**      | in-cluster | Identity and access management                       |
+
+MinIO is **not** part of production. `deploy/k8s/infra/minio/` is used only by the
+local k3d environment; prod reads and writes R2 through the `MINIO_*` variables
+in the sealed secrets (see [`docs/R2_MIGRATION.md`](docs/R2_MIGRATION.md)).
 
 ## External Managed Services
 
 - **Cloudflare Tunnel** — public ingress, plus Cloudflare **Access** in front of
   `argocd.deployserver.work`.
-- **Hetzner Volume** — 161 GB block volume mounted at `/mnt/minio` for object
-  storage.
+- **Cloudflare R2** — buckets `uploads` (media) and `travelnest-backups` (nightly
+  MySQL dumps). Objects are served from the `uploads` custom domain,
+  `https://media.deployserver.work`. The old Hetzner `/mnt/minio` volume is gone.
 
 ## Scripts
 

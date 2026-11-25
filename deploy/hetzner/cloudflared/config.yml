@@ -28,7 +28,7 @@ ingress:
   - hostname: argocd.deployserver.work
     service: http://localhost:80
   # --- New primary domain (trestay.com). Old deployserver.work hostnames stay
-  # routable during the migration; see deploy/docs/DOMAIN-MIGRATION.md.
+  # routable during the migration; see the Hostnames table in README.md.
   - hostname: trestay.com
     service: http://localhost:80
   - hostname: api.trestay.com

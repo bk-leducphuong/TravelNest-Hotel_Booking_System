@@ -74,8 +74,10 @@ ssh hetzner "sudo kubectl -n travelnest exec -it redis-0   -- redis-cli -a '$RED
 the remote process list — prefer option A for anything long-lived.)
 
 `mysql` and `redis-cli` are installed on this laptop, so option A is
-usually the most convenient. `mc` (MinIO client) is **not** installed — use the
-MinIO console (`storage.deployserver.work`) or the S3 API instead.
+usually the most convenient. `mc` (MinIO client) is **not** installed, and
+production has no MinIO console — objects live in Cloudflare R2. Use the
+Cloudflare dashboard (R2) or the `aws` CLI against the R2 S3 endpoint from
+`backup-secret`.
 
 ## Infrastructure
 

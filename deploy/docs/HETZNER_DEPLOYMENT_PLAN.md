@@ -3,6 +3,11 @@
 > **Historical record.** Hotel search is now MySQL-only and Elasticsearch has been
 > retired (issue #153); the Elastic Cloud references below describe the earlier
 > decision and are kept for context. See `docs/architecture/search-mysql.md`.
+>
+> **Object storage update (2026-11).** The in-cluster MinIO described below was
+> retired in #170. Production now stores media and MySQL backups in **Cloudflare
+> R2**; `deploy/k8s/infra/minio/` survives only for the local k3d environment.
+> See `deploy/docs/R2_MIGRATION.md` for the current state.
 
 > Target: [Hetzner CAX21](https://www.hetzner.com/cloud) · Ubuntu 24.04 · k3s + Argo CD + KSOPS
 > Elasticsearch = Elastic Cloud trial · MySQL / Redis / MinIO / NATS / Keycloak in-cluster
@@ -208,4 +213,4 @@ The existing `infra/mysql/overlays/prod` backup CronJob already targets **in-clu
 - `deploy/scripts/secrets/` — SOPS + age init/seal scripts.
 - `deploy/scripts/setup-hotels-index.sh` — Elasticsearch index setup.
 - `.github/workflows/*` — CI builds and pushes images to Docker Hub.
-- Manifest assumptions documented in `deploy/k8s/README.md` (default StorageClass, Traefik, external TLS, Image Updater).
+- Manifest assumptions documented in `deploy/k8s/README.md` (default StorageClass, Traefik, external TLS, CI-side image promotion).

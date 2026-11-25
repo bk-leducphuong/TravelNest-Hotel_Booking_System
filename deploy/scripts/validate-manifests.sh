@@ -79,17 +79,5 @@ if [ "$failed" -ne 0 ]; then
   exit 1
 fi
 
-# Bootstrap manifests applied by hand (no kustomization wrapper).
-shopt -s nullglob
-bootstrap_files=("$K8S_DIR"/bootstrap/argocd/image-updater/*.yaml)
-if [ "${#bootstrap_files[@]}" -gt 0 ]; then
-  printf '==> bootstrap/argocd/image-updater\n'
-  if ! kubeconform -strict -ignore-missing-schemas -summary "${bootstrap_files[@]}"; then
-    echo
-    echo "Manifest validation FAILED." >&2
-    exit 1
-  fi
-fi
-
 echo
 echo "All ${#dirs[@]} kustomize targets rendered and validated."

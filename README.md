@@ -23,19 +23,22 @@ Trestay is a full-stack hotel booking platform inspired by [booking.com](https:/
 A single **production** environment runs on a Hetzner VPS (**k3s** + Argo CD),
 exposed through a **Cloudflare Tunnel**.
 
-| Service                   | URL                                                                                                                                                             |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Guest app**             | [deployserver.work](https://deployserver.work)                                                                                                                  |
-| **Admin console**         | [admin.deployserver.work](https://admin.deployserver.work)                                                                                                      |
-| **Superadmin console**    | [superadmin.deployserver.work](https://superadmin.deployserver.work)                                                                                            |
-| **Backend API**           | [api.deployserver.work](https://api.deployserver.work) — Swagger at `/api-docs` (enabled in non-production, and in production only when `ENABLE_API_DOCS=true`) |
-| **Keycloak**              | [keycloak.deployserver.work](https://keycloak.deployserver.work)                                                                                                |
-| **Media storage (MinIO)** | [storage.deployserver.work](https://storage.deployserver.work)                                                                                                  |
-| **Argo CD**               | [argocd.deployserver.work](https://argocd.deployserver.work) (behind Cloudflare Access)                                                                         |
+| Service                | URL                                                                                                                                                             |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Guest app**          | [deployserver.work](https://deployserver.work)                                                                                                                  |
+| **Admin console**      | [admin.deployserver.work](https://admin.deployserver.work)                                                                                                      |
+| **Superadmin console** | [superadmin.deployserver.work](https://superadmin.deployserver.work)                                                                                            |
+| **Backend API**        | [api.deployserver.work](https://api.deployserver.work) — Swagger at `/api-docs` (enabled in non-production, and in production only when `ENABLE_API_DOCS=true`) |
+| **Keycloak**           | [keycloak.deployserver.work](https://keycloak.deployserver.work)                                                                                                |
+| **Media storage (R2)** | [media.deployserver.work](https://media.deployserver.work)                                                                                                      |
+| **Argo CD**            | [argocd.deployserver.work](https://argocd.deployserver.work) (behind Cloudflare Access)                                                                         |
 
-MySQL, Redis, MinIO, NATS and Keycloak all run in-cluster. Hotel search
-is **MySQL-only** (no external search engine) — see
-[docs/architecture/search-mysql.md](docs/architecture/search-mysql.md).
+MySQL, Redis, NATS and Keycloak all run in-cluster; media and MySQL backups live
+in **Cloudflare R2**. Hotel search is **MySQL-only** (no external search engine) —
+see [docs/architecture/search-mysql.md](docs/architecture/search-mysql.md).
+
+`trestay.com` is the new primary domain; the `deployserver.work` hostnames above
+stay routable during the migration.
 
 ---
 
@@ -87,7 +90,7 @@ is **MySQL-only** (no external search engine) — see
 | **Hotel Search**     | MySQL (`hotel_search_snapshots` + `room_inventory`)                   |
 | **Analytics**        | MySQL event tables (`analytics_*`)                                    |
 | **Cache & Queues**   | Redis 7                                                               |
-| **Object Storage**   | MinIO / S3-compatible                                                 |
+| **Object Storage**   | Cloudflare R2 (S3-compatible; MinIO locally)                          |
 | **Payments**         | Stripe                                                                |
 | **Notifications**    | Nodemailer, Infobip (SMS), Socket.IO                                  |
 | **Auth**             | Session-based, Passport (Google, Twitter), Keycloak                   |

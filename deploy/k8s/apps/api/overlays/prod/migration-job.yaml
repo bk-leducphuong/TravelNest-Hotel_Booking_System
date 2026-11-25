@@ -20,7 +20,7 @@ spec:
       containers:
         - name: migrate
           # Rewritten to docker.io/leducphuong/travelnest-api:<tag> by the
-          # overlay's kustomize `images:` entry (and by Argo CD Image Updater).
+          # overlay's kustomize `images:` entry (managed by CI promotion).
           image: travelnest-api:latest
           imagePullPolicy: IfNotPresent
           command: ["npm", "run", "migrate:production"]

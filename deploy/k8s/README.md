@@ -16,7 +16,7 @@ Phase 1 deploys these workloads into a single-node `k3s` cluster:
 - `notification`
 - `mysql`
 - `redis`
-- `minio`
+- `minio` (local k3d only; prod uses Cloudflare R2)
 - `nats`
 - `keycloak`
 
@@ -101,8 +101,11 @@ Applications (the controller triggers syncs itself, step by step).
   - `superadmin.deployserver.work`
   - `api.deployserver.work`
   - `keycloak.deployserver.work`
-  - `storage.deployserver.work`
+  - `media.deployserver.work` (Cloudflare R2 custom domain, not routed through the tunnel)
   - `argocd.deployserver.work` (Argo CD, behind Cloudflare Access)
+- `trestay.com` and the same `api.` / `admin.` / `superadmin.` / `keycloak.` /
+  `argocd.` subdomains are the new primary domain; the `deployserver.work`
+  hostnames stay routable from the same Ingresses.
 - Cloudflare Tunnel stays outside the cluster in phase 1.
 
 ## Secrets (SOPS + age)
@@ -256,7 +259,7 @@ The overlays are intentionally cluster-agnostic so the same `prod` manifests run
 on the VPS k3s cluster or a managed cloud cluster. Assumptions to satisfy on any
 new cluster:
 
-- **StorageClass** — `mysql`, `redis`, `nats` and `minio` use
+- **StorageClass** — `mysql`, `redis`, `nats` and (local only) `minio` use
   `volumeClaimTemplates` with **no `storageClassName`**, so
   the cluster must have a default StorageClass. Don't hardcode one in the
   manifests; set the default on the cluster instead.
@@ -274,15 +277,17 @@ new cluster:
 
 The Terraform tree (`deploy/terraform/`) can stand up an **`aws-prod`** variant
 that targets a managed AWS data tier: **RDS MySQL**, **ElastiCache Redis**, and
-**S3** replace the in-cluster `mysql`, `redis`, and `minio` workloads, which are
-intentionally absent from that variant's `ApplicationSet`. Connection settings
-travel in the SOPS-sealed prod secrets (see `.env.prod.example`), so the committed
-manifests stay environment-agnostic. Terraform provisions the data tier, cluster,
-and platform add-ons — see [`../terraform/README.md`](../terraform/README.md).
+**S3** replace the in-cluster `mysql` and `redis` workloads and the Cloudflare R2
+object store. Those backends are intentionally absent from that variant's
+`ApplicationSet`. Connection settings travel in the SOPS-sealed prod secrets (see
+`.env.prod.example`), so the committed manifests stay environment-agnostic.
+Terraform provisions the data tier, cluster, and platform add-ons — see
+[`../terraform/README.md`](../terraform/README.md).
 
 > This is an **alternate** target, not the live environment. The production
-> cluster is the single-node Hetzner k3s cluster, where MySQL/Redis/MinIO/NATS/
-> Keycloak all run in-cluster. Hotel search is MySQL-only.
+> cluster is the single-node Hetzner k3s cluster, where MySQL/Redis/NATS/
+> Keycloak run in-cluster and object storage is Cloudflare R2. Hotel search is
+> MySQL-only.
 
 The `keycloak` database is created by
 `infra/keycloak/overlays/prod/db-init-job.yaml` (an Argo CD PreSync hook),
@@ -290,9 +295,10 @@ because RDS cannot run the old in-cluster MySQL init ConfigMap.
 
 ## Before First Deploy
 
-- MySQL, Redis and MinIO are provisioned in-cluster. Re-seal
-  `deploy/k8s/.env.prod` (see above) if you rotate any secret.
+- MySQL and Redis are provisioned in-cluster; object storage is Cloudflare R2.
+  Re-seal `deploy/k8s/.env.prod` (see above) if you rotate any secret.
 - Image pushes deploy automatically: the image CI (on master) commits the new
   tag into the prod overlay and Argo CD rolls it out.
-- If you do not want public MinIO object delivery at `storage.deployserver.work`,
-  change `PUBLIC_OBJECT_BASE_URL` and remove or replace the MinIO ingress.
+- Media objects are public through the R2 custom domain
+  `https://media.deployserver.work`; change `PUBLIC_OBJECT_BASE_URL` (in the
+  media secret) if you front the bucket differently.
