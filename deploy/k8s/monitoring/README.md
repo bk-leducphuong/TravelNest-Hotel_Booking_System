@@ -1,8 +1,8 @@
 # Grafana Cloud monitoring (k8s-monitoring)
 
-Sends Kubernetes, host and application metrics from this cluster to **Grafana
-Cloud**, where the prebuilt Kubernetes Monitoring dashboards live plus the
-latency panels built from the API's own metrics.
+Sends Kubernetes, host and application metrics and container logs from this
+cluster to **Grafana Cloud**, where the prebuilt Kubernetes Monitoring
+dashboards live plus the latency panels built from the API's own metrics.
 
 Deployed via Argo CD as the `monitoring` Application, applied by the root app
 (`travelnest-root`) from
@@ -19,12 +19,16 @@ Deployed via Argo CD as the `monitoring` Application, applied by the root app
 - **`annotationAutodiscovery`** scrapes pods annotated with
   `k8s.grafana.com/scrape`. The API (`job="travelnest-api"`) and the BullMQ
   worker (`job="travelnest-worker"`) use it.
-- Every series carries `cluster="travelnest-test"`, set from `cluster.name`.
+- **`podLogsViaLoki`** tails `/var/log/pods` with the `filesystem-log-reader`
+  preset and pushes container logs to the Loki destination, every pod outside
+  the `monitoring` namespace. See [Logs](#logs).
+- Every series and log stream carries `cluster="travelnest-test"`, set from
+  `cluster.name`.
 - Nothing is exposed publicly: Alloy only makes **outbound** connections, and
   the app metrics ports (API `9464`, worker `4001`) are only reachable
   in-cluster.
 
-Local footprint ≈ **200–360 MiB** (collector preset `small`).
+Local footprint ≈ **250–420 MiB** (collector preset `small`, logs included).
 
 ## Files
 
@@ -52,9 +56,11 @@ decrypted at sync time by KSOPS. The Secret contains two keys:
   destination with `passwordFrom: sys.env("GCLOUD_RW_API_KEY")`, so the token
   never appears in Git or in the rendered Alloy config.
 
-The Prometheus **instance id** (`3658557`) is not a secret and lives directly in
-`values.yaml`. The token must keep the `metrics:write` scope or Alloy's remote
-writes will fail with 401.
+The Prometheus **instance id** (`3658557`) and the Loki **instance id**
+(`1824943`) are not secrets and live directly in `values.yaml`. The token must
+keep both the `metrics:write` and `logs:write` scopes, or the remote writes
+return 401 (metrics) and log pushes return 401 (logs) — separately, so check the
+Alloy logs when only one side goes quiet.
 
 To rotate:
 
@@ -88,11 +94,14 @@ been stable for a few days, delete or disable the `k8s_monitoring_*` pipelines.
 2. Render locally (Helm is not installed on the dev machine):
 
    ```bash
-   docker run --rm -v "$PWD:/apps" alpine/helm:3.16 \
-     template grafana-cloud grafana/k8s-monitoring \
-     --repo https://grafana.github.io/helm-charts --version 4.5.3 \
-     -n monitoring -f /apps/deploy/k8s/monitoring/values.yaml > /tmp/monitoring.yaml
+   docker run --rm -v "$PWD:/apps" --entrypoint sh alpine/helm:3.16 -c '
+     helm repo add grafana https://grafana.github.io/helm-charts >/dev/null &&
+     helm template grafana-cloud grafana/k8s-monitoring --version 4.5.3 \
+       -n monitoring -f /apps/deploy/k8s/monitoring/values.yaml' > /tmp/monitoring.yaml
    ```
+
+   (`helm template --repo …` fails on this image with "version not found", so add
+   the repo explicitly.)
 
 3. Commit and let Argo CD sync. Alloy rolls with the new config.
 
@@ -106,6 +115,40 @@ metadata:
     k8s.grafana.com/job: my-service
     k8s.grafana.com/metrics.portName: metrics
 ```
+
+## Logs
+
+Container stdout/stderr from every pod outside the `monitoring` namespace goes
+to Loki (`grafanacloud-<stack>-logs`), in Explore or `gcx logs query`.
+
+Every stream is labelled `cluster`, `namespace`, `pod`, `container` and
+`service_name` (from the `app.kubernetes.io/name` pod label). Logs use
+`service_name` where metrics use `job`: `{service_name="api"}` ↔
+`job="travelnest-api"`. Add `k8s.grafana.com/logs.job: <name>` to a Deployment's
+pod annotations if you want a matching `job` label.
+
+The API and worker write pino JSON, so parse it in LogQL:
+
+```logql
+{cluster="travelnest-test", service_name="api"} | json | level >= 40
+{cluster="travelnest-test", service_name="worker"} | json | msg =~ ".*failed.*"
+{cluster="travelnest-test"} |= "error" | json | line_format "{{.msg}}"
+```
+
+Filter with the LogQL `level` extracted from JSON rather than pino's numeric
+`level` field. Other containers (nginx, keycloak, mysql, redis, nats) log plain
+text and arrive unparsed.
+
+What is _not_ shipped: the `monitoring` namespace (Alloy's own logs, avoiding a
+feedback loop), rotated log files older than the tail position, and anything
+already deleted by containerd's rotation. To silence a specific pod instead, set
+`logs.grafana.com/pods.enabled: "false"` on it. Turn log shipping off by setting
+`podLogsViaLoki.enabled: false` and committing.
+
+Volume is small today (`/var/log/pods` ≈ 200 MB total on disk), but this is a
+Grafana Cloud Loki quota consumer: raise or lower retention/limits there, not in
+the cluster. Nothing alerts on a Loki 401; `kubectl -n monitoring logs ds/grafana-cloud-alloy-daemon -c alloy`
+is where a bad token shows up.
 
 ## API latency (percentiles)
 
@@ -183,6 +226,8 @@ troubleshoot empty panels.
 
 - Dashboards: **grafana.com → your stack → Kubernetes → Monitoring** (cluster
   `travelnest-test`).
+- Logs: **Explore → Loki** (`grafanacloud-<stack>-logs`), or
+  `gcx logs query '{cluster="travelnest-test"}' -d grafanacloud-logs`.
 - No public endpoint / Cloudflare Tunnel needed.
 - Alerting lives in **Grafana Cloud** (Grafana Alerting), not in the cluster —
   see [`alerts/README.md`](./alerts/README.md).
