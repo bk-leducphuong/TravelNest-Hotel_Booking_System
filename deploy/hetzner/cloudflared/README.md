@@ -109,15 +109,11 @@ cf zones edit -z deployserver.work --paused=false        # resume
 
 `argocd.deployserver.work` serves the Argo CD UI. Two pieces:
 
-1. **Insecure mode** — Argo CD serves plain HTTP (Cloudflare terminates TLS):
-
-   ```bash
-   kubectl -n argocd patch cm argocd-cmd-params-cm \
-     --type merge -p '{"data":{"server.insecure":"true"}}'
-   kubectl -n argocd rollout restart deploy/argocd-server
-   ```
-
-   Then expose it with an Ingress (`deploy/k8s/bootstrap/argocd/argocd-server-ingress.yaml`).
+1. **Insecure mode + Ingress** — both are declared in
+   `deploy/helm/platform/argo-cd/values-prod-k3s.yaml`
+   (`configs.params.server.insecure`, `server.ingress`) and applied by the
+   self-managed `argocd` Application. Argo CD serves plain HTTP; Cloudflare
+   terminates TLS. No manual patch/Ingress needed.
 
 2. **Cloudflare Access (Zero Trust)** — an Access application on
    `argocd.deployserver.work` forces login (email One-Time PIN or the Google

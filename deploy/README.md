@@ -6,7 +6,9 @@ for running TravelNest.
 ## Deployment
 
 Deployment is **Kubernetes + Argo CD GitOps** only — manifests live in
-`deploy/k8s/` and Argo CD auto-syncs them.
+`deploy/k8s/` and Argo CD auto-syncs them. Argo CD itself is an Application in
+that tree (`deploy/k8s/environments/prod/argocd.yaml`), so its chart version and
+KSOPS config change through Git too.
 
 | Track                           | Directory           | Status                 |
 | ------------------------------- | ------------------- | ---------------------- |
@@ -57,10 +59,13 @@ frontends); the children converge via `selfHeal`.
 To bootstrap Argo CD on a cluster:
 
 ```bash
-# prod
+# prod — first install only; afterwards Argo CD manages itself from
+# deploy/k8s/environments/prod/argocd.yaml (bump the chart there to upgrade)
+helm upgrade --install argocd argo/argo-cd -n argocd --create-namespace \
+  --version 10.10.2 -f deploy/helm/platform/argo-cd/values-prod-k3s.yaml
 kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application.yaml
 
-# local (k3d)
+# local (k3d) — bootstrapped from upstream manifests
 kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application-local.yaml
 ```
 

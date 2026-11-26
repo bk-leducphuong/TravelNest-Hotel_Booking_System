@@ -27,10 +27,8 @@ deploy/k8s/.age/keys.txt         # gitignored, age private key
 deploy/scripts/secrets/
   init-age-key.sh                # generate key, write .sops.yaml, create sops-age
   seal-prod-secrets.sh           # render templates + encrypt to secret.enc.yaml
-  install-argo-ksops.sh          # patch Argo CD repo-server for KSOPS
-deploy/k8s/bootstrap/argocd/ksops/
-  argocd-cm-patch.yaml           # --enable-alpha-plugins --enable-exec
-  argocd-repo-server-patch.yaml  # KSOPS init container + age key mount
+deploy/helm/platform/argo-cd/
+  values-prod-k3s.yaml           # KSOPS + ingress for the self-managed prod chart
 
 deploy/k8s/apps/<app>/overlays/prod/
   secret.template.yaml           # committed, ${VAR} placeholders
@@ -66,11 +64,10 @@ kubectl create secret generic sops-age -n argocd \
   --from-file=keys.txt=deploy/k8s/.age/keys.txt
 ```
 
-Then patch Argo CD so the repo-server can use KSOPS:
-
-```bash
-./deploy/scripts/secrets/install-argo-ksops.sh
-```
+Then make KSOPS available to Argo CD. Nothing manual: the `argocd`
+Application renders the repo-server KSOPS init container and kustomize flags
+from `deploy/helm/platform/argo-cd/values-prod-k3s.yaml`. A local k3d Argo CD
+install should use the same chart and values (drop the prod domain/ingress).
 
 ## Day-to-day
 
@@ -143,8 +140,10 @@ environment's paths — so sealing one can never overwrite the other's
 2. `./deploy/scripts/secrets/init-age-key.sh` (once per machine).
 3. `./deploy/scripts/secrets/seal-local-secrets.sh`.
 4. Commit the generated local `secret.enc.yaml` files.
-5. Patch the local Argo CD repo-server with KSOPS:
-   `./deploy/scripts/secrets/install-argo-ksops.sh`.
+5. Install the local Argo CD from the `argo/argo-cd` chart with the KSOPS
+   repo-server settings (same chart/config as
+   `deploy/helm/platform/argo-cd/values-prod-k3s.yaml`; override the prod
+   domain/ingress).
 
 The `*.enc.yaml` local files are safe to commit (encrypted). `deploy/k8s/.env.local`
 and `deploy/k8s/.age/` are gitignored and must never be committed.

@@ -7,3 +7,6 @@ resources:
   # a plain resource of the root app, not an ApplicationSet entry, because the
   # ApplicationSet template targets the `travelnest` project/namespace.
   - monitoring.yaml
+  # Argo CD manages itself from the argo/argo-cd chart. Same reason for
+  # project `default`; see the file's header for bootstrap/upgrade notes.
+  - argocd.yaml

@@ -1,0 +1,53 @@
+# Argo CD manages itself (and every other Application) from this file.
+#
+# It is a plain resource of the prod root app, so `travelnest-root` creates this
+# Application; that Application then renders the argo/argo-cd chart with the
+# KSOPS-enabled values in deploy/helm/platform/argo-cd/values-prod-k3s.yaml.
+#
+# Fresh-cluster bootstrap, before `travelnest-root` exists:
+#   helm upgrade --install argocd argo/argo-cd -n argocd --create-namespace \
+#     --version 10.10.2 -f deploy/helm/platform/argo-cd/values-prod-k3s.yaml
+# then create the `sops-age` Secret and apply bootstrap/argocd/root-application.yaml.
+# Argo adopts the Helm-installed resources on its first sync (same names/values).
+#
+# Upgrades are a one-line `targetRevision` bump. The chart templates its CRDs,
+# so they update with the sync too; `prune: false` below is what stops a sync
+# from ever deleting them.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+  annotations:
+    # Safety valve: pruning this Application would try to delete the whole
+    # Argo CD install (and the CRDs every other Application depends on).
+    # If this manifest is ever removed from Git, delete the app deliberately.
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  # `default` (not `travelnest`): the chart creates cluster-scoped RBAC, which
+  # the tight travelnest AppProject deliberately disallows.
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  sources:
+    - repoURL: https://github.com/bk-leducphuong/TravelNest-Hotel_Booking_System.git
+      targetRevision: master
+      ref: values
+    - repoURL: https://argoproj.github.io/argo-helm
+      chart: argo-cd
+      # argo-cd 10.10.2 ships app version v3.5.4, matching the running install.
+      targetRevision: 10.10.2
+      helm:
+        releaseName: argocd
+        valueFiles:
+          - $values/deploy/helm/platform/argo-cd/values-prod-k3s.yaml
+  syncPolicy:
+    automated:
+      # Never prune Argo CD itself; removing it is a manual, deliberate action.
+      prune: false
+      selfHeal: true
+    syncOptions:
+      # Required for the large ApplicationSet/Application CRDs (annotation limit).
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true

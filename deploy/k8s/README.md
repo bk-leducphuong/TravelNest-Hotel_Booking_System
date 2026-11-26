@@ -41,10 +41,21 @@ per-workload manifests live in a single file instead of 12 near-identical ones.
 
 ## Bootstrap
 
-1. Install `k3s` and Argo CD on the VPS.
-2. Bootstrap SOPS + age and seal the prod secrets, then patch Argo CD for KSOPS
-   (see [Secrets](#secrets-sops--age) below).
-3. Apply the root Argo CD application for your cluster:
+1. Install `k3s` on the VPS.
+2. Install Argo CD once from the pinned chart. Prod then manages itself through
+   the `argocd` Application (`environments/prod/argocd.yaml`):
+
+   ```bash
+   helm upgrade --install argocd argo/argo-cd -n argocd --create-namespace \
+     --version 10.10.2 \
+     -f deploy/helm/platform/argo-cd/values-prod-k3s.yaml
+   ```
+
+   KSOPS is baked into those values, so no repo-server patch is needed.
+
+3. Bootstrap SOPS + age and seal the prod secrets
+   (see [Secrets](#secrets-sops--age) below), then create the `sops-age` Secret.
+4. Apply the root Argo CD application for your cluster:
 
 ```bash
 # prod
@@ -54,7 +65,10 @@ kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application.yaml
 kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application-local.yaml
 ```
 
-Argo CD then syncs the full stack from this repository.
+Argo CD then syncs the full stack from this repository, including the `argocd`
+Application that owns its own release. Upgrade Argo CD by bumping
+`targetRevision` in `environments/prod/argocd.yaml` — never with a second
+`helm upgrade`.
 
 ## Sync ordering
 
@@ -124,7 +138,6 @@ Full guide: **[../docs/SECRETS.md](../docs/SECRETS.md)**. Short version:
 ./deploy/scripts/secrets/init-age-key.sh          # generate key + sops-age Secret
 cp deploy/k8s/.env.prod.example deploy/k8s/.env.prod && $EDITOR deploy/k8s/.env.prod
 ./deploy/scripts/secrets/seal-prod-secrets.sh     # render + encrypt (prod)
-./deploy/scripts/secrets/install-argo-ksops.sh    # patch Argo CD repo-server
 
 # Local environment instead:
 cp deploy/k8s/.env.local.example deploy/k8s/.env.local && $EDITOR deploy/k8s/.env.local

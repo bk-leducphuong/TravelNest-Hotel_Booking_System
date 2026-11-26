@@ -47,7 +47,7 @@ while IFS= read -r file; do
   mv "$file.stripped" "$file"
 done < <(grep -rl '^generators:' "$tmp/k8s" --include=kustomization.yaml || true)
 
-# Bootstrap manifests (e.g. the KSOPS patch) are applied against a live Argo CD
+# Bootstrap manifests (the root Applications) are applied against a live Argo CD
 # install and have no standalone base, so they are excluded.
 mapfile -t dirs < <(
   find "$tmp/k8s" -name kustomization.yaml -not -path '*/bootstrap/*' -printf '%h\n' | sort

@@ -1,7 +1,6 @@
 # Argo CD values for the EKS prod cluster.
 #
-# KSOPS is baked into the Helm values (rather than applied afterwards with
-# deploy/k8s/bootstrap/argocd/ksops) so the repo-server can decrypt
+# KSOPS is baked into the Helm values so the repo-server can decrypt
 # deploy/k8s/**/secret.enc.yaml at render time from the first sync.
 #
 # The chart defaults for repoServer.volumeMounts/volumes/initContainers are
@@ -27,7 +26,8 @@ repoServer:
   initContainers:
     - name: install-ksops
       image: viaductoss/ksops:v4.5.1
-      command: ["/usr/local/bin/ksops", "install", "--with-kustomize", "/custom-tools"]
+      command:
+        ["/usr/local/bin/ksops", "install", "--with-kustomize", "/custom-tools"]
       volumeMounts:
         - name: custom-tools
           mountPath: /custom-tools

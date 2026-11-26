@@ -1,0 +1,97 @@
+# Argo CD values for the single-node k3s prod cluster.
+#
+# Applied by the self-managed `argocd` Application
+# (deploy/k8s/environments/prod/argocd.yaml). Config changes and upgrades are
+# Git commits; do not run `helm upgrade` against this release by hand.
+#
+# Fresh-cluster bootstrap (before the root app exists):
+#   helm upgrade --install argocd argo/argo-cd -n argocd --create-namespace \
+#     --version 10.10.2 -f deploy/helm/platform/argo-cd/values-prod-k3s.yaml
+#
+# fullnameOverride keeps the existing `argocd-*` resource names (argocd-server,
+# argocd-repo-server, ...) so the hand-installed upstream manifests are adopted
+# in place instead of creating a second copy.
+fullnameOverride: argocd
+
+global:
+  domain: argocd.deployserver.work
+  networkPolicy:
+    # The hand-installed upstream manifests had no NetworkPolicies. Leave them
+    # off so the chart does not start filtering traffic (e.g. Traefik -> server).
+    create: false
+
+configs:
+  params:
+    # Cloudflare Tunnel terminates TLS; Traefik talks plain HTTP to argocd-server.
+    server.insecure: true
+  cm:
+    # Required for KSOPS (kustomize exec plugins).
+    kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
+  secret:
+    # argocd-secret holds the admin password and server key that Argo CD
+    # generates itself. Letting the chart render it (empty) can wipe them.
+    createSecret: false
+
+# KSOPS baked into the repo-server (replaces the old manual repo-server patch)
+# so *.enc.yaml decrypts from the first sync.
+repoServer:
+  env:
+    - name: XDG_CONFIG_HOME
+      value: /.config
+    - name: SOPS_AGE_KEY_FILE
+      value: /.config/sops/age/keys.txt
+  initContainers:
+    - name: install-ksops
+      image: viaductoss/ksops:v4.5.1
+      command:
+        ["/usr/local/bin/ksops", "install", "--with-kustomize", "/custom-tools"]
+      volumeMounts:
+        - name: custom-tools
+          mountPath: /custom-tools
+  volumes:
+    - name: custom-tools
+      emptyDir: {}
+    - name: sops-age
+      secret:
+        # Created out of band by deploy/scripts/secrets/init-age-key.sh.
+        # optional=true lets the pod start before the key exists.
+        secretName: sops-age
+        optional: true
+        items:
+          - key: keys.txt
+            path: keys.txt
+  volumeMounts:
+    - name: custom-tools
+      mountPath: /usr/local/bin/kustomize
+      subPath: kustomize
+    - name: custom-tools
+      mountPath: /usr/local/bin/ksops
+      subPath: ksops
+    - name: sops-age
+      mountPath: /.config/sops/age
+      readOnly: true
+
+redis:
+  # `argocd-redis` already exists (key `auth`). Without this the chart's
+  # pre-install Job would mint a new password and the components would lose Redis.
+  existingSecret: argocd-redis
+redisSecretInit:
+  enabled: false
+
+# Keep the metrics Services the upstream install already created under Git.
+# (The controller's upstream service is named `argocd-metrics`; the chart would
+# call it `argocd-application-controller-metrics`, so leave that one out.)
+notifications:
+  metrics:
+    enabled: true
+
+server:
+  metrics:
+    enabled: true
+  ingress:
+    enabled: true
+    controller: generic
+    ingressClassName: traefik
+    hostname: argocd.deployserver.work
+    # Cloudflare terminates TLS; there is no cert-manager on this cluster.
+    tls: false

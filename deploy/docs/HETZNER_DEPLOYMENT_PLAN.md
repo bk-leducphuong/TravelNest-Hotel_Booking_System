@@ -146,7 +146,10 @@ The existing `infra/mysql/overlays/prod` backup CronJob already targets **in-clu
 ### Phase 6 — k3s + Argo CD
 
 1. Install k3s on Ubuntu 24.04 ARM; confirm Traefik + a default local-path StorageClass (both required by the manifests).
-2. Install Argo CD; patch for KSOPS (`deploy/scripts/secrets/install-argo-ksops.sh`).
+2. Install Argo CD from the pinned chart with
+   `deploy/helm/platform/argo-cd/values-prod-k3s.yaml` (KSOPS included). After
+   the root app exists, Argo CD manages its own release from
+   `deploy/k8s/environments/prod/argocd.yaml`.
 3. `kubectl apply -n argocd -f deploy/k8s/bootstrap/argocd/root-application.yaml` (the existing prod root, which points at `environments/prod`).
 4. Sync is not wave-ordered → let it converge via selfHeal. Optionally enable progressive syncs + `RollingSync`.
 
