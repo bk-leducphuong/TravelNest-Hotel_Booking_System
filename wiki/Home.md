@@ -18,15 +18,15 @@ TravelNest is a full-stack hotel booking platform inspired by [booking.com](http
 A single **production** environment runs on a Hetzner VPS (**k3s** + Argo CD),
 exposed through a **Cloudflare Tunnel**.
 
-| Service               | URL                                                                                     |
-| --------------------- | --------------------------------------------------------------------------------------- |
-| Guest app             | [deployserver.work](https://deployserver.work)                                          |
-| Admin console         | [admin.deployserver.work](https://admin.deployserver.work)                              |
-| Superadmin console    | [superadmin.deployserver.work](https://superadmin.deployserver.work)                    |
-| Backend API (Swagger) | [api.deployserver.work/api-docs](https://api.deployserver.work/api-docs)                |
-| Keycloak              | [keycloak.deployserver.work](https://keycloak.deployserver.work)                        |
-| Media storage (R2)    | [media.deployserver.work](https://media.deployserver.work)                              |
-| Argo CD               | [argocd.deployserver.work](https://argocd.deployserver.work) (behind Cloudflare Access) |
+| Service               | URL                                                                         |
+| --------------------- | --------------------------------------------------------------------------- |
+| Guest app             | [trestay.com](https://trestay.com)                                          |
+| Admin console         | [admin.trestay.com](https://admin.trestay.com)                              |
+| Superadmin console    | [superadmin.trestay.com](https://superadmin.trestay.com)                    |
+| Backend API (Swagger) | [api.trestay.com/api-docs](https://api.trestay.com/api-docs)                |
+| Keycloak              | [keycloak.trestay.com](https://keycloak.trestay.com)                        |
+| Media storage (R2)    | [media.trestay.com](https://media.trestay.com)                              |
+| Argo CD               | [argocd.trestay.com](https://argocd.trestay.com) (behind Cloudflare Access) |
 
 ## Quick Links
 

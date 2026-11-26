@@ -114,11 +114,11 @@ jobs:
       # is an SPA, so this public config is baked into the bundle. `with:`
       # values are resolved by the caller and cannot read its `env`.
       build_args: |
-        NUXT_PUBLIC_API_BASE=${{ vars.NUXT_PUBLIC_API_BASE || 'https://api.deployserver.work/api/v1' }}
-        NUXT_PUBLIC_MEDIA_BASE=${{ vars.NUXT_PUBLIC_MEDIA_BASE || vars.VITE_MINIO_URL || 'https://media.deployserver.work' }}
-        NUXT_PUBLIC_KEYCLOAK_URL=${{ vars.NUXT_PUBLIC_KEYCLOAK_URL || 'https://keycloak.deployserver.work' }}
+        NUXT_PUBLIC_API_BASE=${{ vars.NUXT_PUBLIC_API_BASE || 'https://api.trestay.com/api/v1' }}
+        NUXT_PUBLIC_MEDIA_BASE=${{ vars.NUXT_PUBLIC_MEDIA_BASE || vars.VITE_MINIO_URL || 'https://media.trestay.com' }}
+        NUXT_PUBLIC_KEYCLOAK_URL=${{ vars.NUXT_PUBLIC_KEYCLOAK_URL || 'https://keycloak.trestay.com' }}
         NUXT_PUBLIC_KEYCLOAK_REALM=${{ vars.NUXT_PUBLIC_KEYCLOAK_REALM || 'travelnest' }}
         NUXT_PUBLIC_KEYCLOAK_CLIENT_ID=${{ vars.NUXT_PUBLIC_KEYCLOAK_CLIENT_ID || 'travelnest-admin' }}
-        NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI=${{ vars.NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI || 'https://admin.deployserver.work/silent-check-sso.html' }}
+        NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI=${{ vars.NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI || 'https://admin.trestay.com/silent-check-sso.html' }}
       promote_targets: |
         travelnest-admin:deploy/k8s/apps/admin-client/overlays/prod/kustomization.yaml

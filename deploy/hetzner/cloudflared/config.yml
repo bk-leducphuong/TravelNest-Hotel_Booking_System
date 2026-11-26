@@ -53,5 +53,9 @@ ingress:
     service: tcp://localhost:13306
   - hostname: redis.deployserver.work
     service: tcp://localhost:16379
+  - hostname: mysql.trestay.com
+    service: tcp://localhost:13306
+  - hostname: redis.trestay.com
+    service: tcp://localhost:16379
   # Catch-all: anything not matched above returns 404.
   - service: http_status:404

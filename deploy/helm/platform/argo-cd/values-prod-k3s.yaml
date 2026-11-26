@@ -14,7 +14,8 @@
 fullnameOverride: argocd
 
 global:
-  domain: argocd.deployserver.work
+  # Also sets argocd-cm `url` / `statusbadge.url` (see chart _helpers.tpl).
+  domain: argocd.trestay.com
   networkPolicy:
     # The hand-installed upstream manifests had no NetworkPolicies. Leave them
     # off so the chart does not start filtering traffic (e.g. Traefik -> server).
@@ -92,6 +93,9 @@ server:
     enabled: true
     controller: generic
     ingressClassName: traefik
-    hostname: argocd.deployserver.work
+    hostname: argocd.trestay.com
+    extraHosts:
+      # Old hostname stays routable while deployserver.work winds down.
+      - name: argocd.deployserver.work
     # Cloudflare terminates TLS; there is no cert-manager on this cluster.
     tls: false

@@ -23,22 +23,22 @@ Trestay is a full-stack hotel booking platform inspired by [booking.com](https:/
 A single **production** environment runs on a Hetzner VPS (**k3s** + Argo CD),
 exposed through a **Cloudflare Tunnel**.
 
-| Service                | URL                                                                                                                                                             |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Guest app**          | [deployserver.work](https://deployserver.work)                                                                                                                  |
-| **Admin console**      | [admin.deployserver.work](https://admin.deployserver.work)                                                                                                      |
-| **Superadmin console** | [superadmin.deployserver.work](https://superadmin.deployserver.work)                                                                                            |
-| **Backend API**        | [api.deployserver.work](https://api.deployserver.work) — Swagger at `/api-docs` (enabled in non-production, and in production only when `ENABLE_API_DOCS=true`) |
-| **Keycloak**           | [keycloak.deployserver.work](https://keycloak.deployserver.work)                                                                                                |
-| **Media storage (R2)** | [media.deployserver.work](https://media.deployserver.work)                                                                                                      |
-| **Argo CD**            | [argocd.deployserver.work](https://argocd.deployserver.work) (behind Cloudflare Access)                                                                         |
+| Service                | URL                                                                                                                                                 |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Guest app**          | [trestay.com](https://trestay.com)                                                                                                                  |
+| **Admin console**      | [admin.trestay.com](https://admin.trestay.com)                                                                                                      |
+| **Superadmin console** | [superadmin.trestay.com](https://superadmin.trestay.com)                                                                                            |
+| **Backend API**        | [api.trestay.com](https://api.trestay.com) — Swagger at `/api-docs` (enabled in non-production, and in production only when `ENABLE_API_DOCS=true`) |
+| **Keycloak**           | [keycloak.trestay.com](https://keycloak.trestay.com)                                                                                                |
+| **Media storage (R2)** | [media.trestay.com](https://media.trestay.com)                                                                                                      |
+| **Argo CD**            | [argocd.trestay.com](https://argocd.trestay.com) (behind Cloudflare Access)                                                                         |
 
 MySQL, Redis, NATS and Keycloak all run in-cluster; media and MySQL backups live
 in **Cloudflare R2**. Hotel search is **MySQL-only** (no external search engine) —
 see [docs/architecture/search-mysql.md](docs/architecture/search-mysql.md).
 
-`trestay.com` is the new primary domain; the `deployserver.work` hostnames above
-stay routable during the migration.
+`deployserver.work` is the legacy domain and is no longer used; `trestay.com` is
+the only public domain.
 
 ---
 

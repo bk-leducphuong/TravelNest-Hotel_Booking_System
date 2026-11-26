@@ -11,14 +11,14 @@ header, which `cloudflared` preserves.
 
 ## Tunnel
 
-|            |                                                                             |
-| ---------- | --------------------------------------------------------------------------- |
-| Name       | `travelnest`                                                                |
-| ID         | `f3cf83fa-a17c-4e1e-ae43-8c2774b0def8`                                      |
-| Management | **locally-managed** (`config_src: local`)                                   |
-| Runtime    | systemd unit `cloudflared.service` on the VPS host                          |
-| Account    | `938ceca1e7de73dcb1f962d4c48a462e`                                          |
-| Zone       | `deployserver.work`, `trestay.com` (new primary domain; both stay routable) |
+|            |                                                                    |
+| ---------- | ------------------------------------------------------------------ |
+| Name       | `travelnest`                                                       |
+| ID         | `f3cf83fa-a17c-4e1e-ae43-8c2774b0def8`                             |
+| Management | **locally-managed** (`config_src: local`)                          |
+| Runtime    | systemd unit `cloudflared.service` on the VPS host                 |
+| Account    | `938ceca1e7de73dcb1f962d4c48a462e`                                 |
+| Zone       | `trestay.com` (primary). `deployserver.work` is legacy and paused. |
 
 ## Hostnames
 
@@ -30,11 +30,11 @@ header, which `cloudflared` preserves.
 | `superadmin.deployserver.work` / `superadmin.trestay.com` | `superadmin-client:80`                                                                       |
 | `keycloak.deployserver.work` / `keycloak.trestay.com`     | `keycloak:8080`                                                                              |
 | `argocd.deployserver.work` / `argocd.trestay.com`         | `argocd-server:80` (Argo CD dashboard; gated by Cloudflare Access)                           |
-| `mysql.deployserver.work`                                 | `tcp://localhost:13306` (raw TCP; Cloudflare Access + `cloudflared access tcp`)              |
-| `redis.deployserver.work`                                 | `tcp://localhost:16379` (raw TCP; Cloudflare Access + `cloudflared access tcp`)              |
+| `mysql.trestay.com` / `mysql.deployserver.work`           | `tcp://localhost:13306` (raw TCP; Cloudflare Access + `cloudflared access tcp`)              |
+| `redis.trestay.com` / `redis.deployserver.work`           | `tcp://localhost:16379` (raw TCP; Cloudflare Access + `cloudflared access tcp`)              |
 | `storage.deployserver.work` / `storage.trestay.com`       | _(no backend — MinIO was retired in #170; these ingress rules are stale and can be removed)_ |
 
-Media is served by **Cloudflare R2** at `https://media.deployserver.work`, using an
+Media is served by **Cloudflare R2** at `https://media.trestay.com`, using an
 R2 custom domain. It is not a tunnel hostname and needs no `cloudflared` rule.
 
 The `mysql`/`redis` hostnames are **not** HTTP and do not go through

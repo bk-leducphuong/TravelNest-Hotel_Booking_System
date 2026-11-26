@@ -105,10 +105,10 @@ in the sealed secrets (see [`docs/R2_MIGRATION.md`](docs/R2_MIGRATION.md)).
 ## External Managed Services
 
 - **Cloudflare Tunnel** — public ingress, plus Cloudflare **Access** in front of
-  `argocd.deployserver.work`.
+  `argocd.trestay.com`.
 - **Cloudflare R2** — buckets `uploads` (media) and `travelnest-backups` (nightly
   MySQL dumps). Objects are served from the `uploads` custom domain,
-  `https://media.deployserver.work`. The old Hetzner `/mnt/minio` volume is gone.
+  `https://media.trestay.com`. The old Hetzner `/mnt/minio` volume is gone.
 
 ## Scripts
 

@@ -110,16 +110,15 @@ Applications (the controller triggers syncs itself, step by step).
 - Namespace: `travelnest`
 - Ingress controller: `traefik`
 - Public hosts:
-  - `deployserver.work`
-  - `admin.deployserver.work`
-  - `superadmin.deployserver.work`
-  - `api.deployserver.work`
-  - `keycloak.deployserver.work`
-  - `media.deployserver.work` (Cloudflare R2 custom domain, not routed through the tunnel)
-  - `argocd.deployserver.work` (Argo CD, behind Cloudflare Access)
-- `trestay.com` and the same `api.` / `admin.` / `superadmin.` / `keycloak.` /
-  `argocd.` subdomains are the new primary domain; the `deployserver.work`
-  hostnames stay routable from the same Ingresses.
+  - `trestay.com`
+  - `admin.trestay.com`
+  - `superadmin.trestay.com`
+  - `api.trestay.com`
+  - `keycloak.trestay.com`
+  - `media.trestay.com` (Cloudflare R2 custom domain, not routed through the tunnel)
+  - `argocd.trestay.com` (Argo CD, behind Cloudflare Access)
+- `deployserver.work` is legacy; the Ingresses still accept its hosts so old
+  links keep working, but nothing new should reference it.
 - Cloudflare Tunnel stays outside the cluster in phase 1.
 
 ## Secrets (SOPS + age)

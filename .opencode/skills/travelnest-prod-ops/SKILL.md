@@ -42,7 +42,7 @@ ssh hetzner 'sudo kubectl get pods -A -o wide | grep -vE "Completed|Running"'
 ssh hetzner 'sudo kubectl -n travelnest logs deploy/api --tail=200'
 ```
 
-The `argocd` CLI is installed locally but its server (`argocd.deployserver.work`)
+The `argocd` CLI is installed locally but its server (`argocd.trestay.com`)
 sits behind Cloudflare Access; prefer the `kubectl -n argocd` commands above.
 
 ## Prod databases
@@ -54,8 +54,8 @@ Two options. Credentials come from the gitignored `deploy/k8s/.env.prod`
 The host port-forwards are already running on the VPS loopback:
 
 ```bash
-cloudflared access tcp --hostname mysql.deployserver.work   --url 127.0.0.1:3306
-cloudflared access tcp --hostname redis.deployserver.work   --url 127.0.0.1:6379
+cloudflared access tcp --hostname mysql.trestay.com   --url 127.0.0.1:3306
+cloudflared access tcp --hostname redis.trestay.com   --url 127.0.0.1:6379
 # then point mysql at 127.0.0.1:<port>
 ```
 
@@ -85,7 +85,7 @@ Cloudflare dashboard (R2) or the `aws` CLI against the R2 S3 endpoint from
 hcloud server list
 hcloud server describe travelnest-test
 
-cf dns records list -z deployserver.work
+cf dns records list -z trestay.com
 cf zero-trust access applications list
 cloudflared tunnel list
 ```

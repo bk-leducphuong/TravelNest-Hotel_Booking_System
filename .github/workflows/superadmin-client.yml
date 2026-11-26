@@ -123,10 +123,10 @@ jobs:
       # console is an SPA, so this public config is baked into the bundle.
       # `with:` values are resolved by the caller and cannot read its `env`.
       build_args: |
-        NUXT_PUBLIC_API_BASE=${{ vars.NUXT_PUBLIC_API_BASE || 'https://api.deployserver.work/api/v1' }}
-        NUXT_PUBLIC_KEYCLOAK_URL=${{ vars.NUXT_PUBLIC_KEYCLOAK_URL || 'https://keycloak.deployserver.work' }}
+        NUXT_PUBLIC_API_BASE=${{ vars.NUXT_PUBLIC_API_BASE || 'https://api.trestay.com/api/v1' }}
+        NUXT_PUBLIC_KEYCLOAK_URL=${{ vars.NUXT_PUBLIC_KEYCLOAK_URL || 'https://keycloak.trestay.com' }}
         NUXT_PUBLIC_KEYCLOAK_REALM=${{ vars.NUXT_PUBLIC_KEYCLOAK_REALM || 'travelnest' }}
         NUXT_PUBLIC_KEYCLOAK_CLIENT_ID=${{ vars.NUXT_PUBLIC_KEYCLOAK_CLIENT_ID || 'travelnest-superadmin' }}
-        NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI=${{ vars.NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI || 'https://superadmin.deployserver.work/silent-check-sso.html' }}
+        NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI=${{ vars.NUXT_PUBLIC_KEYCLOAK_SILENT_CHECK_SSO_REDIRECT_URI || 'https://superadmin.trestay.com/silent-check-sso.html' }}
       promote_targets: |
         travelnest-superadmin:deploy/k8s/apps/superadmin-client/overlays/prod/kustomization.yaml

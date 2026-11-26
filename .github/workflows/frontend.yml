@@ -145,13 +145,13 @@ jobs:
       # variables (Settings > Variables). `with:` values are resolved by the
       # caller and cannot read its `env`, so the defaults live inline here.
       build_args: |
-        VITE_SERVER_HOST=${{ vars.VITE_SERVER_HOST || 'https://api.deployserver.work' }}
-        VITE_MINIO_URL=${{ vars.VITE_MINIO_URL || 'https://media.deployserver.work' }}
-        VITE_ADMIN_HOST=${{ vars.VITE_ADMIN_HOST || 'https://admin.deployserver.work' }}
-        VITE_KEYCLOAK_URL=${{ vars.VITE_KEYCLOAK_URL || 'https://keycloak.deployserver.work' }}
+        VITE_SERVER_HOST=${{ vars.VITE_SERVER_HOST || 'https://api.trestay.com' }}
+        VITE_MINIO_URL=${{ vars.VITE_MINIO_URL || 'https://media.trestay.com' }}
+        VITE_ADMIN_HOST=${{ vars.VITE_ADMIN_HOST || 'https://admin.trestay.com' }}
+        VITE_KEYCLOAK_URL=${{ vars.VITE_KEYCLOAK_URL || 'https://keycloak.trestay.com' }}
         VITE_KEYCLOAK_REALM=${{ vars.VITE_KEYCLOAK_REALM || 'travelnest' }}
         VITE_KEYCLOAK_CLIENT_ID=${{ vars.VITE_KEYCLOAK_CLIENT_ID || 'travelnest-web' }}
-        PRERENDER_API_BASE=${{ vars.PRERENDER_API_BASE || vars.VITE_SERVER_HOST || 'https://api.deployserver.work' }}
+        PRERENDER_API_BASE=${{ vars.PRERENDER_API_BASE || vars.VITE_SERVER_HOST || 'https://api.trestay.com' }}
         VITE_STRIPE_PUBLIC_KEY=${{ vars.VITE_STRIPE_PUBLIC_KEY || 'pk_test_51T4DQCC8yETwFKHFA9dsnMKy9rJmWzBLTvvDViuizhwPUrGCgbn5GvuqzSAJjqBl3pWarb8XF4rDFhrdeteJ31PP00EfeNIVyd' }}
       promote_targets: |
         travelnest-frontend:deploy/k8s/apps/frontend/overlays/prod/kustomization.yaml
