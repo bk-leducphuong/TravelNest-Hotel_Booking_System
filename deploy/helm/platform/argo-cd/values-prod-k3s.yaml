@@ -94,8 +94,5 @@ server:
     controller: generic
     ingressClassName: traefik
     hostname: argocd.trestay.com
-    extraHosts:
-      # Old hostname stays routable while deployserver.work winds down.
-      - name: argocd.deployserver.work
     # Cloudflare terminates TLS; there is no cert-manager on this cluster.
     tls: false
