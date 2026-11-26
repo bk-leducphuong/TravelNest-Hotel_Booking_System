@@ -9,4 +9,4 @@ images:
     newName: docker.io/leducphuong/travelnest-superadmin
     # Managed by CI promotion (deploy/scripts/ci/update-image-tag.sh):
     # rewritten to an immutable sha-<commit> tag. Do not hand-edit.
-    newTag: sha-408868d
+    newTag: sha-011b5f2
